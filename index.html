@@ -1,0 +1,2258 @@
+<!DOCTYPE html>
+<html lang="de" data-view-level="basic">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0A1929">
+    <meta name="description" content="Zanobo - AI Assistant für akustische Maschinenüberwachung">
+
+    <!-- Cache Control: Force browser to always fetch fresh content -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <title>Zanobo - AI Assistant</title>
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+    <link rel="apple-touch-icon" href="./icons/icon-512.png">
+
+    <!-- Theme Bootstrap (loads before render - inline for guaranteed sync execution) -->
+    <script>
+    /**
+     * ZANOBOT THEME BOOTSTRAP - Inline version for guaranteed sync execution
+     * Prevents FOUC (Flash of Unstyled Content)
+     */
+    (function() {
+        'use strict';
+        const CONFIG_PATH = './config.json';
+        const THEME_STORAGE_KEY = 'zanobot-theme';
+        const DEFAULT_THEME = 'focus';
+        const AVAILABLE_THEMES = ['neon', 'light', 'brand', 'focus'];
+        const VIEW_LEVEL_STORAGE_KEY = 'zanobot.view-level';
+        const DEFAULT_VIEW_LEVEL = 'basic';
+        const AVAILABLE_VIEW_LEVELS = ['basic', 'advanced', 'expert'];
+
+        function getStoredTheme() {
+            try { return localStorage.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME; }
+            catch (e) { return DEFAULT_THEME; }
+        }
+        function getStoredViewLevel() {
+            try {
+                const level = localStorage.getItem(VIEW_LEVEL_STORAGE_KEY);
+                return level && AVAILABLE_VIEW_LEVELS.includes(level) ? level : DEFAULT_VIEW_LEVEL;
+            } catch (e) { return DEFAULT_VIEW_LEVEL; }
+        }
+        function applyTheme(theme) { document.documentElement.setAttribute('data-theme', theme); }
+        function applyViewLevel(level) { document.documentElement.setAttribute('data-view-level', level); }
+
+        async function loadConfig() {
+            try {
+                const response = await fetch(CONFIG_PATH);
+                if (!response.ok) throw new Error('Failed to load config');
+                const config = await response.json();
+                if (getStoredTheme() === 'brand' && config.branding?.colors) applyBrandColors(config.branding.colors);
+                window.ZANOBOT_CONFIG = config;
+            } catch (error) { console.warn('Could not load config.json:', error); }
+        }
+
+        function applyBrandColors(colors) {
+            const root = document.documentElement;
+            if (colors.primary) root.style.setProperty('--primary-color', colors.primary);
+            if (colors.primaryHover) root.style.setProperty('--primary-hover', colors.primaryHover);
+            if (colors.secondary) root.style.setProperty('--secondary-color', colors.secondary);
+            if (colors.accent) root.style.setProperty('--accent-color', colors.accent);
+            if (colors.background) root.style.setProperty('--bg-primary', colors.background);
+            if (colors.backgroundSecondary) root.style.setProperty('--bg-secondary', colors.backgroundSecondary);
+        }
+
+        function initTheme() {
+            applyTheme(getStoredTheme());
+            applyViewLevel(getStoredViewLevel());
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadConfig);
+            else loadConfig();
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    if (!localStorage.getItem(THEME_STORAGE_KEY)) applyTheme(e.matches ? 'neon' : 'light');
+                });
+            }
+        }
+
+        window.ZanobotTheme = {
+            setTheme: function(theme) {
+                if (!AVAILABLE_THEMES.includes(theme)) return;
+                try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch (e) {}
+                applyTheme(theme);
+                if (theme === 'brand' && window.ZANOBOT_CONFIG?.branding?.colors) applyBrandColors(window.ZANOBOT_CONFIG.branding.colors);
+                window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
+            },
+            getTheme: function() { return getStoredTheme(); },
+            toggleTheme: function() {
+                const idx = AVAILABLE_THEMES.indexOf(getStoredTheme());
+                const next = AVAILABLE_THEMES[(idx + 1) % AVAILABLE_THEMES.length];
+                this.setTheme(next);
+                return next;
+            },
+            getAvailableThemes: function() { return [...AVAILABLE_THEMES]; },
+            getThemeDisplayName: function(theme) {
+                return { 'neon': 'Neon Industrial', 'light': 'Daylight', 'brand': 'Zanobo', 'focus': 'Focus' }[theme] || theme;
+            },
+            getThemeDescription: function(theme) {
+                return {
+                    'neon': 'Cyberpunk-Style mit Neon Cyan & Orange. Perfekt für dunkle Umgebungen.',
+                    'light': 'Heller High-Contrast-Modus. Optimal für Sonnenlicht & Outdoor.',
+                    'brand': 'Original Zanobo Design. Ausgewogen & professionell.',
+                    'focus': 'Diagnose-first Design. Klar, ruhig, zielgerichtet.'
+                }[theme] || '';
+            },
+            applyCustomColors: applyBrandColors,
+            reset: function() {
+                try { localStorage.removeItem(THEME_STORAGE_KEY); } catch (e) {}
+                applyTheme(DEFAULT_THEME);
+            }
+        };
+        initTheme();
+    })();
+    </script>
+</head>
+<body>
+    <!-- Microphone Status Badge -->
+    <div id="mic-status-badge" class="status-badge" style="display: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+        <span id="mic-status-text" data-i18n="hardware.micReady">Mikrofon bereit</span>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Hero Header Image -->
+        <section class="hero-header">
+            <img src="./icons/zanobo_banner_1024x500.png" alt="ZANOBO AI Assistant - AI-powered machine health monitoring through sound analysis" class="hero-image">
+
+            <!-- Banner Text Overlay -->
+            <div class="hero-text-overlay">
+                <h1 class="hero-headline" data-i18n="banner.headline">Hört sich die Anlage normal an?</h1>
+                <p class="hero-subline" data-i18n="banner.subline">Zustand in Sekunden prüfen – direkt am Gerät, offline</p>
+            </div>
+        </section>
+
+        <div class="main-actions">
+            <!-- Container 2: Maschine auswählen -->
+            <section class="main-container collapsible">
+                <div class="main-header section-header" data-target="select-machine-content">
+                    <div class="header-with-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <!-- Professional Machine/Settings Icon -->
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v6m0 6v10M1 12h6m6 0h10"/>
+                            <circle cx="12" cy="12" r="9" stroke-width="1.5"/>
+                            <path d="M16.24 7.76l-8.48 8.48M7.76 7.76l8.48 8.48" stroke-width="1"/>
+                        </svg>
+                        <h3 class="container-title" data-i18n="identify.selectMachine">Maschine auswählen</h3>
+                    </div>
+                    <svg class="collapse-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+                <div id="select-machine-content" class="collapsible-content" style="display: none;">
+                    <div class="container-content">
+                        <!-- Option 1: Scan QR Code -->
+                        <div class="machine-selection-option">
+                            <div class="option-header">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <!-- Professional QR/Scan Icon -->
+                                    <rect x="3" y="3" width="8" height="8" rx="1"/>
+                                    <rect x="13" y="3" width="8" height="8" rx="1"/>
+                                    <rect x="3" y="13" width="8" height="8" rx="1"/>
+                                    <rect x="5" y="5" width="4" height="4"/>
+                                    <rect x="15" y="5" width="4" height="4"/>
+                                    <rect x="5" y="15" width="4" height="4"/>
+                                    <path d="M13 13h2v2m0 2h2v2m2-2h2v2"/>
+                                </svg>
+                                <h5 class="option-title" data-i18n="identify.scanQrCode">QR-Code scannen</h5>
+                            </div>
+                            <p class="option-description" data-i18n="identify.scanQrDescription">Identifiziere Maschine via QR-Code</p>
+                            <button class="action-btn secondary-btn" id="scan-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <!-- Professional Camera/Scan Icon -->
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                    <circle cx="12" cy="13" r="4"/>
+                                </svg>
+                                <span data-i18n="buttons.scan">Scannen</span>
+                            </button>
+                        </div>
+
+                        <div class="option-divider">
+                            <span data-i18n="common.or">oder</span>
+                        </div>
+
+                        <!-- Option 2: Manual Entry -->
+                        <div class="machine-selection-option">
+                            <div class="option-header">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <!-- Professional Edit/Create Icon -->
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                <h5 class="option-title" data-i18n="identify.manualEntry">Manuell anlegen</h5>
+                            </div>
+                            <p class="option-description" data-i18n="identify.manualEntryDescription">Neue Maschine mit Namen erstellen</p>
+                            <div class="input-group input-group-required">
+                                <label for="machine-name-input">
+                                    <span data-i18n="identify.machineName">Maschinenname</span><span class="required-star">*</span>
+                                </label>
+                                <input type="text" id="machine-name-input" class="machine-input" placeholder="z.B. Pumpe 3 – Westhalle" data-i18n-placeholder="identify.machineNamePlaceholder" />
+                                <span class="input-hint" id="machine-name-hint" data-i18n="identify.machineNameHint">Eindeutiger Name, z.B. Pumpe 3 – Westhalle</span>
+                                <span class="input-error" id="machine-name-error" role="alert" data-i18n="identify.machineNameRequired">Bitte gib einen Maschinennamen ein.</span>
+                            </div>
+                            <div class="input-group" data-view-level="advanced">
+                                <label for="machine-id-input" data-i18n="identify.machineId">Maschinen-ID (optional)</label>
+                                <input type="text" id="machine-id-input" class="machine-input" placeholder="z.B. 1GB4-636A0-Ba1" data-i18n-placeholder="identify.machineId" />
+                                <span class="input-hint" data-i18n="identify.machineIdHint">Optional: Interne Kennung (z.B. SAP-Nr.). Wird nicht für die Analyse verwendet.</span>
+                            </div>
+
+                            <!-- Sprint 4 UX: Fleet group input with autocomplete -->
+                            <div class="input-group" id="fleet-group-form">
+                                <label for="machine-fleet-group" class="form-label" id="fleet-group-label" data-i18n="fleet.group.label">Flottengruppe (optional)</label>
+                                <input type="text" id="machine-fleet-group" class="machine-input"
+                                       list="fleet-group-suggestions" maxlength="50" autocomplete="off"
+                                       data-i18n-placeholder="fleet.group.hint">
+                                <datalist id="fleet-group-suggestions">
+                                    <!-- Populated dynamically from existing fleetGroup values -->
+                                </datalist>
+                                <span class="input-hint" id="fleet-group-hint" data-i18n="fleet.group.hint">z.B. „Fernwärme Ost" – Maschinen mit gleicher Gruppe werden verglichen</span>
+                            </div>
+
+                            <button class="action-btn" id="create-machine-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <!-- Professional Save Icon -->
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                    <polyline points="17 21 17 13 7 13 7 21"/>
+                                    <polyline points="7 3 7 8 15 8"/>
+                                </svg>
+                                <span data-i18n="buttons.save">Speichern</span>
+                            </button>
+                            <div class="nfc-writer-actions">
+                                <button class="action-btn secondary-btn" id="open-nfc-writer-btn" type="button">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 2v8m0 4v8"/>
+                                        <path d="M5 9h14v6H5z"/>
+                                        <path d="M7 9V7a5 5 0 0 1 10 0v2"/>
+                                    </svg>
+                                    <span data-i18n="nfc.openWriter">NFC-Tag beschreiben</span>
+                                </button>
+                                <button class="action-btn secondary-btn" id="open-qr-generator-btn" type="button">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="2" width="8" height="8" rx="1"/>
+                                        <rect x="14" y="2" width="8" height="8" rx="1"/>
+                                        <rect x="2" y="14" width="8" height="8" rx="1"/>
+                                        <rect x="14" y="14" width="4" height="4"/>
+                                        <rect x="20" y="14" width="2" height="2"/>
+                                        <rect x="14" y="20" width="2" height="2"/>
+                                        <rect x="20" y="20" width="2" height="2"/>
+                                    </svg>
+                                    <span data-i18n="qrCode.openGenerator">QR-Code erstellen</span>
+                                </button>
+                                <p class="setting-description nfc-availability-hint" id="nfc-availability-hint" data-i18n="nfc.unavailableHint" style="display: none;">
+                                    NFC-Schreiben ist nur in Chrome auf Android verfügbar.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Quick Select: Recently Used Machines -->
+                        <div id="quick-select-section" class="machine-selection-option" style="display: none;">
+                            <div class="option-divider">
+                                <span data-i18n="identify.quickAccess">Schnellwahl</span>
+                            </div>
+                            <div class="option-header">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <!-- Professional History/Clock Icon -->
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                <h5 class="option-title" data-i18n="identify.recentlyUsed">Zuletzt verwendet</h5>
+                            </div>
+                            <p class="option-description" data-i18n="identify.quickAccessDescription">Schneller Zugriff auf kürzlich verwendete Maschinen</p>
+                            <div id="quick-select-list" class="quick-select-list">
+                                <!-- Machine buttons will be added dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Sprint 7: Quick Compare CTA -->
+                        <div id="quick-compare-cta" class="quick-compare-cta">
+                            <button id="quick-compare-btn" class="action-btn quick-compare-btn" data-i18n="quickCompare.startButton"></button>
+                            <p class="quick-compare-hint" data-i18n="quickCompare.hint"></p>
+                        </div>
+
+                        <!-- Maschinenübersicht -->
+                        <div class="machine-selection-option" id="machine-overview-section">
+                            <div class="option-divider">
+                                <span data-i18n="identify.overview">Übersicht</span>
+                            </div>
+                            <div class="option-header">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <!-- List/Grid Icon -->
+                                    <rect x="3" y="3" width="7" height="7"/>
+                                    <rect x="14" y="3" width="7" height="7"/>
+                                    <rect x="3" y="14" width="7" height="7"/>
+                                    <rect x="14" y="14" width="7" height="7"/>
+                                </svg>
+                                <h5 class="option-title" data-i18n="identify.machineOverview">Maschinenübersicht</h5>
+                                <button class="help-icon-btn" id="help-machines" aria-label="Hilfe: Maschinen">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <!-- Sprint 5 UX: Toggle + Help wrapper -->
+                            <div class="workflow-toggle-row">
+                                <!-- Sprint 4 UX: Workflow mode toggle -->
+                                <div class="workflow-toggle" id="workflow-toggle">
+                                    <button class="toggle-btn toggle-btn-active" id="toggle-series"
+                                            aria-pressed="true" aria-label="">
+                                        <!-- Text set via i18n -->
+                                    </button>
+                                    <button class="toggle-btn" id="toggle-fleet"
+                                            aria-pressed="false" aria-label="">
+                                        <!-- Text set via i18n -->
+                                    </button>
+                                </div>
+                                <button class="help-icon-btn help-icon-inline" id="help-fleet" aria-label="Hilfe: Flottencheck">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div id="machine-overview" class="machine-list">
+                                <!-- Machine items will be added dynamically -->
+                                <!-- Sprint 2 UX: Empty state mini 1-2-3 guide -->
+                                <div id="machine-overview-empty" class="empty-state-guide" style="display: none;">
+                                    <p class="empty-state-title" data-i18n="identify.emptyGuide.title">So funktioniert Zanobot</p>
+                                    <div class="guide-steps">
+                                        <div class="guide-step">
+                                            <span class="guide-step-number">1</span>
+                                            <div class="guide-step-content">
+                                                <strong data-i18n="identify.emptyGuide.step1Title">Maschine anlegen</strong>
+                                                <span data-i18n="identify.emptyGuide.step1Desc">Gib deiner Maschine einen eindeutigen Namen.</span>
+                                            </div>
+                                        </div>
+                                        <div class="guide-step">
+                                            <span class="guide-step-number">2</span>
+                                            <div class="guide-step-content">
+                                                <strong data-i18n="identify.emptyGuide.step2Title">Referenz aufnehmen</strong>
+                                                <span data-i18n="identify.emptyGuide.step2Desc">10 Sekunden Normalzustand aufnehmen.</span>
+                                            </div>
+                                        </div>
+                                        <div class="guide-step">
+                                            <span class="guide-step-number">3</span>
+                                            <div class="guide-step-content">
+                                                <strong data-i18n="identify.emptyGuide.step3Title">Zustand prüfen</strong>
+                                                <span data-i18n="identify.emptyGuide.step3Desc">Vergleiche jederzeit gegen die Referenz.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="guide-cta-btn" id="empty-state-cta" data-i18n="identify.emptyGuide.cta">
+                                        Erste Maschine anlegen
+                                    </button>
+                                </div>
+                            </div>
+                            <button class="add-reference-btn" id="add-new-machine-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                <span data-i18n="buttons.newMachine">Neue Maschine</span>
+                            </button>
+                        </div>
+
+                        <!-- Historie (Diagnose-Verlauf) -->
+                        <div class="machine-selection-option" id="history-section">
+                            <div class="option-divider">
+                                <span data-i18n="identify.history">Verlauf</span>
+                            </div>
+                            <div class="option-header">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <!-- Clock/History Icon -->
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                <h5 class="option-title" data-i18n="identify.history">Historie</h5>
+                            </div>
+                            <div id="history-list" class="history-list">
+                                <!-- History items will be added dynamically -->
+                                <p class="empty-state" id="history-empty" data-i18n="identify.noMeasurements">Noch keine Messungen vorhanden</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Container 3: Referenz aufnehmen -->
+            <section class="main-container collapsible">
+                <div class="main-header section-header" data-target="record-reference-content">
+                    <div class="header-with-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <!-- Professional Microphone Icon -->
+                            <rect x="9" y="2" width="6" height="12" rx="3"/>
+                            <path d="M5 10v2a7 7 0 0 0 14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="22"/>
+                            <line x1="8" y1="22" x2="16" y2="22"/>
+                        </svg>
+                        <h3 class="container-title" data-i18n="reference.recordReference">Referenz aufnehmen</h3>
+                        <button class="help-icon-btn" id="help-reference" aria-label="Hilfe: Referenz">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <svg class="collapse-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+                <div id="record-reference-content" class="collapsible-content" style="display: none;">
+                    <!-- Level 1 (GMIA) Reference Content - State-based UI -->
+                    <div class="level1-content" data-detection-mode="STATIONARY">
+                        <!-- State B: No machine selected - Zero-friction recording enabled -->
+                        <div id="reference-no-machine" class="container-content reference-state-content">
+                            <!-- ZERO-FRICTION: Direct record button - machine will be auto-created -->
+                            <div class="zero-friction-record">
+                                <p class="sub-description zero-friction-hint" data-i18n="zeroFriction.noMachineSelected">Keine Maschine ausgewählt – wird automatisch erstellt</p>
+                                <button class="action-btn reference-main-btn zero-friction-btn" id="record-reference-btn" data-i18n="buttons.record">Aufnehmen</button>
+                            </div>
+                            <!-- Alternative: Manual machine selection -->
+                            <div class="reference-or-divider">
+                                <span data-i18n="common.or">oder</span>
+                            </div>
+                            <div class="diagnose-tiles">
+                                <!-- Tile 1: Scan QR/Barcode -->
+                                <button class="diagnose-tile" id="reference-scan-btn">
+                                    <div class="diagnose-tile-icon">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                            <rect x="14" y="14" width="3" height="3"/>
+                                            <path d="M17 14h3v3m0 3h-3m3 0v-3"/>
+                                        </svg>
+                                    </div>
+                                    <span class="diagnose-tile-label" data-i18n="diagnose.scanCode">QR scannen</span>
+                                </button>
+                                <!-- Tile 2: Select existing machine -->
+                                <button class="diagnose-tile" id="reference-select-btn">
+                                    <div class="diagnose-tile-icon">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="4" width="18" height="4" rx="1"/>
+                                            <rect x="3" y="10" width="18" height="4" rx="1"/>
+                                            <rect x="3" y="16" width="18" height="4" rx="1"/>
+                                        </svg>
+                                    </div>
+                                    <span class="diagnose-tile-label" data-i18n="diagnose.selectExisting">Maschine wählen</span>
+                                </button>
+                                <!-- Tile 3: Create new machine -->
+                                <button class="diagnose-tile" id="reference-create-btn">
+                                    <div class="diagnose-tile-icon">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="12" y1="5" x2="12" y2="19"/>
+                                            <line x1="5" y1="12" x2="19" y2="12"/>
+                                        </svg>
+                                    </div>
+                                    <span class="diagnose-tile-label" data-i18n="diagnose.createNew">Neue Maschine</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- State A: Machine selected - Ready to record -->
+                        <div id="reference-machine-ready" class="container-content reference-state-content" style="display: none;">
+                            <div class="diagnose-machine-info">
+                                <div class="diagnose-machine-details">
+                                    <h4 class="diagnose-machine-name" id="reference-selected-machine-name">—</h4>
+                                    <p class="diagnose-machine-meta" id="reference-selected-machine-meta"></p>
+                                </div>
+                                <button class="diagnose-change-machine-btn" id="reference-change-machine-btn" data-i18n-title="reference.changeMachine" title="Maschine wechseln">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="sub-description" id="reference-duration-text">10-Sekunden Referenzaufnahme</p>
+                            <button class="action-btn reference-main-btn" id="record-btn" data-i18n="buttons.record">Aufnehmen</button>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- Container 4: Zustand prüfen (Primary CTA) -->
+            <section class="main-container collapsible" data-variant="primary">
+                <div class="main-header section-header" data-target="run-diagnosis-content">
+                    <div class="header-with-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <!-- Stethoscope Icon -->
+                            <path d="M6 3v4a4 4 0 0 0 8 0V3"/>
+                            <path d="M10 7v5a4 4 0 0 0 8 0v-2"/>
+                            <circle cx="18" cy="12" r="2"/>
+                        </svg>
+                        <h3 class="container-title" data-i18n="buttons.startDiagnosis">Zustand prüfen</h3>
+                        <button class="help-icon-btn" id="help-diagnose" aria-label="Hilfe: Diagnose">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <svg class="collapse-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+                <div id="run-diagnosis-content" class="collapsible-content" style="display: none;">
+                    <!-- NEW: Simplified Auto-Detection Flow -->
+                    <!-- Primary CTA: "Jetzt prüfen" - starts auto-detection without machine selection -->
+                    <div id="diagnose-no-machine" class="container-content diagnose-state-content">
+                        <!-- Primary Action: Auto-detect button -->
+                        <div class="auto-detect-primary">
+                            <button class="action-btn auto-detect-btn" id="diagnose-auto-detect-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                                    <line x1="12" y1="19" x2="12" y2="23"/>
+                                    <line x1="8" y1="23" x2="16" y2="23"/>
+                                </svg>
+                                <span data-i18n="autoDetect.startButton">Jetzt prüfen</span>
+                            </button>
+                            <p class="auto-detect-hint" data-i18n="autoDetect.hint">
+                                Das System erkennt automatisch bekannte Maschinen
+                            </p>
+                        </div>
+
+                        <!-- Secondary: Manual selection toggle -->
+                        <button class="manual-selection-toggle" id="diagnose-show-manual-btn">
+                            <span data-i18n="autoDetect.showManualSelection">Maschine manuell auswählen</span>
+                            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </button>
+
+                        <!-- Manual selection options (hidden by default) -->
+                        <div id="diagnose-manual-selection" class="manual-selection-options" style="display: none;">
+                            <div class="diagnose-tiles">
+                                <!-- Tile 1: Scan QR/Barcode -->
+                                <button class="diagnose-tile" id="diagnose-scan-btn">
+                                    <div class="diagnose-tile-icon">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                            <rect x="14" y="14" width="3" height="3"/>
+                                            <path d="M17 14h3v3m0 3h-3m3 0v-3"/>
+                                        </svg>
+                                    </div>
+                                    <span class="diagnose-tile-label" data-i18n="diagnose.scanCode">QR scannen</span>
+                                </button>
+                                <!-- Tile 2: Select existing machine -->
+                                <button class="diagnose-tile" id="diagnose-select-btn">
+                                    <div class="diagnose-tile-icon">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="4" width="18" height="4" rx="1"/>
+                                            <rect x="3" y="10" width="18" height="4" rx="1"/>
+                                            <rect x="3" y="16" width="18" height="4" rx="1"/>
+                                        </svg>
+                                    </div>
+                                    <span class="diagnose-tile-label" data-i18n="diagnose.selectExisting">Maschine wählen</span>
+                                </button>
+                                <!-- Tile 3: Create new machine -->
+                                <button class="diagnose-tile" id="diagnose-create-btn">
+                                    <div class="diagnose-tile-icon">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="12" y1="5" x2="12" y2="19"/>
+                                            <line x1="5" y1="12" x2="19" y2="12"/>
+                                        </svg>
+                                    </div>
+                                    <span class="diagnose-tile-label" data-i18n="diagnose.createNew">Neue Maschine</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- State A: Machine selected - Ready to analyze -->
+                    <div id="diagnose-machine-ready" class="container-content diagnose-state-content" style="display: none;">
+                        <div class="diagnose-machine-info">
+                            <div class="diagnose-machine-details">
+                                <h4 class="diagnose-machine-name" id="diagnose-selected-machine-name">—</h4>
+                                <p class="diagnose-machine-meta" id="diagnose-selected-machine-meta"></p>
+                            </div>
+                            <button class="diagnose-change-machine-btn" id="diagnose-change-machine-btn" data-i18n-title="diagnose.changeMachine" title="Maschine wechseln">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- Analyze button only visible when machine is selected -->
+                        <button class="action-btn diagnose-main-btn" id="diagnose-btn" data-i18n="buttons.analyze">Analysieren</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer / Legal Info - Minimalist 2x2 Grid -->
+        <footer class="footer">
+            <div class="footer-grid">
+                <button class="footer-link" id="settings-btn" data-i18n="footer.settings">Einstellungen</button>
+                <button class="footer-link" id="about-btn" data-i18n="footer.about">Über Zanobo</button>
+                <button class="footer-link" id="datenschutz-btn" data-i18n="footer.privacy">Datenschutz</button>
+                <button class="footer-link" id="impressum-btn" data-i18n="footer.impressum">Impressum</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal for Recording (Reference Phase) -->
+    <div id="recording-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="reference.recordReference">Referenz aufnehmen</h3>
+                <p class="modal-subtitle" id="machine-id">MACHINE 002</p>
+            </div>
+            <div class="modal-body">
+                <canvas id="waveform-canvas" width="300" height="150"></canvas>
+                <canvas id="health-gauge-canvas" width="300" height="300" style="display: none;"></canvas>
+                <p class="recording-status" id="recording-status" data-i18n="reference.recordingStatusHighQuality">High audio quality detected</p>
+                <p class="recording-timer" id="recording-timer">00:00</p>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-secondary" id="stop-recording-btn" data-i18n="buttons.stopRecording">Stop Recording</button>
+                <button class="modal-btn btn-primary" id="save-reference-btn" style="display: none;" data-i18n="buttons.saveReference">Save Reference</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inspection Modal (Simplified PWA View for Diagnosis) -->
+    <div id="inspection-modal" class="modal inspection-modal" style="display: none;">
+        <div class="modal-content">
+            <!-- Fixed Header Banner -->
+            <header class="inspection-header">
+                <h1 class="inspection-question" data-i18n="inspection.mainQuestion">Hört sich die Maschine unauffällig an?</h1>
+                <p class="inspection-subtitle" id="inspection-subtitle" data-i18n="inspection.subtitleInitializing">Vorbereitung – bitte warten</p>
+                <p class="inspection-machine-name" id="inspection-machine-name"></p>
+            </header>
+
+            <!-- Scrollable Middle Content -->
+            <main class="inspection-content is-initializing" id="inspection-content">
+                <!-- Dashboard Grid with Camera and Score will be inserted here dynamically -->
+
+                <!-- Dynamic Quality Hint -->
+                <div class="inspection-hint hint-hidden" id="inspection-hint" data-i18n="inspection.hintWaiting">Warte auf Maschinensignal...</div>
+            </main>
+
+            <!-- Fixed Footer with STOP Button -->
+            <footer class="inspection-footer">
+                <button class="inspection-stop-btn" id="inspection-stop-btn" data-i18n="inspection.stopButton">STOP</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Modal for Review Recording (Phase 2) -->
+    <div id="review-modal" class="modal" style="display: none;">
+        <div class="modal-content app-shell-container">
+            <div class="modal-header shell-header">
+                <h3 data-i18n="review.title">Aufnahme prüfen</h3>
+                <p class="modal-subtitle" data-i18n="review.subtitle">Qualitätskontrolle</p>
+            </div>
+            <div class="modal-body shell-content">
+                <!-- Audio Player -->
+                <div class="review-audio-player">
+                    <h4 class="review-section-title" data-i18n="review.listenTitle">Aufnahme anhören</h4>
+                    <audio id="review-audio" controls style="width: 100%; margin-bottom: 20px;">
+                        <source id="review-audio-source" type="audio/webm">
+                        Ihr Browser unterstützt keine Audio-Wiedergabe.
+                    </audio>
+                    <p class="review-info" id="review-recording-info">15 Sekunden Aufnahme (5s Stabilisierung + 10s Training)</p>
+                </div>
+
+                <div class="review-reference-image" id="review-reference-image-container" style="display: none;">
+                    <h4 class="review-section-title" data-i18n="review.savedPositionImage">Gespeichertes Positionsbild</h4>
+                    <div class="review-image-frame">
+                        <img id="review-reference-image" alt="Gespeichertes Positionsbild der Maschine">
+                    </div>
+                    <p class="review-info" data-i18n="review.positionImageCheck">Prüfen Sie, ob das Bild die korrekte Position zeigt.</p>
+                </div>
+
+                <!-- Quality Assessment -->
+                <div class="review-quality">
+                    <h4 class="review-section-title" data-i18n="review.qualityTitle">Qualitätsbewertung</h4>
+
+                    <!-- Quality Traffic Light -->
+                    <div class="quality-indicator" id="quality-indicator">
+                        <div class="quality-icon" id="quality-icon">
+                            <!-- Icon will be set dynamically -->
+                        </div>
+                        <div class="quality-details">
+                            <p class="quality-score">
+                                Qualität: <strong id="quality-score">--</strong>%
+                            </p>
+                            <p class="quality-rating" id="quality-rating-text">
+                                <!-- Rating text will be set dynamically -->
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Quality Issues (if any) -->
+                    <div class="quality-issues" id="quality-issues" style="display: none;">
+                        <h5 data-i18n="review.issuesTitle">Erkannte Probleme:</h5>
+                        <ul id="quality-issues-list">
+                            <!-- Issues will be added dynamically -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions shell-footer">
+                <button class="modal-btn btn-secondary" id="review-discard-btn" data-i18n="review.discardNew">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    Verwerfen / Neu
+                </button>
+                <button class="modal-btn btn-primary" id="review-save-btn" data-i18n="review.saveAsReference">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    Als Referenz speichern
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deep Link Loading Overlay -->
+    <div id="deep-link-overlay" class="deep-link-overlay" style="display: none;">
+        <div class="deep-link-card">
+            <div class="deep-link-spinner" aria-hidden="true"></div>
+            <p data-i18n="identify.messages.loadingMachine">Maschine wird geladen...</p>
+        </div>
+    </div>
+
+    <!-- Modal for QR/Barcode Scanner -->
+    <div id="scanner-modal" class="modal" style="display: none;">
+        <div class="modal-content scanner-modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="modals.qrScanner">Maschine scannen</h3>
+                <button class="close-modal-btn" id="close-scanner-modal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Scanner Container -->
+                <div id="scanner-container" class="scanner-container">
+                    <div id="qr-reader" class="qr-reader"></div>
+                    <div class="scanner-overlay">
+                        <div class="scanner-frame">
+                            <div class="scanner-corner corner-tl"></div>
+                            <div class="scanner-corner corner-tr"></div>
+                            <div class="scanner-corner corner-bl"></div>
+                            <div class="scanner-corner corner-br"></div>
+                        </div>
+                        <p class="scanner-hint" data-i18n="settingsUI.qrHint">QR-Code oder Barcode in den Rahmen halten</p>
+                    </div>
+                </div>
+
+                <!-- Error/Permission Message -->
+                <div id="scanner-error" class="scanner-error" style="display: none;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--status-error)" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <p id="scanner-error-message" data-i18n="identify.errors.cameraAccessDenied">Kamerazugriff wurde verweigert</p>
+                    <p class="scanner-error-hint" data-i18n="identify.errors.cameraAccessHint">Bitte erlauben Sie den Kamerazugriff in Ihren Browser-Einstellungen</p>
+                </div>
+
+                <!-- Success Message -->
+                <div id="scanner-success" class="scanner-success" style="display: none;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--status-healthy)" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    <p id="scanner-success-message" data-i18n="settingsUI.codeRecognized">Code erkannt!</p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-secondary" id="manual-input-btn" data-i18n="settingsUI.manualInput">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Manuell eingeben
+                </button>
+                <button class="modal-btn btn-secondary" id="close-scanner-btn" data-i18n="buttons.close">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for NFC Writer -->
+    <div id="nfc-writer-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="nfc-writer-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="nfc-writer-title" data-i18n="nfc.title">NFC-Tag beschreiben</h3>
+                <button class="close-modal-btn" id="close-nfc-writer-modal" aria-label="NFC-Dialog schließen" data-i18n-aria="nfc.closeDialog">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description" data-i18n="nfc.description">Wählen Sie aus, welche Information auf den NFC-Tag geschrieben wird.</p>
+                <p class="nfc-support-details" id="nfc-support-details" data-i18n="nfc.supportDetails">Sicherer Kontext: — · NDEFReader verfügbar: —</p>
+                <div class="nfc-option-group">
+                    <label class="nfc-option">
+                        <input type="radio" name="nfc-write-option" id="nfc-option-generic" value="generic" checked>
+                        <span class="nfc-option-text">
+                            <span class="nfc-option-title" data-i18n="nfc.optionGeneric">App-Link (generisch)</span>
+                            <span class="nfc-option-detail" data-i18n="nfc.optionGenericDetail">Öffnet die App ohne Maschinen-ID.</span>
+                        </span>
+                    </label>
+                    <label class="nfc-option">
+                        <input type="radio" name="nfc-write-option" id="nfc-option-specific" value="specific">
+                        <span class="nfc-option-text">
+                            <span class="nfc-option-title" data-i18n="nfc.optionSpecific">Maschinen-Link</span>
+                            <span class="nfc-option-detail" id="nfc-option-specific-detail" data-i18n="nfc.optionSpecificDetailDefault">Öffnet die App mit der aktuell ausgewählten Maschine.</span>
+                        </span>
+                    </label>
+                    <label class="nfc-option">
+                        <input type="radio" name="nfc-write-option" id="nfc-option-fleet" value="fleet">
+                        <span class="nfc-option-text">
+                            <span class="nfc-option-title" data-i18n="nfc.optionFleet">Flotten-Link (Flottencheck)</span>
+                            <span class="nfc-option-detail" id="nfc-option-fleet-detail" data-i18n="nfc.optionFleetDetailDefault">Öffnet die App mit einer kompletten Flotte.</span>
+                        </span>
+                    </label>
+                    <label class="nfc-option">
+                        <input type="radio" name="nfc-write-option" id="nfc-option-quickcompare-count" value="quickcompare-count">
+                        <span class="nfc-option-text">
+                            <span class="nfc-option-title" data-i18n="nfc.optionQuickCompareCount">Schnellvergleich (nur Anzahl)</span>
+                            <span class="nfc-option-detail" id="nfc-option-quickcompare-count-detail" data-i18n="nfc.optionQuickCompareCountDetailDefault">Öffnet einen Schnellvergleich mit einer bestimmten Anzahl Maschinen. Kein Internet nötig.</span>
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Quick Compare count input (shown only when count-only option selected) -->
+                <div id="nfc-qc-count-section" class="nfc-customer-id-section" style="display: none;">
+                    <label class="setting-label" data-i18n="nfc.quickCompareCountLabel">Wie viele Maschinen?</label>
+                    <div class="qc-count-chips" id="nfc-qc-count-chips">
+                        <button type="button" class="qc-count-chip" data-count="3">3</button>
+                        <button type="button" class="qc-count-chip" data-count="5">5</button>
+                        <button type="button" class="qc-count-chip" data-count="8">8</button>
+                        <button type="button" class="qc-count-chip" data-count="10">10</button>
+                        <input type="number" id="nfc-qc-count-input" class="machine-input qc-custom-input" min="2" max="30" placeholder="__">
+                    </div>
+                    <p class="nfc-customer-id-description" data-i18n="nfc.quickCompareCountHint">Kein Internet nötig beim Scannen. Maschinen werden automatisch benannt.</p>
+                    <p class="nfc-db-url-preview" id="nfc-qc-count-url-preview" style="display: none;"></p>
+                </div>
+
+                <!-- Fleet selection (shown only when fleet option selected) -->
+                <div id="nfc-fleet-section" class="nfc-customer-id-section" style="display: none;">
+                    <label class="setting-label" data-i18n="nfc.fleetSelectLabel">Flotte auswählen</label>
+                    <select id="nfc-fleet-select" class="form-input"></select>
+                    <p class="nfc-db-url-preview" id="nfc-fleet-url-preview" style="display: none;"></p>
+                </div>
+
+                <!-- Customer ID Input Field (Variante B) -->
+                <div id="nfc-customer-id-section" class="nfc-customer-id-section">
+                    <label for="nfc-customer-id-input" class="nfc-customer-id-label" data-i18n="nfc.customerIdLabel">Kundenkennung (c)</label>
+                    <p class="nfc-customer-id-description" data-i18n="nfc.customerIdDescription">Diese Kennung bestimmt, welche Referenzdaten beim NFC-Scan geladen werden. Die App lädt automatisch: https://gunterstruck.github.io/&lt;Kundenkennung&gt;/db-latest.json</p>
+                    <input
+                        type="text"
+                        id="nfc-customer-id-input"
+                        class="nfc-customer-id-input"
+                        placeholder="z.B. Kundenkennung_nr1"
+                        data-i18n-placeholder="nfc.customerIdPlaceholder"
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                    <p class="nfc-db-url-preview" id="nfc-db-url-preview" style="display: none;"></p>
+                </div>
+
+                <div class="nfc-status" id="nfc-status" role="status"></div>
+                <p class="nfc-hint" data-i18n="nfc.hint">Halten Sie den NFC-Tag an die Rückseite Ihres Geräts.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-secondary" id="nfc-cancel-btn" data-i18n="buttons.cancel">Abbrechen</button>
+                <button class="modal-btn btn-primary" id="nfc-write-btn" data-i18n="nfc.writeButton">Jetzt schreiben</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for QR Code Generator -->
+    <div id="qr-generator-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="qr-generator-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="qr-generator-title" data-i18n="qrCode.title">QR-Code erstellen</h3>
+                <button class="close-modal-btn" id="close-qr-generator-modal" aria-label="QR-Code Dialog schließen" data-i18n-aria="qrCode.closeDialog">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description" data-i18n="qrCode.description">Erstellen Sie einen QR-Code zum Ausdrucken oder Speichern.</p>
+                <div class="nfc-option-group">
+                    <label class="nfc-option">
+                        <input type="radio" name="qr-option" id="qr-option-generic" value="generic" checked>
+                        <span class="nfc-option-text">
+                            <span class="nfc-option-title" data-i18n="qrCode.optionGeneric">App-Link (generisch)</span>
+                            <span class="nfc-option-detail" data-i18n="qrCode.optionGenericDetail">Öffnet die App ohne Maschinen-ID.</span>
+                        </span>
+                    </label>
+                    <label class="nfc-option">
+                        <input type="radio" name="qr-option" id="qr-option-specific" value="specific">
+                        <span class="nfc-option-text">
+                            <span class="nfc-option-title" data-i18n="qrCode.optionSpecific">Maschinen-Link</span>
+                            <span class="nfc-option-detail" id="qr-option-specific-detail" data-i18n="qrCode.optionSpecificDetailDefault">Öffnet die App mit der aktuell ausgewählten Maschine.</span>
+                        </span>
+                    </label>
+                    <label class="nfc-option">
+                        <input type="radio" name="qr-option" id="qr-option-fleet" value="fleet">
+                        <span class="nfc-option-text">
+                            <span class="nfc-option-title" data-i18n="qrCode.optionFleet">Flotten-Link (Flottencheck)</span>
+                            <span class="nfc-option-detail" id="qr-option-fleet-detail" data-i18n="qrCode.optionFleetDetailDefault">Erstellt einen QR-Code für eine komplette Flotte.</span>
+                        </span>
+                    </label>
+                    <label class="nfc-option">
+                        <input type="radio" name="qr-option" id="qr-option-quickcompare-count" value="quickcompare-count">
+                        <span class="nfc-option-text">
+                            <span class="nfc-option-title" data-i18n="qrCode.optionQuickCompareCount">Schnellvergleich (nur Anzahl)</span>
+                            <span class="nfc-option-detail" id="qr-option-quickcompare-count-detail" data-i18n="qrCode.optionQuickCompareCountDetailDefault">Erstellt QR-Code für einen Schnellvergleich mit einer bestimmten Anzahl Maschinen.</span>
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Quick Compare count input (shown only when count-only option selected) -->
+                <div id="qr-qc-count-section" class="nfc-customer-id-section" style="display: none;">
+                    <label class="setting-label" data-i18n="nfc.quickCompareCountLabel">Wie viele Maschinen?</label>
+                    <div class="qc-count-chips" id="qr-qc-count-chips">
+                        <button type="button" class="qc-count-chip" data-count="3">3</button>
+                        <button type="button" class="qc-count-chip" data-count="5">5</button>
+                        <button type="button" class="qc-count-chip" data-count="8">8</button>
+                        <button type="button" class="qc-count-chip" data-count="10">10</button>
+                        <input type="number" id="qr-qc-count-input" class="machine-input qc-custom-input" min="2" max="30" placeholder="__">
+                    </div>
+                    <p class="nfc-customer-id-description" data-i18n="nfc.quickCompareCountHint">Kein Internet nötig beim Scannen. Maschinen werden automatisch benannt.</p>
+                    <p class="nfc-db-url-preview" id="qr-qc-count-url-preview" style="display: none;"></p>
+                </div>
+
+                <!-- Fleet selection (shown only when fleet option selected) -->
+                <div id="qr-fleet-section" class="nfc-customer-id-section" style="display: none;">
+                    <label class="setting-label" data-i18n="qrCode.fleetSelectLabel">Flotte auswählen</label>
+                    <select id="qr-fleet-select" class="form-input"></select>
+                </div>
+
+                <!-- Customer ID Input Field -->
+                <div class="nfc-customer-id-section" id="qr-customer-id-section">
+                    <label for="qr-customer-id-input" class="nfc-customer-id-label" data-i18n="qrCode.customerIdLabel">Kundenkennung (c)</label>
+                    <p class="nfc-customer-id-description" data-i18n="qrCode.customerIdDescription">Diese Kennung bestimmt, welche Referenzdaten beim Scan geladen werden.</p>
+                    <input
+                        type="text"
+                        id="qr-customer-id-input"
+                        class="nfc-customer-id-input"
+                        placeholder="z.B. Kundenkennung_nr1"
+                        data-i18n-placeholder="qrCode.customerIdPlaceholder"
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                    <p class="nfc-db-url-preview" id="qr-db-url-preview" style="display: none;"></p>
+                </div>
+
+                <!-- QR Code Preview -->
+                <div class="qr-preview-container" id="qr-preview-container" style="display: none;">
+                    <p class="qr-url-preview" id="qr-url-preview"></p>
+                    <div class="qr-canvas-wrapper">
+                        <canvas id="qr-canvas"></canvas>
+                    </div>
+                    <div class="qr-label-info" id="qr-label-info"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-secondary" id="qr-close-btn" data-i18n="buttons.cancel">Abbrechen</button>
+                <button class="modal-btn btn-secondary" id="qr-download-btn" style="display: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    <span data-i18n="qrCode.downloadPng">Als Bild speichern</span>
+                </button>
+                <button class="modal-btn btn-primary" id="qr-print-btn" style="display: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;">
+                        <polyline points="6 9 6 2 18 2 18 9"/>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                        <rect x="6" y="14" width="12" height="8"/>
+                    </svg>
+                    <span data-i18n="qrCode.print">Drucken</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden print-only container for QR code label -->
+    <div id="qr-print-area" class="qr-print-area">
+        <div class="qr-print-label">
+            <div class="qr-print-header" id="qr-print-header"></div>
+            <canvas id="qr-print-canvas"></canvas>
+            <div class="qr-print-details" id="qr-print-details"></div>
+            <div class="qr-print-footer" id="qr-print-footer"></div>
+        </div>
+    </div>
+
+    <!-- NFC Diagnosis Prompt Modal -->
+    <div id="nfc-diagnosis-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="nfc-diagnosis-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="nfc-diagnosis-title" data-i18n="modals.nfcDiagnosisTitle">Zustand prüfen?</h3>
+                <button class="close-modal-btn" id="close-nfc-diagnosis-modal" aria-label="Dialog schließen" data-i18n-aria="modals.closeDialog">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description" data-i18n="modals.nfcDiagnosisPrompt">Maschine erkannt. Zustand jetzt prüfen?</p>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-secondary" id="nfc-diagnosis-cancel-btn" data-i18n="common.no">Nein</button>
+                <button class="modal-btn btn-primary" id="nfc-diagnosis-confirm-btn" data-i18n="common.yes">Ja</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Machine ID Modal -->
+    <div id="manual-input-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="settingsUI.machineIdInput">Maschinen-ID eingeben</h3>
+                <button class="close-modal-btn" id="close-manual-input-modal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <label for="manual-machine-id-input" data-i18n="identify.machineId">Maschinen-ID</label>
+                <input
+                    type="text"
+                    id="manual-machine-id-input"
+                    class="machine-input"
+                    placeholder="z.B. 1GB4-636A0-Ba1"
+                    data-i18n-placeholder="settingsUI.machineIdInput"
+                />
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-secondary" id="manual-input-cancel" data-i18n="buttons.cancel">Abbrechen</button>
+                <button class="modal-btn btn-primary" id="manual-input-confirm" data-i18n="settingsUI.continue">Weiter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Diagnosis Results -->
+    <div id="diagnosis-modal" class="modal" style="display: none;">
+        <div class="modal-content app-shell-container">
+            <div class="modal-header shell-header">
+                <h3 data-i18n="diagnosisResults.title">Diagnoseergebnisse</h3>
+                <div class="modal-header-actions">
+                    <button class="close-modal-btn" id="close-diagnosis-modal" aria-label="Diagnose schließen" data-i18n-aria="diagnosisResults.closeDialog">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body shell-content">
+                <div class="result-card">
+                    <div class="result-barcode" data-view-level="advanced">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="3" y="6" width="2" height="12"/>
+                            <rect x="6" y="6" width="1" height="12"/>
+                            <rect x="8" y="6" width="2" height="12"/>
+                            <rect x="11" y="6" width="1" height="12"/>
+                            <rect x="13" y="6" width="3" height="12"/>
+                            <rect x="17" y="6" width="1" height="12"/>
+                            <rect x="19" y="6" width="2" height="12"/>
+                        </svg>
+                        <span id="machine-barcode">1GB4-636A0-Ba1</span>
+                    </div>
+                    <div class="result-fingerprint">
+                        <h4 data-i18n="diagnosisResults.fingerprintLabel">Fingerprint</h4>
+                        <p class="result-status status-healthy" id="result-status">UNAUFFÄLLIG</p>
+                        <p class="result-verbal-status" id="result-verbal-status"></p>
+                        <p class="result-confidence" data-view-level="advanced"><span id="result-confidence">87</span>% <span data-i18n="diagnosisResults.confidenceScoreLabel">Confidence score</span></p>
+                        <div class="result-feature-mode" data-view-level="advanced">
+                            <span class="result-feature-mode-label" data-i18n="diagnosisResults.featureModeLabel">Feature Mode</span>
+                            <span id="result-feature-mode">Baseline</span>
+                        </div>
+                    </div>
+                    <!-- Sprint 3 UX: Trend Arrow -->
+                    <div class="result-trend" id="result-trend" style="display: none;">
+                        <span class="trend-arrow" id="trend-arrow"></span>
+                        <span class="trend-text" id="trend-text"></span>
+                    </div>
+                    <!-- Environment Match Hint (all view levels, only shown when T60 warning/critical) -->
+                    <div class="env-match-result" id="env-match-result" style="display: none;"></div>
+                    <!-- Sprint 3 UX: Operating point hint (Expert only) -->
+                    <div class="op-hint-result" id="op-hint-result" style="display: none;" data-view-level="expert"></div>
+                    <div class="result-analysis" data-view-level="expert">
+                        <h4 data-i18n="diagnosisResults.varianceTitle">Variance</h4>
+                        <p class="analysis-label" data-i18n="diagnosisResults.frequencyAnomalyLabel">Frequency anomaly</p>
+                        <canvas id="analysis-canvas" width="300" height="100"></canvas>
+                        <p class="analysis-hint" id="analysis-hint" data-i18n="diagnosisResults.analysisHintDefault">Hint: Slightly increased signal around 20 kHz</p>
+                    </div>
+                    <div class="result-quality" data-view-level="advanced">
+                        <h4 data-i18n="diagnosisResults.referenceQualityTitle">Reference Quality</h4>
+                        <p class="quality-status status-good" data-i18n="diagnosisResults.referenceQualityStatusGood">GOOD</p>
+                        <p class="quality-description" data-i18n="diagnosisResults.referenceQualityDescription">Reference recording meets recommended conditions</p>
+                    </div>
+                    <!-- Work Point Ranking: Probability Distribution (Advanced/Expert only) -->
+                    <div id="work-point-ranking-container" class="work-point-ranking" data-view-level="advanced">
+                        <!-- Content rendered dynamically by WorkPointRanking component -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions shell-footer">
+                <button class="modal-btn btn-secondary" id="view-history-btn" data-i18n="diagnosisResults.viewHistory">Verlauf anzeigen</button>
+                <button class="modal-btn btn-secondary" id="close-diagnosis-result-btn" data-i18n="buttons.close">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Machine History Chart -->
+    <div id="history-chart-modal" class="modal" style="display: none;">
+        <div class="modal-content history-chart-modal-content">
+            <div class="modal-header">
+                <h3 id="history-chart-title" data-i18n="historyChart.title">Maschinen-Verlauf</h3>
+                <button class="close-modal-btn" id="close-history-chart-modal" aria-label="Verlauf schließen" data-i18n-aria="historyChart.closeDialog">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="history-chart-info">
+                    <div class="history-chart-info-item">
+                        <span class="info-label" data-i18n="historyChart.machineName">Maschine:</span>
+                        <span class="info-value" id="history-machine-name">-</span>
+                    </div>
+                    <div class="history-chart-info-item">
+                        <span class="info-label" data-i18n="historyChart.dataPoints">Datenpunkte:</span>
+                        <span class="info-value" id="history-data-count">-</span>
+                    </div>
+                    <div class="history-chart-info-item">
+                        <span class="info-label" data-i18n="historyChart.timeRange">Zeitraum:</span>
+                        <span class="info-value" id="history-time-range">-</span>
+                    </div>
+                </div>
+                <div class="history-chart-container">
+                    <canvas id="history-chart-canvas" width="800" height="400"></canvas>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-secondary" id="close-history-chart-btn" data-i18n="buttons.close">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Microphone Selection -->
+    <div id="microphone-selection-modal" class="modal" style="display: none;">
+        <div class="modal-content microphone-modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="settingsUI.selectMicrophone">Mikrofon auswählen</h3>
+                <button class="close-modal-btn" id="close-microphone-modal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description" data-i18n="settingsUI.microphoneAdvice">
+                    Wählen Sie das beste Mikrofon für die Maschinendiagnose.
+                    Vermeiden Sie Headsets und Bluetooth-Geräte, da diese für Sprache optimiert sind.
+                </p>
+                <div id="microphone-device-list" class="microphone-device-list">
+                    <!-- Device items will be added dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Impressum -->
+    <div id="impressum-modal" class="modal" style="display: none;" role="dialog" aria-labelledby="impressum-title" aria-modal="true">
+        <div class="modal-content legal-modal-content">
+            <div class="modal-header">
+                <h3 id="impressum-title">Impressum</h3>
+                <button class="close-modal-btn" id="close-impressum-modal" aria-label="Impressum schließen" data-i18n-aria="footer.closeImpressum">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body legal-modal-body">
+                <p><strong>Angaben gemäß § 5 TMG</strong></p>
+                <p>
+                    Günter Struck<br>
+                    Lönsberg 8<br>
+                    45136 Essen
+                </p>
+
+                <p><strong>Kontakt</strong></p>
+                <p>
+                    E-Mail: <a href="mailto:zanobo@online.de">zanobo@online.de</a><br>
+                </p>
+
+                <p><strong>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</strong></p>
+                <p>
+                    Günter Struck<br>
+                    Lönsberg 8<br>
+                    45136 Essen
+                </p>
+
+                <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ccc;">
+
+                <h4>Rechtliche Hinweise</h4>
+
+                <p><strong>Privates Projekt</strong><br>
+                Dies ist ein rein privates, nicht-kommerzielles Projekt zu Bildungs- und Analysezwecken. Es wird keine Gewinnerzielungsabsicht verfolgt.</p>
+
+                <p><strong>Haftungsausschluss</strong><br>
+                Die Inhalte dieser App wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte – insbesondere der automatisierten Audio-Analysen – kann jedoch keine Gewähr übernommen werden. Die Nutzung erfolgt auf eigene Gefahr.</p>
+
+                <p><strong>Datenschutz</strong><br>
+                Diese App arbeitet nach dem "Privacy-by-Design"-Prinzip. Alle Analysedaten werden ausschließlich lokal in deinem Browser (IndexedDB) gespeichert. Es erfolgt kein Upload auf externe Server.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-primary" id="close-impressum-btn" data-i18n="buttons.close">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Datenschutz -->
+    <div id="datenschutz-modal" class="modal" style="display: none;" role="dialog" aria-labelledby="datenschutz-title" aria-modal="true">
+        <div class="modal-content legal-modal-content">
+            <div class="modal-header">
+                <h3 id="datenschutz-title">Datenschutzerklärung</h3>
+                <button class="close-modal-btn" id="close-datenschutz-modal" aria-label="Datenschutzerklärung schließen" data-i18n-aria="footer.closePrivacy">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body legal-modal-body">
+                <h4>1. Das Wichtigste in Kürze</h4>
+                <p>
+                    <strong>Dein Gerät ist der Server.</strong><br>
+                    Zanobo ist eine "Offline-First" Progressive Web App. Das bedeutet: Alle Analysen, Audio-Daten und Datenbank-Einträge werden <strong>ausschließlich lokal</strong> in deinem Browser gespeichert. Es findet keinerlei Übertragung deiner sensiblen Messdaten an uns oder Dritte statt.
+                </p>
+
+                <h4>2. Verantwortlicher</h4>
+                <p>
+                    Verantwortlich für den technischen Betrieb dieser privaten Webseite:<br>
+                    <strong>Günter Struck</strong><br>
+                    Lönsberg 8<br>
+                    45136 Essen<br>
+                    E-Mail: <a href="mailto:zanobo@online.de">zanobo@online.de</a>
+                </p>
+
+                <h4>3. Hosting &amp; Technische Logfiles</h4>
+                <p>
+                    Diese PWA wird über <strong>GitHub Pages</strong> (ein Dienst von GitHub Inc., USA) bereitgestellt. Wenn du die Seite aufrufst, muss dein Browser technisch bedingt eine Verbindung zu den Servern von GitHub aufbauen.
+                </p>
+                <p>
+                    Dabei werden standardmäßig technische Daten (sog. Server-Logfiles) erfasst, z. B. deine IP-Adresse, Browser-Version und Zeit des Zugriffs. Dies dient der Sicherheit und Stabilität des Betriebs (Art. 6 Abs. 1 lit. f DSGVO). Wir als Betreiber haben keinen direkten Zugriff auf diese Daten und führen sie nicht mit anderen Daten zusammen.
+                </p>
+
+                <h4>4. Lokale Datenverarbeitung in der App</h4>
+                <h5>Mikrofon &amp; Audio-Analyse</h5>
+                <p>
+                    Der Zugriff auf dein Mikrofon erfolgt nur, wenn du aktiv auf "Aufnehmen" oder "Analysieren" klickst. Die Audio-Daten werden in Echtzeit im Arbeitsspeicher (RAM) deines Geräts verarbeitet (via Web Audio API / AudioWorklets).
+                </p>
+                <ul>
+                    <li><strong>Kein Upload:</strong> Es werden keine Audio-Streams ins Internet gesendet.</li>
+                    <li><strong>Speicherung:</strong> Referenzaufnahmen werden in der lokalen Datenbank (IndexedDB) deines Browsers abgelegt.</li>
+                </ul>
+
+                <h5>Kamera (QR-Code &amp; Position)</h5>
+                <p>
+                    Der Kamerazugriff ist optional. Er dient ausschließlich dazu, QR-Codes von Maschinen zu scannen oder (auf Wunsch) ein Foto der Mikrofonposition lokal zu speichern. Auch diese Bilddaten verlassen dein Gerät nicht.
+                </p>
+
+                <h4>5. Cookies &amp; Tracking</h4>
+                <p>
+                    <strong>Wir verwenden keine Tracking-Cookies.</strong><br>
+                    Es gibt keine Google Analytics, kein Facebook Pixel und keine Werbetracker in dieser App. Die einzigen "Daten", die wir speichern, sind deine technischen Einstellungen (z. B. gewähltes Theme "Steve Jobs" oder "Neon"), damit die App beim nächsten Start so aussieht, wie du sie verlassen hast. Diese werden im <code>localStorage</code> deines Browsers notiert.
+                </p>
+
+                <h4>6. Deine Rechte &amp; Datenlöschung</h4>
+                <p>
+                    Da alle Daten lokal bei dir liegen, hast du die volle Kontrolle:
+                </p>
+                <ul>
+                    <li><strong>Daten löschen:</strong> Du kannst jederzeit in den Einstellungen unter "Datenverwaltung" auf <em>"Alle Daten löschen"</em> klicken. Damit wird die lokale Datenbank restlos geleert.</li>
+                    <li><strong>Browser-Daten:</strong> Wenn du deine Browser-Cookies/Cache leerst, sind die App-Daten ebenfalls weg.</li>
+                    <li><strong>Export:</strong> Du hast das Recht, deine Daten jederzeit über die "Export"-Funktion als JSON-Datei herunterzuladen (Recht auf Datenübertragbarkeit).</li>
+                </ul>
+
+                <h4>7. Stand der Erklärung</h4>
+                <p>
+                    Januar 2026<br>
+                    <em>Diese Datenschutzerklärung wurde speziell für den privaten Betrieb ohne Gewinnerzielungsabsicht erstellt.</em>
+                </p>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-primary" id="close-datenschutz-btn" data-i18n="buttons.close">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Settings (Einstellungen) -->
+    <div id="settings-modal" class="modal" style="display: none;" role="dialog" aria-labelledby="settings-title" aria-modal="true">
+        <div class="modal-content legal-modal-content">
+            <div class="modal-header">
+                <h3 id="settings-title" data-i18n="settingsUI.title">Einstellungen</h3>
+                <button class="close-modal-btn" id="close-settings-modal" aria-label="Einstellungen schließen" data-i18n-aria="settingsUI.closeSettings">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body legal-modal-body">
+                <div class="settings-list">
+                    <!-- View Level Selection Section -->
+                    <div class="setting-category">
+                        <h4 class="setting-category-title" data-i18n="viewLevels.viewModeTitle">Ansichtsmodus</h4>
+                        <button class="help-icon-btn" id="help-viewlevel" aria-label="Hilfe: Ansichtsmodus" style="margin-left: 4px; vertical-align: middle;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </button>
+                        <p class="setting-category-description" data-i18n="viewLevels.viewModeDescription">Passen Sie die Komplexität der Benutzeroberfläche an Ihre Bedürfnisse an.</p>
+                        <div class="view-level-selector" id="view-level-selector">
+                            <button class="view-level-btn active" data-level="basic" type="button">
+                                <span class="view-level-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                                        <line x1="9" y1="9" x2="9.01" y2="9"/>
+                                        <line x1="15" y1="9" x2="15.01" y2="9"/>
+                                    </svg>
+                                </span>
+                                <span class="view-level-label" data-i18n="viewLevels.basicLabel">Basis</span>
+                                <span class="view-level-desc" data-i18n="viewLevels.basicDesc">Einfach</span>
+                            </button>
+                            <button class="view-level-btn" data-level="advanced" type="button">
+                                <span class="view-level-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                                    </svg>
+                                </span>
+                                <span class="view-level-label" data-i18n="viewLevels.advancedLabel">Fortgeschritten</span>
+                                <span class="view-level-desc" data-i18n="viewLevels.advancedDesc">Details</span>
+                            </button>
+                            <button class="view-level-btn" data-level="expert" type="button">
+                                <span class="view-level-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="16 18 22 12 16 6"/>
+                                        <polyline points="8 6 2 12 8 18"/>
+                                        <line x1="12" y1="2" x2="12" y2="22"/>
+                                    </svg>
+                                </span>
+                                <span class="view-level-label" data-i18n="viewLevels.expertLabel">Experte</span>
+                                <span class="view-level-desc" data-i18n="viewLevels.expertDesc">Technisch</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="settings-divider"></div>
+
+                    <!-- NFC Writer Section -->
+                    <div class="setting-category">
+                        <h4 class="setting-category-title" data-i18n="settingsUI.nfcWriterTitle">NFC-Tags</h4>
+                        <p class="setting-category-description" data-i18n="settingsUI.nfcWriterDescription">Schreiben Sie NFC-Tags für den App-Zugang oder eine ausgewählte Maschine.</p>
+                        <button class="action-btn secondary-btn" id="settings-nfc-writer-btn" type="button">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2v8m0 4v8"/>
+                                <path d="M5 9h14v6H5z"/>
+                                <path d="M7 9V7a5 5 0 0 1 10 0v2"/>
+                            </svg>
+                            <span data-i18n="nfc.openWriter">NFC-Tag beschreiben</span>
+                        </button>
+                        <p class="setting-description nfc-availability-hint" id="settings-nfc-availability-hint" data-i18n="nfc.unavailableHint" style="display: none;">
+                            NFC-Schreiben ist nur in Chrome auf Android verfügbar.
+                        </p>
+                    </div>
+
+                    <!-- QR Code Generator Section -->
+                    <div class="setting-category">
+                        <h4 class="setting-category-title" data-i18n="qrCode.title">QR-Code erstellen</h4>
+                        <p class="setting-category-description" data-i18n="qrCode.description">Erstellen Sie einen QR-Code zum Ausdrucken oder Speichern.</p>
+                        <button class="action-btn secondary-btn" id="settings-qr-generator-btn" type="button">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="2" width="8" height="8" rx="1"/>
+                                <rect x="14" y="2" width="8" height="8" rx="1"/>
+                                <rect x="2" y="14" width="8" height="8" rx="1"/>
+                                <rect x="14" y="14" width="4" height="4"/>
+                                <rect x="20" y="14" width="2" height="2"/>
+                                <rect x="14" y="20" width="2" height="2"/>
+                                <rect x="20" y="20" width="2" height="2"/>
+                            </svg>
+                            <span data-i18n="qrCode.openGenerator">QR-Code erstellen</span>
+                        </button>
+                    </div>
+
+                    <div class="settings-divider"></div>
+
+                    <!-- Theme Selection Section -->
+                    <div class="setting-category">
+                        <h4 class="setting-category-title" data-i18n="settingsUI.appearance">Erscheinungsbild</h4>
+                        <div class="theme-cards" id="theme-cards">
+                            <!-- Theme Card: Neon Industrial -->
+                            <div class="theme-card" data-theme="neon">
+                                <div class="theme-card-icon">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                                        <circle cx="12" cy="12" r="1" fill="currentColor"/>
+                                    </svg>
+                                </div>
+                                <div class="theme-card-content">
+                                    <h5 class="theme-card-title" data-i18n="themes.neonTitle">Neon Industrial</h5>
+                                    <p class="theme-card-description" data-i18n="themes.neonDescription">Cyberpunk-Style mit Neon Cyan & Orange. Perfekt für dunkle Umgebungen.</p>
+                                </div>
+                                <div class="theme-card-colors">
+                                    <span class="theme-color-dot" style="background: #00f3ff;"></span>
+                                    <span class="theme-color-dot" style="background: #ff8800;"></span>
+                                    <span class="theme-color-dot" style="background: #0f172a;"></span>
+                                </div>
+                            </div>
+
+                            <!-- Theme Card: Daylight -->
+                            <div class="theme-card" data-theme="light">
+                                <div class="theme-card-icon">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="5"/>
+                                        <line x1="12" y1="1" x2="12" y2="3"/>
+                                        <line x1="12" y1="21" x2="12" y2="23"/>
+                                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                        <line x1="1" y1="12" x2="3" y2="12"/>
+                                        <line x1="21" y1="12" x2="23" y2="12"/>
+                                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                                    </svg>
+                                </div>
+                                <div class="theme-card-content">
+                                    <h5 class="theme-card-title" data-i18n="themes.daylightTitle">Daylight</h5>
+                                    <p class="theme-card-description" data-i18n="themes.daylightDescription">Heller High-Contrast-Modus. Optimal für Sonnenlicht & Outdoor.</p>
+                                </div>
+                                <div class="theme-card-colors">
+                                    <span class="theme-color-dot" style="background: #0f172a;"></span>
+                                    <span class="theme-color-dot" style="background: #ea580c;"></span>
+                                    <span class="theme-color-dot" style="background: #ffffff; border: 1px solid #e5e7eb;"></span>
+                                </div>
+                            </div>
+
+                            <!-- Theme Card: Brand -->
+                            <div class="theme-card" data-theme="brand">
+                                <div class="theme-card-icon">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                        <path d="M12 1v6m0 6v10M1 12h6m6 0h10"/>
+                                    </svg>
+                                </div>
+                                <div class="theme-card-content">
+                                    <h5 class="theme-card-title" data-i18n="themes.brandTitle">Zanobo</h5>
+                                    <p class="theme-card-description" data-i18n="themes.brandDescription">Hell, freundlich, vertrauenswürdig. KI, der man vertraut.</p>
+                                </div>
+                                <div class="theme-card-colors">
+                                    <span class="theme-color-dot" style="background: #00B8D9;"></span>
+                                    <span class="theme-color-dot" style="background: #5ECFB8;"></span>
+                                    <span class="theme-color-dot" style="background: #f7fafc; border: 1px solid #e3edf5;"></span>
+                                </div>
+                            </div>
+
+                            <!-- Theme Card: Focus (Diagnose-first) -->
+                            <div class="theme-card" data-theme="focus">
+                                <div class="theme-card-icon">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <!-- Target/Focus Icon - represents clear intention -->
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <circle cx="12" cy="12" r="6"/>
+                                        <circle cx="12" cy="12" r="2"/>
+                                    </svg>
+                                </div>
+                                <div class="theme-card-content">
+                                    <h5 class="theme-card-title" data-i18n="themes.focusTitle">Focus</h5>
+                                    <p class="theme-card-description" data-i18n="themes.focusDescription">Diagnose-first Design. Klar, ruhig, zielgerichtet.</p>
+                                </div>
+                                <div class="theme-card-colors">
+                                    <span class="theme-color-dot" style="background: #0891b2;"></span>
+                                    <span class="theme-color-dot" style="background: #f59e0b;"></span>
+                                    <span class="theme-color-dot" style="background: #fafbfc; border: 1px solid #e5e7eb;"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Divider (Advanced+) -->
+                    <div class="settings-divider" data-view-level="advanced"></div>
+
+                    <!-- Banner Settings (Advanced+ only) -->
+                    <div class="setting-category" data-view-level="advanced">
+                        <h4 class="setting-category-title" data-i18n="settingsUI.bannerTitle">Banner-Bild</h4>
+                        <p class="setting-category-description" data-i18n="settingsUI.bannerDescription">Passen Sie das Banner-Bild der Startseite an. Jedes Theme kann ein eigenes Banner haben.</p>
+
+                        <!-- Banner Preview -->
+                        <div class="banner-preview-container">
+                            <img id="banner-preview-image" class="banner-preview-image" alt="Banner-Vorschau">
+                        </div>
+
+                        <!-- Banner Actions -->
+                        <div class="banner-actions">
+                            <button class="action-btn secondary-btn" id="banner-upload-btn" type="button">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                <span data-i18n="settingsUI.bannerUpload">Banner hochladen</span>
+                            </button>
+                            <button class="action-btn tertiary-btn" id="banner-reset-btn" type="button" disabled>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="1 4 1 10 7 10"/>
+                                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                                </svg>
+                                <span data-i18n="settingsUI.bannerReset">Auf Standard zurücksetzen</span>
+                            </button>
+                            <input type="file" id="banner-upload-input" style="display: none;" accept="image/png">
+                        </div>
+
+                        <p class="setting-description" data-i18n="settingsUI.bannerHint">
+                            Empfohlen: 1024×400 oder 1024×500 Pixel, PNG-Format. Das linke Drittel bleibt für Text frei.
+                        </p>
+                    </div>
+
+                    <!-- Audio Settings (Advanced+) -->
+                    <div class="setting-category" data-view-level="advanced">
+                        <h4 class="setting-category-title" data-i18n="settingsUI.audioSettings">Audioeinstellungen</h4>
+
+                        <!-- Hardware Intelligence Card (Advanced+) -->
+                        <div class="hardware-info-card" data-view-level="advanced">
+                            <div class="hardware-header">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="2" width="6" height="12" rx="3"/>
+                                    <path d="M5 10v2a7 7 0 0 0 14 0v-2"/>
+                                    <line x1="12" y1="19" x2="12" y2="22"/>
+                                    <line x1="8" y1="22" x2="16" y2="22"/>
+                                </svg>
+                                <h5 class="hardware-title" data-i18n="settingsUI.audioHardware">Audio Hardware</h5>
+                            </div>
+                            <div class="hardware-content">
+                                <div class="hardware-status">
+                                    <div id="hardware-status-icon" class="hardware-icon">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <path d="M12 6v6l4 2"/>
+                                        </svg>
+                                    </div>
+                                    <div class="hardware-info">
+                                        <div id="hardware-device-label" class="hardware-device" data-i18n="settingsUI.detectingMicrophone">Erkenne Mikrofon...</div>
+                                        <div id="hardware-status-text" class="hardware-message" data-i18n="settingsUI.initHardwareCheck">Initialisiere Hardware-Check</div>
+                                    </div>
+                                </div>
+                                <button class="action-btn secondary-btn" id="change-microphone-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="3"/>
+                                        <path d="M12 1v6m0 6v10M1 12h6m6 0h10"/>
+                                    </svg>
+                                    <span data-i18n="settingsUI.changeMicrophone">Anderes Mikrofon wählen</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- GMIA-specific confidence threshold (Level 1 only) -->
+                        <div class="setting-item" data-view-level="expert" data-detection-mode="STATIONARY">
+                            <label for="confidence-threshold" data-i18n="settingsUI.confidenceThreshold">Vertrauensschwelle</label>
+                            <input type="range" id="confidence-threshold" min="0" max="100" value="75">
+                            <span id="confidence-value">75%</span>
+                        </div>
+                        <div class="setting-item" data-view-level="expert" data-detection-mode="STATIONARY">
+                            <label for="faulty-threshold" data-i18n="settingsUI.faultyThreshold">Auffälligkeitsschwelle</label>
+                            <input type="range" id="faulty-threshold" min="0" max="100" value="50">
+                            <span id="faulty-value">50%</span>
+                        </div>
+                        <div class="setting-item" data-view-level="expert">
+                            <label for="recording-duration" data-i18n="settingsUI.recordingDuration">Aufnahmedauer</label>
+                            <select id="recording-duration">
+                                <option value="5" data-i18n="settingsUI.seconds5">5 Sekunden</option>
+                                <option value="10" selected data-i18n="settingsUI.seconds10">10 Sekunden</option>
+                                <option value="15" data-i18n="settingsUI.seconds15">15 Sekunden</option>
+                            </select>
+                            <p class="setting-description" data-i18n="settingsUI.recordingDurationDesc">
+                                Reine Aufnahmezeit für Trainingsdaten. Zusätzlich werden 5 Sekunden Stabilisierungszeit für optimale Audioqualität vorgeschaltet.
+                            </p>
+                        </div>
+                        <!-- GMIA-specific settings (Level 1 only) -->
+                        <div class="setting-item" data-view-level="expert" data-detection-mode="STATIONARY">
+                            <label for="frequency-scale-toggle" data-i18n="settingsUI.frequencyAxis">Frequenzachse</label>
+                            <div class="setting-toggle">
+                                <input type="checkbox" id="frequency-scale-toggle">
+                                <p class="setting-description" data-i18n="settingsUI.frequencyAxisDesc">Logarithmisch (mehr Details im Bereich 20–500 Hz)</p>
+                            </div>
+                        </div>
+                        <div class="setting-item" data-view-level="expert" data-detection-mode="STATIONARY">
+                            <label for="amplitude-scale-toggle" data-i18n="settingsUI.amplitudeAxis">Y-Achse / Amplitude</label>
+                            <div class="setting-toggle">
+                                <input type="checkbox" id="amplitude-scale-toggle">
+                                <p class="setting-description" data-i18n="settingsUI.amplitudeAxisDesc">Logarithmisch (dB) – betont leise Signale</p>
+                            </div>
+                        </div>
+                        <div class="setting-item" data-view-level="expert" data-detection-mode="STATIONARY">
+                            <label for="disable-audio-trigger-toggle" data-i18n="settingsUI.disableAudioTriggerLabel">Audio-Trigger deaktivieren</label>
+                            <div class="setting-toggle">
+                                <input type="checkbox" id="disable-audio-trigger-toggle">
+                                <p class="setting-description" data-i18n="settingsUI.disableAudioTriggerDesc">Startet die Messung sofort, auch bei sehr leisen Signalen, ohne auf einen Mindestpegel zu warten. Für extrem leise Maschinen oder Umgebungen.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Divider (Expert) -->
+                    <div class="settings-divider" data-view-level="expert"></div>
+
+                    <!-- Analysis Method Selection (Expert only) -->
+                    <div class="setting-category" data-view-level="expert">
+                        <h4 class="setting-category-title" data-i18n="settingsUI.analysisMethod">Analysemethode</h4>
+                        <p class="setting-category-description" data-i18n="settingsUI.analysisMethodDesc">Wählen Sie die passende Analysemethode für Ihre Maschine.</p>
+
+                        <!-- GMIA Method Description -->
+                        <p class="setting-category-description" style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(128,128,128,0.1); border-left: 3px solid var(--color-primary); border-radius: 4px;" data-i18n="settingsUI.gmaiMethodDesc">GMIA (Generalized Mutual Interdependence Analysis) extrahiert den gemeinsamen, stabilen Anteil mehrerer Zeitfenster und unterdrückt gerätespezifische Effekte. Ideal für strukturierte, zeitlich stabile Maschinengeräusche.</p>
+
+                        <!-- Mode-dependent settings info -->
+                        <div class="mode-settings-info" id="mode-settings-info">
+                            <div class="info-badge" data-detection-mode="STATIONARY">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="16" x2="12" y2="12"/>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                                </svg>
+                                <span data-i18n="settingsUI.level1Info">Level 1: Frequenz- und Amplitudeneinstellungen oben aktiv</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="settings-divider"></div>
+
+                    <!-- Room Measurement (all view levels) -->
+                    <div class="setting-category" id="room-measurement-section">
+                        <h4 class="setting-category-title" data-i18n="roomMeasure.title">Raummessung</h4>
+                        <p class="setting-category-description" data-i18n="roomMeasure.description">
+                            Misst die Nachhallzeit (T60) deiner aktuellen Umgebung per Chirp-Signal. Halte das Smartphone frei in den Raum (nicht abdecken).
+                        </p>
+
+                        <!-- Measure Button -->
+                        <div class="setting-item">
+                            <button id="room-measure-btn" class="room-measure-btn">
+                                <span id="room-measure-btn-icon">&#x1F50A;</span>
+                                <span id="room-measure-btn-text" data-i18n="roomMeasure.measureBtn">Raum messen</span>
+                            </button>
+                        </div>
+
+                        <!-- Progress (initially hidden) -->
+                        <div id="room-measure-progress" style="display: none;">
+                            <div class="room-measure-progress-bar-container">
+                                <div class="room-measure-progress-bar" id="room-measure-progress-bar" style="width: 0%;"></div>
+                            </div>
+                            <p id="room-measure-progress-text" class="room-measure-progress-text">Chirp 1/3...</p>
+                        </div>
+
+                        <!-- Result (initially hidden) -->
+                        <div id="room-measure-result" style="display: none;">
+                            <!-- T60 value -->
+                            <div class="room-measure-value">
+                                <span class="room-measure-t60" id="room-measure-t60">&mdash;</span>
+                                <span class="room-measure-unit">s</span>
+                            </div>
+
+                            <!-- Visual scale -->
+                            <div class="room-measure-scale" id="room-measure-scale">
+                                <div class="room-measure-scale-bar">
+                                    <div class="room-measure-scale-marker" id="room-measure-scale-marker"></div>
+                                </div>
+                                <div class="room-measure-scale-labels">
+                                    <span data-i18n="roomMeasure.veryDry">sehr trocken</span>
+                                    <span data-i18n="roomMeasure.dry">trocken</span>
+                                    <span data-i18n="roomMeasure.medium">mittel</span>
+                                    <span data-i18n="roomMeasure.reverberant">hallig</span>
+                                    <span data-i18n="roomMeasure.veryReverberant">sehr hallig</span>
+                                </div>
+                            </div>
+
+                            <!-- Classification -->
+                            <p class="room-measure-classification" id="room-measure-classification"></p>
+
+                            <!-- Individual measurements (Expert only) -->
+                            <div class="room-measure-details" data-view-level="expert" id="room-measure-details">
+                                <p id="room-measure-individual"></p>
+                                <p id="room-measure-stddev"></p>
+                            </div>
+                        </div>
+
+                        <!-- Error (initially hidden) -->
+                        <div id="room-measure-error" style="display: none;">
+                            <p class="room-measure-error-text" id="room-measure-error-text"></p>
+                        </div>
+                    </div>
+
+                    <!-- Divider (Expert) -->
+                    <div class="settings-divider" data-view-level="expert"></div>
+
+                    <!-- Room Compensation (Expert only) -->
+                    <div class="setting-category" data-view-level="expert">
+                        <h4 class="setting-category-title" data-i18n="settingsUI.roomCompTitle">Raumkompensation</h4>
+                        <p class="setting-category-description" data-i18n="settingsUI.roomCompDescription">
+                            Kompensiert akustische Raumeinflüsse (Nachhall) für stabilere Ergebnisse in verschiedenen Umgebungen.
+                        </p>
+
+                        <!-- Master Toggle -->
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <span data-i18n="settingsUI.roomCompEnabled">Raumkompensation aktivieren</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="room-comp-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Sub-settings (nur sichtbar wenn Master-Toggle AN) -->
+                        <div id="room-comp-details" style="display: none;">
+
+                            <!-- Session Bias Match Toggle (recommended) -->
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <span data-i18n="settingsUI.biasMatchEnabled">Session Bias Match</span>
+                                    <small data-i18n="settingsUI.biasMatchHint">Kompensiert spektrale Unterschiede zwischen Aufnahme-Sessions (verschiedene Räume, Mikro-Positionen). Empfohlen für Raumwechsel.</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="bias-match-toggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <!-- CMN Toggle (experimental) -->
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <span data-i18n="settingsUI.cmnEnabled">CMN (experimentell)</span>
+                                    <small data-i18n="settingsUI.cmnWarning">⚠️ Kann bei stationären Maschinen den Score verschlechtern. Nutze bevorzugt "Session Bias Match" oder T60/Dereverb.</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cmn-toggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <!-- T60 Chirp Toggle (Phase 2 – hidden until implemented) -->
+                            <div class="setting-item" id="t60-setting" style="display: none;">
+                                <div class="setting-label">
+                                    <span data-i18n="settingsUI.t60Enabled">Raumvermessung per Chirp</span>
+                                    <small data-i18n="settingsUI.t60Hint">Spielt automatisch einen kurzen Ton ab, um die Nachhallzeit zu messen</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="t60-toggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <!-- Beta Slider (Phase 2 – hidden until T60 is active) -->
+                            <div class="setting-item" id="beta-setting" style="display: none;">
+                                <div class="setting-label">
+                                    <span data-i18n="settingsUI.betaLabel">Kompensationsstärke (β)</span>
+                                    <small id="beta-value">1.0</small>
+                                </div>
+                                <input type="range" id="beta-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Divider (Expert) -->
+                    <div class="settings-divider" data-view-level="expert"></div>
+
+                    <!-- Cherry-Picking Settings (Expert only) -->
+                    <div class="setting-category" data-view-level="expert">
+                        <h4 class="setting-category-title" data-i18n="settingsUI.cherryPickTitle">Cherry-Picking</h4>
+                        <p class="setting-category-description" data-i18n="settingsUI.cherryPickDescription">
+                            Filtert transiente Störgeräusche (Hupen, Hämmern, Türen) automatisch aus der Aufnahme.
+                        </p>
+
+                        <!-- Master Toggle -->
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <span data-i18n="settingsUI.cherryPickEnabled">Cherry-Picking aktiviert</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="cherry-pick-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Sub-settings (hidden when toggle off) -->
+                        <div id="cherry-pick-details" style="display: none;">
+                            <div class="setting-item" id="sigma-setting">
+                                <div class="setting-label">
+                                    <span data-i18n="settingsUI.sigmaLabel">Empfindlichkeit (σ)</span>
+                                    <small id="sigma-value">2.0</small>
+                                </div>
+                                <input type="range" id="sigma-slider" min="1.0" max="4.0" step="0.5" value="2.0">
+                                <small data-i18n="settingsUI.sigmaHint">
+                                    Niedrig = strenger (mehr Frames verworfen), Hoch = toleranter
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Divider (Expert) -->
+                    <div class="settings-divider" data-view-level="expert"></div>
+
+                    <!-- Drift Detector / Change Analysis (Expert only) -->
+                    <div class="setting-category" data-view-level="expert">
+                        <h4 class="setting-category-title" data-i18n="drift.settingsTitle">Änderungsanalyse</h4>
+                        <p class="setting-category-description" data-i18n="drift.settingsDescription">
+                            Analysiert ob Score-Änderungen durch die Umgebung (Raum) oder die Maschine verursacht werden. Zeigt während der Diagnose eine separate Bewertung an.
+                        </p>
+
+                        <!-- Master Toggle -->
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <span data-i18n="drift.enabled">Änderungsanalyse aktiviert</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="drift-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Sub-settings (hidden when toggle off) -->
+                        <div id="drift-details-settings" style="display: none;">
+
+                            <!-- Explanation -->
+                            <div class="setting-item">
+                                <small data-i18n="drift.howItWorks">
+                                    Das System trennt spektrale Änderungen in zwei Komponenten: Glatte, breitbandige Drift (= Raum/Umgebung) und lokale, schmalbandige Änderungen (= Maschine).
+                                </small>
+                            </div>
+
+                            <!-- Smoothing window -->
+                            <div class="setting-item" id="drift-smooth-setting">
+                                <div class="setting-label">
+                                    <span data-i18n="drift.smoothWindow">Glättungsfenster</span>
+                                    <small id="drift-smooth-value">32</small> Bins
+                                </div>
+                                <input type="range" id="drift-smooth-slider" min="8" max="64" step="8" value="32">
+                                <small data-i18n="drift.smoothHint">
+                                    Größer = mehr Trennung zwischen Raum und Maschine. Kleiner = empfindlicher für Raumeigenheiten.
+                                </small>
+                            </div>
+
+                            <!-- Low-frequency cutoff (Room mode protection) -->
+                            <div class="setting-item" id="drift-lowfreq-setting">
+                                <div class="setting-label">
+                                    <span data-i18n="drift.lowFreqCutoff">Tieffrequenz-Schutz</span>
+                                    <small id="drift-lowfreq-value">3</small> Bins (<small id="drift-lowfreq-hz">&asymp;140</small> Hz)
+                                </div>
+                                <input type="range" id="drift-lowfreq-slider" min="0" max="10" step="1" value="3">
+                                <small data-i18n="drift.lowFreqHint">
+                                    Bins unterhalb werden für die Maschinen-Analyse ignoriert. Schützt vor Raummoden im Bass. 0 = kein Schutz.
+                                </small>
+                            </div>
+
+                            <!-- Global threshold (Room) -->
+                            <div class="setting-item" id="drift-global-setting">
+                                <div class="setting-label">
+                                    <span data-i18n="drift.globalThreshold">Raum-Empfindlichkeit</span>
+                                    <small id="drift-global-value">0.30</small>
+                                </div>
+                                <input type="range" id="drift-global-slider" min="0.1" max="1.0" step="0.05" value="0.30">
+                                <small data-i18n="drift.globalThresholdHint">
+                                    Niedrig = warnt früher bei Umgebungswechsel. Hoch = toleranter.
+                                </small>
+                            </div>
+
+                            <!-- Local threshold (Machine) -->
+                            <div class="setting-item" id="drift-local-setting">
+                                <div class="setting-label">
+                                    <span data-i18n="drift.localThreshold">Maschinen-Empfindlichkeit</span>
+                                    <small id="drift-local-value">0.15</small>
+                                </div>
+                                <input type="range" id="drift-local-slider" min="0.05" max="0.5" step="0.05" value="0.15">
+                                <small data-i18n="drift.localThresholdHint">
+                                    Niedrig = erkennt kleine Maschinenänderungen. Hoch = toleranter.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Divider (Expert) -->
+                    <div class="settings-divider" data-view-level="expert"></div>
+
+                    <!-- Database Management (Expert only) -->
+                    <div class="setting-category" data-view-level="expert">
+                        <h4 class="setting-category-title" data-i18n="settingsUI.dataManagement">Datenverwaltung</h4>
+                        <div class="data-management-card">
+                            <div class="data-management-actions">
+                                <button class="action-btn secondary-btn" id="export-data-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7 10 12 15 17 10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    <span data-i18n="settingsUI.exportDatabase">Datenbank exportieren</span>
+                                </button>
+                                <button class="action-btn secondary-btn" id="share-data-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="18" cy="5" r="3"/>
+                                        <circle cx="6" cy="12" r="3"/>
+                                        <circle cx="18" cy="19" r="3"/>
+                                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                    </svg>
+                                    <span data-i18n="settingsUI.shareDatabase">Datenbank versenden</span>
+                                </button>
+                                <button class="action-btn secondary-btn" id="import-data-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="17 8 12 3 7 8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                    <span data-i18n="settingsUI.importDatabase">Datenbank importieren</span>
+                                </button>
+                            </div>
+                            <div class="data-management-stats">
+                                <div class="data-management-stats-header">
+                                    <strong class="data-management-stats-title" data-i18n="settingsUI.statistics">Statistik:</strong>
+                                </div>
+                                <div class="data-management-stat-grid">
+                                    <div class="data-management-stat">
+                                        <span class="data-management-stat-value" id="stats-machines">0</span>
+                                        <span class="data-management-stat-label" data-i18n="settingsUI.machines">Maschinen</span>
+                                    </div>
+                                    <div class="data-management-stat">
+                                        <span class="data-management-stat-value" id="stats-recordings">0</span>
+                                        <span class="data-management-stat-label" data-i18n="settingsUI.recordings">Aufnahmen</span>
+                                    </div>
+                                    <div class="data-management-stat">
+                                        <span class="data-management-stat-value" id="stats-diagnoses">0</span>
+                                        <span class="data-management-stat-label" data-i18n="settingsUI.diagnoses">Diagnosen</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="data-management-danger">
+                                <button class="action-btn danger-btn" id="clear-data-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"/>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                    </svg>
+                                    <span data-i18n="settingsUI.clearAllData">Alle Daten löschen</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Divider before Reset section -->
+                    <div class="settings-divider settings-divider--strong"></div>
+
+                    <!-- Reset to Defaults -->
+                    <div class="setting-category">
+                        <h4 class="setting-category-title" data-i18n="settingsUI.resetSection">Grundeinstellung</h4>
+                        <p class="setting-category-description" data-i18n="settingsUI.resetDescription">Setzt alle Anzeigeoptionen auf den Ausgangszustand zurück. Maschinendaten bleiben erhalten.</p>
+                        <button class="action-btn secondary-btn reset-defaults-btn" id="reset-defaults-btn"
+                                aria-label="Grundeinstellung wiederherstellen"
+                                data-i18n-aria="settingsUI.resetButton">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <polyline points="1 4 1 10 7 10"/>
+                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                            </svg>
+                            <span data-i18n="settingsUI.resetButton">Grundeinstellung wiederherstellen</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-primary" id="close-settings-btn" data-i18n="buttons.close">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Über Zanobo -->
+    <div id="about-modal" class="modal" style="display: none;" role="dialog" aria-labelledby="about-title" aria-modal="true">
+        <div class="modal-content legal-modal-content">
+            <div class="modal-header">
+                <h3 id="about-title">Über Zanobo</h3>
+                <button class="close-modal-btn" id="close-about-modal" aria-label="Über Zanobo schließen" data-i18n-aria="footer.closeAbout">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body legal-modal-body">
+                <div class="about-hero">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2">
+                        <circle cx="12" cy="12" r="9"/>
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v6m0 6v10M1 12h6m6 0h10"/>
+                    </svg>
+                    <h4>ZANOBO 2.0</h4>
+                    <p class="about-subtitle">Assistent für akustischen Vergleich von Maschinenzuständen</p>
+                </div>
+
+                <p>
+                    <strong>Zanobo 2.0</strong> ist eine datenschutzfreundliche Progressive Web App (PWA) für die vergleichende Analyse von Maschinenakustik. Sie ermöglicht es Nutzern, Maschinengeräusche vollständig <strong>offline</strong> aufzuzeichnen und zu vergleichen, ohne auf Cloud-Dienste, externe Sensoren oder KI-Modelle angewiesen zu sein.
+                </p>
+
+                <h4>Kernfunktionen</h4>
+                <ul>
+                    <li><strong>Offline-First:</strong> Alle Aufnahmen und Verarbeitungen erfolgen lokal im Browser.</li>
+                    <li><strong>Ähnlichkeits-Score (0–100%):</strong> Zanobo berechnet eine Kosinus-Ähnlichkeit zwischen Referenz- und neuer Aufnahme.</li>
+                    <li><strong>Nutzerdefinierte Schwelle:</strong> Nutzer können selbst festlegen, was als „Unauffällig" oder „Abweichend" gilt.</li>
+                    <li><strong>Visuelles Spektrum-Feedback:</strong> Echtzeit-Frequenzspektrum und Score-Visualisierung.</li>
+                    <li><strong>Keine Daten verlassen das Gerät:</strong> Alle Klangdaten und Scores werden in der lokalen IndexedDB gespeichert.</li>
+                </ul>
+
+                <h4>Rechtliche Position und IP-Überprüfung</h4>
+                <p>
+                    Zanobo wurde unabhängig als privates, nicht-kommerzielles Open-Source-Projekt unter der <strong>MIT-Lizenz</strong> entwickelt. Die Funktionalität basiert auf offen beschriebenen mathematischen Verfahren (z.B. GMIA-ähnlicher Kosinus-Vergleich) und integriert keine patentierte Systemlogik oder Lernmechanismen.
+                </p>
+                <p>
+                    Vor der Veröffentlichung wurde eine detaillierte rechtliche und technische Überprüfung durchgeführt, um sicherzustellen, dass die Lösung nicht mit bestehenden Patenten oder Siemens-internen Methoden kollidiert.
+                </p>
+
+                <h5>Relevante IP und technische Abgrenzung</h5>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9em;">
+                        <thead>
+                            <tr style="background: var(--surface-color); border-bottom: 2px solid var(--border-color);">
+                                <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Referenz / Titel</th>
+                                <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Quelle & Status</th>
+                                <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Geschützter Bereich</th>
+                                <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Zanobo-Unterschied</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>PAPDEOTT005125</strong><br><em>Verfahren zur Diagnose von Maschinen</em></td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Defensive Veröffentlichung, Siemens AG, 2016</td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren</td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Zanobo ist <strong>vollständig lokal</strong>, keine Cloud, keine Remote-DB, keine Diagnose</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>EP3701708B1</strong><br><em>Remote machine condition analysis</em></td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Europäisches Patent, Siemens AG, 2022</td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">ML-basierte Remote-Diagnose mit trainierten Modellen und Sensoren</td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Zanobo verwendet <strong>kein ML</strong>, keine Cloud, keine eingebettete Logik</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>US9263041B2</strong><br><em>Channel detection in noise using GMIA</em></td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Siemens Corp, 2016</td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Wendet GMIA auf Spracherkennung und Hörsysteme an</td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Zanobo nutzt GMIA-ähnliche Mathematik für <strong>Nicht-Sprache</strong>, nur lokaler Vergleich</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>US9443201B2</strong><br><em>Learning of sensor signatures</em></td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Siemens, 2016</td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Klassifikation und Modelltraining von Signalprofilen</td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Zanobo macht <strong>keine Klassifikation</strong>, kein Modelltraining</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>US9602781B2</strong><br><em>Seismic signal deblending (GMIA)</em></td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Schlumberger, 2017</td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Wendet GMIA-ähnliche Trennung auf seismische Daten an</td>
+                                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Zanobo ist im Bereich und Signaltyp nicht verwandt</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>Transparenz und Intention</h4>
+                <p>
+                    Zanobo ist <strong>kein Diagnosewerkzeug</strong> und nimmt keine automatisierten technischen Bewertungen vor. Es bietet lediglich eine visuelle und mathematische Vergleichshilfe unter vollständiger Kontrolle des Nutzers. Alle Verarbeitungen erfolgen offline. Es werden keine Nutzerdaten übertragen, extern gespeichert oder ausgewertet.
+                </p>
+                <p>
+                    Diese Transparenz spiegelt ein starkes Engagement für verantwortungsvolle Open-Source-Entwicklung und Respekt vor Rechten Dritter wider.
+                </p>
+
+                <p style="margin-top: 1.5rem;">
+                    <strong>Öffentliche Instanz:</strong> <a href="https://zanobo.vercel.app" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color);">zanobo.vercel.app</a>
+                </p>
+
+                <div class="about-version">
+                    <p><strong>Version:</strong> 2.0.0 (2026)</p>
+                    <p><strong>Entwickelt von:</strong> Günter Struck</p>
+                    <p><strong>Lizenz:</strong> MIT</p>
+                    <p><strong>Stack:</strong> TypeScript, Vite, Web Audio API</p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-primary" id="close-about-btn" data-i18n="buttons.close">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================
+         AUTO-DETECTION MODALS
+         Modals for the simplified "Zustand prüfen" flow with automatic machine recognition
+         ======================================================================== -->
+
+    <!-- Modal: Auto-Detection Listening (shows while detecting) -->
+    <div id="auto-detect-modal" class="modal auto-detect-modal" style="display: none;" role="dialog" aria-labelledby="auto-detect-title" aria-modal="true">
+        <div class="modal-content auto-detect-content">
+            <div class="auto-detect-visual">
+                <div class="pulse-circle" id="auto-detect-pulse">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/>
+                        <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                </div>
+            </div>
+            <h3 id="auto-detect-title" class="auto-detect-title" data-i18n="autoDetect.listening">Höre zu...</h3>
+            <p id="auto-detect-subtitle" class="auto-detect-subtitle" data-i18n="autoDetect.waitingForSignal">Bitte Mikrofon an die Maschine halten</p>
+            <button class="modal-btn btn-secondary" id="auto-detect-cancel-btn" data-i18n="buttons.cancel">Abbrechen</button>
+        </div>
+    </div>
+
+    <!-- Modal: Machine Detail (shown after selecting a machine from quick-select or overview) -->
+    <div id="machine-detail-modal" class="modal" style="display: none;" role="dialog" aria-labelledby="machine-detail-title" aria-modal="true">
+        <div class="modal-content machine-detail-content">
+            <div class="modal-header">
+                <h3 id="machine-detail-title" data-i18n="identify.machineDetail.title">Maschine</h3>
+                <button class="close-modal-btn" id="close-machine-detail-modal" aria-label="Schließen">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="machine-detail-body">
+                <div class="machine-detail-info">
+                    <h4 id="machine-detail-name" class="machine-detail-name">—</h4>
+                    <p id="machine-detail-id" class="machine-detail-id">—</p>
+                </div>
+                <div id="machine-detail-signatures" class="machine-detail-signatures">
+                    <!-- Reference models / signatures will be populated dynamically -->
+                </div>
+            </div>
+            <div class="modal-actions machine-detail-actions">
+                <button class="action-btn" id="machine-detail-select-btn" data-i18n="identify.machineDetail.select">Maschine laden</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Machine Recognized (Fall A - High Confidence ≥80%) -->
+    <div id="machine-recognized-modal" class="modal" style="display: none;" role="dialog" aria-labelledby="recognized-title" aria-modal="true">
+        <div class="modal-content recognized-content">
+            <div class="recognized-header">
+                <div class="recognized-icon status-healthy">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                </div>
+                <h3 id="recognized-title" class="recognized-title" data-i18n="autoDetect.machineRecognized">Maschine erkannt</h3>
+            </div>
+            <div class="recognized-info">
+                <p class="recognized-machine-name" id="recognized-machine-name">—</p>
+                <div class="recognized-details">
+                    <span class="recognized-similarity" id="recognized-similarity">—%</span>
+                    <span data-i18n="autoDetect.matchConfidence">Übereinstimmung</span>
+                </div>
+                <div id="recognized-status" class="recognized-status status-healthy">Unauffällig</div>
+            </div>
+            <div class="recognized-actions">
+                <button class="modal-btn btn-primary" id="recognized-continue-btn" data-i18n="autoDetect.continueAnalysis">Weiter prüfen</button>
+                <button class="modal-btn btn-secondary" id="recognized-different-btn" data-i18n="autoDetect.differentMachine">Andere Maschine</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Candidate Selection (Fall B - Uncertain 40-79%) -->
+    <div id="candidate-selection-modal" class="modal" style="display: none;" role="dialog" aria-labelledby="candidate-title" aria-modal="true">
+        <div class="modal-content candidate-content">
+            <div class="candidate-header">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--status-uncertain)" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <h3 id="candidate-title" class="candidate-title" data-i18n="autoDetect.uncertainMatch">Welche Maschine ist das?</h3>
+                <p class="candidate-subtitle" data-i18n="autoDetect.selectMachine">Bitte wählen Sie die passende Maschine</p>
+            </div>
+            <div class="candidate-list" id="candidate-list">
+                <!-- Candidates will be populated dynamically -->
+            </div>
+            <div class="candidate-actions">
+                <button class="modal-btn btn-secondary" id="candidate-cancel-btn" data-i18n="buttons.cancel">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: No Match Found (Fall C - Below 40%) -->
+    <div id="no-match-modal" class="modal" style="display: none;" role="dialog" aria-labelledby="no-match-title" aria-modal="true">
+        <div class="modal-content no-match-content">
+            <div class="no-match-header">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9 9a3 3 0 1 1 6 0c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <h3 id="no-match-title" class="no-match-title" data-i18n="autoDetect.noMatch">Dieses Geräusch kenne ich noch nicht</h3>
+                <p class="no-match-subtitle" data-i18n="autoDetect.noMatchHint">Möchten Sie eine Referenz aufnehmen?</p>
+            </div>
+            <div class="no-match-actions">
+                <button class="modal-btn btn-primary" id="no-match-record-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    </svg>
+                    <span data-i18n="autoDetect.recordReference">Referenz aufnehmen</span>
+                </button>
+                <button class="modal-btn btn-secondary" id="no-match-new-machine-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    <span data-i18n="autoDetect.newMachine">Neue Maschine anlegen</span>
+                </button>
+                <button class="modal-btn btn-text" id="no-match-cancel-btn" data-i18n="buttons.cancel">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="./src/main.ts?v=20260210-001" type="module"></script>
+</body>
+</html>

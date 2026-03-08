@@ -1,0 +1,55 @@
+{
+  "name": "zanobo",
+  "version": "2.0.0",
+  "description": "Zanobo - Industrial Machine Diagnostics PWA using GMIA Algorithm",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:gh-pages": "DEPLOY_TARGET=github-pages tsc && DEPLOY_TARGET=github-pages vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "check-i18n": "node scripts/check-i18n-consistency.mjs"
+  },
+  "dependencies": {
+    "html5-qrcode": "^2.3.8",
+    "idb": "^8.0.0",
+    "idb-keyval": "^6.2.1",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^22.19.9",
+    "@types/qrcode": "^1.5.6",
+    "@typescript-eslint/eslint-plugin": "^8.52.0",
+    "@typescript-eslint/parser": "^8.52.0",
+    "@vitest/ui": "^4.0.16",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "fake-indexeddb": "^6.2.5",
+    "prettier": "^3.7.4",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.53.1",
+    "vite": "^6.0.7",
+    "vite-plugin-html": "^3.2.2",
+    "vite-plugin-pwa": "^0.21.1",
+    "vitest": "^4.0.16"
+  },
+  "keywords": [
+    "pwa",
+    "machine-diagnostics",
+    "audio-analysis",
+    "gmia",
+    "typescript"
+  ],
+  "author": "Zanobo Team",
+  "license": "MIT"
+}
