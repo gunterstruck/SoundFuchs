@@ -1,0 +1,97 @@
+/* ============================================================================
+ * Pipeline Status Dashboard
+ *
+ * Compact, semi-transparent status bar showing live DSP pipeline state.
+ * Only visible in Expert mode when at least one DSP feature is active.
+ * ============================================================================ */
+
+.pipeline-status-dashboard {
+  margin: 8px 12px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  color: var(--text-secondary, #a0aec0);
+}
+
+.pipeline-status-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+}
+
+.pipeline-status-icon {
+  font-size: 0.8rem;
+}
+
+.pipeline-status-items {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pipeline-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  transition: background 0.3s ease;
+  border-radius: 4px;
+}
+
+.pipeline-item-icon {
+  font-size: 0.85rem;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.pipeline-item-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* T60 color classes (uses existing status color variables) */
+.pipeline-item-label.status-healthy {
+  color: var(--status-healthy, #10b981);
+}
+
+.pipeline-item-label.status-uncertain {
+  color: var(--status-warning, #f59e0b);
+}
+
+.pipeline-item-label.status-warning {
+  color: #f97316; /* Orange */
+}
+
+.pipeline-item-label.status-faulty {
+  color: var(--status-error, #ef4444);
+}
+
+/* Cherry-Pick blink animation for rejected frames */
+.pipeline-item-blink {
+  background: rgba(245, 158, 11, 0.2);
+  animation: cherryBlink 0.3s ease;
+}
+
+@keyframes cherryBlink {
+  0% { background: rgba(245, 158, 11, 0.4); }
+  100% { background: rgba(245, 158, 11, 0); }
+}
+
+/* Compact on small screens */
+@media (max-width: 360px) {
+  .pipeline-status-dashboard {
+    font-size: 0.65rem;
+    padding: 6px 8px;
+    margin: 4px 8px;
+  }
+}
