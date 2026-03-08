@@ -1,0 +1,63 @@
+{
+  "app": {
+    "name": "Zanobo",
+    "version": "1.0.0",
+    "description": "AI Assistant for Acoustic Machine Monitoring",
+    "defaultLanguage": "de"
+  },
+  "branding": {
+    "title": "ZANOBO",
+    "subtitle": "AI ASSISTANT",
+    "colors": {
+      "primary": "#00D4FF",
+      "primaryHover": "#00B8E6",
+      "secondary": "#40E0D0",
+      "accent": "#00FFC6",
+      "background": "#0A1929",
+      "backgroundSecondary": "#0D1F31"
+    },
+    "logo": {
+      "url": "assets/logo.svg",
+      "width": 48,
+      "height": 48
+    }
+  },
+  "features": {
+    "qrCodeScanning": true,
+    "audioRecording": true,
+    "spectralAnalysis": true,
+    "machineFingerprinting": true,
+    "offlineMode": true
+  },
+  "audio": {
+    "sampleRate": 48000,
+    "channels": 1,
+    "recordingDuration": 10,
+    "fftSize": 2048,
+    "minFrequency": 20,
+    "maxFrequency": 20000
+  },
+  "diagnosis": {
+    "confidenceThreshold": 0.75,
+    "healthyRange": [0.8, 1.0],
+    "uncertainRange": [0.6, 0.8],
+    "unhealthyRange": [0.0, 0.6]
+  },
+  "ui": {
+    "defaultTheme": "focus",
+    "enableAnimations": true,
+    "showStatusBadge": true,
+    "collapsibleSections": true
+  },
+  "storage": {
+    "maxHistoryItems": 100,
+    "maxReferences": 50,
+    "cacheAudioData": true
+  },
+  "advanced": {
+    "debugMode": false,
+    "logLevel": "info",
+    "apiEndpoint": null,
+    "syncEnabled": false
+  }
+}
