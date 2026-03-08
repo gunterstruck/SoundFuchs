@@ -20,7 +20,7 @@ export interface AppSetting<T = unknown> {
 /**
  * Database schema definition
  */
-interface ZanobotDB extends DBSchema {
+interface ZanoboDB extends DBSchema {
   machines: {
     key: string;
     value: Machine;
@@ -61,22 +61,22 @@ interface ZanobotDB extends DBSchema {
   };
 }
 
-const DB_NAME = 'zanobot-db';
+const DB_NAME = 'zanobo-db';
 const DB_VERSION = 7; // Incremented for NFC Machine Setup + Reference Database
 
-let dbInstance: IDBPDatabase<ZanobotDB> | null = null;
+let dbInstance: IDBPDatabase<ZanoboDB> | null = null;
 
 /**
  * Initialize and open the database
  *
  * @returns Database instance
  */
-export async function initDB(): Promise<IDBPDatabase<ZanobotDB>> {
+export async function initDB(): Promise<IDBPDatabase<ZanoboDB>> {
   if (dbInstance) {
     return dbInstance;
   }
 
-  dbInstance = await openDB<ZanobotDB>(DB_NAME, DB_VERSION, {
+  dbInstance = await openDB<ZanoboDB>(DB_NAME, DB_VERSION, {
     upgrade(db, oldVersion, newVersion, transaction) {
       // Create machines store
       if (!db.objectStoreNames.contains('machines')) {
@@ -148,7 +148,7 @@ export async function initDB(): Promise<IDBPDatabase<ZanobotDB>> {
         // CRITICAL: Store migration info in localStorage to show user warning
         // This will be displayed on next page load in main.ts
         try {
-          localStorage.setItem('zanobot-migration-v3-occurred', JSON.stringify({
+          localStorage.setItem('zanobo-migration-v3-occurred', JSON.stringify({
             timestamp: Date.now(),
             oldVersion,
             newVersion: 3,

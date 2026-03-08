@@ -75,7 +75,7 @@
     --z-popover: 1200;
     --z-toast: 2000;
 
-    /* Default Theme: Brand (Zanobot Original) */
+    /* Default Theme: Brand (Zanobo Original) */
     --primary-color: #00D4FF;
     --primary-hover: #00B8E6;
     --secondary-color: #40E0D0;
@@ -339,7 +339,7 @@
 }
 
 /* ===================================
-   THEME: BRAND (Zanobot Original)
+   THEME: BRAND (Zanobo Original)
    Vibe: Light, friendly, trustworthy - matching the colorful banner
    "KI, der man vertraut – freundlich, klar, leicht."
    =================================== */
@@ -5519,7 +5519,7 @@ select:focus-visible {
     line-height: 1.5;
 }
 
-/* Legal Modals (Impressum, Datenschutz, Über Zanobot) */
+/* Legal Modals (Impressum, Datenschutz, Über Zanobo) */
 .legal-modal-content {
     max-width: 700px;
     max-height: 85vh;

@@ -418,7 +418,7 @@ export const zh: TranslationDict = {
     },
 
     share: {
-      title: 'Zanobot 数据库备份',
+      title: 'Zanobo 数据库备份',
       text: '数据库备份：{{filename}}',
       success: '备份已分享：{{filename}}',
       fallback: '无法分享，已改为下载 {{filename}}。',

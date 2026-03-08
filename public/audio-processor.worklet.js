@@ -38,7 +38,7 @@ const RING_BUFFER_SIZE_MULTIPLIER = 2;
 // Minimum ring buffer size in samples
 const MIN_RING_BUFFER_SIZE = 32768;
 
-class ZanobotAudioProcessor extends AudioWorkletProcessor {
+class ZanoboAudioProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
 
@@ -358,4 +358,4 @@ class ZanobotAudioProcessor extends AudioWorkletProcessor {
 }
 
 // Register processor
-registerProcessor('zanobot-audio-processor', ZanobotAudioProcessor);
+registerProcessor('zanobo-audio-processor', ZanoboAudioProcessor);

@@ -667,7 +667,7 @@ export class ReferenceDbService {
     const d = data as Record<string, unknown>;
 
     // Check for full database export format first (from manual export)
-    if (this.isFullDatabaseExport(d)) return 'zanobot_export_v1';
+    if (this.isFullDatabaseExport(d)) return 'zanobo_export_v1';
 
     if (d.db_meta && d.models) return 'new_format_with_models';
     if (d.db_meta) return 'new_format_partial';
@@ -737,7 +737,7 @@ export class ReferenceDbService {
 
     // Trace: Schema validation complete - using shared import path
     onboardingTrace.success('schema_validation_complete', {
-      detectedFormat: 'zanobot_export_v1',
+      detectedFormat: 'zanobo_export_v1',
       importPath: 'shared_manual_import',
       machineCount: data.machines?.length || 0,
       recordingCount: data.recordings?.length || 0,
@@ -1411,7 +1411,7 @@ export class ReferenceDbService {
       }
 
       const exportData: FleetDbFile = {
-        format: 'zanobot-fleet-db',
+        format: 'zanobo-fleet-db',
         schemaVersion: '1.0.0',
         exportDbVersion: 7,
         exportedAt: new Date().toISOString(),

@@ -1,5 +1,5 @@
 /**
- * ZANOBOT - MAIN APPLICATION ENTRY POINT
+ * ZANOBO - MAIN APPLICATION ENTRY POINT
  *
  * Initializes the entire app:
  * - Database
@@ -38,7 +38,7 @@ import { initI18n, t, translateDOM } from './i18n/index.js';
  */
 declare global {
   interface Window {
-    ZanobotTheme?: {
+    ZanoboTheme?: {
       setTheme: (theme: string) => void;
       getTheme: () => string;
       toggleTheme: () => string;
@@ -48,11 +48,11 @@ declare global {
       applyCustomColors: (colors: Record<string, string>) => void;
       reset: () => void;
     };
-    ZANOBOT_CONFIG?: Record<string, unknown>;
+    ZANOBO_CONFIG?: Record<string, unknown>;
   }
 }
 
-class ZanobotApp {
+class ZanoboApp {
   private router: Router | null = null;
   private bannerManager: BannerManager | null = null;
 
@@ -281,7 +281,7 @@ class ZanobotApp {
    * the user that their data was cleared.
    */
   private checkMigrationNotification(): void {
-    const MIGRATION_KEY = 'zanobot-migration-v3-occurred';
+    const MIGRATION_KEY = 'zanobo-migration-v3-occurred';
 
     try {
       const migrationInfo = localStorage.getItem(MIGRATION_KEY);
@@ -641,7 +641,7 @@ class ZanobotApp {
         document.documentElement.setAttribute('data-theme', theme);
 
         // Save to localStorage
-        localStorage.setItem('zanobot-theme', theme);
+        localStorage.setItem('zanobo-theme', theme);
 
         // Update active state
         themeBtns.forEach((b) => b.classList.remove('active'));
@@ -653,7 +653,7 @@ class ZanobotApp {
     });
 
     // Load saved theme
-    const savedTheme = localStorage.getItem('zanobot-theme') || 'brand';
+    const savedTheme = localStorage.getItem('zanobo-theme') || 'brand';
     document.documentElement.setAttribute('data-theme', savedTheme);
 
     themeBtns.forEach((btn) => {
@@ -677,9 +677,9 @@ class ZanobotApp {
 
     quickToggleBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
-        // Use the global ZanobotTheme API from theme-bootstrap.js
-        if (window.ZanobotTheme?.toggleTheme) {
-          window.ZanobotTheme.toggleTheme();
+        // Use the global ZanoboTheme API from theme-bootstrap.js
+        if (window.ZanoboTheme?.toggleTheme) {
+          window.ZanoboTheme.toggleTheme();
           logger.debug('🎨 Theme toggled via quick toggle button');
 
           // Apply theme-appropriate banner (if no custom banner)
@@ -738,7 +738,7 @@ class ZanobotApp {
   }
 
   /**
-   * Setup footer links (Impressum, Datenschutz, Über Zanobot)
+   * Setup footer links (Impressum, Datenschutz, Über Zanobo)
    */
   private setupFooterLinks(): void {
     // Helper function to close a modal
@@ -787,7 +787,7 @@ class ZanobotApp {
       closeDatenschutzBtn.addEventListener('click', () => closeModal(datenschutzModal));
     }
 
-    // Über Zanobot modal
+    // Über Zanobo modal
     const aboutBtn = document.getElementById('about-btn');
     const aboutModal = document.getElementById('about-modal');
     const closeAboutModal = document.getElementById('close-about-modal');
@@ -853,11 +853,11 @@ class ZanobotApp {
    * - Generates service-worker.js with Workbox
    * - Creates registerSW.js registration script
    * - Injects the script tag into index.html
-   * - Handles correct base path (/Zanobot/) and scope
+   * - Handles correct base path (/Zanobo/) and scope
    *
    * No manual registration needed here to avoid conflicts.
    */
 }
 
 // Start the app
-new ZanobotApp();
+new ZanoboApp();

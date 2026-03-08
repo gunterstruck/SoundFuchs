@@ -2,11 +2,11 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
-// Dynamic base path: GitHub Pages uses /Zanobot/, Vercel uses /
-const base = process.env.DEPLOY_TARGET === 'github-pages' ? '/Zanobot/' : '/';
+// Dynamic base path: GitHub Pages uses /Zanobo/, Vercel uses /
+const base = process.env.DEPLOY_TARGET === 'github-pages' ? '/Zanobo/' : '/';
 
 export default defineConfig({
-  base,  // Dynamic: /Zanobot/ for GitHub Pages, / for Vercel
+  base,  // Dynamic: /Zanobo/ for GitHub Pages, / for Vercel
   resolve: {
     alias: {
       '@core': path.resolve(__dirname, './src/core'),

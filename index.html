@@ -20,16 +20,16 @@
     <!-- Theme Bootstrap (loads before render - inline for guaranteed sync execution) -->
     <script>
     /**
-     * ZANOBOT THEME BOOTSTRAP - Inline version for guaranteed sync execution
+     * ZANOBO THEME BOOTSTRAP - Inline version for guaranteed sync execution
      * Prevents FOUC (Flash of Unstyled Content)
      */
     (function() {
         'use strict';
         const CONFIG_PATH = './config.json';
-        const THEME_STORAGE_KEY = 'zanobot-theme';
+        const THEME_STORAGE_KEY = 'zanobo-theme';
         const DEFAULT_THEME = 'focus';
         const AVAILABLE_THEMES = ['neon', 'light', 'brand', 'focus'];
-        const VIEW_LEVEL_STORAGE_KEY = 'zanobot.view-level';
+        const VIEW_LEVEL_STORAGE_KEY = 'zanobo.view-level';
         const DEFAULT_VIEW_LEVEL = 'basic';
         const AVAILABLE_VIEW_LEVELS = ['basic', 'advanced', 'expert'];
 
@@ -52,7 +52,7 @@
                 if (!response.ok) throw new Error('Failed to load config');
                 const config = await response.json();
                 if (getStoredTheme() === 'brand' && config.branding?.colors) applyBrandColors(config.branding.colors);
-                window.ZANOBOT_CONFIG = config;
+                window.ZANOBO_CONFIG = config;
             } catch (error) { console.warn('Could not load config.json:', error); }
         }
 
@@ -78,12 +78,12 @@
             }
         }
 
-        window.ZanobotTheme = {
+        window.ZanoboTheme = {
             setTheme: function(theme) {
                 if (!AVAILABLE_THEMES.includes(theme)) return;
                 try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch (e) {}
                 applyTheme(theme);
-                if (theme === 'brand' && window.ZANOBOT_CONFIG?.branding?.colors) applyBrandColors(window.ZANOBOT_CONFIG.branding.colors);
+                if (theme === 'brand' && window.ZANOBO_CONFIG?.branding?.colors) applyBrandColors(window.ZANOBO_CONFIG.branding.colors);
                 window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
             },
             getTheme: function() { return getStoredTheme(); },
@@ -332,7 +332,7 @@
                                 <!-- Machine items will be added dynamically -->
                                 <!-- Sprint 2 UX: Empty state mini 1-2-3 guide -->
                                 <div id="machine-overview-empty" class="empty-state-guide" style="display: none;">
-                                    <p class="empty-state-title" data-i18n="identify.emptyGuide.title">So funktioniert Zanobot</p>
+                                    <p class="empty-state-title" data-i18n="identify.emptyGuide.title">So funktioniert Zanobo</p>
                                     <div class="guide-steps">
                                         <div class="guide-step">
                                             <span class="guide-step-number">1</span>

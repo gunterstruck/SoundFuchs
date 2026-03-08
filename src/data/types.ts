@@ -247,8 +247,8 @@ export interface AppSettings {
  * Every field marked as required MUST be present, otherwise import MUST fail.
  */
 export interface FleetDbFile {
-  /** Format identifier – MUST be exactly 'zanobot-fleet-db' */
-  format: 'zanobot-fleet-db';
+  /** Format identifier – MUST be exactly 'zanobo-fleet-db' */
+  format: 'zanobo-fleet-db';
 
   /** Schema version (SemVer). Import MUST reject files with major > 1. */
   schemaVersion: '1.0.0';

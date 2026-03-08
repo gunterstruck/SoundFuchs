@@ -1,5 +1,5 @@
-// Zanobot Service Worker - Minimal Version
-const CACHE_NAME = 'zanobot-cache-v1';
+// Zanobo Service Worker - Minimal Version
+const CACHE_NAME = 'zanobo-cache-v1';
 const urlsToCache = [
   './',
   './index.html',

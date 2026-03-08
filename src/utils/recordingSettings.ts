@@ -5,9 +5,9 @@ export type RecordingSettings = {
   disableAudioTrigger: boolean; // if true, skip Smart Start and record immediately (for very quiet machines)
 };
 
-export const RECORDING_SETTINGS_EVENT = 'zanobot:recording-settings-change';
+export const RECORDING_SETTINGS_EVENT = 'zanobo:recording-settings-change';
 
-const STORAGE_KEY = 'zanobot.recording.settings';
+const STORAGE_KEY = 'zanobo.recording.settings';
 
 const defaultSettings: RecordingSettings = {
   recordingDuration: 10,

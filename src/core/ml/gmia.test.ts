@@ -1,8 +1,8 @@
 /**
- * ZANOBOT - GMIA ALGORITHM TESTS
+ * ZANOBO - GMIA ALGORITHM TESTS
  *
  * Comprehensive tests for the GMIA (Gaussian Model Independent Attributes) algorithm.
- * This is the CORE machine learning component of Zanobot.
+ * This is the CORE machine learning component of Zanobo.
  *
  * Tests cover:
  * - Training with various feature configurations

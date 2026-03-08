@@ -117,7 +117,7 @@ export const en: TranslationDict = {
 
     // Sprint 2 UX: Empty state mini guide
     emptyGuide: {
-      title: 'How Zanobot works',
+      title: 'How Zanobo works',
       step1Title: 'Create machine',
       step1Desc: 'Give your machine a unique name.',
       step2Title: 'Record reference',
@@ -450,7 +450,7 @@ export const en: TranslationDict = {
     },
 
     share: {
-      title: 'Zanobot database backup',
+      title: 'Zanobo database backup',
       text: 'Database backup: {{filename}}',
       success: 'Backup shared: {{filename}}',
       fallback: 'Sharing not available. Downloaded {{filename}} instead.',

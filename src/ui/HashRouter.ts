@@ -801,7 +801,7 @@ export class HashRouter {
     const d = data as Record<string, unknown>;
 
     // Format check
-    if (d.format !== 'zanobot-fleet-db') return { valid: false, error: 'wrong_format' };
+    if (d.format !== 'zanobo-fleet-db') return { valid: false, error: 'wrong_format' };
 
     // Schema version check (only support major version 1)
     const sv = String(d.schemaVersion || '');

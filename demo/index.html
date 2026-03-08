@@ -260,11 +260,11 @@
 
         function setTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('zanobot-theme', theme);
+            localStorage.setItem('zanobo-theme', theme);
         }
 
         function loadTheme() {
-            const savedTheme = localStorage.getItem('zanobot-theme');
+            const savedTheme = localStorage.getItem('zanobo-theme');
             if (savedTheme) {
                 currentThemeIndex = themes.indexOf(savedTheme);
                 if (currentThemeIndex === -1) currentThemeIndex = 0;

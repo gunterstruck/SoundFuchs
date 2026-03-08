@@ -2583,7 +2583,7 @@ export class IdentifyPhase {
         ? `qr-fleet-${ReferenceDbService.slugifyFleetName(this.qrFleetSelect.value)}.png`
         : this.currentMachine && this.qrSpecificOption?.checked
         ? `qr-${this.currentMachine.id}.png`
-        : 'qr-zanobot.png';
+        : 'qr-zanobo.png';
       link.href = downloadCanvas.toDataURL('image/png');
       link.click();
     });

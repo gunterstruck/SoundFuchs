@@ -419,7 +419,7 @@ export const fr: TranslationDict = {
     },
 
     share: {
-      title: 'Sauvegarde de la base de données Zanobot',
+      title: 'Sauvegarde de la base de données Zanobo',
       text: 'Sauvegarde de la base de données : {{filename}}',
       success: 'Sauvegarde partagée : {{filename}}',
       fallback: 'Partage indisponible. {{filename}} a été téléchargé à la place.',
