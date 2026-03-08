@@ -1,0 +1,43 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with gradient -->
+  <rect width="512" height="512" rx="115" fill="url(#bgGradient)"/>
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="512" y2="512">
+      <stop offset="0%" stop-color="#0A1929"/>
+      <stop offset="100%" stop-color="#1a2d3f"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Brain/Head Circle -->
+  <circle cx="256" cy="230" r="120" stroke="#00D4FF" stroke-width="10" fill="none"/>
+
+  <!-- Brain connections (neural network style) -->
+  <circle cx="226" cy="190" r="12" fill="#00D4FF"/>
+  <circle cx="286" cy="190" r="12" fill="#00D4FF"/>
+  <circle cx="256" cy="230" r="12" fill="#00D4FF"/>
+  <circle cx="226" cy="260" r="12" fill="#00D4FF"/>
+  <circle cx="286" cy="260" r="12" fill="#00D4FF"/>
+
+  <line x1="226" y1="190" x2="256" y2="230" stroke="#00D4FF" stroke-width="6"/>
+  <line x1="286" y1="190" x2="256" y2="230" stroke="#00D4FF" stroke-width="6"/>
+  <line x1="256" y1="230" x2="226" y2="260" stroke="#00D4FF" stroke-width="6"/>
+  <line x1="256" y1="230" x2="286" y2="260" stroke="#00D4FF" stroke-width="6"/>
+  <line x1="226" y1="190" x2="226" y2="260" stroke="#00D4FF" stroke-width="3" opacity="0.5"/>
+  <line x1="286" y1="190" x2="286" y2="260" stroke="#00D4FF" stroke-width="3" opacity="0.5"/>
+
+  <!-- Sound waves (left side) -->
+  <path d="M 80 180 Q 60 230 80 280" stroke="#00D4FF" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 50 150 Q 20 230 50 310" stroke="#00D4FF" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 110 210 L 100 230 L 110 250" stroke="#00D4FF" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <circle cx="130" cy="230" r="6" fill="#00D4FF"/>
+
+  <!-- Sound waves (right side) -->
+  <path d="M 432 180 Q 452 230 432 280" stroke="#00D4FF" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 462 150 Q 492 230 462 310" stroke="#00D4FF" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 402 210 L 412 230 L 402 250" stroke="#00D4FF" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <circle cx="382" cy="230" r="6" fill="#00D4FF"/>
+
+  <!-- Brand text -->
+  <text x="256" y="410" font-family="Arial, sans-serif" font-size="60" font-weight="bold" fill="#00D4FF" text-anchor="middle">ZANOBOT</text>
+  <text x="256" y="450" font-family="Arial, sans-serif" font-size="28" fill="#00D4FF" text-anchor="middle" opacity="0.8">AI ASSISTANT</text>
+</svg>
