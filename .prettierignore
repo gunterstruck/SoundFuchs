@@ -1,0 +1,21 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+build
+
+# Cache
+.cache
+*.log
+
+# IDE
+.vscode
+.idea
+
+# PWA
+sw.js
+workbox-*.js
+
+# Lock files
+package-lock.json

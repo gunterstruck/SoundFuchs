@@ -1,5 +1,5 @@
 /**
- * ZANOBOT - View Level Settings
+ * ZANOBO - View Level Settings
  *
  * Manages the User Experience View Level system:
  * - basic: Simple "traffic light" interface for operators
@@ -14,9 +14,9 @@ import { logger } from './logger.js';
 
 export type ViewLevel = 'basic' | 'advanced' | 'expert';
 
-export const VIEW_LEVEL_EVENT = 'zanobot:view-level-change';
+export const VIEW_LEVEL_EVENT = 'zanobo:view-level-change';
 
-const STORAGE_KEY = 'zanobot.view-level';
+const STORAGE_KEY = 'zanobo.view-level';
 
 const defaultLevel: ViewLevel = 'basic';
 
@@ -210,18 +210,18 @@ export const restoreViewLevel = (): ViewLevel => {
 // Defaults / Reset
 // ════════════════════════════════════════════════════════════
 
-const INITIALIZED_KEY = 'zanobot.initialized';
+const INITIALIZED_KEY = 'zanobo.initialized';
 
 /**
  * All localStorage keys managed by the app's UI settings.
  * IndexedDB data (machines, recordings, diagnoses) is NOT included.
  */
 const UI_SETTINGS_KEYS = [
-  'zanobot.visualizer.settings',
-  'zanobot.recording.settings',
-  'zanobot-drift-detector-settings',
-  'zanobot-room-comp-settings',
-  'zanobot-cherry-pick-settings',
+  'zanobo.visualizer.settings',
+  'zanobo.recording.settings',
+  'zanobo-drift-detector-settings',
+  'zanobo-room-comp-settings',
+  'zanobo-cherry-pick-settings',
 ] as const;
 
 /**
@@ -239,10 +239,10 @@ export const applyDefaults = (): void => {
   setViewLevel('basic');
 
   // 2. Theme → focus (persists + DOM + event)
-  if (window.ZanobotTheme?.setTheme) {
-    window.ZanobotTheme.setTheme('focus');
+  if (window.ZanoboTheme?.setTheme) {
+    window.ZanoboTheme.setTheme('focus');
   } else {
-    try { localStorage.setItem('zanobot-theme', 'focus'); } catch { /* ignore */ }
+    try { localStorage.setItem('zanobo-theme', 'focus'); } catch { /* ignore */ }
     document.documentElement.setAttribute('data-theme', 'focus');
   }
 
@@ -274,7 +274,7 @@ export const applyDefaultsTemporary = (): void => {
  */
 export const restoreTheme = (): void => {
   try {
-    const savedTheme = localStorage.getItem('zanobot-theme');
+    const savedTheme = localStorage.getItem('zanobo-theme');
     if (savedTheme) {
       document.documentElement.setAttribute('data-theme', savedTheme);
       window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: savedTheme } }));

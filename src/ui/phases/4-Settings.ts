@@ -1230,7 +1230,7 @@ export class SettingsPhase {
 
     // Create filename with timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const filename = `zanobot-backup-${timestamp}.json`;
+    const filename = `zanobo-backup-${timestamp}.json`;
     const file = new File([blob], filename, { type: 'application/json' });
 
     return { data, filename, blob, file };

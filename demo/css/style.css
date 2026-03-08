@@ -24,7 +24,7 @@
     --font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
 
-    /* Default Theme: Brand (Zanobot Original) */
+    /* Default Theme: Brand (Zanobo Original) */
     --primary-color: #00D4FF;
     --primary-hover: #00B8E6;
     --secondary-color: #40E0D0;
@@ -160,11 +160,11 @@
 }
 
 /* ===================================
-   THEME: BRAND (Zanobot Original)
+   THEME: BRAND (Zanobo Original)
    Vibe: Corporate identity, balanced, professional cyan/teal
    =================================== */
 [data-theme="brand"] {
-    /* Core Colors - Original Zanobot */
+    /* Core Colors - Original Zanobo */
     --primary-color: #00D4FF;
     --primary-hover: #00B8E6;
     --secondary-color: #40E0D0;

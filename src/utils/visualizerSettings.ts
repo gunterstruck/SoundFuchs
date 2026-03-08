@@ -5,9 +5,9 @@ export type VisualizerSettings = {
   amplitudeScale: VisualizerScale;
 };
 
-export const VISUALIZER_SETTINGS_EVENT = 'zanobot:visualizer-settings-change';
+export const VISUALIZER_SETTINGS_EVENT = 'zanobo:visualizer-settings-change';
 
-const STORAGE_KEY = 'zanobot.visualizer.settings';
+const STORAGE_KEY = 'zanobo.visualizer.settings';
 
 const defaultSettings: VisualizerSettings = {
   frequencyScale: 'linear',
