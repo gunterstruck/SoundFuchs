@@ -1321,8 +1321,21 @@ export class SettingsPhase {
       const cancelBtn = document.getElementById(opts.cancelId);
       const closeBtn = document.getElementById(opts.closeId);
 
+      // The export/import buttons live inside the settings modal, which shares
+      // the same z-index. Hide it while our dialog is open so it doesn't overlay
+      // the dialog (same convention as the NFC writer modal), then restore it.
+      const settingsModal = document.getElementById('settings-modal');
+      const settingsWasOpen =
+        !!settingsModal && window.getComputedStyle(settingsModal).display !== 'none';
+      if (settingsWasOpen && settingsModal) {
+        settingsModal.style.display = 'none';
+      }
+
       const cleanup = (result: boolean): void => {
         modal.style.display = 'none';
+        if (settingsWasOpen && settingsModal) {
+          settingsModal.style.display = 'flex';
+        }
         confirmBtn?.removeEventListener('click', onConfirm);
         cancelBtn?.removeEventListener('click', onCancel);
         closeBtn?.removeEventListener('click', onCancel);
