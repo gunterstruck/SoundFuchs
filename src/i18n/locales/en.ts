@@ -436,6 +436,22 @@ export const en: TranslationDict = {
       modeReplaced: 'Replaced',
       partialWarning: 'Machines: {{machinesImported}} imported, {{machinesSkipped}} skipped\nRecordings: {{recordingsImported}} imported, {{recordingsSkipped}} skipped\nDiagnoses: {{diagnosesImported}} imported, {{diagnosesSkipped}} skipped\n\n{{totalSkipped}} record(s) could not be imported.\nMode: {{mode}}',
       setupError: 'Error preparing import',
+      withSettings: 'The stored settings (banner, theme, view) were applied.',
+    },
+
+    exportOptions: {
+      title: 'Export database',
+      description: 'Choose what to include in the backup.',
+      includeSettings: 'Include settings in export',
+      includeSettingsDetail: 'Save the banner, theme, view and all other settings exactly as they are right now.',
+    },
+
+    importOptions: {
+      title: 'Import database',
+      description: 'The machines will be added to your existing data.',
+      mergeNote: 'Existing machines are kept – imported machines are added. If you want to start fresh, clear the database first.',
+      includeSettings: 'Apply stored settings',
+      includeSettingsDetail: 'Apply the banner, theme and view from the backup, overwriting your current settings.',
     },
 
     clear: {
@@ -447,6 +463,7 @@ export const en: TranslationDict = {
 
     export: {
       success: 'File: {{filename}}\n\nMachines: {{machines}}\nRecordings: {{recordings}}\nDiagnoses: {{diagnoses}}',
+      withSettings: 'The current settings (banner, theme, view) were saved as well.',
     },
 
     share: {
