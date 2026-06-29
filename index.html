@@ -891,6 +891,69 @@
         </div>
     </div>
 
+    <!-- Modal: Export options (ask whether to include settings) -->
+    <div id="export-options-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="export-options-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="export-options-title" data-i18n="settings.exportOptions.title">Datenbank exportieren</h3>
+                <button class="close-modal-btn" id="export-options-close" aria-label="Dialog schließen" data-i18n-aria="buttons.close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description" data-i18n="settings.exportOptions.description">Wählen Sie aus, was in das Backup aufgenommen wird.</p>
+                <div class="nfc-option-group">
+                    <label class="nfc-option">
+                        <input type="checkbox" id="export-include-settings" checked>
+                        <span class="nfc-option-text">
+                            <span class="nfc-option-title" data-i18n="settings.exportOptions.includeSettings">Einstellungen mit exportieren</span>
+                            <span class="nfc-option-detail" data-i18n="settings.exportOptions.includeSettingsDetail">Banner, Theme, Ansicht und alle weiteren Einstellungen so speichern, wie sie aktuell sind.</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-secondary" id="export-options-cancel" data-i18n="buttons.cancel">Abbrechen</button>
+                <button class="modal-btn btn-primary" id="export-options-confirm" data-i18n="settingsUI.exportDatabase">Datenbank exportieren</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Import options (ask whether to also apply stored settings) -->
+    <div id="import-options-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="import-options-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="import-options-title" data-i18n="settings.importOptions.title">Datenbank importieren</h3>
+                <button class="close-modal-btn" id="import-options-close" aria-label="Dialog schließen" data-i18n-aria="buttons.close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description" id="import-options-summary" data-i18n="settings.importOptions.description">Die Maschinen werden zu Ihren bestehenden Daten hinzugefügt.</p>
+                <p class="modal-description" data-i18n="settings.importOptions.mergeNote">Bestehende Maschinen bleiben erhalten – importierte Maschinen kommen hinzu. Möchten Sie vorher von vorne beginnen, leeren Sie zuerst die Datenbank.</p>
+                <div class="nfc-option-group" id="import-include-settings-option" style="display: none;">
+                    <label class="nfc-option">
+                        <input type="checkbox" id="import-include-settings">
+                        <span class="nfc-option-text">
+                            <span class="nfc-option-title" data-i18n="settings.importOptions.includeSettings">Hinterlegte Einstellungen übernehmen</span>
+                            <span class="nfc-option-detail" data-i18n="settings.importOptions.includeSettingsDetail">Banner, Theme und Ansicht aus dem Backup übernehmen und Ihre aktuellen Einstellungen überschreiben.</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-secondary" id="import-options-cancel" data-i18n="buttons.cancel">Abbrechen</button>
+                <button class="modal-btn btn-primary" id="import-options-confirm" data-i18n="settingsUI.importDatabase">Datenbank importieren</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal for QR Code Generator -->
     <div id="qr-generator-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="qr-generator-title">
         <div class="modal-content">

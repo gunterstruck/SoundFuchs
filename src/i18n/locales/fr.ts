@@ -405,6 +405,22 @@ export const fr: TranslationDict = {
       modeReplaced: 'Remplacé',
       partialWarning: 'Machines : {{machinesImported}} importées, {{machinesSkipped}} ignorées\nEnregistrements : {{recordingsImported}} importés, {{recordingsSkipped}} ignorés\nDiagnostics : {{diagnosesImported}} importés, {{diagnosesSkipped}} ignorés\n\n{{totalSkipped}} enregistrement(s) n\'ont pas pu être importés.\nMode : {{mode}}',
       setupError: 'Erreur lors de la préparation de l\'importation',
+      withSettings: 'Les réglages enregistrés (bannière, thème, vue) ont été appliqués.',
+    },
+
+    exportOptions: {
+      title: 'Exporter la base de données',
+      description: 'Choisissez ce qui doit figurer dans la sauvegarde.',
+      includeSettings: 'Inclure les réglages dans l\'export',
+      includeSettingsDetail: 'Enregistrer la bannière, le thème, la vue et tous les autres réglages tels qu\'ils sont actuellement.',
+    },
+
+    importOptions: {
+      title: 'Importer la base de données',
+      description: 'Les machines seront ajoutées à vos données existantes.',
+      mergeNote: 'Les machines existantes sont conservées – les machines importées sont ajoutées. Pour repartir de zéro, videz d\'abord la base de données.',
+      includeSettings: 'Appliquer les réglages enregistrés',
+      includeSettingsDetail: 'Appliquer la bannière, le thème et la vue de la sauvegarde, en écrasant vos réglages actuels.',
     },
 
     clear: {
@@ -416,6 +432,7 @@ export const fr: TranslationDict = {
 
     export: {
       success: 'Fichier : {{filename}}\n\nMachines : {{machines}}\nEnregistrements : {{recordings}}\nDiagnostics : {{diagnoses}}',
+      withSettings: 'Les réglages actuels (bannière, thème, vue) ont également été enregistrés.',
     },
 
     share: {

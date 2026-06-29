@@ -250,6 +250,73 @@ export async function deleteAppSetting(key: string): Promise<void> {
   logger.info(`🗑️ App setting deleted: ${key}`);
 }
 
+/**
+ * A single app setting prepared for JSON backup.
+ * Blob values (e.g. custom hero banners) are stored in serialized form so they
+ * survive JSON round-trips.
+ */
+export interface SerializedAppSetting {
+  key: string;
+  value: unknown;
+  updatedAt: number;
+}
+
+/**
+ * Export all app_settings (UI assets such as custom hero banners).
+ *
+ * Blob values are serialized to a JSON-safe base64 representation.
+ *
+ * @returns Array of serialized app settings
+ */
+export async function exportAppSettings(): Promise<SerializedAppSetting[]> {
+  const db = await initDB();
+  const all = await db.getAll('app_settings');
+
+  return Promise.all(
+    all.map(async (setting) => ({
+      key: setting.key,
+      value: setting.value instanceof Blob ? await serializeBlob(setting.value) : setting.value,
+      updatedAt: setting.updatedAt ?? Date.now(),
+    }))
+  );
+}
+
+/**
+ * Import app_settings (UI assets such as custom hero banners).
+ *
+ * Serialized Blob values are rehydrated back into real Blobs before storing.
+ * Existing keys are overwritten so imported banners/themes take effect.
+ *
+ * @param settings - Serialized app settings (from a backup file)
+ * @returns Number of settings successfully imported
+ */
+export async function importAppSettings(settings: SerializedAppSetting[]): Promise<number> {
+  const db = await initDB();
+  let imported = 0;
+
+  for (const setting of settings) {
+    try {
+      const value = isSerializedBlob(setting.value)
+        ? deserializeBlob(setting.value)
+        : setting.value;
+
+      await db.put('app_settings', {
+        key: setting.key,
+        value,
+        updatedAt: setting.updatedAt ?? Date.now(),
+      });
+      imported++;
+    } catch (error) {
+      logger.warn(
+        `⚠️ Skipped app setting "${setting.key || 'unknown'}": ${error instanceof Error ? error.message : error}`
+      );
+    }
+  }
+
+  logger.info(`📥 Imported ${imported}/${settings.length} app setting(s)`);
+  return imported;
+}
+
 // ============================================================================
 // STORAGE QUOTA MANAGEMENT
 // ============================================================================

@@ -405,6 +405,22 @@ export const es: TranslationDict = {
       modeReplaced: 'Reemplazado',
       partialWarning: 'Máquinas: {{machinesImported}} importadas, {{machinesSkipped}} omitidas\nGrabaciones: {{recordingsImported}} importadas, {{recordingsSkipped}} omitidas\nDiagnósticos: {{diagnosesImported}} importados, {{diagnosesSkipped}} omitidos\n\n{{totalSkipped}} registro(s) no pudieron ser importados.\nModo: {{mode}}',
       setupError: 'Error al preparar la importación',
+      withSettings: 'Se aplicaron los ajustes almacenados (banner, tema, vista).',
+    },
+
+    exportOptions: {
+      title: 'Exportar base de datos',
+      description: 'Elija qué incluir en la copia de seguridad.',
+      includeSettings: 'Incluir ajustes en la exportación',
+      includeSettingsDetail: 'Guardar el banner, el tema, la vista y todos los demás ajustes tal como están ahora.',
+    },
+
+    importOptions: {
+      title: 'Importar base de datos',
+      description: 'Las máquinas se añadirán a sus datos existentes.',
+      mergeNote: 'Las máquinas existentes se conservan: las importadas se añaden. Si desea empezar de cero, vacíe primero la base de datos.',
+      includeSettings: 'Aplicar los ajustes almacenados',
+      includeSettingsDetail: 'Aplicar el banner, el tema y la vista de la copia de seguridad, sobrescribiendo sus ajustes actuales.',
     },
 
     clear: {
@@ -416,6 +432,7 @@ export const es: TranslationDict = {
 
     export: {
       success: 'Archivo: {{filename}}\n\nMáquinas: {{machines}}\nGrabaciones: {{recordings}}\nDiagnósticos: {{diagnoses}}',
+      withSettings: 'Los ajustes actuales (banner, tema, vista) también se guardaron.',
     },
 
     share: {

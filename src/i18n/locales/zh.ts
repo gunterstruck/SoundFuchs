@@ -404,6 +404,22 @@ export const zh: TranslationDict = {
       modeReplaced: '已替换',
       partialWarning: '机器：{{machinesImported}} 已导入，{{machinesSkipped}} 已跳过\n录制：{{recordingsImported}} 已导入，{{recordingsSkipped}} 已跳过\n诊断：{{diagnosesImported}} 已导入，{{diagnosesSkipped}} 已跳过\n\n{{totalSkipped}} 条记录无法导入。\n模式：{{mode}}',
       setupError: '准备导入时出错',
+      withSettings: '已应用备份中的设置（横幅、主题、视图）。',
+    },
+
+    exportOptions: {
+      title: '导出数据库',
+      description: '选择要包含在备份中的内容。',
+      includeSettings: '同时导出设置',
+      includeSettingsDetail: '按当前状态保存横幅、主题、视图以及所有其他设置。',
+    },
+
+    importOptions: {
+      title: '导入数据库',
+      description: '机器将添加到您现有的数据中。',
+      mergeNote: '现有机器将被保留——导入的机器会被添加进来。如果想重新开始，请先清空数据库。',
+      includeSettings: '应用存储的设置',
+      includeSettingsDetail: '应用备份中的横幅、主题和视图，并覆盖您当前的设置。',
     },
 
     clear: {
@@ -415,6 +431,7 @@ export const zh: TranslationDict = {
 
     export: {
       success: '文件：{{filename}}\n\n机器：{{machines}}\n录制：{{recordings}}\n诊断：{{diagnoses}}',
+      withSettings: '当前设置（横幅、主题、视图）也已一并保存。',
     },
 
     share: {

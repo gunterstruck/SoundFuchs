@@ -43,6 +43,12 @@ import {
 import { DEFAULT_DSP_CONFIG } from '@core/dsp/features.js';
 import { applyDefaults } from '@utils/viewLevelSettings.js';
 import { toast } from '@ui/components/Toast.js';
+import {
+  collectSettings,
+  applySettings,
+  hasSettingsBackup,
+  type SettingsBackup,
+} from '@utils/settingsBackup.js';
 
 export class SettingsPhase {
 
@@ -890,21 +896,42 @@ export class SettingsPhase {
    * Handle database export
    */
   private async handleExportData(): Promise<void> {
+    // Ask the user whether to include the current settings (banner, theme, …)
+    const checkbox = document.getElementById('export-include-settings') as HTMLInputElement | null;
+    if (checkbox) {
+      checkbox.checked = true; // default: include settings
+    }
+
+    const confirmed = await this.openChoiceModal({
+      modalId: 'export-options-modal',
+      confirmId: 'export-options-confirm',
+      cancelId: 'export-options-cancel',
+      closeId: 'export-options-close',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    const includeSettings = checkbox?.checked ?? true;
+
     try {
       logger.info('📦 Exporting database...');
 
-      const { data, filename, blob } = await this.buildExportPayload();
+      const { data, includesSettings, filename, blob } =
+        await this.buildExportPayload(includeSettings);
 
       this.triggerDownload(blob, filename);
 
-      logger.info(`✅ Database exported: ${filename}`);
+      logger.info(`✅ Database exported: ${filename}${includesSettings ? ' (incl. settings)' : ''}`);
       notify.success(
         t('settings.export.success', {
           filename,
           machines: data.machines.length,
           recordings: data.recordings.length,
           diagnoses: data.diagnoses.length,
-        }),
+        }) +
+          (includesSettings ? `\n\n${t('settings.export.withSettings')}` : ''),
         { title: t('modals.databaseExported') }
       );
     } catch (error) {
@@ -1034,23 +1061,45 @@ export class SettingsPhase {
             throw new Error('Invalid backup file format');
           }
 
-          // Ask for merge or replace
-          const merge = confirm(t('settings.import.confirmMerge', { filename: file.name }));
+          // Does the backup contain stored settings (banner, theme, …)?
+          const backupHasSettings = hasSettingsBackup(data);
 
-          // Confirm replace if not merging
-          if (!merge) {
-            const confirmReplace = confirm(t('settings.import.confirmReplace'));
-
-            if (!confirmReplace) {
-              return;
-            }
+          // Show the settings checkbox only when the backup actually contains settings
+          const settingsOption = document.getElementById('import-include-settings-option');
+          const settingsCheckbox = document.getElementById(
+            'import-include-settings'
+          ) as HTMLInputElement | null;
+          if (settingsOption) {
+            settingsOption.style.display = backupHasSettings ? '' : 'none';
+          }
+          if (settingsCheckbox) {
+            settingsCheckbox.checked = backupHasSettings; // default: take settings along when present
           }
 
-          // Import data
-          const result = await importData(data, merge);
+          const confirmed = await this.openChoiceModal({
+            modalId: 'import-options-modal',
+            confirmId: 'import-options-confirm',
+            cancelId: 'import-options-cancel',
+            closeId: 'import-options-close',
+          });
+
+          if (!confirmed) {
+            return;
+          }
+
+          const applyStoredSettings = backupHasSettings && (settingsCheckbox?.checked ?? false);
+
+          // Always merge: imported machines are ADDED next to the existing ones.
+          // (Users who want a clean slate can clear the database beforehand.)
+          const result = await importData(data, true);
+
+          // Optionally restore the stored settings (banner, theme, view level, …)
+          if (applyStoredSettings) {
+            await applySettings((data as { settings: SettingsBackup }).settings);
+          }
 
           // Show success (or warning if some records were skipped)
-          const mode = merge ? t('settings.import.modeMerged') : t('settings.import.modeReplaced');
+          const mode = t('settings.import.modeMerged');
 
           if (result.totalSkipped > 0) {
             notify.warning(
@@ -1073,7 +1122,8 @@ export class SettingsPhase {
                 recordings: result.recordingsImported,
                 diagnoses: result.diagnosesImported,
                 mode,
-              }),
+              }) +
+                (applyStoredSettings ? `\n\n${t('settings.import.withSettings')}` : ''),
               { title: t('modals.databaseImported') }
             );
           }
@@ -1215,8 +1265,9 @@ export class SettingsPhase {
     }
   }
 
-  private async buildExportPayload(): Promise<{
+  private async buildExportPayload(includeSettings: boolean = true): Promise<{
     data: Awaited<ReturnType<typeof exportData>>;
+    includesSettings: boolean;
     filename: string;
     blob: Blob;
     file: File;
@@ -1224,8 +1275,21 @@ export class SettingsPhase {
     // Get all data
     const data = await exportData();
 
+    // Optionally attach the current UI settings (theme, banner, view level, …)
+    let exportObject: Record<string, unknown> = { ...data };
+    let includesSettings = false;
+    if (includeSettings) {
+      try {
+        const settings = await collectSettings();
+        exportObject = { ...data, settings };
+        includesSettings = true;
+      } catch (error) {
+        logger.warn('⚠️ Failed to collect settings for export, exporting data only', error);
+      }
+    }
+
     // Create JSON blob
-    const jsonString = JSON.stringify(data, null, 2);
+    const jsonString = JSON.stringify(exportObject, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
 
     // Create filename with timestamp
@@ -1233,7 +1297,53 @@ export class SettingsPhase {
     const filename = `zanobo-backup-${timestamp}.json`;
     const file = new File([blob], filename, { type: 'application/json' });
 
-    return { data, filename, blob, file };
+    return { data, includesSettings, filename, blob, file };
+  }
+
+  /**
+   * Show a modal and resolve to true if the user confirmed, false otherwise.
+   * Listeners are wired up per call and removed on close to avoid leaks.
+   */
+  private openChoiceModal(opts: {
+    modalId: string;
+    confirmId: string;
+    cancelId: string;
+    closeId: string;
+  }): Promise<boolean> {
+    return new Promise((resolve) => {
+      const modal = document.getElementById(opts.modalId);
+      if (!modal) {
+        resolve(false);
+        return;
+      }
+
+      const confirmBtn = document.getElementById(opts.confirmId);
+      const cancelBtn = document.getElementById(opts.cancelId);
+      const closeBtn = document.getElementById(opts.closeId);
+
+      const cleanup = (result: boolean): void => {
+        modal.style.display = 'none';
+        confirmBtn?.removeEventListener('click', onConfirm);
+        cancelBtn?.removeEventListener('click', onCancel);
+        closeBtn?.removeEventListener('click', onCancel);
+        modal.removeEventListener('click', onBackdrop);
+        resolve(result);
+      };
+      const onConfirm = (): void => cleanup(true);
+      const onCancel = (): void => cleanup(false);
+      const onBackdrop = (e: MouseEvent): void => {
+        if (e.target === modal) {
+          cleanup(false);
+        }
+      };
+
+      confirmBtn?.addEventListener('click', onConfirm);
+      cancelBtn?.addEventListener('click', onCancel);
+      closeBtn?.addEventListener('click', onCancel);
+      modal.addEventListener('click', onBackdrop);
+
+      modal.style.display = 'flex';
+    });
   }
 
   private triggerDownload(blob: Blob, filename: string): void {

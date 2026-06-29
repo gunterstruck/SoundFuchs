@@ -438,6 +438,22 @@ export const de: TranslationDict = {
       modeReplaced: 'Ersetzt',
       partialWarning: 'Maschinen: {{machinesImported}} importiert, {{machinesSkipped}} übersprungen\nAufnahmen: {{recordingsImported}} importiert, {{recordingsSkipped}} übersprungen\nDiagnosen: {{diagnosesImported}} importiert, {{diagnosesSkipped}} übersprungen\n\n{{totalSkipped}} Datensatz/Datensätze konnten nicht importiert werden.\nModus: {{mode}}',
       setupError: 'Fehler beim Vorbereiten des Imports',
+      withSettings: 'Die hinterlegten Einstellungen (Banner, Theme, Ansicht) wurden übernommen.',
+    },
+
+    exportOptions: {
+      title: 'Datenbank exportieren',
+      description: 'Wählen Sie aus, was in das Backup aufgenommen wird.',
+      includeSettings: 'Einstellungen mit exportieren',
+      includeSettingsDetail: 'Banner, Theme, Ansicht und alle weiteren Einstellungen so speichern, wie sie aktuell sind.',
+    },
+
+    importOptions: {
+      title: 'Datenbank importieren',
+      description: 'Die Maschinen werden zu Ihren bestehenden Daten hinzugefügt.',
+      mergeNote: 'Bestehende Maschinen bleiben erhalten – importierte Maschinen kommen hinzu. Möchten Sie vorher von vorne beginnen, leeren Sie zuerst die Datenbank.',
+      includeSettings: 'Hinterlegte Einstellungen übernehmen',
+      includeSettingsDetail: 'Banner, Theme und Ansicht aus dem Backup übernehmen und Ihre aktuellen Einstellungen überschreiben.',
     },
 
     clear: {
@@ -449,6 +465,7 @@ export const de: TranslationDict = {
 
     export: {
       success: 'Datei: {{filename}}\n\nMaschinen: {{machines}}\nAufnahmen: {{recordings}}\nDiagnosen: {{diagnoses}}',
+      withSettings: 'Die aktuellen Einstellungen (Banner, Theme, Ansicht) wurden mit gespeichert.',
     },
 
     share: {
