@@ -10,7 +10,10 @@
  */
 
 import { extractFeatures, DEFAULT_DSP_CONFIG } from '@core/dsp/features.js';
-import { trainGMIA } from '@core/ml/gmia.js';
+import { getEngine } from '@core/ml/engine/registry.js';
+import { getEvaluationEngine, setEvaluationEngine } from '@utils/evaluationSettings.js';
+import { assessNonStationarity } from '@core/ml/engine/engineRecommendation.js';
+import { frameRmsSeries } from '@core/ml/engine/temporalCycle.js';
 import { assessRecordingQuality } from '@core/ml/qualityCheck.js';
 import { AudioVisualizer } from '@ui/components/AudioVisualizer.js';
 import { getRawAudioStream, getSmartStartStatusMessage } from '@core/audio/audioHelper.js';
@@ -20,8 +23,7 @@ import type { Machine, TrainingData, FeatureVector, QualityResult } from '@data/
 import { logger } from '@utils/logger.js';
 import { BUTTON_TEXT } from '@ui/constants.js';
 import { stopMediaStream, closeAudioContext } from '@utils/streamHelper.js';
-import { classifyDiagnosticState } from '@core/ml/scoring.js';
-import { t, getLocale } from '../../i18n/index.js';
+import { t } from '../../i18n/index.js';
 import { getRecordingSettings } from '@utils/recordingSettings.js';
 import {
   applyRoomCompensation,
@@ -32,6 +34,11 @@ import {
 } from '@core/dsp/roomCompensation.js';
 import type { T60Estimate } from '@core/dsp/roomCompensation.js';
 import { getCherryPickSettings, cherryPickFeatures } from '@core/dsp/cherryPicking.js';
+import {
+  applyNoiseSubtraction,
+  getNoiseSubtractionSettings,
+  getActiveNoiseProfile,
+} from '@core/dsp/noiseProfile.js';
 import { PipelineStatusDashboard } from '@ui/components/PipelineStatus.js';
 import { getViewLevel } from '@utils/viewLevelSettings.js';
 import {
@@ -40,12 +47,16 @@ import {
   calibrateAdaptiveThresholds,
   type RefDriftBaseline,
 } from '@core/dsp/driftDetector.js';
+import { promptReferenceAudioExport } from './referenceAudioExport.js';
+import { showLabelTypeModal } from './referenceLabelModal.js';
+import { setMeasurementActive } from '@utils/measurementActivity.js';
 
 export class ReferencePhase {
   private machine: Machine | null;
   private selectedDeviceId: string | undefined; // Selected microphone device ID
   private onMachineUpdated: ((machine: Machine) => void) | null = null; // Callback when machine is updated
   private wasAutoCreated: boolean = false; // Track if machine was auto-created for zero-friction flow
+  private isSavingReference: boolean = false; // Re-entry guard for the save button (training can take seconds)
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
   private cameraStream: MediaStream | null = null; // VISUAL POSITIONING: Camera stream for reference image
@@ -62,6 +73,15 @@ export class ReferencePhase {
   private timerInterval: ReturnType<typeof setInterval> | null = null; // Track timer interval for cleanup
   private isRecordingStarting: boolean = false;
   private autoStopTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Force-Start-Timer (Audio-Trigger deaktiviert) — muss beim Smart-Start-Erfolg gecancelt werden. */
+  private forceStartTimer: ReturnType<typeof setTimeout> | null = null;
+  /**
+   * True, solange processRecording() asynchron arbeitet. Verhindert, dass
+   * parallele Stop-/Timer-Pfade cleanup() aufrufen und den AudioContext
+   * unter dem laufenden Decoding wegziehen (Race: "Audio context not
+   * initialized" / "createBuffer of null").
+   */
+  private isProcessingRecording: boolean = false;
   private smartStartWasUsed: boolean = false; // Track if Smart Start completed successfully
 
   // Room Compensation: T60 estimate from chirp measurement
@@ -76,12 +96,23 @@ export class ReferencePhase {
   // CRITICAL FIX: Store event listener reference for proper cleanup
   private recordButtonClickHandler: (() => void) | null = null;
 
+  // Bugfix: Track if recording tip toast was already shown (once per recording)
+  private recordingTipShown: boolean = false;
+
   // VISUAL POSITIONING: Reference image captured during recording
   private capturedReferenceImage: Blob | null = null;
   private reviewImageUrl: string | null = null;
 
   // Pipeline Status Dashboard (Expert mode, shows batch DSP results in review modal)
   private pipelineStatus: PipelineStatusDashboard | null = null;
+
+  // Live signal quality tracking during reference recording
+  private rmsHistory: number[] = [];
+  private signalQualityVisible: boolean = false;
+  private signalQualityInterval: ReturnType<typeof setInterval> | null = null;
+  private signalAnalyser: AnalyserNode | null = null;
+  private signalAnalyserData: Float32Array | null = null;
+  private lastSignalLevel: 'good' | 'ok' | 'weak' | null = null;
 
   // Reference environment data (for Session Bias Match + T60 environment comparison)
   private currentRefLogMean: number[] | null = null;
@@ -121,7 +152,6 @@ export class ReferencePhase {
       machineId: machine.id,
       machineName: machine.name,
     });
-
   }
 
   /**
@@ -152,7 +182,6 @@ export class ReferencePhase {
       zeroFrictionRecordBtn.addEventListener('click', this.recordButtonClickHandler);
       logger.debug('📝 Zero-friction record button initialized');
     }
-
   }
 
   /**
@@ -189,11 +218,13 @@ export class ReferencePhase {
       // Request microphone access using central helper with selected device
       this.mediaStream = await getRawAudioStream(this.selectedDeviceId);
 
-      // VISUAL POSITIONING: Only request camera if Room Compensation is active
-      // Reference phase needs camera to capture the reference image for later ghost overlay
-      const roomCompSettings = getRoomCompSettings();
-
-      if (roomCompSettings.enabled) {
+      // VISUAL POSITIONING: Capture a reference image only on the FIRST
+      // reference recording for a machine. Subsequent recordings (good/bad)
+      // reuse the existing image so the ghost overlay stays consistent.
+      if (this.machine?.referenceImage) {
+        logger.debug('📷 Machine already has a reference image – skipping camera');
+        this.cameraStream = null;
+      } else {
         try {
           this.cameraStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'environment' }, // Prefer back camera on mobile
@@ -201,18 +232,12 @@ export class ReferencePhase {
           });
           logger.info('📷 Camera access granted for reference image');
         } catch (cameraError) {
-          logger.warn(
-            '⚠️ Camera access denied – continuing without reference image',
-            cameraError
-          );
+          logger.warn('⚠️ Camera access denied – continuing without reference image', cameraError);
           notify.info(t('reference.recording.cameraNotAvailable'), {
             title: t('modals.cameraOptional'),
           });
           this.cameraStream = null;
         }
-      } else {
-        logger.debug('📷 Camera not requested (Room Comp. inactive)');
-        this.cameraStream = null;
       }
 
       // Drift Detector: Show info hint if change analysis is active
@@ -251,7 +276,12 @@ export class ReferencePhase {
       // Must happen BEFORE Smart Start so the chirp doesn't interfere with the machine recording.
       this.currentT60 = null;
       const roomSettings = getRoomCompSettings();
-      if (roomSettings.enabled && roomSettings.t60Enabled && this.audioContext && this.mediaStream) {
+      if (
+        roomSettings.enabled &&
+        roomSettings.t60Enabled &&
+        this.audioContext &&
+        this.mediaStream
+      ) {
         try {
           logger.info('🔊 Chirp calibration: Automatic room measurement...');
           const { chirp, recorded } = await playChirpAndRecord(this.audioContext, this.mediaStream);
@@ -300,8 +330,9 @@ export class ReferencePhase {
             this.smartStartWasUsed = true; // Mark that Smart Start completed successfully
 
             // Sprint 2 UX: Visual ready moment (flash green + haptic)
-            const statusElement = document.getElementById('recording-status')
-              || document.querySelector('.recording-status');
+            const statusElement =
+              document.getElementById('recording-status') ||
+              document.querySelector('.recording-status');
             if (statusElement) {
               statusElement.classList.add('smart-start-ready');
               statusElement.textContent = t('smartStartReady.signalDetected');
@@ -339,8 +370,12 @@ export class ReferencePhase {
           // FORCE START: Skip signal detection after warmup, start immediately
           logger.info('⚡ Force Start: Audio trigger disabled, will start after warmup');
 
-          // Wait for warmup duration, then skip to recording
-          setTimeout(() => {
+          // Wait for warmup duration, then skip to recording.
+          // RACE-FIX: Timer-Handle merken — meldet der Smart Start in der
+          // Zwischenzeit selbst ein Signal, wird dieser Timer gecancelt
+          // (sonst starteten ZWEI Aufnahmen parallel).
+          this.forceStartTimer = setTimeout(() => {
+            this.forceStartTimer = null;
             if (!this.audioWorkletManager) {
               logger.error('AudioWorkletManager not initialized');
               return;
@@ -378,8 +413,10 @@ export class ReferencePhase {
     // Reset state flags to prevent memory leaks
     this.isRecordingActive = false;
     this.isRecordingStarting = false;
+    setMeasurementActive(false); // recording over → PWA reload allowed again
     this.currentT60 = null;
     this.smartStartWasUsed = false; // Reset Smart Start flag for next recording
+    this.recordingTipShown = false; // Reset tip flag for next recording
 
     // Clear timer interval to prevent memory leaks
     if (this.timerInterval !== null) {
@@ -389,6 +426,10 @@ export class ReferencePhase {
     if (this.autoStopTimer !== null) {
       clearTimeout(this.autoStopTimer);
       this.autoStopTimer = null;
+    }
+    if (this.forceStartTimer !== null) {
+      clearTimeout(this.forceStartTimer);
+      this.forceStartTimer = null;
     }
 
     // Stop media recorder if active
@@ -422,7 +463,157 @@ export class ReferencePhase {
     closeAudioContext(this.audioContext);
     this.audioContext = null;
 
+    // Welle 1 UX: Reset countdown
+    const countdownContainer = document.getElementById('recording-countdown-container');
+    if (countdownContainer) countdownContainer.style.display = 'none';
+    const countdownBarFill = document.getElementById('recording-countdown-bar-fill');
+    if (countdownBarFill) countdownBarFill.style.width = '0%';
+    const fallbackTimer = document.getElementById('recording-timer');
+    if (fallbackTimer) fallbackTimer.style.display = '';
+
+    // Reset live signal quality indicator
+    this.stopSignalQualityMonitor();
+
     logger.debug('🧹 Reference phase cleanup complete');
+  }
+
+  /**
+   * Start the live signal quality monitor during reference recording.
+   * Creates an AnalyserNode on the AudioContext to read RMS in real-time.
+   */
+  private startSignalQualityMonitor(): void {
+    if (!this.audioContext || !this.mediaStream) return;
+
+    // Create analyser for RMS measurement
+    this.signalAnalyser = this.audioContext.createAnalyser();
+    this.signalAnalyser.fftSize = 2048;
+    this.signalAnalyser.smoothingTimeConstant = 0;
+    this.signalAnalyserData = new Float32Array(this.signalAnalyser.fftSize);
+
+    const source = this.audioContext.createMediaStreamSource(this.mediaStream);
+    source.connect(this.signalAnalyser);
+
+    // Reset state
+    this.rmsHistory = [];
+    this.lastSignalLevel = null;
+
+    // Show the bar immediately
+    const container = document.getElementById('ref-signal-quality');
+    if (container) {
+      container.style.display = 'block';
+      this.signalQualityVisible = true;
+    }
+
+    // Poll every 300ms to compute RMS and update UI
+    this.signalQualityInterval = setInterval(() => {
+      if (!this.signalAnalyser || !this.signalAnalyserData) return;
+      this.signalAnalyser.getFloatTimeDomainData(
+        this.signalAnalyserData as Float32Array<ArrayBuffer>
+      );
+
+      // Compute RMS from raw time-domain samples
+      let sumSq = 0;
+      for (let i = 0; i < this.signalAnalyserData.length; i++) {
+        sumSq += this.signalAnalyserData[i] * this.signalAnalyserData[i];
+      }
+      const rms = Math.sqrt(sumSq / this.signalAnalyserData.length);
+      this.updateSignalQuality(rms);
+    }, 300);
+  }
+
+  /**
+   * Stop the live signal quality monitor and hide the bar.
+   */
+  private stopSignalQualityMonitor(): void {
+    if (this.signalQualityInterval !== null) {
+      clearInterval(this.signalQualityInterval);
+      this.signalQualityInterval = null;
+    }
+    if (this.signalAnalyser) {
+      this.signalAnalyser.disconnect();
+      this.signalAnalyser = null;
+    }
+    this.signalAnalyserData = null;
+    this.rmsHistory = [];
+    this.lastSignalLevel = null;
+    this.signalQualityVisible = false;
+
+    const container = document.getElementById('ref-signal-quality');
+    if (container) container.style.display = 'none';
+  }
+
+  /**
+   * Update the live signal quality indicator based on current RMS amplitude.
+   *
+   * Uses a rolling median of recent RMS values (last ~3s) to avoid flickering.
+   * Thresholds aligned with qualityCheck.ts QUALITY_THRESHOLDS:
+   *   - RMS < 0.01 (RMS_CRITICAL) → weak/red
+   *   - RMS 0.01–0.02 (RMS_WARNING range) → ok/yellow
+   *   - RMS >= 0.02 → good/green
+   */
+  private updateSignalQuality(rmsAmplitude: number): void {
+    // Rolling window of ~3 seconds (~9 chunks at 300ms)
+    this.rmsHistory.push(rmsAmplitude);
+    if (this.rmsHistory.length > 9) {
+      this.rmsHistory.shift();
+    }
+
+    // Median for stability
+    const sorted = [...this.rmsHistory].sort((a, b) => a - b);
+    const medianRms = sorted[Math.floor(sorted.length / 2)];
+
+    // Logarithmic scale: 0.005 → ~0%, 0.01 → ~30%, 0.02 → ~60%, 0.05+ → ~100%
+    const minRms = 0.005;
+    const maxRms = 0.05;
+    const clamped = Math.max(minRms, Math.min(maxRms, medianRms));
+    const percent = Math.round(
+      ((Math.log(clamped) - Math.log(minRms)) / (Math.log(maxRms) - Math.log(minRms))) * 100
+    );
+
+    let level: 'good' | 'ok' | 'weak';
+    if (percent >= 60) {
+      level = 'good';
+    } else if (percent >= 30) {
+      level = 'ok';
+    } else {
+      level = 'weak';
+    }
+
+    // Skip DOM update if level hasn't changed (performance optimisation)
+    if (level === this.lastSignalLevel) return;
+    this.lastSignalLevel = level;
+
+    const container = document.getElementById('ref-signal-quality');
+    const fill = document.getElementById('ref-signal-fill');
+    const status = document.getElementById('ref-signal-status');
+    const hint = document.getElementById('ref-signal-hint');
+    if (!container || !fill || !status) return;
+
+    fill.style.width = `${percent}%`;
+    fill.className = `signal-quality-fill level-${level}`;
+
+    const statusText =
+      level === 'good'
+        ? t('reference.signalQuality.good')
+        : level === 'ok'
+          ? t('reference.signalQuality.ok')
+          : t('reference.signalQuality.weak');
+    status.textContent = statusText;
+    status.className = `signal-quality-status status-${level}`;
+
+    container.setAttribute('aria-label', `${t('reference.signalQuality.label')}: ${statusText}`);
+
+    if (hint) {
+      if (level === 'ok') {
+        hint.textContent = t('reference.signalQuality.hintCloser');
+        hint.style.display = 'block';
+      } else if (level === 'weak') {
+        hint.textContent = t('reference.signalQuality.hintTooWeak');
+        hint.style.display = 'block';
+      } else {
+        hint.style.display = 'none';
+      }
+    }
   }
 
   /**
@@ -434,6 +625,20 @@ export class ReferencePhase {
   private actuallyStartRecording(): void {
     if (!this.mediaStream) {
       return;
+    }
+
+    // RACE-FIX: Smart-Start-Erfolg UND Force-Start-Timeout können beide
+    // feuern (fast zeitgleich am Warmup-Ende). Ohne Guard entstehen ZWEI
+    // MediaRecorder mit ZWEI Auto-Stop-Timern — der zweite Timer räumte dann
+    // mitten in processRecording() den AudioContext ab. Der zweite Trigger
+    // ist ab jetzt ein No-Op.
+    if (this.isRecordingActive) {
+      logger.warn('⚠️ Doppelter Aufnahme-Start ignoriert (Smart-Start + Force-Start-Race)');
+      return;
+    }
+    if (this.forceStartTimer !== null) {
+      clearTimeout(this.forceStartTimer);
+      this.forceStartTimer = null;
     }
 
     // Stop AudioWorklet Smart Start
@@ -460,6 +665,7 @@ export class ReferencePhase {
       : new MediaRecorder(this.mediaStream);
     this.isRecordingActive = true;
     this.isRecordingStarting = false;
+    setMeasurementActive(true); // block PWA reload while recording
 
     this.mediaRecorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
@@ -470,10 +676,7 @@ export class ReferencePhase {
     this.mediaRecorder.onstop = () => {
       this.processRecording().catch((error) => {
         logger.error('Unhandled error in processRecording:', error);
-        notify.error(t('reference.recording.processingFailed'), error as Error, {
-          title: t('modals.processingError'),
-          duration: 0,
-        });
+        this.showRecordingFailedToast(error as Error);
         this.cleanup();
         this.hideRecordingModal();
       });
@@ -494,7 +697,10 @@ export class ReferencePhase {
         ? this.recordingDuration
         : this.warmUpDuration + this.recordingDuration;
 
+      // RACE-FIX: nie zwei Auto-Stop-Timer parallel
+      if (this.autoStopTimer !== null) clearTimeout(this.autoStopTimer);
       this.autoStopTimer = setTimeout(() => {
+        this.autoStopTimer = null;
         this.stopRecording();
       }, totalDuration * 1000);
 
@@ -506,6 +712,9 @@ export class ReferencePhase {
       setTimeout(() => {
         this.captureReferenceSnapshot();
       }, snapshotDelay);
+
+      // Start live signal quality monitoring
+      this.startSignalQualityMonitor();
     };
 
     // Start recording (will trigger onstart event)
@@ -589,6 +798,15 @@ export class ReferencePhase {
       return;
     }
 
+    // RACE-FIX: Läuft die Verarbeitung bereits (Recorder gestoppt, Decoding
+    // aktiv), darf hier NICHT aufgeräumt werden — cleanup() würde den
+    // AudioContext unter processRecording() wegziehen. Das Processing
+    // räumt am Ende selbst auf.
+    if (this.isProcessingRecording) {
+      logger.debug('stopRecording: Verarbeitung läuft — kein Cleanup aus dem Stop-Pfad');
+      return;
+    }
+
     // Handle Smart Start / waiting phase where MediaRecorder is inactive
     if (this.audioWorkletManager || this.isRecordingActive || this.isRecordingStarting) {
       if (this.audioWorkletManager) {
@@ -614,6 +832,7 @@ export class ReferencePhase {
    * - Cleanup is called at the end to release AudioContext after processing
    */
   private async processRecording(): Promise<void> {
+    this.isProcessingRecording = true;
     try {
       if (!this.audioContext) {
         throw new Error('Audio context not initialized');
@@ -669,13 +888,21 @@ export class ReferencePhase {
 
       if (trainingSamples <= 0) {
         throw new Error(
-          t('reference.errors.recordingTooShort', { duration: audioBuffer.duration.toFixed(2), warmup: this.warmUpDuration, minDuration: (this.warmUpDuration + MIN_TRAINING_DURATION).toFixed(1) })
+          t('reference.errors.recordingTooShort', {
+            duration: audioBuffer.duration.toFixed(2),
+            warmup: this.warmUpDuration,
+            minDuration: (this.warmUpDuration + MIN_TRAINING_DURATION).toFixed(1),
+          })
         );
       }
 
       if (trainingSamples < minTrainingSamples) {
         throw new Error(
-          t('reference.errors.trainingDataTooShort', { duration: (trainingSamples / sampleRate).toFixed(2), minDuration: MIN_TRAINING_DURATION, totalMinDuration: (this.warmUpDuration + MIN_TRAINING_DURATION).toFixed(1) })
+          t('reference.errors.trainingDataTooShort', {
+            duration: (trainingSamples / sampleRate).toFixed(2),
+            minDuration: MIN_TRAINING_DURATION,
+            totalMinDuration: (this.warmUpDuration + MIN_TRAINING_DURATION).toFixed(1),
+          })
         );
       }
 
@@ -726,11 +953,17 @@ export class ReferencePhase {
         const cpResult = cherryPickFeatures(features, cherryPickSettings);
         cpTotalCount = cpResult.totalCount;
         cpRemovedCount = cpResult.removedCount;
-        logger.info(`🍒 Cherry-Picking: ${cpResult.removedCount}/${cpResult.totalCount} Frames verworfen`);
+        logger.info(
+          `🍒 Cherry-Picking: ${cpResult.removedCount}/${cpResult.totalCount} Frames verworfen`
+        );
         if (cpResult.removedCount > 0) {
           logger.info(`   Entfernte Indizes: [${cpResult.removedIndices.join(', ')}]`);
-          logger.info(`   Energie-Schwellen: [${cpResult.energyStats.threshold[0].toFixed(4)}, ${cpResult.energyStats.threshold[1].toFixed(4)}]`);
-          logger.info(`   Entropie-Schwellen: [${cpResult.entropyStats.threshold[0].toFixed(4)}, ${cpResult.entropyStats.threshold[1].toFixed(4)}]`);
+          logger.info(
+            `   Energie-Schwellen: [${cpResult.energyStats.threshold[0].toFixed(4)}, ${cpResult.energyStats.threshold[1].toFixed(4)}]`
+          );
+          logger.info(
+            `   Entropie-Schwellen: [${cpResult.entropyStats.threshold[0].toFixed(4)}, ${cpResult.entropyStats.threshold[1].toFixed(4)}]`
+          );
         }
         cherryPickedFeatures = cpResult.filteredFeatures;
 
@@ -745,14 +978,30 @@ export class ReferencePhase {
       // PHASE 2: Assess recording quality (on cherry-picked features, before room compensation)
       const qualityResult = assessRecordingQuality(cherryPickedFeatures);
 
+      // Noise Profile Subtraction (Pipeline-Stufe 1.5): additive Störungen zuerst.
+      // Nützlich, wenn die Referenz selbst in lauter Umgebung erstellt wird
+      // (Einlernen beim Kunden statt im Werk). Bei inkompatiblem Profil gibt
+      // applyNoiseSubtraction den Input unverändert zurück (Pass-Through).
+      const noiseSubSettings = getNoiseSubtractionSettings();
+      const activeNoiseProfile = noiseSubSettings.enabled ? getActiveNoiseProfile() : null;
+      const noiseSubtractedFeatures = activeNoiseProfile
+        ? applyNoiseSubtraction(cherryPickedFeatures, activeNoiseProfile, noiseSubSettings)
+        : cherryPickedFeatures;
+      const noiseSubApplied = noiseSubtractedFeatures !== cherryPickedFeatures;
+
       // Room Compensation: Apply T60 subtraction + optional CMN (Pipeline-Stufe 3.5)
       // IMPORTANT: Quality assessment uses cherry-picked features; training uses compensated features.
       // NOTE: During reference creation, Bias-Match is not applicable (no prior reference exists).
       //       Only T60 subtraction is meaningful here. CMN is off by default.
       const roomCompSettings = getRoomCompSettings();
       const processedFeatures = roomCompSettings.enabled
-        ? applyRoomCompensation(cherryPickedFeatures, roomCompSettings, this.currentT60 ?? undefined, undefined)
-        : cherryPickedFeatures;
+        ? applyRoomCompensation(
+            noiseSubtractedFeatures,
+            roomCompSettings,
+            this.currentT60 ?? undefined,
+            undefined
+          )
+        : noiseSubtractedFeatures;
 
       // Pipeline Status Dashboard: Prepare for review modal (Expert mode only)
       if (this.pipelineStatus) {
@@ -760,7 +1009,10 @@ export class ReferencePhase {
         this.pipelineStatus = null;
       }
       const currentViewLevel = getViewLevel();
-      if (currentViewLevel === 'expert' && (cherryPickSettings.enabled || roomCompSettings.enabled)) {
+      if (
+        currentViewLevel === 'expert' &&
+        (cherryPickSettings.enabled || roomCompSettings.enabled || noiseSubApplied)
+      ) {
         this.pipelineStatus = new PipelineStatusDashboard();
         this.pipelineStatus.loadFromSettings(
           cherryPickSettings.enabled,
@@ -769,11 +1021,17 @@ export class ReferencePhase {
           roomCompSettings.t60Enabled,
           cherryPickSettings.sigmaThreshold,
           roomCompSettings.beta,
-          roomCompSettings.biasMatchEnabled
+          roomCompSettings.biasMatchEnabled,
+          noiseSubApplied,
+          activeNoiseProfile?.name ?? ''
         );
 
         if (cherryPickSettings.enabled) {
           this.pipelineStatus.setCherryPickBatchResult(cpTotalCount, cpRemovedCount);
+        }
+
+        if (noiseSubApplied) {
+          this.pipelineStatus.setNoiseSubStatus(true, activeNoiseProfile?.name ?? '', true);
         }
 
         if (this.currentT60) {
@@ -829,7 +1087,11 @@ export class ReferencePhase {
       // Residual standard deviation (refLogResidualStd) – Drift Detector V2
       // Measures variance of the FINE STRUCTURE (not overall spectrum).
       const driftSettings = getDriftSettings();
-      const residualStd = computeRefLogResidualStd(processedFeatures, refLogMeanArr, driftSettings.smoothWindow);
+      const residualStd = computeRefLogResidualStd(
+        processedFeatures,
+        refLogMeanArr,
+        driftSettings.smoothWindow
+      );
       if (residualStd) {
         this.currentRefLogResidualStd = Array.from(residualStd);
         logger.info(`📊 refLogResidualStd computed (${K} bins, ${N} frames)`);
@@ -847,12 +1109,13 @@ export class ReferencePhase {
 
       // Store reference T60 (measured during chirp warmup)
       this.currentRefT60 = this.currentT60?.broadband ?? null;
-      this.currentRefT60Classification = this.currentRefT60 !== null
-        ? classifyT60Value(this.currentRefT60)
-        : null;
+      this.currentRefT60Classification =
+        this.currentRefT60 !== null ? classifyT60Value(this.currentRefT60) : null;
 
       if (this.currentRefT60 !== null) {
-        logger.info(`🔊 Reference environment: T60 = ${this.currentRefT60.toFixed(2)}s (${this.currentRefT60Classification})`);
+        logger.info(
+          `🔊 Reference environment: T60 = ${this.currentRefT60.toFixed(2)}s (${this.currentRefT60Classification})`
+        );
       } else {
         logger.info('🔊 No reference T60 (chirp disabled or failed)');
       }
@@ -885,76 +1148,37 @@ export class ReferencePhase {
       this.showReviewModal();
     } catch (error) {
       logger.error('Processing error:', error);
-      notify.error(t('reference.recording.processingFailed'), error as Error, {
-        title: t('modals.processingError'),
-        duration: 0,
-      });
+      this.showRecordingFailedToast(error as Error);
 
       // Cleanup on error
       this.cleanup();
 
       this.hideRecordingModal();
+    } finally {
+      this.isProcessingRecording = false;
     }
   }
 
   /**
-   * Show success message with reference audio export option
+   * UX: Fehlgeschlagene Aufnahme menschlich melden — mit Erneut-versuchen-
+   * Button direkt im Toast statt rohem Exception-Text. Die technischen
+   * Details stehen im Log (und der Fehler ist mit dem Race-Fix oben
+   * ohnehin die absolute Ausnahme).
    */
-  private showSuccessWithExport(): void {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-
-    // CRITICAL FIX: Determine file extension based on actual MIME type
-    let extension = 'webm';
-    if (this.recordedBlob) {
-      if (this.recordedBlob.type.includes('ogg')) {
-        extension = 'ogg';
-      } else if (this.recordedBlob.type.includes('mp4')) {
-        extension = 'm4a';
-      }
-    }
-    const machineId = this.machine?.id || 'unknown';
-    const machineName = this.machine?.name || 'Unknown Machine';
-    const filename = `${machineId}_REF_${timestamp}.${extension}`;
-
-    const shouldDownload = confirm(
-      t('reference.success.modelTrained', { name: machineName }) +
-        '\n\n' +
-        t('reference.success.downloadPrompt')
-    );
-
-    if (shouldDownload && this.recordedBlob) {
-      this.exportReferenceAudio(filename);
-    }
-  }
-
-  /**
-   * Export reference audio as downloadable file
-   */
-  private exportReferenceAudio(filename: string): void {
-    if (!this.recordedBlob) {
-      notify.warning(t('reference.errors.noAudioFile'), {
-        title: t('reference.errors.noAudioFile'),
-      });
-      return;
-    }
-
-    try {
-      const url = URL.createObjectURL(this.recordedBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      logger.info(`📥 Reference audio exported: ${filename}`);
-    } catch (error) {
-      logger.error('Export error:', error);
-      notify.error(t('reference.errors.exportFailed'), error as Error, {
-        title: t('reference.errors.exportFailed'),
-      });
-    }
+  private showRecordingFailedToast(error: Error): void {
+    logger.error('Aufnahme fehlgeschlagen:', error);
+    notify.error(t('reference.recording.failedFriendly'), undefined, {
+      title: t('modals.processingError'),
+      duration: 0,
+      actions: [
+        {
+          label: t('reference.recording.retryAction'),
+          onClick: () => {
+            void this.startRecording();
+          },
+        },
+      ],
+    });
   }
 
   /**
@@ -970,7 +1194,10 @@ export class ReferencePhase {
     const modalTitle = document.querySelector('#recording-modal .modal-header h3');
     if (modalTitle && message.includes(t('reference.recording.stabilizing').split('...')[0])) {
       modalTitle.textContent = `${t('modals.referenceRecording')} - ${t('reference.recording.stabilizing')}`;
-    } else if (modalTitle && message.includes(t('reference.recording.waitingForSignal').split(' ')[0])) {
+    } else if (
+      modalTitle &&
+      message.includes(t('reference.recording.waitingForSignal').split(' ')[0])
+    ) {
       modalTitle.textContent = `${t('modals.referenceRecording')} - ${t('reference.recording.waitingForSignal')}`;
     } else if (modalTitle && message.includes(t('reference.recording.recording').split(' ')[0])) {
       modalTitle.textContent = `${t('modals.referenceRecording')} - ${t('reference.recording.recording')}`;
@@ -999,66 +1226,22 @@ export class ReferencePhase {
       }
     }
 
-    // Sprint 1 UX: Show reference explanation before recording
+    // Sprint 1 UX: Show reference explanation as toast notification
+    notify.info(t('reference.explainBefore'), { duration: 4000 });
+
+    // Add status message
     const modalBody = document.querySelector('#recording-modal .modal-body');
-    if (modalBody && !document.getElementById('reference-explain-banner')) {
-      const explainBanner = document.createElement('div');
-      explainBanner.id = 'reference-explain-banner';
-      explainBanner.className = 'reference-explain-banner';
-      explainBanner.innerHTML = `
-        <div class="explain-icon">\u2139\uFE0F</div>
-        <div class="explain-text">${t('reference.explainBefore')}</div>
-      `;
-      modalBody.insertBefore(explainBanner, modalBody.firstChild);
-    }
-
-    // Add existing models info and status message
     if (modalBody && !document.getElementById('recording-status')) {
-      // Show existing models info
-      const existingModels = this.machine?.referenceModels || [];
-      const existingModelsInfo =
-        existingModels.length > 0
-          ? existingModels
-              .map((m) => {
-                const trainingDate = new Date(m.trainingDate).toLocaleString(getLocale(), {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                });
-                return `${m.label} (${trainingDate})`;
-              })
-              .join(', ')
-          : t('reference.noModelsYet');
-
-      const infoDiv = document.createElement('div');
-      infoDiv.className = 'existing-models-info';
-      infoDiv.style.cssText =
-        'background: rgba(0, 212, 255, 0.1); border-left: 3px solid var(--primary-color); padding: 8px 12px; margin-bottom: 12px; border-radius: 4px;';
-      infoDiv.innerHTML = `
-        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">${t('reference.existingModels')}</div>
-        <div style="font-size: 0.85rem; color: var(--text-primary); font-weight: 500;">${existingModelsInfo}</div>
-        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">${t('reference.statesTrainedCount', { count: existingModels.length })}</div>
-      `;
-      const visualizerContainer = modalBody.querySelector('#visualizer-container');
-      if (visualizerContainer) {
-        visualizerContainer.insertAdjacentElement('afterend', infoDiv);
-      } else {
-        modalBody.insertBefore(infoDiv, modalBody.firstChild);
-      }
-
       const statusDiv = document.createElement('div');
       statusDiv.id = 'recording-status';
       statusDiv.className = 'recording-status';
       statusDiv.textContent = t('common.initializing');
-      infoDiv.insertAdjacentElement('afterend', statusDiv);
-
-      // Sprint 1 UX: Show movement hint during recording
-      const movementHint = document.createElement('div');
-      movementHint.className = 'recording-hint';
-      movementHint.textContent = t('reference.explainDuring');
-      statusDiv.insertAdjacentElement('afterend', movementHint);
+      const visualizerContainer = modalBody.querySelector('#visualizer-container');
+      if (visualizerContainer) {
+        visualizerContainer.insertAdjacentElement('afterend', statusDiv);
+      } else {
+        modalBody.insertBefore(statusDiv, modalBody.firstChild);
+      }
     }
 
     // Setup stop button
@@ -1134,12 +1317,6 @@ export class ReferencePhase {
       statusElement.remove();
     }
 
-    // Clean up existing models info
-    const existingModelsInfo = modal?.querySelector('.existing-models-info');
-    if (existingModelsInfo) {
-      existingModelsInfo.remove();
-    }
-
     // VISUAL POSITIONING: Clean up video elements
     const videoContainer = document.getElementById('reference-video-container');
     if (videoContainer) {
@@ -1207,11 +1384,40 @@ export class ReferencePhase {
         // Phase 2: Aufnahme - actual recording phase (after warmup if applicable)
         const recordingElapsed = this.smartStartWasUsed ? elapsed : elapsed - warmupPhase;
         const recordingTotal = this.recordingDuration;
+        const remaining = Math.max(0, recordingTotal - recordingElapsed);
 
         if (statusElement) {
           statusElement.textContent = `${t('reference.recording.recording')}...`;
         }
-        if (timerElement) {
+
+        // Welle 1 UX: Show countdown during recording phase
+        const countdownContainer = document.getElementById('recording-countdown-container');
+        const countdownNumber = document.getElementById('recording-countdown-number');
+        const countdownBarFill = document.getElementById('recording-countdown-bar-fill');
+
+        if (countdownContainer && countdownNumber && countdownBarFill) {
+          // Show countdown, hide MM:SS timer
+          countdownContainer.style.display = 'flex';
+          if (timerElement) timerElement.style.display = 'none';
+
+          // Bugfix: Show recording tip as toast (once per recording)
+          if (!this.recordingTipShown) {
+            notify.info(t('reference.recording.countdownTip'), {
+              duration: 5000,
+            });
+            this.recordingTipShown = true;
+          }
+
+          // Update countdown number with tick animation
+          countdownNumber.textContent = String(remaining);
+          countdownNumber.classList.add('countdown-tick');
+          setTimeout(() => countdownNumber.classList.remove('countdown-tick'), 150);
+
+          // Update progress bar
+          const progress = (recordingElapsed / recordingTotal) * 100;
+          countdownBarFill.style.width = `${Math.min(100, progress)}%`;
+        } else if (timerElement) {
+          // Fallback: show MM:SS timer if countdown elements not found
           const minutes = Math.floor(recordingElapsed / 60);
           const seconds = recordingElapsed % 60;
           timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} / ${Math.floor(
@@ -1247,10 +1453,14 @@ export class ReferencePhase {
     const modal = document.getElementById('review-modal');
     if (!modal) {
       logger.error('Review modal element not found');
-      notify.error(t('reference.recording.processingFailed'), new Error('Review modal not found in DOM'), {
-        title: t('modals.processingError'),
-        duration: 0,
-      });
+      notify.error(
+        t('reference.recording.processingFailed'),
+        new Error('Review modal not found in DOM'),
+        {
+          title: t('modals.processingError'),
+          duration: 0,
+        }
+      );
       return;
     }
 
@@ -1270,10 +1480,14 @@ export class ReferencePhase {
 
     if (!audioElement) {
       logger.error('Audio player element not found');
-      notify.error(t('reference.recording.processingFailed'), new Error('Audio player element not found in DOM'), {
-        title: t('modals.processingError'),
-        duration: 0,
-      });
+      notify.error(
+        t('reference.recording.processingFailed'),
+        new Error('Audio player element not found in DOM'),
+        {
+          title: t('modals.processingError'),
+          duration: 0,
+        }
+      );
       return;
     }
 
@@ -1292,7 +1506,9 @@ export class ReferencePhase {
     audioElement.load();
 
     const imageContainer = document.getElementById('review-reference-image-container');
-    const imageElement = document.getElementById('review-reference-image') as HTMLImageElement | null;
+    const imageElement = document.getElementById(
+      'review-reference-image'
+    ) as HTMLImageElement | null;
 
     if (imageContainer && imageElement) {
       if (this.capturedReferenceImage) {
@@ -1323,20 +1539,31 @@ export class ReferencePhase {
       saveBtn.onclick = () => this.handleReviewSave();
     }
 
-    // Mount Pipeline Status Dashboard into review modal (Expert mode)
+    // Mount Pipeline Status Dashboard at end of modal-body (Expert mode)
     if (this.pipelineStatus) {
-      const qualitySection = modal.querySelector('.review-quality');
-      if (qualitySection && qualitySection.parentElement) {
-        this.pipelineStatus.mount(
-          qualitySection.parentElement,
-          qualitySection.nextSibling as HTMLElement
-        );
+      const modalBody = modal.querySelector('.modal-body');
+      if (modalBody) {
+        this.pipelineStatus.mount(modalBody as HTMLElement);
         this.pipelineStatus.show();
       }
     }
 
     // Show modal
     modal.style.display = 'flex';
+
+    // Scroll-Indikator: Fade-Out ausblenden wenn am Ende gescrollt
+    const shellContent = modal.querySelector('.shell-content');
+    if (shellContent) {
+      const checkScroll = () => {
+        const el = shellContent as HTMLElement;
+        const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10;
+        const hasOverflow = el.scrollHeight > el.clientHeight + 10;
+        el.classList.toggle('scrolled-to-bottom', !hasOverflow || isAtBottom);
+      };
+
+      shellContent.addEventListener('scroll', checkScroll, { passive: true });
+      requestAnimationFrame(checkScroll);
+    }
 
     logger.info('🔍 Review modal displayed');
   }
@@ -1372,7 +1599,9 @@ export class ReferencePhase {
       this.reviewImageUrl = null;
     }
     const imageContainer = document.getElementById('review-reference-image-container');
-    const imageElement = document.getElementById('review-reference-image') as HTMLImageElement | null;
+    const imageElement = document.getElementById(
+      'review-reference-image'
+    ) as HTMLImageElement | null;
     if (imageContainer && imageElement) {
       imageElement.removeAttribute('src');
       imageContainer.style.display = 'none';
@@ -1478,8 +1707,42 @@ export class ReferencePhase {
    *
    * IMPORTANT: If quality is BAD, show additional confirmation warning
    */
+  /**
+   * Save-button entry point. Guards against re-entry and gives immediate visual
+   * feedback: training (especially YAMNet: TF.js + model load) can take a few
+   * seconds, during which the button must not look idle — otherwise users tap
+   * again and again, queueing several train+save passes for the same recording.
+   */
   private async handleReviewSave(): Promise<void> {
-    const { getMachine, saveMachine, createAutoMachine, getNextAutoMachineNumber } = await import('@data/db.js');
+    if (this.isSavingReference) {
+      logger.info('Save already in progress — ignoring duplicate tap');
+      return;
+    }
+    this.isSavingReference = true;
+
+    const saveBtn = document.getElementById('review-save-btn') as HTMLButtonElement | null;
+    const previousHtml = saveBtn ? saveBtn.innerHTML : null;
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.classList.add('is-busy');
+      saveBtn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span> ${t('common.saving')}`;
+    }
+
+    try {
+      await this.performReviewSave();
+    } finally {
+      this.isSavingReference = false;
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.classList.remove('is-busy');
+        if (previousHtml !== null) saveBtn.innerHTML = previousHtml;
+      }
+    }
+  }
+
+  private async performReviewSave(): Promise<void> {
+    const { getMachine, saveMachine, createAutoMachine, getNextAutoMachineNumber } =
+      await import('@data/db.js');
 
     let machineToUpdate: Machine;
 
@@ -1525,10 +1788,14 @@ export class ReferencePhase {
 
     if (!this.currentTrainingData || !this.currentQualityResult) {
       logger.error('Cannot save: missing training data or quality result');
-      notify.error(t('reference.recording.processingFailed'), new Error('Missing training data or quality result'), {
-        title: t('modals.processingError'),
-        duration: 0,
-      });
+      notify.error(
+        t('reference.recording.processingFailed'),
+        new Error('Missing training data or quality result'),
+        {
+          title: t('modals.processingError'),
+          duration: 0,
+        }
+      );
       return;
     }
 
@@ -1536,7 +1803,9 @@ export class ReferencePhase {
     if (this.currentQualityResult.rating === 'BAD' && this.currentQualityResult.score < 30) {
       logger.error('Recording quality too low for training - blocking save');
       notify.error(
-        t('reference.errors.qualityTooLow', { issues: this.currentQualityResult.issues.map((issue) => `• ${issue}`).join('\n') }),
+        t('reference.errors.qualityTooLow', {
+          issues: this.currentQualityResult.issues.map((issue) => `• ${issue}`).join('\n'),
+        }),
         new Error('Quality too low'),
         { duration: 0 }
       );
@@ -1569,7 +1838,7 @@ export class ReferencePhase {
     // This runs ONLY if not blocked by magnitude check above
     if (this.currentQualityResult.rating === 'BAD') {
       const confirmed = confirm(
-        t('reference.errors.badQualityWarning', {
+        t('reference.errors.qualityWarning', {
           issues: this.currentQualityResult.issues.map((issue) => `• ${issue}`).join('\n'),
         })
       );
@@ -1592,53 +1861,30 @@ export class ReferencePhase {
       // ZERO-FRICTION: First recording is always baseline - no prompt needed
       if (existingModels.length === 0) {
         // First recording: Always baseline (healthy state) - SILENT, no user interaction
-        label = t('reference.labels.baseline');
+        // CRITICAL FIX: Store the literal 'Baseline' marker (not the translated display
+        // text) - this is the sentinel that find(m => m.label === 'Baseline') lookups
+        // throughout the app rely on to pick "the" reference for ghost overlay, iris
+        // fingerprint and fleet comparison. Storing the translated word here meant that
+        // sentinel never matched, silently falling back to referenceModels[0] instead.
+        label = 'Baseline';
         type = 'healthy';
         logger.info(`🎯 Zero-friction: First recording - using label: "${label}", type: "healthy"`);
       } else {
-        // Additional recordings: Ask user for label and type
-        const userLabel = prompt(
-          t('reference.labels.prompt'),
-          ''
-        );
+        // Additional recordings: Ask user for label and type via a custom
+        // in-app modal. CRITICAL FIX: window.prompt()/confirm() are silently
+        // suppressed in installed/standalone PWAs on Android (no dialog is
+        // ever shown, the call just returns null/false immediately), which
+        // made this step always fail with "no label provided". A real modal
+        // works reliably everywhere.
+        const choice = await showLabelTypeModal();
 
-        if (!userLabel || userLabel.trim() === '') {
+        if (!choice) {
           logger.info('User cancelled - no label provided');
-          notify.warning(t('reference.labels.pleaseEnterName'), { title: t('modals.cancelled') });
           return;
         }
 
-        // CRITICAL FIX: Validate and sanitize user input to prevent issues
-        // - Limit length to prevent UI overflow
-        // - Remove control characters and excessive whitespace
-        // - Validate against empty result after sanitization
-        const MAX_LABEL_LENGTH = 50;
-        // eslint-disable-next-line no-control-regex
-        const controlCharsRegex = /[\u0000-\u001F\u007F]/g;
-        let sanitizedLabel = userLabel
-          .trim()
-          .replace(controlCharsRegex, '') // Remove control characters
-          .replace(/\s+/g, ' '); // Normalize whitespace
-
-        if (sanitizedLabel.length > MAX_LABEL_LENGTH) {
-          sanitizedLabel = sanitizedLabel.substring(0, MAX_LABEL_LENGTH);
-          logger.warn(`Label truncated to ${MAX_LABEL_LENGTH} characters`);
-        }
-
-        if (sanitizedLabel === '') {
-          logger.info('User input empty after sanitization');
-          notify.warning(t('reference.labels.pleaseEnterName'), { title: t('modals.cancelled') });
-          return;
-        }
-
-        label = sanitizedLabel;
-
-        // Ask user for type: Is this a normal state or a fault?
-        const isHealthy = confirm(
-          t('reference.labels.confirmType', { label })
-        );
-
-        type = isHealthy ? 'healthy' : 'faulty';
+        label = choice.label;
+        type = choice.type;
         logger.info(`Additional recording - using label: "${label}", type: "${type}"`);
       }
 
@@ -1653,72 +1899,51 @@ export class ReferencePhase {
         existingModels: this.machine.referenceModels?.length || 0,
       });
 
-      // Train GMIA model
-      const model = trainGMIA(this.currentTrainingData, this.machine.id);
+      // Train the reference model using the selected evaluation engine.
+      // GMIA stays the default; for GMIA this calls trainGMIA() plus the same
+      // baseline self-test as before (unchanged behavior). Diagnosis later
+      // dispatches by the model's own engineId, so existing machines that were
+      // trained with a different engine are unaffected by this setting.
+      const evaluationEngineId = getEvaluationEngine();
+      const engine = getEngine(evaluationEngineId);
+      logger.info(`🧠 Training reference model with engine "${evaluationEngineId}"...`);
 
-      // REMOVED: Weight magnitude validation check
-      // This check was too strict and caused false negatives (rejecting good recordings like hair dryer)
-      // Reason: Weight vectors from standardized features are naturally small (0.001-0.01 range)
-      // We now rely on the RMS amplitude check above, which is much more reliable
-      // The RMS check validates BEFORE standardization, preserving true signal strength
-
-      logger.info(
-        `✅ Model trained successfully (scaling constant: ${model.scalingConstant.toFixed(3)})`
+      // Raw reference audio (for embedding engines like YAMNet). Sync engines
+      // (GMIA, spectral-cosine) ignore it; `await` resolves immediately for them.
+      // IMPORTANT: the raw samples come straight from the AudioBuffer, so the
+      // sample rate that matters for resampling is the buffer's OWN sampleRate
+      // (the actual hardware rate), not config.sampleRate (the requested/target
+      // rate, which the browser may not have honored). Passing the wrong rate
+      // would mis-resample the reference to 16 kHz and corrupt every embedding.
+      const rawBuffer = this.currentAudioBuffer
+        ? this.currentAudioBuffer.getChannelData(0)
+        : undefined;
+      const rawSampleRate = this.currentAudioBuffer
+        ? this.currentAudioBuffer.sampleRate
+        : this.currentTrainingData.config.sampleRate;
+      const model = await engine.train(
+        {
+          trainingData: this.currentTrainingData,
+          rawBuffer,
+          sampleRate: rawSampleRate,
+        },
+        this.machine.id
       );
 
+      logger.info('✅ Model trained successfully');
+
       // ============================================================================
-      // SCORE CALIBRATION: Self-Test for Baseline Score
+      // QUALITY GATE: Baseline self-recognition score
       // ============================================================================
-      // After training, we test the model against its own training data to determine
-      // the "baseline score" - how well the model recognizes itself.
-      //
-      // This baseline score is used to normalize diagnosis scores:
-      // DisplayedScore = (RawScore / BaselineScore) * 100
-      //
-      // This ensures that a perfect match (reference vs. same signal) shows 100%,
-      // even if the mathematical raw score is only 85-95% due to GMIA algorithm characteristics.
-      //
-      // Quality Gate: If baseline score < 75%, the recording is too noisy/unstable
-      // and should be rejected to prevent unreliable diagnoses.
+      // Every engine reports a baselineScore (mean self-recognition over its own
+      // training data). For GMIA this is the historical baseline calibration; for
+      // spectral-cosine it is the mean self-score of the fitted similarity→score curve.
+      // If it is too low, the recording is too noisy/unstable to be a reliable
+      // reference and we reject it.
       // ============================================================================
-      logger.info('🎯 Performing self-test for baseline score calibration...');
+      const baselineScore = model.baselineScore ?? 0;
+      logger.info(`✅ Baseline Score: ${baselineScore.toFixed(1)}%`);
 
-      // Test model against multiple samples from its own training data
-      const numSamplesToTest = Math.min(20, this.currentFeatures.length);
-      const step = Math.max(1, Math.floor(this.currentFeatures.length / numSamplesToTest));
-      const testScores: number[] = [];
-
-      for (let i = 0; i < numSamplesToTest; i++) {
-        const featureIndex = Math.min(i * step, this.currentFeatures.length - 1);
-        const testFeature = this.currentFeatures[featureIndex];
-
-        try {
-          const diagnosis = classifyDiagnosticState(
-            [model],
-            testFeature,
-            this.currentTrainingData.config.sampleRate
-          );
-          testScores.push(diagnosis.healthScore);
-        } catch (error) {
-          logger.warn(`⚠️ Self-test sample ${i} failed:`, error);
-          // Continue with remaining samples
-        }
-      }
-
-      // Calculate average baseline score
-      if (testScores.length === 0) {
-        throw new Error('Self-test failed: No valid scores could be calculated');
-      }
-
-      const baselineScore = testScores.reduce((sum, s) => sum + s, 0) / testScores.length;
-      logger.info(
-        `✅ Baseline Score: ${baselineScore.toFixed(1)}% (averaged from ${testScores.length} samples)`
-      );
-      logger.info(
-        `   Score range: ${Math.min(...testScores).toFixed(1)}% - ${Math.max(...testScores).toFixed(1)}%`
-      );
-
-      // QUALITY GATE: Reject reference if baseline score is too low
       const MIN_BASELINE_SCORE = 75;
       if (baselineScore < MIN_BASELINE_SCORE) {
         logger.error(
@@ -1782,10 +2007,34 @@ export class ReferencePhase {
       machineToUpdate.refT60 = this.currentRefT60;
       machineToUpdate.refT60Classification = this.currentRefT60Classification;
       if (this.currentRefT60 !== null) {
-        logger.info(`📍 Reference environment saved: T60 = ${this.currentRefT60.toFixed(2)}s (${this.currentRefT60Classification})`);
+        logger.info(
+          `📍 Reference environment saved: T60 = ${this.currentRefT60.toFixed(2)}s (${this.currentRefT60Classification})`
+        );
       }
 
       await saveMachine(machineToUpdate);
+
+      // Persist the reference audio so it can be played back for the A/B
+      // "hear the difference" comparison on the diagnosis result screen.
+      // Additive and failure-tolerant – a storage error must not break
+      // reference creation. (Stores the full reference recording.)
+      if (this.currentAudioBuffer) {
+        try {
+          const { saveRecording } = await import('@data/db.js');
+          await saveRecording({
+            id: `rec-${this.machine.id}-${Date.now()}`,
+            machineId: this.machine.id,
+            type: 'reference',
+            audioBuffer: this.currentAudioBuffer,
+            timestamp: Date.now(),
+            duration: this.currentAudioBuffer.duration,
+            sampleRate: this.currentAudioBuffer.sampleRate,
+          });
+          logger.info('🎧 Reference audio stored for A/B comparison');
+        } catch (error) {
+          logger.warn('Could not store reference audio:', error);
+        }
+      }
 
       logger.info(
         `✅ Reference model "${label}" trained and saved${this.capturedReferenceImage ? ' with image' : ''}!`
@@ -1816,12 +2065,19 @@ export class ReferencePhase {
         duration: 5000,
       });
 
+      // T2-a3 (§7 Auto-Empfehlung): Referenz mit Mittelwert-Engine trainiert,
+      // aber die Aufnahme klingt nicht-stationär (Pegel bewegt sich, klarer
+      // Takt oder stabile Periodizität)? Dann Hinweis auf die Zeitmuster-
+      // Engine — EIN Tap schaltet die Engine für NEUE Referenzen um.
+      // Erkennen, nicht übernehmen: der Nutzer entscheidet.
+      this.maybeRecommendTemporalEngine(evaluationEngineId, rawBuffer, rawSampleRate);
+
       // ZERO-FRICTION: Show simple success toast with edit option for auto-created machines
       if (this.wasAutoCreated) {
         this.showZeroFrictionSuccess(updatedMachine);
       } else {
         // Show success with option to download reference audio
-        this.showSuccessWithExport();
+        promptReferenceAudioExport(this.recordedBlob, this.machine);
       }
 
       // Clear stored data
@@ -1841,6 +2097,58 @@ export class ReferencePhase {
         title: t('modals.saveError'),
         duration: 0,
       });
+    }
+  }
+
+  /**
+   * T2-a3 (Konzept §7): Auto-Empfehlung stationär/instationär.
+   *
+   * Nach erfolgreichem Anlernen mit einer Mittelwert-Engine wird die
+   * Aufnahme auf Nicht-Stationarität geprüft (CV der Frame-Energien,
+   * Onset-Dichte, Periodizität). Trifft eines zu, erscheint ein Hinweis-
+   * Toast mit Ein-Tap-Umschaltung der Engine für NEUE Referenzen.
+   * Bewusst fehler-tolerant: eine Ausnahme hier darf das Speichern der
+   * Referenz nie beeinträchtigen.
+   */
+  private maybeRecommendTemporalEngine(
+    engineId: string,
+    rawBuffer: Float32Array | undefined,
+    rawSampleRate: number
+  ): void {
+    try {
+      if (engineId === 'temporal' || !this.currentTrainingData) return;
+
+      const config = this.currentTrainingData.config;
+      const frameRms = rawBuffer
+        ? frameRmsSeries(rawBuffer, config.windowSize, config.hopSize, rawSampleRate)
+        : undefined;
+      const assessment = assessNonStationarity(
+        this.currentTrainingData.featureVectors,
+        frameRms,
+        config.hopSize
+      );
+      if (!assessment.recommendTemporal) return;
+
+      logger.info(
+        `💡 Nicht-stationäre Referenz erkannt (CV=${assessment.energyCv.toFixed(2)}, ` +
+          `Ereignisse=${assessment.eventRatePerMin.toFixed(0)}/min, ` +
+          `Zyklus=${assessment.cyclePeriodSec?.toFixed(2) ?? '–'}s) — empfehle Zeitmuster-Engine`
+      );
+      notify.info(t('temporalEvents.recommendBody'), {
+        title: t('temporalEvents.recommendTitle'),
+        duration: 15000,
+        actions: [
+          {
+            label: t('temporalEvents.recommendAction'),
+            onClick: () => {
+              setEvaluationEngine('temporal');
+              notify.success(t('temporalEvents.recommendSwitched'));
+            },
+          },
+        ],
+      });
+    } catch (error) {
+      logger.warn('Engine-Empfehlung übersprungen:', error);
     }
   }
 
@@ -1889,7 +2197,6 @@ export class ReferencePhase {
 
     // Reset auto-created flag
     this.wasAutoCreated = false;
-
   }
 
   private applyAppShellLayout(): void {

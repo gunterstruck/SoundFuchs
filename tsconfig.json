@@ -26,7 +26,8 @@
       "@core/*": ["src/core/*"],
       "@data/*": ["src/data/*"],
       "@ui/*": ["src/ui/*"],
-      "@utils/*": ["src/utils/*"]
+      "@utils/*": ["src/utils/*"],
+      "@lab/*": ["src/lab/*"]
     }
   },
   "include": ["src/**/*"],

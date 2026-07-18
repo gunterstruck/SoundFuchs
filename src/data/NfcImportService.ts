@@ -327,7 +327,7 @@ export class NfcImportService {
                 <ul>
                   <li><strong>${currentStats.machines}</strong> ${t('common.machines') || 'Maschinen'}</li>
                   <li><strong>${currentStats.recordings}</strong> ${t('common.recordings') || 'Aufnahmen'}</li>
-                  <li><strong>${currentStats.diagnoses}</strong> ${t('common.diagnoses') || 'Diagnosen'}</li>
+                  <li><strong>${currentStats.diagnoses}</strong> ${t('common.diagnoses') || 'Prüfungen'}</li>
                 </ul>
               </div>
               <div class="import-arrow">→</div>
@@ -336,7 +336,7 @@ export class NfcImportService {
                 <ul>
                   <li><strong>${metadata.machineCount}</strong> ${t('common.machines') || 'Maschinen'}</li>
                   <li><strong>${metadata.recordingCount}</strong> ${t('common.recordings') || 'Aufnahmen'}</li>
-                  <li><strong>${metadata.diagnosisCount}</strong> ${t('common.diagnoses') || 'Diagnosen'}</li>
+                  <li><strong>${metadata.diagnosisCount}</strong> ${t('common.diagnoses') || 'Prüfungen'}</li>
                 </ul>
                 <p class="export-date">${t('nfcImport.exportedAt') || 'Exportiert am'}: ${exportDateStr}</p>
               </div>
@@ -360,7 +360,16 @@ export class NfcImportService {
       const cancelBtn = modal.querySelector('#nfc-import-cancel') as HTMLButtonElement;
       const closeBtn = modal.querySelector('#nfc-import-close') as HTMLButtonElement;
 
+      // Escape handler must be removed on EVERY close path (confirm/cancel/
+      // close/backdrop), otherwise each modal open leaks a document listener
+      const escHandler = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          cleanup(false);
+        }
+      };
+
       const cleanup = (result: boolean) => {
+        document.removeEventListener('keydown', escHandler);
         modal.remove();
         resolve(result);
       };
@@ -377,12 +386,6 @@ export class NfcImportService {
       });
 
       // Close on Escape
-      const escHandler = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          document.removeEventListener('keydown', escHandler);
-          cleanup(false);
-        }
-      };
       document.addEventListener('keydown', escHandler);
     });
   }

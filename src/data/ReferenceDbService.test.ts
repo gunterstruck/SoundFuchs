@@ -119,7 +119,7 @@ describe('ReferenceDbService', () => {
     });
 
     it('should accept official GitHub Pages URLs', () => {
-      const url = 'https://gunterstruck.github.io/zanobo-backup.json';
+      const url = 'https://gunterstruck.github.io/zanobot-backup.json';
       const result = ReferenceDbService.validateUrl(url);
       expect(result.valid).toBe(true);
     });

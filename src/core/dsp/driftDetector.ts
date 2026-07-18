@@ -108,7 +108,7 @@ export interface DriftResult {
 // Settings Persistence
 // ════════════════════════════════════════════════════════════
 
-const STORAGE_KEY = 'zanobo-drift-detector-settings';
+const STORAGE_KEY = 'zanobot-drift-detector-settings';
 
 export function getDriftSettings(): DriftDetectorSettings {
   try {

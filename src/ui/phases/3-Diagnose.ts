@@ -18,15 +18,48 @@ import {
   ScoreHistory,
   LabelHistory,
   getClassificationDetails,
-  classifyDiagnosticState,
   classifyHealthStatus,
-  getAllModelScores,
   getMinConfidentMatchScore,
+  type WorkPointScore,
 } from '@core/ml/scoring.js';
+import {
+  classifyWithEngines,
+  scoreAllWithEngines,
+  getModelWeightVector,
+  getAsyncEngine,
+} from '@core/ml/engine/registry.js';
+import { RollingAudioBuffer } from '@core/dsp/resample.js';
+import { assessRecordingQuality } from '@core/ml/qualityCheck.js';
+import {
+  renderAnalysisCanvas,
+  dominantFrequency,
+  topDeviationHz,
+  topDeviations,
+} from './analysisRender.js';
+import { showMaintenanceExportChoice } from './maintenanceExport.js';
+import { getScoreVerbalStatus } from './diagnoseScore.js';
+import { setMeasurementActive } from '@utils/measurementActivity.js';
 import { WorkPointRanking, type WorkPoint } from '@ui/components/WorkPointRanking.js';
 import { OperatingPointMetrics } from '@core/dsp/operatingPointMetrics.js';
 import { OperatingPointMonitor } from '@ui/components/OperatingPointMonitor.js';
-import { saveDiagnosis, getMachine, getDiagnosesForMachine } from '@data/db.js';
+import { EventTimeline } from '@ui/components/EventTimeline.js';
+import type {
+  TemporalEventsMetadata,
+  TemporalCycleMetadata,
+} from '@core/ml/engine/TemporalEngine.js';
+import {
+  saveDiagnosis,
+  getMachine,
+  getDiagnosesForMachine,
+  getRecordingsForMachine,
+  saveRecording,
+  deleteRecording,
+} from '@data/db.js';
+import { getDiagnosisAudioMode } from '@utils/diagnosisAudioSettings.js';
+import { SlowListenPlayer } from '@core/audio/slowListen.js';
+import { isolateDifference } from '@core/audio/differenceIsolation.js';
+import { averageSpectrum } from '@core/dsp/spectrumSummary.js';
+import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
 import { HealthGauge } from '@ui/components/HealthGauge.js';
 import { HistoryChart } from '@ui/components/HistoryChart.js';
 import {
@@ -36,7 +69,8 @@ import {
 } from '@core/audio/audioHelper.js';
 import { AudioWorkletManager, isAudioWorkletSupported } from '@core/audio/audioWorkletHelper.js';
 import { notify } from '@utils/notifications.js';
-import type { Machine, DiagnosisResult, GMIAModel } from '@data/types.js';
+import type { Machine, DiagnosisResult, ReferenceModel, FeatureVector } from '@data/types.js';
+import { isGMIAModel } from '@data/types.js';
 import { logger } from '@utils/logger.js';
 import { BUTTON_TEXT, MODAL_TITLE } from '@ui/constants.js';
 import { stopMediaStream, closeAudioContext } from '@utils/streamHelper.js';
@@ -54,10 +88,20 @@ import {
   estimateT60FromChirp,
   compareEnvironments,
   classifyT60Value,
-  getT60ClassificationLabel,
 } from '@core/dsp/roomCompensation.js';
 import type { T60Estimate, EnvironmentComparisonResult } from '@core/dsp/roomCompensation.js';
 import { getCherryPickSettings, RealtimeCherryPick } from '@core/dsp/cherryPicking.js';
+import {
+  RealtimeNoiseSubtraction,
+  RealtimeMinStatsSubtraction,
+  getNoiseSubtractionSettings,
+  getActiveNoiseProfile,
+  isProfileCompatible,
+  isProfileStale,
+  profileAgeDays,
+  noiseReferenceOverlap,
+  OVERLAP_WARN_THRESHOLD,
+} from '@core/dsp/noiseProfile.js';
 import { PipelineStatusDashboard } from '@ui/components/PipelineStatus.js';
 import {
   RealtimeDriftDetector,
@@ -66,6 +110,16 @@ import {
   type DriftDetectorSettings,
   type RefDriftBaseline,
 } from '@core/dsp/driftDetector.js';
+import { hapticForScore } from '@utils/haptics.js';
+import { escapeHtml } from '@utils/sanitize.js';
+
+/** Minimal placeholder feature for the YAMNet path (which ignores spectral features). */
+const EMPTY_FEATURE: FeatureVector = {
+  features: new Float64Array(0),
+  absoluteFeatures: new Float64Array(0),
+  bins: 0,
+  frequencyRange: [0, 0],
+};
 
 export class DiagnosePhase {
   private machine: Machine;
@@ -75,9 +129,25 @@ export class DiagnosePhase {
   private cameraStream: MediaStream | null = null; // VISUAL POSITIONING: Camera stream for ghost overlay
   private audioWorkletManager: AudioWorkletManager | null = null;
   private visualizer: AudioVisualizer | null = null; // Used in advanced/expert view
+  private revealVisualizer: AudioVisualizer | null = null; // basic view "look closer" spectrum
+  private slowListenPlayer: SlowListenPlayer | null = null; // A/B listening on the result screen
+  // "Hear the difference": capture the diagnosis audio (fully decoupled from the
+  // scoring pipeline via MediaRecorder) for A/B playback against the reference.
+  private diagnosisRecorder: MediaRecorder | null = null;
+  private diagnosisAudioChunks: Blob[] = [];
+  private lastDiagnosisAudioBuffer: AudioBuffer | null = null;
+  private diagnosisAudioPromise: Promise<AudioBuffer | null> | null = null;
+  private listenPlayingKey: string | null = null;
   private healthGauge: HealthGauge | null = null;
   private historyChart: HistoryChart | null = null;
-  private activeModels: GMIAModel[] = [];
+  private activeModels: ReferenceModel[] = [];
+  // Tier 1 (YAMNet) — separate async diagnosis path. Sync engines never touch these.
+  private diagnosisIsYamnet = false;
+  private yamnetBuffer: RollingAudioBuffer | null = null;
+  private yamnetBusy = false;
+  // Last per-state YAMNet scores (the async engine produces no ESD feature
+  // vector, so the expert work-point ranking reuses these instead).
+  private lastYamnetScores: WorkPointScore[] | null = null;
 
   // Simplified inspection view state
   private lastMagnitudeFactor: number = 0;
@@ -86,6 +156,18 @@ export class DiagnosePhase {
   // Real-time processing
   private isProcessing: boolean = false;
   private scoreHistory: ScoreHistory;
+  // Separate smoothing for the best FAULT-reference match. The main gauge shows
+  // closeness to a HEALTHY reference; a confidently matched fault reference is
+  // reported separately (and flips the status to faulty even at a high score).
+  private faultScoreHistory: ScoreHistory;
+  private lastFaultLabel: string = ''; // detected fault state (empty = none)
+  private lastFaultScore: number = 0; // its match quality (0 = none)
+  // Best fault match REGARDLESS of detection — so the fault line stays visible
+  // whenever fault references exist (showing they are actively checked and, when
+  // below threshold, ruled out). Empty label = no fault references at all.
+  private lastBestFaultLabel: string = '';
+  private lastBestFaultScore: number = 0;
+  private lastFaultModelsExist: boolean = false;
   private labelHistory: LabelHistory; // CRITICAL FIX: Label history for majority voting
   private lastProcessedScore: number = 0;
   private lastProcessedStatus: 'healthy' | 'uncertain' | 'faulty' | 'UNKNOWN' = 'UNKNOWN';
@@ -127,9 +209,27 @@ export class DiagnosePhase {
     rmsAmplitude?: number;
   } | null = null; // Store for ranking calculation
 
+  // Reference spectrum (from the stored reference audio) for the expert
+  // analysis canvas overlay – only set when real reference audio is available.
+  private lastReferenceSpectrum: { data: ArrayLike<number>; nyquist: number } | null = null;
+
+  // Measured spectrum derived from the captured measurement audio. Used as the
+  // expert "Frequenzabweichung" curve when the active engine produces no ESD
+  // feature vector (e.g. YAMNet works on raw-audio embeddings), so the spectrum
+  // comparison stays available regardless of the evaluation method.
+  private lastMeasurementSpectrum: { data: ArrayLike<number>; nyquist: number } | null = null;
+
+  // Quality gate: raw (pre room-comp) frames collected during a check, assessed
+  // at the end to warn when the measurement signal is too weak / noise-masked.
+  private diagnosisQualityFeatures: FeatureVector[] = [];
+  private measurementSignalTooWeak = false;
+
   // Operating Point Monitor (Expert mode only)
   private opMetrics: OperatingPointMetrics | null = null;
   private opMonitor: OperatingPointMonitor | null = null;
+
+  // Ereignis-Zeitleiste (Expert mode, nur Temporal-Engine / Tier 2)
+  private eventTimeline: EventTimeline | null = null;
 
   // Room Compensation (real-time CMN + T60 + Bias Match)
   private realtimeCMN: RealtimeCMN | null = null;
@@ -140,6 +240,16 @@ export class DiagnosePhase {
 
   // Cherry-Picking (real-time Energy-Entropy Gate)
   private realtimeCherryPick: RealtimeCherryPick | null = null;
+
+  // Noise Profile Subtraction (Pipeline-Stufe 1.5, real-time)
+  private realtimeNoiseSub: RealtimeNoiseSubtraction | null = null;
+  private realtimeMinStats: RealtimeMinStatsSubtraction | null = null;
+  private noiseSubProfileName: string = '';
+  private noiseSubContext: {
+    staleDays: number | null;
+    overlapWarning: boolean;
+    deviceMismatch: boolean;
+  } | null = null;
 
   // Pipeline Status Dashboard (Expert mode, shows DSP pipeline state)
   private pipelineStatus: PipelineStatusDashboard | null = null;
@@ -160,6 +270,12 @@ export class DiagnosePhase {
 
   /** Sprint 5 Fix: Optional callback fired when diagnosis fails to start (for fleet queue error recovery) */
   private onDiagnosisError: ((error: unknown) => void) | null = null;
+
+  /** Welle 2: Optional callback fired when result modal is closed (for dashboard refresh) */
+  private onResultModalClosed: (() => void) | null = null;
+
+  /** UX-Fix: Optional callback fired when the explicit "Weiter" button is clicked (for Grundansicht reset) */
+  private onResultContinue: (() => void) | null = null;
 
   /** Quick Compare context: gold standard machine name for UX hints */
   private qcGoldStandardName: string | null = null;
@@ -187,6 +303,7 @@ export class DiagnosePhase {
 
     // Initialize score history for filtering
     this.scoreHistory = new ScoreHistory();
+    this.faultScoreHistory = new ScoreHistory();
     // CRITICAL FIX: Initialize label history for majority voting
     this.labelHistory = new LabelHistory();
   }
@@ -215,6 +332,20 @@ export class DiagnosePhase {
    */
   public setOnDiagnosisError(cb: (error: unknown) => void): void {
     this.onDiagnosisError = cb;
+  }
+
+  /**
+   * Welle 2: Set callback for when result modal is closed (for dashboard refresh)
+   */
+  public setOnResultModalClosed(cb: () => void): void {
+    this.onResultModalClosed = cb;
+  }
+
+  /**
+   * UX-Fix: Set callback for when the explicit "Weiter" button is clicked (triggers Grundansicht reset)
+   */
+  public setOnResultContinue(cb: () => void): void {
+    this.onResultContinue = cb;
   }
 
   /**
@@ -247,6 +378,8 @@ export class DiagnosePhase {
       return;
     }
 
+    setMeasurementActive(true); // block PWA reload while measuring
+
     // Sprint 3 UX: Reset operating point change flag for new diagnosis
     this.opChangedDuringDiagnosis = false;
 
@@ -257,8 +390,14 @@ export class DiagnosePhase {
         // Sprint 5: Shared Fleet Reference – load Gold Standard models if configured
         if (latestMachine.fleetReferenceSourceId) {
           const goldStandard = await getMachine(latestMachine.fleetReferenceSourceId);
-          if (goldStandard && goldStandard.referenceModels && goldStandard.referenceModels.length > 0) {
-            logger.info(`🏆 Using Gold Standard reference from: ${goldStandard.name} (${goldStandard.id})`);
+          if (
+            goldStandard &&
+            goldStandard.referenceModels &&
+            goldStandard.referenceModels.length > 0
+          ) {
+            logger.info(
+              `🏆 Using Gold Standard reference from: ${goldStandard.name} (${goldStandard.id})`
+            );
             latestMachine = {
               ...latestMachine,
               referenceModels: goldStandard.referenceModels,
@@ -270,7 +409,9 @@ export class DiagnosePhase {
               refT60Classification: goldStandard.refT60Classification,
             };
           } else {
-            logger.warn(`⚠️ Gold Standard ${latestMachine.fleetReferenceSourceId} not found or has no models. Using own reference.`);
+            logger.warn(
+              `⚠️ Gold Standard ${latestMachine.fleetReferenceSourceId} not found or has no models. Using own reference.`
+            );
           }
         }
         this.machine = latestMachine;
@@ -284,12 +425,14 @@ export class DiagnosePhase {
         machineId: this.machine.id,
         machineName: this.machine.name,
         numModels: this.machine.referenceModels?.length || 0,
-        models: this.machine.referenceModels?.map(m => ({
-          label: m.label,
-          trainingDate: new Date(m.trainingDate).toLocaleString(),
-          sampleRate: m.sampleRate,
-          weightMagnitude: m.metadata?.weightMagnitude?.toFixed(6) || 'N/A',
-        })) || [],
+        models:
+          this.machine.referenceModels?.map((m) => ({
+            label: m.label,
+            trainingDate: new Date(m.trainingDate).toLocaleString(),
+            sampleRate: m.sampleRate,
+            weightMagnitude:
+              (isGMIAModel(m) ? m.metadata.weightMagnitude?.toFixed(6) : undefined) || 'N/A',
+          })) || [],
       });
 
       // Check if machine has reference models (multiclass)
@@ -304,11 +447,10 @@ export class DiagnosePhase {
       this.useAudioWorklet = isAudioWorkletSupported();
       if (!this.useAudioWorklet) {
         logger.error('❌ AudioWorklet not supported - Real-time diagnosis requires AudioWorklet');
-        notify.error(
-          t('diagnose.browserNotCompatible'),
-          new Error('AudioWorklet not supported'),
-          { title: t('modals.browserIncompatible'), duration: 0 }
-        );
+        notify.error(t('diagnose.browserNotCompatible'), new Error('AudioWorklet not supported'), {
+          title: t('modals.browserIncompatible'),
+          duration: 0,
+        });
         return;
       }
 
@@ -319,7 +461,10 @@ export class DiagnosePhase {
       this.lastProcessedScore = 0;
       this.lastProcessedStatus = 'UNKNOWN';
       this.lastDetectedState = 'UNKNOWN'; // MULTICLASS: Reset detected state
+      this.diagnosisQualityFeatures = [];
+      this.measurementSignalTooWeak = false;
       this.scoreHistory.clear();
+      this.faultScoreHistory.clear();
       this.labelHistory.clear(); // CRITICAL FIX: Clear label history
 
       // CRITICAL FIX: Validate sample rate compatibility BEFORE creating any resources
@@ -332,7 +477,7 @@ export class DiagnosePhase {
       }
 
       // Check if all models have the same sample rate
-      const uniqueRates = [...new Set(this.machine.referenceModels.map(m => m.sampleRate))];
+      const uniqueRates = [...new Set(this.machine.referenceModels.map((m) => m.sampleRate))];
       if (uniqueRates.length > 1) {
         logger.warn(`⚠️ Multiple sample rates in models: ${uniqueRates.join(', ')}Hz`);
       }
@@ -352,7 +497,10 @@ export class DiagnosePhase {
           });
           logger.info('📷 Camera access granted for visual positioning');
         } catch (cameraError) {
-          logger.warn('⚠️ Camera access denied – continuing without visual positioning', cameraError);
+          logger.warn(
+            '⚠️ Camera access denied – continuing without visual positioning',
+            cameraError
+          );
           notify.info(t('diagnose.cameraNotAvailable'), {
             title: t('modals.cameraOptional'),
           });
@@ -382,7 +530,9 @@ export class DiagnosePhase {
       // CRITICAL: Validate sample rate compatibility with trained models
       // This check now happens AFTER we know the actual hardware rate
       this.activeModels = this.machine.referenceModels.filter(
-        (model) => model.sampleRate === this.actualSampleRate
+        // YAMNet is sample-rate independent (it resamples to 16 kHz internally),
+        // so it is not subject to the FFT-bin sample-rate constraint.
+        (model) => model.engineId === 'yamnet' || model.sampleRate === this.actualSampleRate
       );
       if (this.activeModels.length === 0) {
         const rateList = [...new Set(this.machine.referenceModels.map((model) => model.sampleRate))]
@@ -392,7 +542,10 @@ export class DiagnosePhase {
           `❌ Sample Rate Mismatch: Hardware=${this.actualSampleRate}Hz, ModelRates=[${rateList}]`
         );
         notify.error(
-          t('diagnose.sampleRateError', { actual: String(this.actualSampleRate), expected: rateList }),
+          t('diagnose.sampleRateError', {
+            actual: String(this.actualSampleRate),
+            expected: rateList,
+          }),
           new Error('Sample Rate Mismatch'),
           {
             title: t('modals.sampleRateMismatch'),
@@ -414,6 +567,20 @@ export class DiagnosePhase {
         `✅ Sample Rate validation passed: ${this.actualSampleRate}Hz (matches model training)`
       );
 
+      // Tier 1: detect a YAMNet (embedding) machine → separate async path.
+      // Sync engines (GMIA, spectral-cosine) keep the existing path unchanged.
+      this.diagnosisIsYamnet =
+        this.activeModels.length > 0 &&
+        this.activeModels.every((m) => m.engineId === 'yamnet');
+      this.lastYamnetScores = null; // fresh ranking per diagnosis
+      if (this.diagnosisIsYamnet) {
+        this.yamnetBuffer = new RollingAudioBuffer(Math.round(1.1 * this.actualSampleRate));
+        // Warm up the model (lazy TF.js + YAMNet load) while the user records.
+        void getAsyncEngine('yamnet')
+          .init()
+          .catch((e) => logger.error('YAMNet init failed:', e));
+      }
+
       // Update chunkSize and DSP config with actual sample rate
       this.chunkSize = Math.floor(DEFAULT_DSP_CONFIG.windowSize * this.actualSampleRate);
       this.dspConfig = {
@@ -432,14 +599,21 @@ export class DiagnosePhase {
       // Session Bias Match: Preferred over CMN for stationary machine signals.
       // Uses precomputed refLogMean from the Machine object (stored at reference creation).
       this.realtimeBiasMatch = null;
-      if (roomCompSettings.enabled && roomCompSettings.biasMatchEnabled && this.machine.refLogMean) {
+      if (
+        roomCompSettings.enabled &&
+        roomCompSettings.biasMatchEnabled &&
+        this.machine.refLogMean
+      ) {
         const muRef = new Float64Array(this.machine.refLogMean);
         this.realtimeBiasMatch = new RealtimeBiasMatch(muRef);
         logger.info(`📊 Session Bias Match activated (refLogMean loaded, ${muRef.length} bins)`);
       }
 
       // CMN: Only if explicitly enabled AND bias match is NOT active
-      this.roomCompEnabled = roomCompSettings.enabled && roomCompSettings.cmnEnabled && !roomCompSettings.biasMatchEnabled;
+      this.roomCompEnabled =
+        roomCompSettings.enabled &&
+        roomCompSettings.cmnEnabled &&
+        !roomCompSettings.biasMatchEnabled;
       if (this.roomCompEnabled) {
         this.realtimeCMN = new RealtimeCMN(this.dspConfig.frequencyBins);
         logger.info('🔧 Room compensation (real-time CMN) initialized');
@@ -451,7 +625,12 @@ export class DiagnosePhase {
       // Plays a short ~60ms tone through the speaker BEFORE Smart Start begins.
       this.currentT60 = null;
       this.realtimeT60 = null;
-      if (roomCompSettings.enabled && roomCompSettings.t60Enabled && this.audioContext && this.mediaStream) {
+      if (
+        roomCompSettings.enabled &&
+        roomCompSettings.t60Enabled &&
+        this.audioContext &&
+        this.mediaStream
+      ) {
         try {
           logger.info('🔊 Chirp calibration for diagnosis...');
           const { chirp, recorded } = await playChirpAndRecord(this.audioContext, this.mediaStream);
@@ -484,14 +663,106 @@ export class DiagnosePhase {
         if (this.environmentWarning.severity !== 'ok') {
           logger.warn(`⚠️ Environment comparison: ${this.environmentWarning.message}`);
         } else {
-          logger.info(`✅ Environment similar to reference (ratio: ${this.environmentWarning.ratio.toFixed(1)}x)`);
+          logger.info(
+            `✅ Environment similar to reference (ratio: ${this.environmentWarning.ratio.toFixed(1)}x)`
+          );
+        }
+      }
+
+      // Noise Profile Subtraction (Pipeline-Stufe 1.5): Initialize real-time processor.
+      // Additive Störungen werden VOR den konvolutiven Stufen (T60/Bias Match) entfernt.
+      this.realtimeNoiseSub = null;
+      this.realtimeMinStats = null;
+      this.noiseSubProfileName = '';
+      this.noiseSubContext = null;
+      const noiseSubSettings = getNoiseSubtractionSettings();
+      if (noiseSubSettings.enabled) {
+        const activeNoiseProfile = getActiveNoiseProfile();
+        if (
+          activeNoiseProfile &&
+          isProfileCompatible(
+            activeNoiseProfile,
+            this.actualSampleRate,
+            this.dspConfig.frequencyBins
+          )
+        ) {
+          const noiseRefLogMean = this.machine.refLogMean
+            ? new Float64Array(this.machine.refLogMean)
+            : null;
+          this.realtimeNoiseSub = new RealtimeNoiseSubtraction(
+            activeNoiseProfile,
+            noiseSubSettings,
+            noiseRefLogMean
+          );
+          this.noiseSubProfileName = activeNoiseProfile.name;
+          logger.info(
+            `🎚️ Noise subtraction activated (profile "${activeNoiseProfile.name}", β=${noiseSubSettings.beta})`
+          );
+
+          // Kontext-Warnungen: Staleness (R1), Überlappung (R5), Gerätewechsel (R4)
+          const staleDays = isProfileStale(activeNoiseProfile)
+            ? profileAgeDays(activeNoiseProfile)
+            : null;
+          const overlap = noiseRefLogMean
+            ? noiseReferenceOverlap(activeNoiseProfile, noiseRefLogMean)
+            : null;
+          const overlapWarning = overlap !== null && overlap > OVERLAP_WARN_THRESHOLD;
+          const currentMicLabel = this.mediaStream?.getAudioTracks()[0]?.label ?? '';
+          const deviceMismatch =
+            !!activeNoiseProfile.deviceLabel &&
+            !!currentMicLabel &&
+            activeNoiseProfile.deviceLabel !== currentMicLabel;
+          this.noiseSubContext = { staleDays, overlapWarning, deviceMismatch };
+
+          if (staleDays !== null) {
+            logger.warn(`⚠️ Noise profile is ${staleDays} days old – consider re-recording`);
+          }
+          if (overlapWarning) {
+            logger.warn(
+              `⚠️ Noise profile resembles machine reference (overlap=${overlap!.toFixed(2)}) – ` +
+                `subtraction may distort the signature`
+            );
+          }
+          if (deviceMismatch) {
+            logger.warn(
+              `⚠️ Different microphone than during profile capture ` +
+                `("${activeNoiseProfile.deviceLabel}" vs. "${currentMicLabel}")`
+            );
+          }
+        } else if (activeNoiseProfile) {
+          logger.warn(
+            `⚠️ Noise profile "${activeNoiseProfile.name}" incompatible with current ` +
+              `sample rate (${this.actualSampleRate}Hz) – subtraction skipped`
+          );
+        }
+
+        // Stufe-3-Fallback: Kein (kompatibles) Profil, aber Minimum-Statistik
+        // erlaubt → Lärmboden live schätzen. Braucht refLogMean (Bin-Maske,
+        // Schutz der Maschinensignatur bei stationären Maschinen).
+        if (!this.realtimeNoiseSub && noiseSubSettings.minStatsEnabled) {
+          if (this.machine.refLogMean) {
+            this.realtimeMinStats = new RealtimeMinStatsSubtraction(
+              this.dspConfig.frequencyBins,
+              new Float64Array(this.machine.refLogMean),
+              noiseSubSettings
+            );
+            this.noiseSubProfileName = t('noiseSub.minStatsName');
+            logger.info('🎚️ Min-stats noise fallback activated (no stored profile)');
+          } else {
+            logger.warn(
+              '⚠️ Min-stats noise fallback needs a reference with refLogMean – skipped'
+            );
+          }
         }
       }
 
       // Cherry-Picking: Initialize real-time Energy-Entropy Gate if enabled
       const cherryPickSettings = getCherryPickSettings();
       if (cherryPickSettings.enabled) {
-        this.realtimeCherryPick = new RealtimeCherryPick(cherryPickSettings, DEFAULT_DSP_CONFIG.hopSize);
+        this.realtimeCherryPick = new RealtimeCherryPick(
+          cherryPickSettings,
+          DEFAULT_DSP_CONFIG.hopSize
+        );
         logger.info(`🍒 Cherry-Picking Gate activated (σ=${cherryPickSettings.sigmaThreshold})`);
       } else {
         this.realtimeCherryPick = null;
@@ -508,18 +779,28 @@ export class DiagnosePhase {
           : this.machine.refLogStd
             ? new Float64Array(this.machine.refLogStd)
             : undefined;
-        const baseline = (this.machine.refDriftBaseline as RefDriftBaseline | undefined) ?? undefined;
-        this.realtimeDrift = new RealtimeDriftDetector(muRef, this.driftSettings, sigmaRef, baseline);
+        const baseline =
+          (this.machine.refDriftBaseline as RefDriftBaseline | undefined) ?? undefined;
+        this.realtimeDrift = new RealtimeDriftDetector(
+          muRef,
+          this.driftSettings,
+          sigmaRef,
+          baseline
+        );
         logger.info(
-          '🔍 Drift detector V2 activated'
-          + (sigmaRef ? (this.machine.refLogResidualStd ? ' (residual-σ)' : ' (σ)') : '')
-          + (baseline ? ' (adaptive thresholds)' : ' (fallback thresholds)')
+          '🔍 Drift detector V2 activated' +
+            (sigmaRef ? (this.machine.refLogResidualStd ? ' (residual-σ)' : ' (σ)') : '') +
+            (baseline ? ' (adaptive thresholds)' : ' (fallback thresholds)')
         );
       }
 
       // Pipeline Status Dashboard: Initialize if expert mode and features active
       const viewLevelForDashboard = getViewLevel();
-      if (viewLevelForDashboard === 'expert' && (cherryPickSettings.enabled || roomCompSettings.enabled)) {
+      const noiseStageActive = this.realtimeNoiseSub !== null || this.realtimeMinStats !== null;
+      if (
+        viewLevelForDashboard === 'expert' &&
+        (cherryPickSettings.enabled || roomCompSettings.enabled || noiseStageActive)
+      ) {
         this.pipelineStatus = new PipelineStatusDashboard();
         this.pipelineStatus.loadFromSettings(
           cherryPickSettings.enabled,
@@ -528,8 +809,19 @@ export class DiagnosePhase {
           roomCompSettings.t60Enabled,
           cherryPickSettings.sigmaThreshold,
           roomCompSettings.beta,
-          roomCompSettings.biasMatchEnabled
+          roomCompSettings.biasMatchEnabled,
+          noiseStageActive,
+          this.noiseSubProfileName
         );
+
+        // Noise profile context warnings (staleness, overlap, device mismatch)
+        if (this.realtimeNoiseSub && this.noiseSubContext) {
+          this.pipelineStatus.setNoiseSubContext(
+            this.noiseSubContext.staleDays,
+            this.noiseSubContext.overlapWarning,
+            this.noiseSubContext.deviceMismatch
+          );
+        }
 
         // Set T60 result if chirp was already performed
         if (this.currentT60) {
@@ -569,7 +861,9 @@ export class DiagnosePhase {
       const currentViewLevel = getViewLevel();
       this.useSimplifiedView = currentViewLevel === 'basic';
 
-      logger.info(`📊 Level 1 (Schnelltest): View level='${currentViewLevel}', useSimplifiedView=${this.useSimplifiedView}${isNfcDiagnosis ? ' (NFC initiated)' : ''}`);
+      logger.info(
+        `📊 Level 1 (Schnelltest): View level='${currentViewLevel}', useSimplifiedView=${this.useSimplifiedView}${isNfcDiagnosis ? ' (NFC initiated)' : ''}`
+      );
 
       // Show recording modal (uses pre-calculated useSimplifiedView)
       this.showRecordingModal();
@@ -580,6 +874,25 @@ export class DiagnosePhase {
         if (waveformCanvas) {
           this.visualizer = new AudioVisualizer('waveform-canvas');
           this.visualizer.start(this.audioContext, this.mediaStream);
+
+          // Step 1: overlay the reference "ghost" behind the live spectrum.
+          // The model's weight vector is, in effect, the averaged reference
+          // spectrum – so the ghost works for every existing machine without
+          // any new stored data.
+          const baselineModel =
+            this.activeModels.find((m) => m.label === 'Baseline') || this.activeModels[0];
+          const baselineWeights = baselineModel ? getModelWeightVector(baselineModel) : undefined;
+          if (baselineWeights?.length) {
+            this.visualizer.setReferenceSpectrum(
+              baselineWeights,
+              baselineModel.sampleRate / 2
+            );
+          } else if (baselineModel) {
+            // YAMNet models carry an embedding, not a spectrum. Derive the ghost
+            // from the reference AUDIO (same averageSpectrum used for the iris) so
+            // the overlay also works for the neural engine. Async + best-effort.
+            void this.loadReferenceGhostFromAudio();
+          }
         }
 
         // Initialize HealthGauge for advanced view
@@ -613,8 +926,9 @@ export class DiagnosePhase {
           logger.info(`✅ Smart Start: Signal detected! RMS: ${rms.toFixed(4)}`);
 
           // Sprint 2 UX: Visual ready moment (flash green + haptic)
-          const statusElement = document.getElementById('smart-start-status')
-            || document.getElementById('inspection-subtitle');
+          const statusElement =
+            document.getElementById('smart-start-status') ||
+            document.getElementById('inspection-subtitle');
           if (statusElement) {
             statusElement.classList.add('smart-start-ready');
             statusElement.textContent = t('smartStartReady.signalDetected');
@@ -628,6 +942,7 @@ export class DiagnosePhase {
 
           this.updateSmartStartStatus(t('diagnose.diagnosisRunning'));
           this.isProcessing = true; // Start processing incoming chunks
+          this.startDiagnosisAudioCapture();
         },
         onSmartStartTimeout: () => {
           logger.warn('⏱️ Smart Start timeout - cleaning up resources');
@@ -660,6 +975,7 @@ export class DiagnosePhase {
           this.updateSmartStartStatus(t('diagnose.diagnosisRunning'));
           this.audioWorkletManager.skipToRecording();
           this.isProcessing = true; // Start processing incoming chunks
+          this.startDiagnosisAudioCapture();
         }, DEFAULT_SMART_START_CONFIG.warmUpDuration);
       }
 
@@ -691,13 +1007,29 @@ export class DiagnosePhase {
     // Stop processing
     this.isProcessing = false;
     this.isStarting = false;
+    // Tier 1: reset the YAMNet async path state.
+    this.diagnosisIsYamnet = false;
+    this.yamnetBusy = false;
+    this.yamnetBuffer?.clear();
+    setMeasurementActive(false); // measurement over → PWA reload allowed again
+
+    // Stop diagnosis audio capture BEFORE the media stream is torn down below,
+    // and kick off decoding so the buffer is ready by the time results show.
+    this.stopDiagnosisAudioCapture();
 
     // Reset state flags to prevent memory leaks
     this.hasValidMeasurement = false;
     this.lastProcessedScore = 0;
     this.lastProcessedStatus = 'UNKNOWN';
     this.lastDetectedState = 'UNKNOWN'; // MULTICLASS: Reset detected state
+    this.lastFaultLabel = '';
+    this.lastFaultScore = 0;
+    this.lastBestFaultLabel = '';
+    this.lastBestFaultScore = 0;
+    this.lastFaultModelsExist = false;
+    this.renderFaultLine(null);
     this.scoreHistory.clear();
+    this.faultScoreHistory.clear();
     this.labelHistory.clear(); // CRITICAL FIX: Clear label history
 
     // Cleanup Pipeline Status Dashboard
@@ -711,6 +1043,18 @@ export class DiagnosePhase {
       this.realtimeCherryPick.reset();
       this.realtimeCherryPick = null;
     }
+
+    // Cleanup Noise Profile Subtraction state
+    if (this.realtimeNoiseSub) {
+      this.realtimeNoiseSub.reset();
+      this.realtimeNoiseSub = null;
+    }
+    if (this.realtimeMinStats) {
+      this.realtimeMinStats.reset();
+      this.realtimeMinStats = null;
+    }
+    this.noiseSubProfileName = '';
+    this.noiseSubContext = null;
 
     // Cleanup Drift Detector state
     if (this.realtimeDrift) {
@@ -749,6 +1093,12 @@ export class DiagnosePhase {
       this.opMonitor = null;
     }
 
+    // Cleanup Ereignis-Zeitleiste (Expert mode, Temporal-Engine)
+    if (this.eventTimeline) {
+      this.eventTimeline.destroy();
+      this.eventTimeline = null;
+    }
+
     // Cleanup AudioWorklet
     if (this.audioWorkletManager) {
       this.audioWorkletManager.cleanup();
@@ -759,6 +1109,12 @@ export class DiagnosePhase {
     if (this.visualizer) {
       this.visualizer.stop();
       this.visualizer = null;
+    }
+
+    // Stop the on-demand basic-view spectrum, if it was revealed
+    if (this.revealVisualizer) {
+      this.revealVisualizer.stop();
+      this.revealVisualizer = null;
     }
 
     // Stop media stream tracks
@@ -824,6 +1180,14 @@ export class DiagnosePhase {
         return;
       }
 
+      // Tier 1: YAMNet machines run on raw audio via a SEPARATE async path.
+      // Everything below (the synchronous GMIA / spectral-cosine pipeline and
+      // the entire UI it drives) is left exactly as it was.
+      if (this.diagnosisIsYamnet) {
+        void this.processChunkYamnet(chunk);
+        return;
+      }
+
       // CRITICAL: Ensure chunk has minimum required samples for feature extraction
       // Required: this.chunkSize samples (330ms window = ~15840 samples at 48kHz, ~14553 at 44.1kHz)
       // If chunk is smaller, skip processing and wait for more data from AudioWorklet
@@ -854,8 +1218,40 @@ export class DiagnosePhase {
         }
       }
 
-      // Step 1b: Room Compensation - Apply T60 subtraction, then Bias Match or CMN
+      // Quality gate: collect accepted raw frames (bounded) for the
+      // end-of-check signal-quality assessment (pre room-comp = true mic signal).
+      this.diagnosisQualityFeatures.push(rawFeatureVector);
+      if (this.diagnosisQualityFeatures.length > 120) {
+        this.diagnosisQualityFeatures.shift();
+      }
+
+      // Step 1b: Noise Profile Subtraction (Pipeline-Stufe 1.5) –
+      // additive Störungen zuerst, dann konvolutive (T60/Bias Match/CMN).
+      // Entweder mit gespeichertem Profil ODER Min-Stats-Fallback (Stufe 3).
       let featureVector = rawFeatureVector;
+      if (this.realtimeNoiseSub) {
+        featureVector = this.realtimeNoiseSub.process(featureVector);
+        if (this.pipelineStatus) {
+          this.pipelineStatus.setNoiseSubStatus(
+            true,
+            this.noiseSubProfileName,
+            true,
+            this.realtimeNoiseSub.estimatedSnrDb
+          );
+        }
+      } else if (this.realtimeMinStats) {
+        featureVector = this.realtimeMinStats.process(featureVector);
+        if (this.pipelineStatus) {
+          this.pipelineStatus.setNoiseSubStatus(
+            true,
+            this.noiseSubProfileName,
+            this.realtimeMinStats.isActive,
+            this.realtimeMinStats.estimatedSnrDb
+          );
+        }
+      }
+
+      // Step 1c: Room Compensation - Apply T60 subtraction, then Bias Match or CMN
       if (this.realtimeT60) {
         featureVector = this.realtimeT60.process(featureVector);
       }
@@ -877,32 +1273,71 @@ export class DiagnosePhase {
       // Step 2: MULTICLASS CLASSIFICATION
       // Compare against all trained models and find best match
       // CRITICAL: Pass actualSampleRate for validation against model's training sample rate
-      const diagnosis = classifyDiagnosticState(
-        this.activeModels,
-        featureVector,
-        this.actualSampleRate
-      );
+      const diagnosis = classifyWithEngines(this.activeModels, {
+        feature: featureVector,
+        sampleRate: this.actualSampleRate,
+      });
 
-      // Step 3: Add score to history for filtering
-      this.scoreHistory.addScore(diagnosis.healthScore);
-
-      // CRITICAL FIX: Add label to history for majority voting
-      const detectedState = (typeof diagnosis.metadata?.detectedState === 'string'
-        ? diagnosis.metadata.detectedState
-        : 'UNKNOWN');
-      this.labelHistory.addLabel(detectedState);
-
-      // Step 4: Get filtered score (trimmed mean of last 10)
-      const filteredScore = this.scoreHistory.getFilteredScore();
-
-      // Step 5: Derive status from filtered score for consistency
-      // Use user-configured thresholds from settings
+      // Step 3: Split the per-state scores by reference TYPE so a matched FAULT
+      // reference is reported as a fault — not as "healthy" just because the
+      // match score is high. The main gauge shows closeness to a HEALTHY
+      // reference; the best FAULT match is tracked and smoothed separately.
       const settings = getRecordingSettings();
-      const filteredStatus = classifyHealthStatus(
-        filteredScore,
-        settings.confidenceThreshold,
-        settings.faultyThreshold
-      );
+      const allScores = scoreAllWithEngines(this.activeModels, {
+        feature: featureVector,
+        sampleRate: this.actualSampleRate,
+      });
+      let bestHealthyScore = 0;
+      let bestHealthyLabel = '';
+      let bestFaultyScore = 0;
+      let bestFaultyLabel = '';
+      let hasFaultModels = false;
+      for (const s of allScores) {
+        if (s.isHealthy) {
+          if (s.score > bestHealthyScore) {
+            bestHealthyScore = s.score;
+            bestHealthyLabel = s.label;
+          }
+        } else {
+          hasFaultModels = true;
+          if (s.score > bestFaultyScore) {
+            bestFaultyScore = s.score;
+            bestFaultyLabel = s.label;
+          }
+        }
+      }
+
+      // Smooth health (gauge) and fault separately.
+      this.scoreHistory.addScore(bestHealthyScore);
+      this.faultScoreHistory.addScore(bestFaultyScore);
+      const filteredScore = this.scoreHistory.getFilteredScore();
+      const filteredFaultScore = this.faultScoreHistory.getFilteredScore();
+
+      // A FAULT reference matched confidently → status is faulty regardless of
+      // how "clean" the score looks. Otherwise derive health from the gauge.
+      const faultDetected =
+        hasFaultModels && filteredFaultScore >= settings.confidenceThreshold;
+      const filteredStatus: 'healthy' | 'uncertain' | 'faulty' = faultDetected
+        ? 'faulty'
+        : classifyHealthStatus(
+            filteredScore,
+            settings.confidenceThreshold,
+            settings.faultyThreshold
+          );
+
+      this.lastFaultLabel = faultDetected ? bestFaultyLabel : '';
+      this.lastFaultScore = faultDetected ? filteredFaultScore : 0;
+      // Best fault regardless of detection (for the always-visible fault line).
+      this.lastFaultModelsExist = hasFaultModels;
+      this.lastBestFaultLabel = hasFaultModels ? bestFaultyLabel : '';
+      this.lastBestFaultScore = hasFaultModels ? filteredFaultScore : 0;
+
+      // Detected state for display/save: the fault label when a fault is
+      // detected, otherwise the best-matching healthy state.
+      const detectedState = faultDetected
+        ? bestFaultyLabel
+        : bestHealthyLabel || 'UNKNOWN';
+      this.labelHistory.addLabel(detectedState);
 
       // Step 6: Store debug values from diagnosis metadata
       if (diagnosis.metadata?.debug) {
@@ -921,6 +1356,14 @@ export class DiagnosePhase {
         logger.debug('✅ Debug values stored:', this.lastDebugValues);
       } else {
         logger.warn('⚠️ No debug values in diagnosis.metadata!', diagnosis.metadata);
+      }
+
+      // Step 6a (T2-a2/T2-a3): Ereignis-Zeitleiste + Zyklus-Status (Expert)
+      if (this.eventTimeline && diagnosis.metadata?.temporalEvents) {
+        this.eventTimeline.update(diagnosis.metadata.temporalEvents as TemporalEventsMetadata);
+        this.eventTimeline.updateCycle(
+          (diagnosis.metadata.temporalCycle as TemporalCycleMetadata | undefined) ?? null
+        );
       }
 
       // Step 6b: Update operating point metrics (Expert mode only)
@@ -945,7 +1388,15 @@ export class DiagnosePhase {
       }
 
       // Step 7: Update UI in real-time with detected state and debug values
-      this.updateLiveDisplay(filteredScore, filteredStatus, detectedState, operatingPointChanged);
+      this.updateLiveDisplay(
+        filteredScore,
+        filteredStatus,
+        detectedState,
+        operatingPointChanged,
+        hasFaultModels
+          ? { label: bestFaultyLabel, score: filteredFaultScore, detected: faultDetected }
+          : null
+      );
       this.updateDebugDisplay();
 
       // Step 8: Store for final save (use filtered score/status for consistency)
@@ -994,6 +1445,99 @@ export class DiagnosePhase {
   }
 
   /**
+   * Tier 1 — YAMNet diagnosis (separate async path).
+   *
+   * Accumulates raw audio in a ~1 s rolling window and, once enough is buffered,
+   * runs the YAMNet embedding engine off the audio (resample → 16 kHz → embed →
+   * cosine k-NN). Reuses the SAME fault-aware smoothing/status/display logic as
+   * the synchronous path, but is fully isolated so the GMIA / spectral-cosine
+   * pipeline above is untouched. A busy-flag drops overlapping frames so slow
+   * inference never piles up.
+   */
+  private async processChunkYamnet(chunk: Float32Array): Promise<void> {
+    if (!this.isProcessing || !this.yamnetBuffer) return;
+    this.yamnetBuffer.push(chunk);
+    const needed = Math.round(0.96 * this.actualSampleRate);
+    if (this.yamnetBuffer.length < needed || this.yamnetBusy) return;
+
+    this.yamnetBusy = true;
+    try {
+      const wave = this.yamnetBuffer.toArray();
+      const frame = {
+        feature: this.lastFeatureVector ?? EMPTY_FEATURE,
+        rawChunk: wave,
+        sampleRate: this.actualSampleRate,
+      };
+      const allScores = await getAsyncEngine('yamnet').scoreAll(this.activeModels, frame);
+      if (!this.isProcessing) return;
+      // Keep the latest per-state scores for the expert work-point ranking.
+      this.lastYamnetScores = allScores;
+
+      // Same fault-aware split as the synchronous path (health gauge vs. fault).
+      let bestHealthyScore = 0;
+      let bestHealthyLabel = '';
+      let bestFaultyScore = 0;
+      let bestFaultyLabel = '';
+      let hasFaultModels = false;
+      for (const s of allScores) {
+        if (s.isHealthy) {
+          if (s.score > bestHealthyScore) {
+            bestHealthyScore = s.score;
+            bestHealthyLabel = s.label;
+          }
+        } else {
+          hasFaultModels = true;
+          if (s.score > bestFaultyScore) {
+            bestFaultyScore = s.score;
+            bestFaultyLabel = s.label;
+          }
+        }
+      }
+
+      this.scoreHistory.addScore(bestHealthyScore);
+      this.faultScoreHistory.addScore(bestFaultyScore);
+      const filteredScore = this.scoreHistory.getFilteredScore();
+      const filteredFaultScore = this.faultScoreHistory.getFilteredScore();
+      const settings = getRecordingSettings();
+      const faultDetected =
+        hasFaultModels && filteredFaultScore >= settings.confidenceThreshold;
+      const filteredStatus: 'healthy' | 'uncertain' | 'faulty' = faultDetected
+        ? 'faulty'
+        : classifyHealthStatus(
+            filteredScore,
+            settings.confidenceThreshold,
+            settings.faultyThreshold
+          );
+
+      this.lastFaultLabel = faultDetected ? bestFaultyLabel : '';
+      this.lastFaultScore = faultDetected ? filteredFaultScore : 0;
+      this.lastFaultModelsExist = hasFaultModels;
+      this.lastBestFaultLabel = hasFaultModels ? bestFaultyLabel : '';
+      this.lastBestFaultScore = hasFaultModels ? filteredFaultScore : 0;
+      const detectedState = faultDetected ? bestFaultyLabel : bestHealthyLabel || 'UNKNOWN';
+      this.labelHistory.addLabel(detectedState);
+
+      this.updateLiveDisplay(
+        filteredScore,
+        filteredStatus,
+        detectedState,
+        undefined,
+        hasFaultModels
+          ? { label: bestFaultyLabel, score: filteredFaultScore, detected: faultDetected }
+          : null
+      );
+      this.lastProcessedScore = filteredScore;
+      this.lastProcessedStatus = filteredStatus;
+      this.lastDetectedState = detectedState;
+      this.hasValidMeasurement = true;
+    } catch (error) {
+      logger.error('YAMNet diagnosis error:', error);
+    } finally {
+      this.yamnetBusy = false;
+    }
+  }
+
+  /**
    * Update Smart Start status message
    *
    * Updates both simplified and advanced views during initialization.
@@ -1005,7 +1549,10 @@ export class DiagnosePhase {
    * @param message - Status message to display
    * @param phase - Optional SmartStart phase ('idle' | 'warmup' | 'waiting' | 'recording')
    */
-  private updateSmartStartStatus(message: string, phase?: 'idle' | 'warmup' | 'waiting' | 'recording'): void {
+  private updateSmartStartStatus(
+    message: string,
+    phase?: 'idle' | 'warmup' | 'waiting' | 'recording'
+  ): void {
     // CRITICAL FIX: Check phase instead of matching German strings
     // This ensures internationalization works correctly
     const isRecording = phase === 'recording';
@@ -1196,8 +1743,7 @@ export class DiagnosePhase {
     const interpEl = document.getElementById('drift-interpretation');
     if (interpEl) {
       interpEl.textContent = result.overallMessage;
-      interpEl.className =
-        'drift-interpretation drift-interp-' + result.interpretation;
+      interpEl.className = 'drift-interpretation drift-interp-' + result.interpretation;
     }
 
     // Recommendation (only when there's a deviation)
@@ -1264,25 +1810,70 @@ export class DiagnosePhase {
    * - Advanced view: Updates HealthGauge, live score display, status
    */
   /**
-   * Sprint 1 UX: Get human-readable status text for a health score
+   * Render the dedicated fault line shown beneath the main status.
+   *
+   * It is visible whenever fault references exist for this machine, so the user
+   * can always see that known faults are being actively checked:
+   *  - DETECTED  → red, "⚠ Fehler erkannt: ‹Label› (NN %)"
+   *  - not (yet) → neutral, "Fehler ‚‹Label›': NN % – kein Treffer"
+   * When no fault references exist (faultInfo == null) the line stays hidden, so
+   * machines with only healthy references look exactly as before.
    */
-  private getScoreVerbalStatus(score: number): string {
-    if (score >= 85) return t('status.consistent');
-    if (score >= 70) return t('status.slightDeviation');
-    if (score >= 50) return t('status.significantChange');
-    return t('status.strongDeviation');
+  private renderFaultLine(
+    faultInfo: { label: string; score: number; detected: boolean } | null
+  ): void {
+    const el =
+      document.getElementById('inspection-fault-line') ||
+      document.getElementById('live-dashboard-fault-line');
+    if (!el) {
+      return;
+    }
+    if (!faultInfo) {
+      el.style.display = 'none';
+      el.textContent = '';
+      el.classList.remove('fault-detected', 'fault-clear');
+      return;
+    }
+    const pct = Math.round(faultInfo.score);
+    const label = faultInfo.label || t('diagnose.faultGeneric');
+    el.style.display = '';
+    el.classList.remove('fault-detected', 'fault-clear');
+    if (faultInfo.detected) {
+      el.classList.add('fault-detected');
+      el.textContent = `⚠ ${t('diagnose.faultDetected', { fault: `${label} (${pct} %)` })}`;
+    } else {
+      el.classList.add('fault-clear');
+      el.textContent = t('diagnose.faultChecked', { fault: label, score: pct });
+    }
   }
 
-  private updateLiveDisplay(score: number, status: string, detectedState?: string, operatingPointChanged?: boolean): void {
+  private updateLiveDisplay(
+    score: number,
+    status: string,
+    detectedState?: string,
+    operatingPointChanged?: boolean,
+    faultInfo?: { label: string; score: number; detected: boolean } | null
+  ): void {
     const normalizedStatus = status.toLowerCase();
+
+    // The dedicated fault line (below) shows the best fault match whenever fault
+    // references exist — red when detected, neutral ("checked, no match") when
+    // below threshold. The main status text only names the fault when it was
+    // actually DETECTED, so a healthy reading stays clean.
+    this.renderFaultLine(faultInfo ?? null);
+    const faultLabelText =
+      faultInfo && faultInfo.detected
+        ? `${faultInfo.label} (${Math.round(faultInfo.score)} %)`
+        : null;
 
     if (this.useSimplifiedView) {
       // === SIMPLIFIED INSPECTION VIEW ===
-      const statusClass = normalizedStatus === 'healthy'
-        ? 'status-healthy'
-        : normalizedStatus === 'uncertain'
-          ? 'status-uncertain'
-          : 'status-faulty';
+      const statusClass =
+        normalizedStatus === 'healthy'
+          ? 'status-healthy'
+          : normalizedStatus === 'uncertain'
+            ? 'status-uncertain'
+            : 'status-faulty';
 
       // Remove initializing state when we have real data
       const contentElement = document.getElementById('inspection-content');
@@ -1323,7 +1914,10 @@ export class DiagnosePhase {
         } else {
           statusText = t('inspection.statusDeviation');
         }
-        statusLabel.textContent = statusText;
+        // When a known fault is detected, name it with its own match quality.
+        statusLabel.textContent = faultLabelText
+          ? `${statusText} — ${t('diagnose.faultDetected', { fault: faultLabelText })}`
+          : statusText;
         statusLabel.classList.remove('status-healthy', 'status-uncertain', 'status-faulty');
         statusLabel.classList.add(statusClass);
       }
@@ -1334,16 +1928,18 @@ export class DiagnosePhase {
       // Sprint 1 UX: Update verbal status in simplified view
       const inspectionVerbal = document.getElementById('live-verbal-status');
       if (inspectionVerbal) {
-        inspectionVerbal.textContent = this.getScoreVerbalStatus(score);
+        inspectionVerbal.textContent = faultLabelText
+          ? t('diagnose.faultDetected', { fault: faultLabelText })
+          : getScoreVerbalStatus(score);
       }
-
     } else {
       // === ADVANCED/EXPERT VIEW ===
-      const statusClass = normalizedStatus === 'healthy'
-        ? 'status-healthy'
-        : normalizedStatus === 'uncertain'
-          ? 'status-uncertain'
-          : 'status-faulty';
+      const statusClass =
+        normalizedStatus === 'healthy'
+          ? 'status-healthy'
+          : normalizedStatus === 'uncertain'
+            ? 'status-uncertain'
+            : 'status-faulty';
 
       // Update HealthGauge (if still present)
       if (this.healthGauge) {
@@ -1386,23 +1982,32 @@ export class DiagnosePhase {
       // Update dashboard score container color
       const dashboardScoreContainer = document.getElementById('live-dashboard-score-container');
       if (dashboardScoreContainer) {
-        dashboardScoreContainer.classList.remove('status-healthy', 'status-uncertain', 'status-faulty');
+        dashboardScoreContainer.classList.remove(
+          'status-healthy',
+          'status-uncertain',
+          'status-faulty'
+        );
         dashboardScoreContainer.classList.add(statusClass);
       }
 
       // Update dashboard status text
       const dashboardStatus = document.getElementById('live-dashboard-status');
       if (dashboardStatus) {
-        const localizedStatus = normalizedStatus === 'healthy'
-          ? t('status.healthy')
-          : normalizedStatus === 'uncertain'
-            ? t('status.uncertain')
-            : normalizedStatus === 'faulty'
-              ? t('status.faulty')
-              : status;
+        const localizedStatus =
+          normalizedStatus === 'healthy'
+            ? t('status.healthy')
+            : normalizedStatus === 'uncertain'
+              ? t('status.uncertain')
+              : normalizedStatus === 'faulty'
+                ? t('status.faulty')
+                : status;
 
-        const shouldShowState = score >= getMinConfidentMatchScore() && detectedState && detectedState !== 'UNKNOWN';
-        const displayState = detectedState === 'Baseline' ? t('reference.labels.baseline') : detectedState;
+        const shouldShowState =
+          faultLabelText != null ||
+          (score >= getMinConfidentMatchScore() && detectedState && detectedState !== 'UNKNOWN');
+        const displayState =
+          faultLabelText ??
+          (detectedState === 'Baseline' ? t('reference.labels.baseline') : detectedState);
 
         if (shouldShowState) {
           dashboardStatus.textContent = `${localizedStatus} | ${displayState}`;
@@ -1413,26 +2018,32 @@ export class DiagnosePhase {
       }
 
       // Sprint 1 UX: Update verbal status in advanced/expert view
-      const liveVerbal = document.getElementById('live-verbal-status')
-        || document.getElementById('live-dashboard-verbal');
+      const liveVerbal =
+        document.getElementById('live-verbal-status') ||
+        document.getElementById('live-dashboard-verbal');
       if (liveVerbal) {
-        liveVerbal.textContent = this.getScoreVerbalStatus(score);
+        liveVerbal.textContent = getScoreVerbalStatus(score);
       }
 
       // Update legacy status element
       const statusElement = document.getElementById('live-status');
       if (statusElement) {
-        const localizedStatus = normalizedStatus === 'healthy'
-          ? t('status.healthy')
-          : normalizedStatus === 'uncertain'
-            ? t('status.uncertain')
-            : normalizedStatus === 'faulty'
-              ? t('status.faulty')
-              : status;
+        const localizedStatus =
+          normalizedStatus === 'healthy'
+            ? t('status.healthy')
+            : normalizedStatus === 'uncertain'
+              ? t('status.uncertain')
+              : normalizedStatus === 'faulty'
+                ? t('status.faulty')
+                : status;
 
         // Show detected state if score meets confident match threshold
-        const shouldShowState = score >= getMinConfidentMatchScore() && detectedState && detectedState !== 'UNKNOWN';
-        const displayState = detectedState === 'Baseline' ? t('reference.labels.baseline') : detectedState;
+        const shouldShowState =
+          faultLabelText != null ||
+          (score >= getMinConfidentMatchScore() && detectedState && detectedState !== 'UNKNOWN');
+        const displayState =
+          faultLabelText ??
+          (detectedState === 'Baseline' ? t('reference.labels.baseline') : detectedState);
 
         if (shouldShowState) {
           statusElement.textContent = `${localizedStatus} | ${displayState}`;
@@ -1525,6 +2136,19 @@ export class DiagnosePhase {
     const finalDetectedState = this.labelHistory.getMajorityLabel();
     const labelHistoryCopy = this.labelHistory.getAllLabels().slice(); // Copy for debugging
 
+    // Quality gate (before cleanup clears the collected frames): flag a weak,
+    // noise-masked measurement. Purely additive – never blocks or alters the score.
+    this.measurementSignalTooWeak = false;
+    try {
+      if (this.diagnosisQualityFeatures.length >= 5) {
+        const quality = assessRecordingQuality(this.diagnosisQualityFeatures);
+        this.measurementSignalTooWeak = quality.metadata?.signalTooWeak === true;
+      }
+    } catch (error) {
+      logger.warn('Quality gate assessment failed (ignored):', error);
+      this.measurementSignalTooWeak = false;
+    }
+
     logger.info(
       `🗳️ Majority voting: ${finalDetectedState} (from ${labelHistoryCopy.length} chunks: ${labelHistoryCopy.slice(-5).join(', ')})`
     );
@@ -1581,15 +2205,24 @@ export class DiagnosePhase {
       const classification = getClassificationDetails(finalScore);
 
       // UX FIX: Hide detected state if score below confident match threshold
-      const effectiveDetectedState = finalScore >= getMinConfidentMatchScore() ? detectedState : 'UNKNOWN';
+      const effectiveDetectedState =
+        finalScore >= getMinConfidentMatchScore() ? detectedState : 'UNKNOWN';
 
       // MULTICLASS: Generate hint based on detected state
       let hint = classification.recommendation;
       if (effectiveDetectedState !== 'UNKNOWN') {
         if (finalStatus === 'healthy') {
-          hint = t('diagnose.analysis.healthyMatch', { state: effectiveDetectedState, score: finalScore.toFixed(1) });
+          hint = t('diagnose.analysis.healthyMatch', {
+            state: effectiveDetectedState,
+            score: finalScore.toFixed(1),
+          });
         } else if (finalStatus === 'faulty') {
-          hint = t('diagnose.analysis.faultyMatch', { state: effectiveDetectedState, score: finalScore.toFixed(1) });
+          // When a known fault was matched, report ITS quality (not the health gauge).
+          const faultQuality = this.lastFaultScore > 0 ? this.lastFaultScore : finalScore;
+          hint = t('diagnose.analysis.faultyMatch', {
+            state: effectiveDetectedState,
+            score: faultQuality.toFixed(1),
+          });
         }
       }
 
@@ -1619,6 +2252,17 @@ export class DiagnosePhase {
           detectedState: effectiveDetectedState, // MULTICLASS: Store detected state (UNKNOWN if score < 70%)
           multiclassMode: true,
           evaluatedModels: this.activeModels.length,
+          // Fault-aware fields: when a known fault reference was matched, record
+          // its label and match quality separately from the health gauge.
+          faultLabel: this.lastFaultLabel || undefined,
+          faultScore: this.lastFaultScore > 0 ? Math.round(this.lastFaultScore * 10) / 10 : undefined,
+          // Best fault check regardless of detection — lets the result/history
+          // document that known faults were actively checked and ruled out.
+          faultModelsExist: this.lastFaultModelsExist || undefined,
+          bestFaultLabel: this.lastFaultModelsExist ? this.lastBestFaultLabel || undefined : undefined,
+          bestFaultScore: this.lastFaultModelsExist
+            ? Math.round(this.lastBestFaultScore * 10) / 10
+            : undefined,
         },
         analysis: {
           hint,
@@ -1632,6 +2276,11 @@ export class DiagnosePhase {
       // Save to database
       await saveDiagnosis(diagnosis);
 
+      // Persist the measurement audio (so the check can be re-opened later with
+      // A/B / difference listening), honoring the user's retention setting.
+      // Recording id == diagnosis id, so a past result can fetch its audio.
+      await this.persistDiagnosisAudio(diagnosis.id);
+
       // Hide modal
       this.hideRecordingModal();
 
@@ -1643,13 +2292,19 @@ export class DiagnosePhase {
         duration: 3000,
       });
 
+      // Welle 1 UX: Haptic feedback on diagnosis completion
+      hapticForScore(finalScore);
+
       // UX improvement: One-time score explanation after first QC diagnosis
       if (this.qcGoldStandardName && !DiagnosePhase.scoreExplanationShown) {
         DiagnosePhase.scoreExplanationShown = true;
         setTimeout(() => {
-          notify.info(t('quickCompare.scoreExplanation.hint', { score: String(Math.round(finalScore)) }), {
-            duration: 6000,
-          });
+          notify.info(
+            t('quickCompare.scoreExplanation.hint', { score: String(Math.round(finalScore)) }),
+            {
+              duration: 6000,
+            }
+          );
         }, 500);
       }
 
@@ -1679,8 +2334,13 @@ export class DiagnosePhase {
    */
   private renderCameraAndScoreLayout(): string {
     // --- LEFT: Camera with Ghost Overlay ---
+    // UX: Ohne Positionsbild wird die Kamera-Zelle KOMPLETT eingeklappt
+    // (Grid-Modifier .no-camera) — vorher belegte ein „Kein Positionsbild"-
+    // Platzhalter die halbe Bildschirmhöhe, die wertvollste Fläche des
+    // Livescreens zeigte ein Nichts. Der Score bekommt den Platz.
+    const hasCamera = Boolean(this.cameraStream && this.machine.referenceImage);
     let cameraHTML = '';
-    if (this.cameraStream && this.machine.referenceImage) {
+    if (hasCamera && this.machine.referenceImage) {
       const imageUrl = URL.createObjectURL(this.machine.referenceImage);
       cameraHTML = `
         <div class="ghost-overlay-container" id="ghost-overlay-container">
@@ -1690,20 +2350,10 @@ export class DiagnosePhase {
           </div>
         </div>
       `;
-    } else {
-      cameraHTML = `
-        <div style="text-align: center; padding: var(--spacing-sm); color: var(--text-muted); font-size: 0.75rem;">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.5; margin-bottom: 4px;">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-            <circle cx="12" cy="13" r="4"/>
-          </svg>
-          <div>${t('diagnose.display.noCameraAvailable')}</div>
-        </div>
-      `;
     }
 
     return `
-      <div class="diagnosis-dashboard-grid">
+      <div class="diagnosis-dashboard-grid${hasCamera ? '' : ' no-camera'}">
         <div class="dashboard-left-cam">
           <div class="diagnosis-middle-camera">
             ${cameraHTML}
@@ -1721,9 +2371,110 @@ export class DiagnosePhase {
             <span class="inspection-score" id="inspection-score">--<span class="inspection-score-unit">%</span></span>
           </div>
           <div class="inspection-status" id="inspection-status-label">${t('common.initializing')}</div>
+          <!-- Fault line: visible whenever fault references exist (red when a
+               fault is detected, neutral "checked – no match" otherwise). -->
+          <div class="inspection-fault-line" id="inspection-fault-line" style="display: none"></div>
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Insert the "look closer" reveal into the basic inspection view.
+   *
+   * Basic view stays a clean traffic light by default; this adds a single
+   * toggle that reveals the live spectrum with the reference "ghost" behind it
+   * – the comparison is shown on demand, never forced.
+   */
+  private insertSpectrumReveal(contentElement: HTMLElement): void {
+    if (contentElement.querySelector('#inspection-spectrum-reveal')) {
+      return;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'inspection-spectrum-reveal';
+    wrapper.id = 'inspection-spectrum-reveal';
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'inspection-spectrum-toggle';
+    toggleBtn.id = 'inspection-spectrum-toggle';
+    toggleBtn.textContent = t('diagnose.display.spectrumReveal');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+
+    const panel = document.createElement('div');
+    panel.className = 'inspection-spectrum-panel';
+    panel.id = 'inspection-spectrum-panel';
+    panel.style.display = 'none';
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'inspection-spectrum-canvas';
+    canvas.className = 'inspection-spectrum-canvas';
+    panel.appendChild(canvas);
+
+    toggleBtn.addEventListener('click', () => this.toggleInspectionSpectrum());
+
+    wrapper.appendChild(toggleBtn);
+    wrapper.appendChild(panel);
+
+    // Place the reveal after the dashboard grid (below camera + score)
+    const grid = contentElement.querySelector('.diagnosis-dashboard-grid');
+    if (grid && grid.parentElement) {
+      grid.parentElement.insertBefore(wrapper, grid.nextSibling);
+    } else {
+      contentElement.appendChild(wrapper);
+    }
+  }
+
+  /**
+   * Toggle the on-demand spectrum panel in basic view. The AudioVisualizer is
+   * created lazily on first reveal (so the canvas has a real size) and stopped
+   * when hidden to avoid running a second render loop unnecessarily.
+   */
+  private toggleInspectionSpectrum(): void {
+    const panel = document.getElementById('inspection-spectrum-panel');
+    const toggleBtn = document.getElementById('inspection-spectrum-toggle');
+    if (!panel || !toggleBtn) return;
+
+    const isHidden = panel.style.display === 'none';
+
+    if (isHidden) {
+      panel.style.display = 'block';
+      toggleBtn.textContent = t('diagnose.display.spectrumHide');
+      toggleBtn.setAttribute('aria-expanded', 'true');
+
+      // Create the visualizer after the panel is laid out, so the canvas has
+      // a non-zero size when its backing store is configured.
+      requestAnimationFrame(() => {
+        if (!this.revealVisualizer && this.audioContext && this.mediaStream) {
+          try {
+            this.revealVisualizer = new AudioVisualizer('inspection-spectrum-canvas');
+            this.revealVisualizer.start(this.audioContext, this.mediaStream);
+            const baselineModel =
+              this.activeModels.find((m) => m.label === 'Baseline') || this.activeModels[0];
+            const baselineWeights = baselineModel
+              ? getModelWeightVector(baselineModel)
+              : undefined;
+            if (baselineWeights?.length) {
+              this.revealVisualizer.setReferenceSpectrum(
+                baselineWeights,
+                baselineModel.sampleRate / 2
+              );
+            }
+          } catch (error) {
+            logger.warn('Could not start inspection spectrum visualizer:', error);
+          }
+        }
+      });
+    } else {
+      panel.style.display = 'none';
+      toggleBtn.textContent = t('diagnose.display.spectrumReveal');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+      if (this.revealVisualizer) {
+        this.revealVisualizer.stop();
+        this.revealVisualizer = null;
+      }
+    }
   }
 
   /**
@@ -1769,7 +2520,9 @@ export class DiagnosePhase {
     const subtitleElement = document.getElementById('inspection-subtitle');
     if (subtitleElement) {
       if (this.qcGoldStandardName) {
-        subtitleElement.textContent = t('quickCompare.inspectionReference.comparingWith', { name: this.qcGoldStandardName });
+        subtitleElement.textContent = t('quickCompare.inspectionReference.comparingWith', {
+          name: this.qcGoldStandardName,
+        });
       } else {
         subtitleElement.textContent = t('inspection.subtitleInitializing');
       }
@@ -1779,10 +2532,10 @@ export class DiagnosePhase {
     const referenceValueElement = document.getElementById('inspection-reference-value');
     if (referenceValueElement && this.activeModels.length > 0) {
       // Get the baseline/primary reference model label
-      const baselineModel = this.activeModels.find(m => m.label === 'Baseline') || this.activeModels[0];
-      const referenceLabel = baselineModel.label === 'Baseline'
-        ? t('inspection.referenceDefault')
-        : baselineModel.label;
+      const baselineModel =
+        this.activeModels.find((m) => m.label === 'Baseline') || this.activeModels[0];
+      const referenceLabel =
+        baselineModel.label === 'Baseline' ? t('inspection.referenceDefault') : baselineModel.label;
       referenceValueElement.textContent = referenceLabel;
     }
 
@@ -1804,7 +2557,11 @@ export class DiagnosePhase {
         this.initCamera();
 
         // Ghost overlay hint: show once per session when overlay is visible (as toast, not overlay)
-        if (this.cameraStream && this.machine.referenceImage && !DiagnosePhase.ghostOverlayHintShown) {
+        if (
+          this.cameraStream &&
+          this.machine.referenceImage &&
+          !DiagnosePhase.ghostOverlayHintShown
+        ) {
           DiagnosePhase.ghostOverlayHintShown = true;
           notify.info(t('quickCompare.ghostOverlay.hint'), { duration: 5000 });
         }
@@ -1818,9 +2575,29 @@ export class DiagnosePhase {
           refInfo.textContent = `${t('diagnose.display.reference')}: ${this.machine.name}`;
           rightScore.appendChild(refInfo);
         }
+
+        // "Look closer" reveal: keep basic view a clean traffic light, but let
+        // the user open the live spectrum + reference ghost on demand.
+        this.insertSpectrumReveal(contentElement);
       }
 
       contentElement.classList.add('is-initializing');
+    }
+
+    // Always start the spectrum reveal collapsed and tear down any previous
+    // live visualizer, so a repeated measurement begins from a consistent
+    // state (otherwise the panel could stay "open" from the last run while its
+    // visualizer was destroyed, so the first tap would wrongly collapse it).
+    const revealPanel = document.getElementById('inspection-spectrum-panel');
+    const revealToggle = document.getElementById('inspection-spectrum-toggle');
+    if (revealPanel) revealPanel.style.display = 'none';
+    if (revealToggle) {
+      revealToggle.textContent = t('diagnose.display.spectrumReveal');
+      revealToggle.setAttribute('aria-expanded', 'false');
+    }
+    if (this.revealVisualizer) {
+      this.revealVisualizer.stop();
+      this.revealVisualizer = null;
     }
 
     // Setup stop button
@@ -1857,9 +2634,10 @@ export class DiagnosePhase {
     }
 
     // Sprint 1 UX: Tap on score shows explanation toast
-    const scoreDisplay = document.getElementById('health-gauge-canvas')
-      || document.getElementById('inspection-score-container')
-      || document.getElementById('live-dashboard-score-container');
+    const scoreDisplay =
+      document.getElementById('health-gauge-canvas') ||
+      document.getElementById('inspection-score-container') ||
+      document.getElementById('live-dashboard-score-container');
 
     if (scoreDisplay && !scoreDisplay.dataset.scoreTapBound) {
       scoreDisplay.dataset.scoreTapBound = 'true';
@@ -1904,6 +2682,8 @@ export class DiagnosePhase {
     if (stopBtn) {
       stopBtn.textContent = BUTTON_TEXT.STOP_DIAGNOSE;
       stopBtn.onclick = () => this.stopRecording();
+      // Hide footer stop button – the dynamically created stop-diagnosis-btn is the primary control
+      stopBtn.style.display = 'none';
     }
 
     // Update modal title
@@ -1930,7 +2710,8 @@ export class DiagnosePhase {
     // Build structured content container
     const structuredContent = document.createElement('div');
     structuredContent.className = 'diagnosis-structured-content';
-    structuredContent.style.cssText = 'display: flex; flex-direction: column; height: 100%; gap: var(--spacing-sm);';
+    structuredContent.style.cssText =
+      'display: flex; flex-direction: column; height: 100%; gap: var(--spacing-sm);';
 
     // === DASHBOARD GRID: Camera (left) + Score (right) ===
     // Use shared rendering method for consistency with basic view
@@ -1948,6 +2729,10 @@ export class DiagnosePhase {
     if (statusElement) {
       statusElement.id = 'live-dashboard-status';
       statusElement.textContent = t('diagnose.display.waitingForSignal');
+    }
+    const faultLineElement = dashboardGrid.querySelector('#inspection-fault-line');
+    if (faultLineElement) {
+      faultLineElement.id = 'live-dashboard-fault-line';
     }
 
     // Add reference info line for advanced view
@@ -1977,7 +2762,8 @@ export class DiagnosePhase {
     const spectroHelp = document.createElement('button');
     spectroHelp.className = 'help-icon-btn help-icon-inline';
     spectroHelp.setAttribute('aria-label', t('help.spectrogram.title'));
-    spectroHelp.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+    spectroHelp.innerHTML =
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
     spectroHelp.addEventListener('click', (e) => {
       e.stopPropagation();
       InfoBottomSheet.show({
@@ -1998,18 +2784,23 @@ export class DiagnosePhase {
     const currentViewLevel = getViewLevel();
     if (currentViewLevel === 'expert') {
       const dateLocale = getLocale();
-      const refModelInfo = this.activeModels.length > 0
-        ? this.activeModels.map(m => {
-            const trainingDate = new Date(m.trainingDate).toLocaleString(dateLocale, {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-            return `${m.label} (${trainingDate})`;
-          }).join(', ')
-        : t('reference.noModelsYet');
+      const refModelInfo =
+        this.activeModels.length > 0
+          ? this.activeModels
+              .map((m) => {
+                const trainingDate = new Date(m.trainingDate).toLocaleString(dateLocale, {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+                const displayLabel =
+                  m.label === 'Baseline' ? t('reference.labels.baseline') : escapeHtml(m.label);
+                return `${displayLabel} (${trainingDate})`;
+              })
+              .join(', ')
+          : t('reference.noModelsYet');
 
       const expertStats = document.createElement('div');
       expertStats.id = 'expert-debug-stats';
@@ -2037,6 +2828,11 @@ export class DiagnosePhase {
       const opMonitorContainer = document.createElement('div');
       opMonitorContainer.id = 'op-monitor-container';
       scrollableArea.appendChild(opMonitorContainer);
+
+      // --- Ereignis-Zeitleiste (T2-a2): Container, nur Temporal-Modelle ---
+      const eventTimelineContainer = document.createElement('div');
+      eventTimelineContainer.id = 'event-timeline-container';
+      scrollableArea.appendChild(eventTimelineContainer);
 
       // Initialize OperatingPointMetrics calculator
       this.opMetrics = new OperatingPointMetrics(
@@ -2068,7 +2864,8 @@ export class DiagnosePhase {
       const driftHelpAdv = document.createElement('button');
       driftHelpAdv.className = 'help-icon-btn help-icon-inline';
       driftHelpAdv.setAttribute('aria-label', t('help.drift.title'));
-      driftHelpAdv.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+      driftHelpAdv.innerHTML =
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
       driftHelpAdv.addEventListener('click', (e) => {
         e.stopPropagation();
         InfoBottomSheet.show({
@@ -2119,7 +2916,8 @@ export class DiagnosePhase {
       const driftHelpExp = document.createElement('button');
       driftHelpExp.className = 'help-icon-btn help-icon-inline';
       driftHelpExp.setAttribute('aria-label', t('help.drift.title'));
-      driftHelpExp.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+      driftHelpExp.innerHTML =
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
       driftHelpExp.addEventListener('click', (e) => {
         e.stopPropagation();
         InfoBottomSheet.show({
@@ -2161,6 +2959,16 @@ export class DiagnosePhase {
       this.opMonitor.mount();
     }
 
+    // Ereignis-Zeitleiste (T2-a2): nur Expert-Modus UND Temporal-Modelle aktiv
+    if (
+      currentViewLevel === 'expert' &&
+      !this.eventTimeline &&
+      this.activeModels.some((m) => m.engineId === 'temporal')
+    ) {
+      this.eventTimeline = new EventTimeline('event-timeline-container');
+      this.eventTimeline.mount();
+    }
+
     logger.info('✅ Advanced recording modal shown with dashboard layout');
   }
 
@@ -2179,7 +2987,9 @@ export class DiagnosePhase {
         contentElement.classList.add('is-initializing');
 
         // Clean up ghost overlay image URL in basic view
-        const ghostImage = contentElement.querySelector('#ghost-overlay-image') as HTMLImageElement | null;
+        const ghostImage = contentElement.querySelector(
+          '#ghost-overlay-image'
+        ) as HTMLImageElement | null;
         if (ghostImage && ghostImage.src) {
           URL.revokeObjectURL(ghostImage.src);
         }
@@ -2188,6 +2998,18 @@ export class DiagnosePhase {
         const dashboardGrid = contentElement.querySelector('.diagnosis-dashboard-grid');
         if (dashboardGrid) {
           dashboardGrid.remove();
+        }
+
+        // Remove the spectrum reveal too, so it is re-created fresh (and
+        // correctly positioned under the new grid) on the next check instead
+        // of lingering at a stale position.
+        const spectrumReveal = contentElement.querySelector('#inspection-spectrum-reveal');
+        if (spectrumReveal) {
+          spectrumReveal.remove();
+        }
+        if (this.revealVisualizer) {
+          this.revealVisualizer.stop();
+          this.revealVisualizer = null;
         }
       }
 
@@ -2223,6 +3045,12 @@ export class DiagnosePhase {
     if (recordingModal) {
       recordingModal.style.display = 'none';
 
+      // Restore footer stop button visibility for reference recording mode
+      const stopBtn = document.getElementById('stop-recording-btn');
+      if (stopBtn) {
+        stopBtn.style.display = '';
+      }
+
       // Remove diagnosis-active class from body
       document.body.classList.remove('diagnosis-active');
 
@@ -2230,7 +3058,9 @@ export class DiagnosePhase {
       const structuredContent = recordingModal.querySelector('.diagnosis-structured-content');
       if (structuredContent) {
         // Clean up ghost overlay image URL
-        const ghostImage = structuredContent.querySelector('#ghost-overlay-image') as HTMLImageElement | null;
+        const ghostImage = structuredContent.querySelector(
+          '#ghost-overlay-image'
+        ) as HTMLImageElement | null;
         if (ghostImage && ghostImage.src) {
           URL.revokeObjectURL(ghostImage.src);
         }
@@ -2255,7 +3085,9 @@ export class DiagnosePhase {
       // Clean up legacy ghost overlay elements
       const ghostContainer = recordingModal.querySelector('#ghost-overlay-container');
       if (ghostContainer) {
-        const ghostImage = ghostContainer.querySelector('#ghost-overlay-image') as HTMLImageElement | null;
+        const ghostImage = ghostContainer.querySelector(
+          '#ghost-overlay-image'
+        ) as HTMLImageElement | null;
         if (ghostImage && ghostImage.src) {
           URL.revokeObjectURL(ghostImage.src);
         }
@@ -2304,18 +3136,26 @@ export class DiagnosePhase {
     if (resultStatus) {
       // Translate technical status to localized display text
       const normalizedStatus = diagnosis.status.toLowerCase();
-      const localizedStatus = normalizedStatus === 'healthy'
-        ? t('status.healthy')
-        : normalizedStatus === 'uncertain'
-          ? t('status.uncertain')
-          : normalizedStatus === 'faulty'
-            ? t('status.faulty')
-            : t('status.unknown');
+      const localizedStatus =
+        normalizedStatus === 'healthy'
+          ? t('status.healthy')
+          : normalizedStatus === 'uncertain'
+            ? t('status.uncertain')
+            : normalizedStatus === 'faulty'
+              ? t('status.faulty')
+              : t('status.unknown');
 
-      // MULTICLASS: Show detected state if available
+      // MULTICLASS: Show detected state if available. When a known fault was
+      // matched, name it with its own match quality (separate from the gauge).
       const detectedState = diagnosis.metadata?.detectedState;
-      if (detectedState && detectedState !== 'UNKNOWN') {
-        const displayState = detectedState === 'Baseline' ? t('reference.labels.baseline') : detectedState;
+      const faultLabel = diagnosis.metadata?.faultLabel as string | undefined;
+      const faultScore = diagnosis.metadata?.faultScore as number | undefined;
+      if (normalizedStatus === 'faulty' && faultLabel) {
+        const faultText = `${faultLabel}${typeof faultScore === 'number' ? ` (${Math.round(faultScore)} %)` : ''}`;
+        resultStatus.textContent = `${localizedStatus} | ${t('diagnose.faultDetected', { fault: faultText })}`;
+      } else if (detectedState && detectedState !== 'UNKNOWN') {
+        const displayState =
+          detectedState === 'Baseline' ? t('reference.labels.baseline') : detectedState;
         resultStatus.textContent = `${localizedStatus} | ${displayState}`;
       } else {
         resultStatus.textContent = localizedStatus;
@@ -2324,66 +3164,208 @@ export class DiagnosePhase {
       resultStatus.className = `result-status status-${normalizedStatus}`;
     }
 
+    // Fault line in the saved documentation: shown whenever fault references
+    // existed for this check — red if a fault was detected, neutral if they were
+    // checked and ruled out. Hidden entirely when the machine has no fault refs.
+    const resultFaultLine = document.getElementById('result-fault-line');
+    if (resultFaultLine) {
+      const faultModelsExist = diagnosis.metadata?.faultModelsExist === true;
+      const detectedFaultLabel = diagnosis.metadata?.faultLabel as string | undefined;
+      const detectedFaultScore = diagnosis.metadata?.faultScore as number | undefined;
+      const bestFaultLabel = diagnosis.metadata?.bestFaultLabel as string | undefined;
+      const bestFaultScore = diagnosis.metadata?.bestFaultScore as number | undefined;
+      resultFaultLine.classList.remove('fault-detected', 'fault-clear');
+      if (detectedFaultLabel) {
+        const pct = typeof detectedFaultScore === 'number' ? Math.round(detectedFaultScore) : 0;
+        resultFaultLine.classList.add('fault-detected');
+        resultFaultLine.textContent = `⚠ ${t('diagnose.faultDetected', { fault: `${detectedFaultLabel} (${pct} %)` })}`;
+        resultFaultLine.style.display = '';
+      } else if (faultModelsExist && bestFaultLabel) {
+        resultFaultLine.classList.add('fault-clear');
+        resultFaultLine.textContent = t('diagnose.faultChecked', {
+          fault: bestFaultLabel || t('diagnose.faultGeneric'),
+          score: typeof bestFaultScore === 'number' ? Math.round(bestFaultScore) : 0,
+        });
+        resultFaultLine.style.display = '';
+      } else {
+        resultFaultLine.style.display = 'none';
+        resultFaultLine.textContent = '';
+      }
+    }
+
     // Sprint 1 UX: Add verbal status below score in result modal
     const verbalStatus = document.getElementById('result-verbal-status');
     if (verbalStatus) {
-      verbalStatus.textContent = this.getScoreVerbalStatus(diagnosis.healthScore);
+      verbalStatus.textContent = getScoreVerbalStatus(diagnosis.healthScore);
     }
 
-    // Sprint 3 UX: Calculate and show trend arrow
+    // Measurement quality gate: warn when the signal was too weak / noise-masked
+    // (e.g. mic too far, machine off, mostly background noise). Additive only –
+    // the score and status are still shown, just flagged as barely usable.
+    const qualityWarning = document.getElementById('quality-warning-result');
+    if (qualityWarning) {
+      if (this.measurementSignalTooWeak) {
+        qualityWarning.textContent = t('diagnosisResults.measurementQualityWarning');
+        qualityWarning.style.display = '';
+      } else {
+        qualityWarning.style.display = 'none';
+        qualityWarning.textContent = '';
+      }
+    }
+
+    // Welle 1 UX: Action recommendation
+    const recommendationEl = document.getElementById('diagnosis-recommendation');
+    if (recommendationEl) {
+      if (diagnosis.healthScore >= 75) {
+        recommendationEl.textContent = t('diagnose.recommendation.healthy');
+      } else if (diagnosis.healthScore >= 50) {
+        recommendationEl.textContent = t('diagnose.recommendation.warning');
+      } else {
+        recommendationEl.textContent = t('diagnose.recommendation.critical');
+      }
+    }
+
+    // Welle 2 UX: Ampel-Banner
+    const ampel = document.getElementById('result-ampel');
+    if (ampel) {
+      const ampelIcon = document.getElementById('result-ampel-icon');
+      const ampelLabel = document.getElementById('result-ampel-label');
+      const ampelExplanation = document.getElementById('result-ampel-explanation');
+      const ampelRecommendation = document.getElementById('result-ampel-recommendation');
+
+      const ampelScore = diagnosis.healthScore;
+
+      // Remove previous status classes
+      ampel.classList.remove('ampel-healthy', 'ampel-warning', 'ampel-critical');
+
+      if (ampelScore >= 75) {
+        ampel.classList.add('ampel-healthy');
+        if (ampelIcon) ampelIcon.textContent = '✅';
+        if (ampelLabel) ampelLabel.textContent = t('status.healthy').toUpperCase();
+        if (ampelExplanation) ampelExplanation.textContent = t('resultAmpel.explanationHealthy');
+        if (ampelRecommendation)
+          ampelRecommendation.textContent = t('diagnose.recommendation.healthy');
+      } else if (ampelScore >= 50) {
+        ampel.classList.add('ampel-warning');
+        if (ampelIcon) ampelIcon.textContent = '⚠';
+        if (ampelLabel) ampelLabel.textContent = t('status.uncertain').toUpperCase();
+        if (ampelExplanation) ampelExplanation.textContent = t('resultAmpel.explanationWarning');
+        if (ampelRecommendation)
+          ampelRecommendation.textContent = t('diagnose.recommendation.warning');
+      } else {
+        ampel.classList.add('ampel-critical');
+        if (ampelIcon) ampelIcon.textContent = '❌';
+        if (ampelLabel) ampelLabel.textContent = t('status.faulty').toUpperCase();
+        if (ampelExplanation) ampelExplanation.textContent = t('resultAmpel.explanationCritical');
+        if (ampelRecommendation)
+          ampelRecommendation.textContent = t('diagnose.recommendation.critical');
+      }
+
+      // Welle 2: Trend with delta in ampel banner
+      const ampelTrendContainer = document.getElementById('result-ampel-trend');
+      const ampelTrendArrow = document.getElementById('result-ampel-trend-arrow');
+      const ampelTrendText = document.getElementById('result-ampel-trend-text');
+
+      if (ampelTrendContainer && ampelTrendArrow && ampelTrendText) {
+        try {
+          const ampelDiagnoses = await getDiagnosesForMachine(this.machine.id, 6);
+          const ampelOlder = ampelDiagnoses.filter((d) => d.id !== diagnosis.id).slice(0, 5);
+
+          if (ampelOlder.length >= 2) {
+            const olderScores = ampelOlder.map((d) => d.healthScore);
+            const sorted = [...olderScores].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            const median =
+              sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+            const delta = ampelScore - median;
+
+            ampelTrendContainer.style.display = 'flex';
+
+            if (Math.abs(delta) <= 3) {
+              ampelTrendArrow.textContent = '→';
+              ampelTrendText.textContent = t('resultAmpel.trendStable', {
+                count: String(ampelOlder.length),
+              });
+              ampelTrendContainer.className = 'result-ampel-trend trend-stable';
+            } else if (delta > 0) {
+              ampelTrendArrow.textContent = '↗';
+              ampelTrendText.textContent = t('resultAmpel.trendImproving', {
+                delta: `+${delta.toFixed(0)}`,
+                count: String(ampelOlder.length),
+              });
+              ampelTrendContainer.className = 'result-ampel-trend trend-improving';
+            } else {
+              ampelTrendArrow.textContent = '↘';
+              ampelTrendText.textContent = t('resultAmpel.trendDeclining', {
+                delta: delta.toFixed(0),
+                count: String(ampelOlder.length),
+              });
+              ampelTrendContainer.className = 'result-ampel-trend trend-declining';
+            }
+          } else {
+            ampelTrendContainer.style.display = 'none';
+          }
+        } catch {
+          ampelTrendContainer.style.display = 'none';
+        }
+      }
+    }
+
+    // Welle 2 UX: Context-aware action buttons
+    const resultBtnNext = document.getElementById('result-btn-next');
+    const resultBtnDetails = document.getElementById('result-btn-details');
+    if (resultBtnNext) {
+      if (diagnosis.healthScore < 50) {
+        // Critical: Primary action becomes "Report maintenance"
+        resultBtnNext.textContent = t('resultActions.reportMaintenance');
+        resultBtnNext.className = 'result-action-btn result-action-danger';
+
+        const newNextBtn = resultBtnNext.cloneNode(true) as HTMLElement;
+        resultBtnNext.parentNode?.replaceChild(newNextBtn, resultBtnNext);
+        newNextBtn.addEventListener('click', () => {
+          showMaintenanceExportChoice(this.machine, diagnosis);
+        });
+      } else {
+        // Normal: "New check"
+        resultBtnNext.textContent = t('resultActions.newCheck');
+        resultBtnNext.className = 'result-action-btn result-action-primary';
+
+        const newNextBtn = resultBtnNext.cloneNode(true) as HTMLElement;
+        resultBtnNext.parentNode?.replaceChild(newNextBtn, resultBtnNext);
+        newNextBtn.addEventListener('click', () => {
+          modal.style.display = 'none';
+          if (this.workPointRanking) {
+            this.workPointRanking.destroy();
+            this.workPointRanking = null;
+          }
+          if (this.onResultModalClosed) {
+            this.onResultModalClosed();
+          }
+          // Re-trigger diagnosis
+          const diagnoseBtn = document.getElementById('diagnose-btn');
+          if (diagnoseBtn) {
+            diagnoseBtn.click();
+          }
+        });
+      }
+    }
+
+    // Welle 2: Details button scrolls to technical details
+    if (resultBtnDetails) {
+      const newDetailsBtn = resultBtnDetails.cloneNode(true) as HTMLElement;
+      resultBtnDetails.parentNode?.replaceChild(newDetailsBtn, resultBtnDetails);
+      newDetailsBtn.addEventListener('click', () => {
+        const fingerprint = modal.querySelector('.result-fingerprint');
+        if (fingerprint) {
+          fingerprint.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
+
+    // Sprint 3 UX: Old trend arrow (hidden - replaced by Welle 2 ampel trend)
     const trendEl = document.getElementById('result-trend');
     if (trendEl) {
-      try {
-        const recentDiagnoses = await getDiagnosesForMachine(this.machine.id, 6);
-        const olderDiagnoses = recentDiagnoses.filter(d => d.id !== diagnosis.id);
-
-        if (olderDiagnoses.length < 1) {
-          trendEl.style.display = 'flex';
-          const arrowEl = document.getElementById('trend-arrow');
-          const textEl = document.getElementById('trend-text');
-          if (arrowEl) arrowEl.textContent = '—';
-          if (textEl) textEl.textContent = t('trend.noTrend');
-          trendEl.className = 'result-trend trend-neutral';
-        } else if (olderDiagnoses.length <= 2) {
-          trendEl.style.display = 'flex';
-          const arrowEl = document.getElementById('trend-arrow');
-          const textEl = document.getElementById('trend-text');
-          if (arrowEl) arrowEl.textContent = '~';
-          if (textEl) textEl.textContent = t('trend.uncertain');
-          trendEl.className = 'result-trend trend-neutral';
-        } else {
-          const currentScore = diagnosis.healthScore;
-          const olderScores = olderDiagnoses
-            .slice(0, 5)
-            .map(d => d.healthScore)
-            .sort((a, b) => a - b);
-          const medianOlder = olderScores.length % 2 === 0
-            ? (olderScores[olderScores.length / 2 - 1] + olderScores[olderScores.length / 2]) / 2
-            : olderScores[Math.floor(olderScores.length / 2)];
-          const diff = currentScore - medianOlder;
-
-          const arrowEl = document.getElementById('trend-arrow');
-          const textEl = document.getElementById('trend-text');
-          trendEl.style.display = 'flex';
-
-          if (diff > 3) {
-            trendEl.className = 'result-trend trend-up';
-            if (arrowEl) arrowEl.textContent = '↗';
-            if (textEl) textEl.textContent = t('trend.improving');
-          } else if (diff < -3) {
-            trendEl.className = 'result-trend trend-down';
-            if (arrowEl) arrowEl.textContent = '↘';
-            if (textEl) textEl.textContent = t('trend.declining');
-          } else {
-            trendEl.className = 'result-trend trend-stable';
-            if (arrowEl) arrowEl.textContent = '→';
-            if (textEl) textEl.textContent = t('trend.stable');
-          }
-        }
-      } catch (error) {
-        logger.warn('Could not calculate trend:', error);
-        trendEl.style.display = 'none';
-      }
+      trendEl.style.display = 'none';
     }
 
     // Environment match hint (all view levels)
@@ -2461,22 +3443,34 @@ export class DiagnosePhase {
     if (closeBtn) {
       closeBtn.onclick = () => {
         modal.style.display = 'none';
+        // Stop slow-motion playback if still running
+        this.slowListenPlayer?.stop();
         // Cleanup ranking when modal closes
         if (this.workPointRanking) {
           this.workPointRanking.destroy();
           this.workPointRanking = null;
         }
+        // Welle 2: Notify router to refresh dashboard
+        if (this.onResultModalClosed) {
+          this.onResultModalClosed();
+        }
       };
     }
 
-    // Setup footer close button
+    // Setup footer "Weiter" button – closes modal and triggers Grundansicht reset
     const closeResultBtn = document.getElementById('close-diagnosis-result-btn');
     if (closeResultBtn) {
       closeResultBtn.onclick = () => {
         modal.style.display = 'none';
+        // Stop slow-motion playback if still running
+        this.slowListenPlayer?.stop();
         if (this.workPointRanking) {
           this.workPointRanking.destroy();
           this.workPointRanking = null;
+        }
+        // UX-Fix: Notify router to reset to Grundansicht (explicit "Weiter" action)
+        if (this.onResultContinue) {
+          this.onResultContinue();
         }
       };
     }
@@ -2488,95 +3482,557 @@ export class DiagnosePhase {
         this.showHistoryChart();
       };
     }
+
+    // Result extras (iris comparison + A/B listen controls): reserve their
+    // slots in a fixed order and fill them from a single shared audio load, so
+    // they fade in place instead of racing and reordering (which made the
+    // result screen jump as each block was pushed in).
+    void this.renderResultExtras(diagnosis);
   }
 
   /**
-   * Draw frequency spectrum visualization on the analysis canvas.
-   * Shows the measured frequency energy distribution with color-coded
-   * bars based on the diagnosis status.
+   * Reserve fixed-order slots for the result extras and fill them from a single
+   * shared audio load. Replaces the two independent async insertions that used
+   * to race for the same anchor (causing the visible "jump"/reorder).
    */
+  private async renderResultExtras(diagnosis: DiagnosisResult): Promise<void> {
+    const anchor = document.getElementById('result-ampel');
+    if (!anchor || !anchor.parentElement) return;
+
+    // (Re)create the two slots in a fixed order: iris comparison, then listen
+    // controls, directly under the ampel. They stay collapsed (:empty) until
+    // populated, then fade in.
+    document.getElementById('iris-comparison')?.remove();
+    document.getElementById('listen-controls')?.remove();
+    const listenSlot = document.createElement('div');
+    listenSlot.id = 'listen-controls';
+    listenSlot.className = 'listen-controls result-extra-slot';
+    const irisSlot = document.createElement('div');
+    irisSlot.id = 'iris-comparison';
+    irisSlot.className = 'iris-comparison result-extra-slot';
+    anchor.parentElement.insertBefore(listenSlot, anchor.nextSibling);
+    anchor.parentElement.insertBefore(irisSlot, anchor.nextSibling);
+
+    // Load the shared audio ONCE (both extras need the reference recording and
+    // the captured measurement) instead of each function reading them again.
+    let referenceBuffer: AudioBuffer | null = null;
+    let measurementBuffer: AudioBuffer | null = null;
+    try {
+      const recordings = await getRecordingsForMachine(this.machine.id);
+      referenceBuffer =
+        recordings
+          .filter((r) => r.type === 'reference' && r.audioBuffer)
+          .sort((a, b) => b.timestamp - a.timestamp)[0]?.audioBuffer ?? null;
+    } catch (error) {
+      logger.warn('Could not load reference recording for result extras:', error);
+    }
+    try {
+      measurementBuffer = (await this.diagnosisAudioPromise) ?? this.lastDiagnosisAudioBuffer;
+    } catch {
+      measurementBuffer = null;
+    }
+
+    this.populateIrisComparison(diagnosis, referenceBuffer, measurementBuffer);
+    this.populateListenControls(referenceBuffer, measurementBuffer);
+  }
+
+  /**
+   * Reveal a populated result-extra slot with a quick fade-in (only if it
+   * actually received content). Collapsed-while-empty + fade keeps the result
+   * screen from popping/jumping.
+   */
+  private revealResultSlot(slot: HTMLElement): void {
+    if (!slot.firstChild) return;
+    requestAnimationFrame(() => slot.classList.add('is-ready'));
+  }
+
+  /**
+   * Show two fingerprint "irises" side by side on the result screen: the
+   * reference and the measurement just taken, so their acoustic signatures can
+   * be compared at a glance. Reference uses the stored reference audio when
+   * available, otherwise the baseline model's spectrum.
+   */
+  private populateIrisComparison(
+    diagnosis: DiagnosisResult,
+    referenceBuffer: AudioBuffer | null,
+    measurementBuffer: AudioBuffer | null
+  ): void {
+    const container = document.getElementById('iris-comparison');
+    if (!container) return;
+
+    // Reference spectrum: prefer reference audio, fall back to baseline model.
+    // Only real reference audio populates the analysis-canvas overlay.
+    let refVector: ArrayLike<number> | null = null;
+    this.lastReferenceSpectrum = null;
+    if (referenceBuffer) {
+      refVector = averageSpectrum(referenceBuffer);
+      this.lastReferenceSpectrum = { data: refVector, nyquist: referenceBuffer.sampleRate / 2 };
+    }
+    if (!refVector) {
+      const baseline =
+        this.activeModels.find((m) => m.label === 'Baseline') || this.activeModels[0];
+      const baselineWeights = baseline ? getModelWeightVector(baseline) : undefined;
+      if (baselineWeights?.length) refVector = baselineWeights;
+    }
+
+    const measVector = measurementBuffer ? averageSpectrum(measurementBuffer) : null;
+    // Remember the measured spectrum so the expert analysis canvas can render it
+    // even for engines that don't produce an ESD feature vector (e.g. YAMNet).
+    this.lastMeasurementSpectrum =
+      measVector && measurementBuffer
+        ? { data: measVector, nyquist: measurementBuffer.sampleRate / 2 }
+        : null;
+
+    // Document the "bad features" of this check — frequency bands where the
+    // measurement adds energy the reference doesn't — and persist them on the
+    // diagnosis so the history can list them and mark the timeline. Computed
+    // once (guard) and only when both spectra are available; backfills older
+    // results too when their audio is still retained.
+    if (
+      refVector &&
+      measVector &&
+      measurementBuffer &&
+      !diagnosis.analysis?.frequencyAnomalies
+    ) {
+      const anomalies = topDeviations(refVector, measVector, measurementBuffer.sampleRate / 2);
+      diagnosis.analysis = { ...(diagnosis.analysis ?? {}), frequencyAnomalies: anomalies };
+      void saveDiagnosis(diagnosis);
+    }
+
+    if (!refVector && !measVector) return;
+
+    container.innerHTML = '';
+
+    const makeCell = (label: string, vector: ArrayLike<number>) => {
+      const cell = document.createElement('div');
+      cell.className = 'iris-cell';
+      const canvas = document.createElement('canvas');
+      canvas.className = 'iris-comparison-canvas';
+      canvas.setAttribute('aria-hidden', 'true');
+      const caption = document.createElement('div');
+      caption.className = 'iris-cell-label';
+      caption.textContent = label;
+      cell.appendChild(canvas);
+      cell.appendChild(caption);
+      container.appendChild(cell);
+      requestAnimationFrame(() => renderMachineFingerprint(canvas, vector));
+    };
+
+    if (refVector) makeCell(t('diagnose.display.irisReference'), refVector);
+    if (measVector) makeCell(t('diagnose.display.irisMeasurement'), measVector);
+
+    // When the machine deviates from the reference, point to the frequency
+    // where the deviation is strongest, so the user can check (with a
+    // frequency-locator) whether it comes from the machine or the environment.
+    if (diagnosis.status !== 'healthy' && refVector && measVector && measurementBuffer) {
+      const hz = topDeviationHz(refVector, measVector, measurementBuffer.sampleRate / 2);
+      if (hz && hz > 0) {
+        const freqText = hz >= 1000 ? `${(hz / 1000).toFixed(1)} kHz` : `${Math.round(hz)} Hz`;
+        const devBox = document.createElement('div');
+        devBox.className = 'deviation-frequency';
+        const line = document.createElement('div');
+        line.className = 'deviation-frequency-main';
+        line.textContent = t('diagnose.display.deviationFrequencyLabel', { freq: freqText });
+        const hint = document.createElement('div');
+        hint.className = 'deviation-frequency-hint';
+        hint.textContent = t('diagnose.display.deviationFrequencyHint');
+        devBox.appendChild(line);
+        devBox.appendChild(hint);
+        container.appendChild(devBox);
+      }
+    }
+
+    // Operating-point check: if the dominant frequency shifted a lot versus the
+    // reference, a lower score may reflect a different speed/load rather than a
+    // fault. Additive hint only – never changes the score. Requires real
+    // reference audio and a non-healthy result.
+    if (
+      diagnosis.status !== 'healthy' &&
+      this.lastReferenceSpectrum &&
+      measVector &&
+      measurementBuffer
+    ) {
+      const refDom = dominantFrequency(
+        this.lastReferenceSpectrum.data,
+        this.lastReferenceSpectrum.nyquist
+      );
+      const measDom = dominantFrequency(measVector, measurementBuffer.sampleRate / 2);
+      if (refDom > 0 && measDom > 0 && Math.abs(measDom - refDom) / refDom > 0.15) {
+        const fmt = (hz: number) =>
+          hz >= 1000 ? `${(hz / 1000).toFixed(1)} kHz` : `${Math.round(hz)} Hz`;
+        const opBox = document.createElement('div');
+        opBox.className = 'deviation-frequency operating-point-note';
+        const opLine = document.createElement('div');
+        opLine.className = 'deviation-frequency-main';
+        opLine.textContent = t('diagnose.display.operatingPointWarning', {
+          refFreq: fmt(refDom),
+          measFreq: fmt(measDom),
+        });
+        opBox.appendChild(opLine);
+        container.appendChild(opBox);
+      }
+    }
+
+    // Re-draw the expert analysis canvas now that the reference and/or measured
+    // spectrum are available, so it can overlay the reference for deviation
+    // context (and, for engines without an ESD vector like YAMNet, draw the
+    // measured curve at all).
+    if (this.lastReferenceSpectrum || this.lastMeasurementSpectrum) {
+      this.drawAnalysisCanvas(diagnosis);
+    }
+
+    this.revealResultSlot(container);
+  }
+
+  /**
+   * Start capturing the diagnosis audio for later A/B playback.
+   *
+   * Uses a dedicated MediaRecorder on the microphone stream – completely
+   * decoupled from the scoring pipeline, so it can never affect the
+   * measurement. Idempotent (safe to call from multiple start callbacks).
+   */
+  private startDiagnosisAudioCapture(): void {
+    if (this.diagnosisRecorder || !this.mediaStream) return;
+    if (typeof MediaRecorder === 'undefined') return; // unsupported (e.g. older iOS)
+
+    try {
+      this.diagnosisAudioChunks = [];
+      this.lastDiagnosisAudioBuffer = null;
+      const recorder = new MediaRecorder(this.mediaStream);
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) this.diagnosisAudioChunks.push(e.data);
+      };
+      recorder.start();
+      this.diagnosisRecorder = recorder;
+    } catch (error) {
+      logger.warn('Could not start diagnosis audio capture:', error);
+      this.diagnosisRecorder = null;
+    }
+  }
+
+  /**
+   * Stop diagnosis audio capture and decode it to an AudioBuffer.
+   *
+   * Must be called before the media stream is stopped. Stores a promise that
+   * resolves to the decoded buffer (or null), which the result screen awaits.
+   */
+  private stopDiagnosisAudioCapture(): void {
+    const recorder = this.diagnosisRecorder;
+    if (!recorder) return;
+    this.diagnosisRecorder = null;
+
+    this.diagnosisAudioPromise = new Promise<AudioBuffer | null>((resolve) => {
+      recorder.onstop = async () => {
+        try {
+          if (this.diagnosisAudioChunks.length === 0) {
+            resolve(null);
+            return;
+          }
+          const blob = new Blob(this.diagnosisAudioChunks, {
+            type: recorder.mimeType || 'audio/webm',
+          });
+          this.diagnosisAudioChunks = [];
+          const arrayBuffer = await blob.arrayBuffer();
+          const AudioCtx =
+            window.AudioContext ||
+            (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+          if (!AudioCtx) {
+            resolve(null);
+            return;
+          }
+          const ctx = new AudioCtx();
+          const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+          await ctx.close();
+          this.lastDiagnosisAudioBuffer = audioBuffer;
+          resolve(audioBuffer);
+        } catch (error) {
+          logger.warn('Could not decode diagnosis audio:', error);
+          resolve(null);
+        }
+      };
+      try {
+        recorder.stop();
+      } catch {
+        resolve(null);
+      }
+    });
+  }
+
+  /**
+   * Persist the captured measurement audio for later re-opening, honoring the
+   * retention setting ('none' | 'latest' | 'all'). The recording id matches the
+   * diagnosis id so the result screen can fetch the right audio later.
+   *
+   * Additive and failure-tolerant – never breaks diagnosis saving.
+   */
+  private async persistDiagnosisAudio(diagnosisId: string): Promise<void> {
+    const mode = getDiagnosisAudioMode();
+    if (mode === 'none') return;
+
+    try {
+      const buffer = (await this.diagnosisAudioPromise) ?? this.lastDiagnosisAudioBuffer;
+      if (!buffer) return;
+
+      // 'latest' → drop previously stored measurement audio for this machine
+      if (mode === 'latest') {
+        const existing = await getRecordingsForMachine(this.machine.id);
+        for (const rec of existing) {
+          if (rec.type === 'diagnosis') {
+            await deleteRecording(rec.id);
+          }
+        }
+      }
+
+      await saveRecording({
+        id: diagnosisId,
+        machineId: this.machine.id,
+        type: 'diagnosis',
+        audioBuffer: buffer,
+        timestamp: Date.now(),
+        duration: buffer.duration,
+        sampleRate: buffer.sampleRate,
+      });
+    } catch (error) {
+      logger.warn('Could not persist diagnosis audio:', error);
+    }
+  }
+
+  /**
+   * Add A/B listening controls to the result screen: play the reference and
+   * "this measurement" back to back by ear (the real "hear the difference"),
+   * with an optional slow-motion toggle for transient/rhythmic detail.
+   *
+   * Degrades gracefully: shows only what audio is available. NFC-provisioned
+   * machines may have no local reference audio; very old browsers may not have
+   * captured the diagnosis audio.
+   */
+  private populateListenControls(
+    referenceBuffer: AudioBuffer | null,
+    diagnosisBuffer: AudioBuffer | null
+  ): void {
+    const container = document.getElementById('listen-controls');
+    if (!container) return;
+
+    if (!referenceBuffer && !diagnosisBuffer) return;
+
+    if (!this.slowListenPlayer) {
+      this.slowListenPlayer = new SlowListenPlayer();
+    }
+    this.listenPlayingKey = null;
+
+    container.innerHTML = '';
+
+    let speedFactor = 1; // 0.5 = slower/lower, 2 = faster/higher
+    const buttons: Array<{ key: string; el: HTMLButtonElement; label: string }> = [];
+    const buffers: Record<string, AudioBuffer> = {};
+
+    const resetAll = () => {
+      this.listenPlayingKey = null;
+      for (const b of buttons) b.el.textContent = b.label;
+    };
+
+    // Play a given recording at the current speed, updating button labels
+    const startPlayback = (key: string) => {
+      const player = this.slowListenPlayer;
+      const buffer = buffers[key];
+      if (!player || !buffer) return;
+      player.stop();
+      resetAll();
+      this.listenPlayingKey = key;
+      const active = buttons.find((b) => b.key === key);
+      if (active) active.el.textContent = t('diagnose.display.listenStop');
+      void player.play(buffer, { playbackRate: speedFactor }, resetAll).catch((error) => {
+        logger.warn('Listen playback failed:', error);
+        resetAll();
+      });
+    };
+
+    const makeListenButton = (key: string, label: string, buffer: AudioBuffer) => {
+      buffers[key] = buffer;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'listen-btn';
+      btn.textContent = label;
+      btn.onclick = () => {
+        if (this.listenPlayingKey === key) {
+          // tapping the active button just stops
+          this.slowListenPlayer?.stop();
+          resetAll();
+          return;
+        }
+        startPlayback(key);
+      };
+      buttons.push({ key, el: btn, label });
+      container.appendChild(btn);
+    };
+
+    if (referenceBuffer) {
+      makeListenButton('reference', t('diagnose.display.listenReference'), referenceBuffer);
+    }
+    if (diagnosisBuffer) {
+      makeListenButton('measurement', t('diagnose.display.listenMeasurement'), diagnosisBuffer);
+    }
+
+    // "Hear only the difference": resynthesize what's new in the measurement vs
+    // the reference (spectral subtraction). Only when both takes are available.
+    if (referenceBuffer && diagnosisBuffer) {
+      const refBuf = referenceBuffer;
+      const measBuf = diagnosisBuffer;
+      let differenceComputed = false;
+      let computing = false;
+      const diffLabel = t('diagnose.display.listenDifference');
+
+      const diffBtn = document.createElement('button');
+      diffBtn.type = 'button';
+      diffBtn.className = 'listen-btn listen-btn-difference';
+      diffBtn.textContent = diffLabel;
+      buttons.push({ key: 'difference', el: diffBtn, label: diffLabel });
+
+      diffBtn.onclick = () => {
+        if (this.listenPlayingKey === 'difference') {
+          this.slowListenPlayer?.stop();
+          resetAll();
+          return;
+        }
+        if (differenceComputed) {
+          startPlayback('difference');
+          return;
+        }
+        if (computing) return;
+        computing = true;
+        diffBtn.textContent = t('diagnose.display.listenComputing');
+        // Defer so the "computing" label paints before the heavy synchronous DSP
+        setTimeout(() => {
+          try {
+            const result = isolateDifference(refBuf, measBuf);
+            if (result.samples.length === 0) {
+              notify.info(t('diagnose.display.listenDifferenceTooShort'));
+              diffBtn.textContent = diffLabel;
+              computing = false;
+              return;
+            }
+            buffers['difference'] = this.samplesToAudioBuffer(result.samples, result.sampleRate);
+            differenceComputed = true;
+            computing = false;
+            diffBtn.textContent = diffLabel;
+            startPlayback('difference');
+          } catch (error) {
+            logger.warn('Difference isolation failed:', error);
+            diffBtn.textContent = diffLabel;
+            computing = false;
+          }
+        }, 50);
+      };
+      container.appendChild(diffBtn);
+    }
+
+    // Speed toggles: slower/lower (🐢, good for impacts/rattles) and
+    // faster/higher (🐇, transposes low content up into the phone-speaker range
+    // so deep hums become audible). Mutually exclusive; tapping the active one
+    // returns to normal speed.
+    const slowToggle = document.createElement('button');
+    const normalToggle = document.createElement('button');
+    const fastToggle = document.createElement('button');
+
+    // Speed selector: slower/lower (🐢), normal (▶), faster/higher (🐇).
+    // Exactly one is active; the speed applies to whichever clip is playing.
+    const updateSpeedActive = () => {
+      slowToggle.classList.toggle('active', speedFactor === 0.5);
+      normalToggle.classList.toggle('active', speedFactor === 1);
+      fastToggle.classList.toggle('active', speedFactor === 2);
+    };
+    const applySpeed = (factor: number) => {
+      speedFactor = factor;
+      updateSpeedActive();
+      // If something is playing, replay it immediately at the new speed
+      const playingKey = this.listenPlayingKey;
+      if (playingKey) startPlayback(playingKey);
+    };
+
+    slowToggle.type = 'button';
+    slowToggle.className = 'listen-slow-toggle';
+    slowToggle.textContent = t('diagnose.display.listenSlow');
+    slowToggle.onclick = () => applySpeed(0.5);
+    container.appendChild(slowToggle);
+
+    normalToggle.type = 'button';
+    normalToggle.className = 'listen-slow-toggle listen-normal-toggle';
+    normalToggle.textContent = t('diagnose.display.listenNormal');
+    normalToggle.onclick = () => applySpeed(1);
+    container.appendChild(normalToggle);
+
+    fastToggle.type = 'button';
+    fastToggle.className = 'listen-slow-toggle listen-fast-toggle';
+    fastToggle.textContent = t('diagnose.display.listenFaster');
+    fastToggle.setAttribute('aria-pressed', 'false');
+    fastToggle.onclick = () => applySpeed(2);
+    container.appendChild(fastToggle);
+
+    updateSpeedActive(); // Normal active by default
+
+    this.revealResultSlot(container);
+  }
+
+  /**
+   * Wrap a mono sample buffer into a playable AudioBuffer.
+   */
+  private samplesToAudioBuffer(samples: Float32Array, sampleRate: number): AudioBuffer {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const ctx = new AudioCtx();
+    const buffer = ctx.createBuffer(1, samples.length, sampleRate);
+    buffer.getChannelData(0).set(samples);
+    void ctx.close();
+    return buffer;
+  }
+
+  /**
+   * Draw the frequency-analysis visualization on the expert "Varianz /
+   * Frequenzabweichung" canvas.
+   *
+   * Plots the measured spectrum on logarithmic frequency (x) and logarithmic
+   * amplitude/dB (y) axes as a status-coloured line, and annotates the two
+   * dominant spectral peaks with a dashed marker and their frequency value so
+   * the user can tell which frequencies the energy sits at.
+   */
+  /**
+   * Set the live "ghost" overlay from the machine's reference AUDIO (for engines
+   * whose model carries no spectrum, i.e. YAMNet). Best-effort: silently does
+   * nothing if no reference audio is stored or the visualizer is gone.
+   */
+  private async loadReferenceGhostFromAudio(): Promise<void> {
+    try {
+      const recordings = await getRecordingsForMachine(this.machine.id);
+      const refBuffer = recordings
+        .filter((r) => r.type === 'reference' && r.audioBuffer)
+        .sort((a, b) => b.timestamp - a.timestamp)[0]?.audioBuffer;
+      if (!refBuffer || !this.visualizer) return;
+      const spectrum = averageSpectrum(refBuffer);
+      this.visualizer.setReferenceSpectrum(spectrum, refBuffer.sampleRate / 2);
+    } catch (error) {
+      logger.warn('Could not build reference ghost from audio:', error);
+    }
+  }
+
   private drawAnalysisCanvas(diagnosis: DiagnosisResult): void {
     const canvas = document.getElementById('analysis-canvas') as HTMLCanvasElement | null;
-    if (!canvas || !this.lastFeatureVector) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Set canvas resolution to match display size (avoid blurry rendering)
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * (window.devicePixelRatio || 1);
-    canvas.height = rect.height * (window.devicePixelRatio || 1);
-    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
-
-    const displayWidth = rect.width;
-    const displayHeight = rect.height;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, displayWidth, displayHeight);
-
-    const features = this.lastFeatureVector.features;
-    const bins = features.length;
-    if (bins === 0) return;
-
-    // Downsample bins to fit display width (group bins together)
-    const barCount = Math.min(bins, Math.floor(displayWidth / 2));
-    const binsPerBar = bins / barCount;
-    const downsampled: number[] = [];
-    for (let i = 0; i < barCount; i++) {
-      const start = Math.floor(i * binsPerBar);
-      const end = Math.floor((i + 1) * binsPerBar);
-      let sum = 0;
-      for (let j = start; j < end; j++) {
-        sum += features[j];
-      }
-      downsampled.push(sum / (end - start));
-    }
-
-    // Find max value for normalization
-    const maxVal = Math.max(...downsampled, 1e-10);
-
-    // Choose color based on diagnosis status
-    const statusColors: Record<string, { bar: string; glow: string }> = {
-      healthy: { bar: '#00E676', glow: 'rgba(0, 230, 118, 0.3)' },
-      uncertain: { bar: '#FFA726', glow: 'rgba(255, 167, 38, 0.3)' },
-      faulty: { bar: '#FF5252', glow: 'rgba(255, 82, 82, 0.3)' },
-    };
-    const colors = statusColors[diagnosis.status] || statusColors.uncertain;
-
-    // Draw bars
-    const barWidth = displayWidth / barCount;
-    const padding = Math.max(0.5, barWidth * 0.1);
-
-    for (let i = 0; i < barCount; i++) {
-      const normalizedHeight = (downsampled[i] / maxVal) * (displayHeight - 4);
-      const barHeight = Math.max(1, normalizedHeight);
-      const x = i * barWidth + padding / 2;
-      const y = displayHeight - barHeight;
-
-      // Subtle glow effect
-      ctx.fillStyle = colors.glow;
-      ctx.fillRect(x, y - 1, barWidth - padding, barHeight + 1);
-
-      // Main bar
-      ctx.fillStyle = colors.bar;
-      ctx.globalAlpha = 0.4 + 0.6 * (downsampled[i] / maxVal);
-      ctx.fillRect(x, y, barWidth - padding, barHeight);
-      ctx.globalAlpha = 1.0;
-    }
-
-    // Draw frequency axis labels
-    const freqRange = this.lastFeatureVector.frequencyRange;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.font = '9px sans-serif';
-    ctx.textBaseline = 'top';
-
-    const freqLabels = [0, 5, 10, 15, 20];
-    for (const kHz of freqLabels) {
-      const freq = kHz * 1000;
-      if (freq > freqRange[1]) break;
-      const xPos = (freq / freqRange[1]) * displayWidth;
-      ctx.fillText(`${kHz}k`, xPos + 2, 2);
-    }
+    if (!canvas) return;
+    // Prefer the engine's ESD feature vector (GMIA / spectral-cosine). When the
+    // active engine produces none (YAMNet), fall back to the measured spectrum
+    // computed from the captured audio, so the "Frequenzabweichung" plot — the
+    // measured curve over the reference, with the strongest deviations — is
+    // shown regardless of the evaluation method.
+    const measured = this.lastFeatureVector
+      ? this.lastFeatureVector
+      : this.lastMeasurementSpectrum
+        ? {
+            features: this.lastMeasurementSpectrum.data,
+            frequencyRange: [0, this.lastMeasurementSpectrum.nyquist] as [number, number],
+          }
+        : null;
+    if (!measured) return;
+    renderAnalysisCanvas(canvas, measured, this.lastReferenceSpectrum, diagnosis.status);
   }
 
   /**
@@ -2586,18 +4042,25 @@ export class DiagnosePhase {
    * and their probability scores for Advanced/Expert users.
    */
   private updateWorkPointRanking(): void {
-    // Check if we have the necessary data
-    if (!this.lastFeatureVector || !this.activeModels || this.activeModels.length === 0) {
-      logger.debug('📊 WorkPointRanking: No feature vector or models available');
-      return;
+    // YAMNet produces no ESD feature vector and is skipped by the sync
+    // dispatcher, so reuse the per-state scores captured during the live YAMNet
+    // diagnosis. All other engines score synchronously from the feature vector.
+    // NOTE: detect YAMNet by the captured scores, NOT this.diagnosisIsYamnet —
+    // cleanup() resets that flag before the result screen renders. lastYamnetScores
+    // survives cleanup and is only set during a YAMNet diagnosis.
+    let modelScores: WorkPointScore[];
+    if (this.lastYamnetScores && this.lastYamnetScores.length > 0) {
+      modelScores = this.lastYamnetScores;
+    } else {
+      if (!this.lastFeatureVector || !this.activeModels || this.activeModels.length === 0) {
+        logger.debug('📊 WorkPointRanking: No feature vector or models available');
+        return;
+      }
+      modelScores = scoreAllWithEngines(this.activeModels, {
+        feature: this.lastFeatureVector,
+        sampleRate: this.actualSampleRate,
+      });
     }
-
-    // Get all model scores
-    const modelScores = getAllModelScores(
-      this.activeModels,
-      this.lastFeatureVector,
-      this.actualSampleRate
-    );
 
     if (modelScores.length === 0) {
       logger.debug('📊 WorkPointRanking: No scores calculated');
@@ -2639,6 +4102,53 @@ export class DiagnosePhase {
   /**
    * Show history chart modal with machine diagnosis history
    */
+  /**
+   * Render the "Auffällige Merkmale" list for the most recent check in the
+   * history modal. Lists every recorded bad feature (even weak ones, so they're
+   * at least documented); strong ones (≥ 50 %) are marked red to match the
+   * timeline markers.
+   */
+  private renderHistoryAnomalyList(diagnoses: DiagnosisResult[]): void {
+    const listEl = document.getElementById('history-anomaly-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    const latest = diagnoses.reduce(
+      (a, b) => (b.timestamp > a.timestamp ? b : a),
+      diagnoses[0]
+    );
+    const anomalies = latest?.analysis?.frequencyAnomalies ?? [];
+
+    if (anomalies.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'history-anomaly-empty';
+      li.textContent = t('historyChart.anomalyNone');
+      listEl.appendChild(li);
+      return;
+    }
+
+    const fmtHz = (hz: number): string =>
+      hz >= 1000 ? `${(hz / 1000).toFixed(1)} kHz` : `${Math.round(hz)} Hz`;
+
+    for (const a of anomalies) {
+      const li = document.createElement('li');
+      li.className = 'history-anomaly-item';
+      if (a.strength >= 50) li.classList.add('is-strong');
+
+      const freq = document.createElement('span');
+      freq.className = 'history-anomaly-freq';
+      freq.textContent = fmtHz(a.frequency);
+
+      const strength = document.createElement('span');
+      strength.className = 'history-anomaly-strength';
+      strength.textContent = `${Math.round(a.strength)}%`;
+
+      li.appendChild(freq);
+      li.appendChild(strength);
+      listEl.appendChild(li);
+    }
+  }
+
   private async showHistoryChart(): Promise<void> {
     try {
       logger.info('📈 Loading history chart...');
@@ -2681,7 +4191,7 @@ export class DiagnosePhase {
           return date.toLocaleDateString(getLocale(), {
             year: 'numeric',
             month: 'short',
-            day: 'numeric'
+            day: 'numeric',
           });
         };
         timeRangeEl.textContent = `${formatDate(firstDate)} - ${formatDate(lastDate)}`;
@@ -2696,6 +4206,9 @@ export class DiagnosePhase {
       }
       this.historyChart = new HistoryChart('history-chart-canvas');
       this.historyChart.draw(diagnoses, true);
+
+      // List the bad features ("Auffällige Merkmale") of the most recent check.
+      this.renderHistoryAnomalyList(diagnoses);
 
       // Setup close buttons
       const closeBtn = document.getElementById('close-history-chart-modal');
@@ -2758,6 +4271,25 @@ export class DiagnosePhase {
       this.visualizer = null;
     }
 
+    // Destroy the on-demand basic-view spectrum visualizer
+    if (this.revealVisualizer) {
+      this.revealVisualizer.destroy();
+      this.revealVisualizer = null;
+    }
+
+    // Stop any A/B listening playback
+    if (this.slowListenPlayer) {
+      this.slowListenPlayer.stop();
+      this.slowListenPlayer = null;
+    }
+
+    // Stop diagnosis audio capture and release captured buffers
+    this.stopDiagnosisAudioCapture();
+    this.diagnosisAudioChunks = [];
+    this.lastDiagnosisAudioBuffer = null;
+    this.diagnosisAudioPromise = null;
+    this.listenPlayingKey = null;
+
     // Cleanup health gauge instance to prevent leaks
     if (this.healthGauge) {
       this.healthGauge.destroy();
@@ -2776,9 +4308,20 @@ export class DiagnosePhase {
       this.workPointRanking = null;
     }
     this.lastFeatureVector = null;
+    this.lastReferenceSpectrum = null;
+    this.lastMeasurementSpectrum = null;
+    this.lastYamnetScores = null;
+    this.diagnosisQualityFeatures = [];
+    this.measurementSignalTooWeak = false;
 
     // Clear score history
     this.scoreHistory.clear();
+    this.faultScoreHistory.clear();
     this.labelHistory.clear(); // CRITICAL FIX: Clear label history
+    this.lastFaultLabel = '';
+    this.lastFaultScore = 0;
+    this.lastBestFaultLabel = '';
+    this.lastBestFaultScore = 0;
+    this.lastFaultModelsExist = false;
   }
 }

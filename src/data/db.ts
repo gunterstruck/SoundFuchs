@@ -8,7 +8,15 @@
  */
 
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { Machine, Recording, DiagnosisResult, GMIAModel, ReferenceDatabase } from './types.js';
+import type {
+  Machine,
+  Recording,
+  DiagnosisResult,
+  GMIAModel,
+  SpectralCosineModel,
+  ReferenceModel,
+  ReferenceDatabase,
+} from './types.js';
 import { logger } from '@utils/logger.js';
 
 export interface AppSetting<T = unknown> {
@@ -20,7 +28,7 @@ export interface AppSetting<T = unknown> {
 /**
  * Database schema definition
  */
-interface ZanoboDB extends DBSchema {
+interface ZanobotDB extends DBSchema {
   machines: {
     key: string;
     value: Machine;
@@ -61,23 +69,36 @@ interface ZanoboDB extends DBSchema {
   };
 }
 
-const DB_NAME = 'zanobo-db';
-const DB_VERSION = 7; // Incremented for NFC Machine Setup + Reference Database
+const DB_NAME = 'zanobot-db';
+const DB_VERSION = 8; // Incremented for swappable evaluation engines (ReferenceModel union)
 
-let dbInstance: IDBPDatabase<ZanoboDB> | null = null;
+let dbInstance: IDBPDatabase<ZanobotDB> | null = null;
 
 /**
  * Initialize and open the database
  *
  * @returns Database instance
  */
-export async function initDB(): Promise<IDBPDatabase<ZanoboDB>> {
+export async function initDB(): Promise<IDBPDatabase<ZanobotDB>> {
   if (dbInstance) {
     return dbInstance;
   }
 
-  dbInstance = await openDB<ZanoboDB>(DB_NAME, DB_VERSION, {
+  dbInstance = await openDB<ZanobotDB>(DB_NAME, DB_VERSION, {
     upgrade(db, oldVersion, newVersion, transaction) {
+      // ══════════════════════════════════════════════════════════════════
+      // UPDATE-POLICY (Betreiber-Anforderung): Ab Schema v3 sind ALLE
+      // Migrationen ADDITIV — ein App-Update darf niemals Maschinen,
+      // Aufnahmen, Prüfungen oder Einstellungen löschen. Neue Felder sind
+      // optional (Lesen von Alt-Daten bleibt gültig, vgl. v7→v8), neue
+      // Stores kommen hinzu, nichts wird geleert oder gelöscht.
+      // Der Wächter-Test src/data/dbMigration.test.ts erzwingt das: Er
+      // migriert eine befüllte v3-Datenbank auf DB_VERSION und schlägt
+      // fehl, sobald eine künftige Migration Daten verliert.
+      // (Die destruktiven Blöcke unten betreffen NUR historische
+      // v1/v2-Datenbanken aus der Zeit vor Multiclass.)
+      // ══════════════════════════════════════════════════════════════════
+
       // Create machines store
       if (!db.objectStoreNames.contains('machines')) {
         const machineStore = db.createObjectStore('machines', { keyPath: 'id' });
@@ -140,7 +161,10 @@ export async function initDB(): Promise<IDBPDatabase<ZanoboDB>> {
       // Migration from v2 to v3: Multiclass diagnosis - HARD RESET
       // Breaking change: referenceModel → referenceModels[] + label field
       // We cannot migrate old single-model data to multiclass, so we clear everything
-      if (oldVersion < 3) {
+      // UX-FIX: oldVersion === 0 ist eine NEUINSTALLATION (nie Daten gehabt) —
+      // dort weder leere Stores "resetten" noch die beunruhigende
+      // "alle Daten gelöscht"-Warnung beim allerersten App-Start zeigen.
+      if (oldVersion > 0 && oldVersion < 3) {
         logger.warn('🔄 Migrating database from v2 to v3 (Multiclass Diagnosis)');
         logger.warn('   ⚠️ BREAKING CHANGE: referenceModel → referenceModels[]');
         logger.warn('   ⚠️ All existing data will be cleared (machines, recordings, diagnoses)');
@@ -148,7 +172,7 @@ export async function initDB(): Promise<IDBPDatabase<ZanoboDB>> {
         // CRITICAL: Store migration info in localStorage to show user warning
         // This will be displayed on next page load in main.ts
         try {
-          localStorage.setItem('zanobo-migration-v3-occurred', JSON.stringify({
+          localStorage.setItem('zanobot-migration-v3-occurred', JSON.stringify({
             timestamp: Date.now(),
             oldVersion,
             newVersion: 3,
@@ -216,6 +240,17 @@ export async function initDB(): Promise<IDBPDatabase<ZanoboDB>> {
         logger.info('   ✅ Added reference_data store for NFC-based setup');
         logger.info('   ✅ Extended Machine model with referenceDbUrl, location, notes');
       }
+
+      // Migration from v7 to v8: Swappable evaluation engines.
+      // NON-BREAKING / ADDITIVE: referenceModels[] now holds a ReferenceModel
+      // union (GMIAModel | SpectralCosineModel). No store changes and no data
+      // rewrite needed — existing GMIAModel records have no engineId and are
+      // interpreted as 'gmia' at read time (resolveEngineId).
+      if (oldVersion < 8) {
+        logger.info('🔄 Migrating database from v7 to v8 (Swappable evaluation engines)');
+        logger.info('   ✅ referenceModels[] now accepts the ReferenceModel union (additive)');
+        logger.info('   ℹ️ Existing GMIA models keep working and are read as engineId="gmia"');
+      }
     },
   });
 
@@ -248,73 +283,6 @@ export async function deleteAppSetting(key: string): Promise<void> {
   const db = await initDB();
   await db.delete('app_settings', key);
   logger.info(`🗑️ App setting deleted: ${key}`);
-}
-
-/**
- * A single app setting prepared for JSON backup.
- * Blob values (e.g. custom hero banners) are stored in serialized form so they
- * survive JSON round-trips.
- */
-export interface SerializedAppSetting {
-  key: string;
-  value: unknown;
-  updatedAt: number;
-}
-
-/**
- * Export all app_settings (UI assets such as custom hero banners).
- *
- * Blob values are serialized to a JSON-safe base64 representation.
- *
- * @returns Array of serialized app settings
- */
-export async function exportAppSettings(): Promise<SerializedAppSetting[]> {
-  const db = await initDB();
-  const all = await db.getAll('app_settings');
-
-  return Promise.all(
-    all.map(async (setting) => ({
-      key: setting.key,
-      value: setting.value instanceof Blob ? await serializeBlob(setting.value) : setting.value,
-      updatedAt: setting.updatedAt ?? Date.now(),
-    }))
-  );
-}
-
-/**
- * Import app_settings (UI assets such as custom hero banners).
- *
- * Serialized Blob values are rehydrated back into real Blobs before storing.
- * Existing keys are overwritten so imported banners/themes take effect.
- *
- * @param settings - Serialized app settings (from a backup file)
- * @returns Number of settings successfully imported
- */
-export async function importAppSettings(settings: SerializedAppSetting[]): Promise<number> {
-  const db = await initDB();
-  let imported = 0;
-
-  for (const setting of settings) {
-    try {
-      const value = isSerializedBlob(setting.value)
-        ? deserializeBlob(setting.value)
-        : setting.value;
-
-      await db.put('app_settings', {
-        key: setting.key,
-        value,
-        updatedAt: setting.updatedAt ?? Date.now(),
-      });
-      imported++;
-    } catch (error) {
-      logger.warn(
-        `⚠️ Skipped app setting "${setting.key || 'unknown'}": ${error instanceof Error ? error.message : error}`
-      );
-    }
-  }
-
-  logger.info(`📥 Imported ${imported}/${settings.length} app setting(s)`);
-  return imported;
 }
 
 // ============================================================================
@@ -584,12 +552,63 @@ export async function deleteReferenceModel(machineId: string, modelLabel: string
 }
 
 /**
+ * Promote a reference model to be the machine's "Baseline" (primary reference).
+ *
+ * The Baseline label is treated as special throughout the app (ghost overlay,
+ * iris fingerprint, fleet comparison) – it's the model used whenever "the"
+ * reference for a machine is needed. This is useful when a machine's current
+ * Baseline came from an NFC/database import with no backing audio recording:
+ * promoting a locally-recorded state makes that recording (and its audio)
+ * the new primary reference.
+ *
+ * Any existing model already labeled "Baseline" is renamed to demotedLabel
+ * so there is never more than one Baseline at a time.
+ *
+ * @param machineId - Machine ID
+ * @param modelLabel - Label of the model to promote
+ * @param demotedLabel - Fallback label for the previous Baseline model (if any)
+ * @returns The previous Baseline's label if one was demoted, null if there was
+ *          none, or undefined if the target model could not be found
+ */
+export async function promoteToBaseline(
+  machineId: string,
+  modelLabel: string,
+  demotedLabel: string
+): Promise<string | null | undefined> {
+  const machine = await getMachine(machineId);
+  if (!machine) return undefined;
+
+  const models = machine.referenceModels || [];
+  const target = models.find(
+    (m) => m.label?.toLowerCase().trim() === modelLabel.toLowerCase().trim()
+  );
+  if (!target) return undefined;
+
+  if (target.label === 'Baseline') return null; // Already the Baseline
+
+  let demoted: string | null = null;
+  for (const m of models) {
+    if (m.label === 'Baseline' && m !== target) {
+      demoted = m.label;
+      m.label = demotedLabel;
+    }
+  }
+
+  target.label = 'Baseline';
+  target.type = 'healthy';
+
+  await saveMachine(machine);
+  logger.info(`⭐ Reference model "${modelLabel}" promoted to Baseline on machine ${machineId}`);
+  return demoted;
+}
+
+/**
  * Add a reference model to a machine's model collection
  *
  * @param machineId - Machine ID
- * @param model - GMIA model to add
+ * @param model - Reference model to add (GMIA or alternative engine)
  */
-export async function updateMachineModel(machineId: string, model: GMIAModel): Promise<void> {
+export async function updateMachineModel(machineId: string, model: ReferenceModel): Promise<void> {
   const db = await initDB();
   const machine = await db.get('machines', machineId);
 
@@ -700,6 +719,16 @@ export async function getRecordingsForMachine(machineId: string): Promise<Record
     }
     return recording as Recording;
   });
+}
+
+/**
+ * Delete a recording by id.
+ *
+ * @param id - Recording id
+ */
+export async function deleteRecording(id: string): Promise<void> {
+  const db = await initDB();
+  await db.delete('recordings', id);
 }
 
 // ============================================================================
@@ -883,9 +912,48 @@ interface SerializedBlob {
   data: string;
 }
 
+/** A GMIA model with its Float64Array weight vector serialized to number[]. */
+type SerializedGMIAModel = Omit<GMIAModel, 'weightVector'> & { weightVector: number[] };
+
+/**
+ * Serialized reference model union. Spectral-cosine (and YAMNet) models are
+ * already JSON-friendly (mean / bank are number[]), so only GMIA needs the
+ * Float64Array → number[] weightVector conversion.
+ */
+type SerializedReferenceModel = SerializedGMIAModel | SpectralCosineModel;
+
 interface SerializedMachine extends Omit<Machine, 'referenceModels' | 'referenceImage'> {
-  referenceModels: Array<Omit<GMIAModel, 'weightVector'> & { weightVector: number[] }>;
+  referenceModels: SerializedReferenceModel[];
   referenceImage?: SerializedBlob;
+}
+
+/** Engine-aware serialization: convert GMIA weightVector to number[]; pass others through. */
+function serializeReferenceModel(model: ReferenceModel): SerializedReferenceModel {
+  if ((model.engineId ?? 'gmia') === 'gmia') {
+    const gmia = model as GMIAModel;
+    return { ...gmia, weightVector: Array.from(gmia.weightVector) };
+  }
+  return { ...(model as SpectralCosineModel) };
+}
+
+/** Engine-aware deserialization: rebuild GMIA weightVector as Float64Array; pass others through. */
+function deserializeReferenceModel(
+  model: SerializedReferenceModel | ReferenceModel
+): ReferenceModel {
+  if ((model.engineId ?? 'gmia') === 'gmia') {
+    const gmia = model as SerializedGMIAModel & { weightVector: number[] | Float64Array };
+    const wv = gmia.weightVector;
+    if (!(wv instanceof Float64Array) && !Array.isArray(wv)) {
+      throw new Error(
+        `Reference model "${gmia.label || 'unnamed'}" has an invalid weightVector`
+      );
+    }
+    return {
+      ...(gmia as object),
+      weightVector: wv instanceof Float64Array ? wv : new Float64Array(wv),
+    } as GMIAModel;
+  }
+  return model as SpectralCosineModel;
 }
 
 /**
@@ -975,10 +1043,7 @@ export async function exportData(): Promise<{
       referenceImage: machine.referenceImage
         ? await serializeBlob(machine.referenceImage)
         : undefined,
-      referenceModels: (machine.referenceModels || []).map((model) => ({
-        ...model,
-        weightVector: Array.from(model.weightVector),
-      })),
+      referenceModels: (machine.referenceModels || []).map(serializeReferenceModel),
     }))
   );
   const recordings = await db.getAll('recordings');
@@ -1102,6 +1167,37 @@ export interface ImportResult {
 }
 
 /**
+ * Validate the structural shape of import data.
+ *
+ * Must be called (and pass) BEFORE any destructive operation: in replace mode
+ * the database is wiped, so a malformed file must be rejected while the
+ * existing data is still intact.
+ *
+ * @throws Error if the data is not a usable backup structure
+ */
+function validateImportStructure(data: {
+  machines?: unknown;
+  recordings?: unknown;
+  diagnoses?: unknown;
+}): void {
+  for (const key of ['machines', 'recordings', 'diagnoses'] as const) {
+    const value = data[key];
+    if (value !== undefined && !Array.isArray(value)) {
+      throw new Error(`Invalid backup file: "${key}" must be an array, got ${typeof value}`);
+    }
+  }
+
+  const hasContent =
+    (Array.isArray(data.machines) && data.machines.length > 0) ||
+    (Array.isArray(data.recordings) && data.recordings.length > 0) ||
+    (Array.isArray(data.diagnoses) && data.diagnoses.length > 0);
+
+  if (!hasContent) {
+    throw new Error('Invalid backup file: no machines, recordings or diagnoses to import');
+  }
+}
+
+/**
  * Import data (restore from backup)
  *
  * @param data - Data to import
@@ -1116,6 +1212,9 @@ export async function importData(
   },
   merge: boolean = false
 ): Promise<ImportResult> {
+  // Reject malformed files BEFORE clearing anything (data-loss guard)
+  validateImportStructure(data);
+
   const db = await initDB();
 
   // If not merging, clear existing data first
@@ -1139,13 +1238,9 @@ export async function importData(
           normalizedReferenceImage = deserializeBlob(referenceImage);
         }
 
-        const normalizedReferenceModels = (machine.referenceModels || []).map((model) => ({
-          ...model,
-          weightVector:
-            model.weightVector instanceof Float64Array
-              ? model.weightVector
-              : new Float64Array(model.weightVector as number[]),
-        }));
+        const normalizedReferenceModels = (machine.referenceModels || []).map(
+          deserializeReferenceModel
+        );
 
         const normalizedMachine: Machine = {
           ...machine,
@@ -1286,6 +1381,156 @@ export async function importData(
     diagnosesSkipped,
     totalSkipped,
   };
+}
+
+// ============================================================================
+// SETTINGS EXPORT / IMPORT (UI preferences + banner assets)
+// ============================================================================
+
+/**
+ * Prefix shared by every localStorage key the app owns (both the dotted
+ * `zanobot.…` and the dashed `zanobot-…` families). Used to pick out the app's
+ * own settings without touching unrelated localStorage entries.
+ */
+const SETTINGS_LS_PREFIX = 'zanobot';
+
+/**
+ * localStorage keys that hold transient runtime state rather than user
+ * settings. They are never exported and never overwritten on import, so a
+ * restored backup can't, e.g., resurrect a stale migration/update banner.
+ */
+const TRANSIENT_LS_KEYS = new Set<string>([
+  'zanobot-migration-v3-occurred',
+  'zanobot-update-prompt-shown-at',
+]);
+
+/** A single exported app_settings entry. Blob values are serialized to base64. */
+export interface ExportedAppSetting {
+  key: string;
+  value: unknown;
+  updatedAt: number;
+}
+
+/**
+ * Snapshot of the app's UI settings, suitable for embedding in a backup file.
+ * Covers both storage layers: localStorage preferences (theme, view level,
+ * recording/visualizer/drift/room/cherry settings, per-theme banner text &
+ * position) and the IndexedDB app_settings store (banner images).
+ */
+export interface ExportedSettings {
+  localStorage: Record<string, string>;
+  appSettings: ExportedAppSetting[];
+}
+
+/**
+ * Collect the current UI settings for inclusion in a backup. Reads every
+ * app-owned localStorage key plus the banner image blobs in the app_settings
+ * object store (serialized to base64). Does NOT touch machines/recordings/
+ * diagnoses — those are handled by {@link exportData}.
+ */
+export async function exportSettings(): Promise<ExportedSettings> {
+  const settingsLs: Record<string, string> = {};
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(SETTINGS_LS_PREFIX) || TRANSIENT_LS_KEYS.has(key)) {
+        continue;
+      }
+      const value = localStorage.getItem(key);
+      if (value !== null) {
+        settingsLs[key] = value;
+      }
+    }
+  } catch (error) {
+    logger.warn('⚠️ Could not read settings from localStorage:', error);
+  }
+
+  const db = await initDB();
+  const stored = await db.getAll('app_settings');
+  const appSettings: ExportedAppSetting[] = await Promise.all(
+    stored.map(async (s) => ({
+      key: s.key,
+      value: s.value instanceof Blob ? await serializeBlob(s.value) : s.value,
+      updatedAt: s.updatedAt,
+    }))
+  );
+
+  logger.info(
+    `⚙️ Settings exported: ${Object.keys(settingsLs).length} preference(s), ${appSettings.length} asset(s)`
+  );
+
+  return { localStorage: settingsLs, appSettings };
+}
+
+/**
+ * Restore a settings snapshot produced by {@link exportSettings}: write the
+ * localStorage preferences and the app_settings assets (banner images) back.
+ * This overwrites the matching current settings but never touches
+ * machines/recordings/diagnoses. A page reload is expected afterwards so the
+ * live UI (theme, view level, banner) picks up the restored values.
+ */
+export async function importSettings(settings: ExportedSettings | undefined | null): Promise<void> {
+  if (!settings || typeof settings !== 'object') {
+    return;
+  }
+
+  if (settings.localStorage && typeof settings.localStorage === 'object') {
+    for (const [key, value] of Object.entries(settings.localStorage)) {
+      if (!key.startsWith(SETTINGS_LS_PREFIX) || TRANSIENT_LS_KEYS.has(key)) {
+        continue;
+      }
+      if (typeof value !== 'string') {
+        continue;
+      }
+      try {
+        localStorage.setItem(key, value);
+      } catch (error) {
+        logger.warn(`⚠️ Could not restore setting "${key}":`, error);
+      }
+    }
+  }
+
+  if (Array.isArray(settings.appSettings)) {
+    const db = await initDB();
+    for (const entry of settings.appSettings) {
+      if (!entry || typeof entry.key !== 'string') {
+        continue;
+      }
+      try {
+        const value = isSerializedBlob(entry.value) ? deserializeBlob(entry.value) : entry.value;
+        const setting: AppSetting = {
+          key: entry.key,
+          value,
+          updatedAt: typeof entry.updatedAt === 'number' ? entry.updatedAt : Date.now(),
+        };
+        await db.put('app_settings', setting);
+      } catch (error) {
+        logger.warn(`⚠️ Could not restore app setting "${entry.key}":`, error);
+      }
+    }
+  }
+
+  logger.info('✅ Settings import complete');
+}
+
+/**
+ * True if a parsed backup file carries a non-empty exported-settings section.
+ * Used to decide whether to offer the "also import settings" option.
+ */
+export function backupHasSettings(data: unknown): boolean {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+  const settings = (data as { settings?: Partial<ExportedSettings> }).settings;
+  if (!settings || typeof settings !== 'object') {
+    return false;
+  }
+  const hasPrefs =
+    !!settings.localStorage &&
+    typeof settings.localStorage === 'object' &&
+    Object.keys(settings.localStorage).length > 0;
+  const hasAssets = Array.isArray(settings.appSettings) && settings.appSettings.length > 0;
+  return hasPrefs || hasAssets;
 }
 
 // ============================================================================

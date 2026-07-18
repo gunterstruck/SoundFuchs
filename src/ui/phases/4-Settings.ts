@@ -10,17 +10,23 @@
  * - Clear all data
  */
 
-import { exportData, importData, getDBStats, clearAllData } from '@data/db.js';
+import {
+  exportData,
+  importData,
+  getDBStats,
+  clearAllData,
+  exportSettings,
+  importSettings,
+  backupHasSettings,
+  type ExportedSettings,
+} from '@data/db.js';
+import { openExportOptionsModal, openImportOptionsModal } from './ImportExportModal.js';
 import { notify } from '@utils/notifications.js';
 import { logger } from '@utils/logger.js';
-import {
-  getVisualizerSettings,
-  setVisualizerSettings,
-} from '@utils/visualizerSettings.js';
-import {
-  getRecordingSettings,
-  setRecordingSettings,
-} from '@utils/recordingSettings.js';
+import { getVisualizerSettings, setVisualizerSettings } from '@utils/visualizerSettings.js';
+import { getRecordingSettings, setRecordingSettings } from '@utils/recordingSettings.js';
+import { getEvaluationEngine, setEvaluationEngine } from '@utils/evaluationSettings.js';
+import type { EngineId } from '@data/types.js';
 import { t } from '../../i18n/index.js';
 import {
   getRoomCompSettings,
@@ -31,27 +37,35 @@ import {
   getT60ClassificationLabel,
 } from '@core/dsp/roomCompensation.js';
 import { getRawAudioStream } from '@core/audio/audioHelper.js';
+import { getBannerManager } from '../BannerManager.js';
+import { openBannerCropModal } from '@ui/components/BannerCropModal.js';
 import {
-  getCherryPickSettings,
-  setCherryPickSettings,
-} from '@core/dsp/cherryPicking.js';
+  getBannerText,
+  setBannerText,
+  hasCustomBannerText,
+  getBannerTextPosition,
+  setBannerTextPosition,
+  hasCustomBannerTextPosition,
+  isBannerTextHidden,
+  setBannerTextHidden,
+} from '@utils/bannerTextSettings.js';
+import { getCherryPickSettings, setCherryPickSettings } from '@core/dsp/cherryPicking.js';
 import {
-  getDriftSettings,
-  setDriftSettings,
-  getHzPerBin,
-} from '@core/dsp/driftDetector.js';
-import { DEFAULT_DSP_CONFIG } from '@core/dsp/features.js';
+  getNoiseSubtractionSettings,
+  setNoiseSubtractionSettings,
+  getNoiseProfiles,
+  saveNoiseProfile,
+  deleteNoiseProfile,
+  buildNoiseProfileFromFeatures,
+  isProfileStationary,
+  MAX_NOISE_PROFILES,
+} from '@core/dsp/noiseProfile.js';
+import { getDriftSettings, setDriftSettings, getHzPerBin } from '@core/dsp/driftDetector.js';
+import { DEFAULT_DSP_CONFIG, extractFeatures } from '@core/dsp/features.js';
 import { applyDefaults } from '@utils/viewLevelSettings.js';
 import { toast } from '@ui/components/Toast.js';
-import {
-  collectSettings,
-  applySettings,
-  hasSettingsBackup,
-  type SettingsBackup,
-} from '@utils/settingsBackup.js';
 
 export class SettingsPhase {
-
   // Pre-built export payload for instant sharing (preserves user gesture)
   private preparedSharePayload: {
     file: File;
@@ -81,6 +95,8 @@ export class SettingsPhase {
 
     this.initVisualizerScaleSettings();
     this.initRecordingSettings();
+    this.initEvaluationEngineSettings();
+    this.initMessLaborEntry();
 
     // Initialize banner settings (advanced/expert only)
     this.initBannerSettings();
@@ -90,6 +106,9 @@ export class SettingsPhase {
 
     // Initialize room compensation settings (expert only)
     this.initRoomCompSettings();
+
+    // Initialize noise profile subtraction settings (expert only)
+    this.initNoiseProfileSettings();
 
     // Initialize cherry-picking settings (expert only)
     this.initCherryPickSettings();
@@ -128,12 +147,8 @@ export class SettingsPhase {
   }
 
   private initVisualizerScaleSettings(): void {
-    const freqToggle = document.getElementById(
-      'frequency-scale-toggle'
-    ) as HTMLInputElement | null;
-    const ampToggle = document.getElementById(
-      'amplitude-scale-toggle'
-    ) as HTMLInputElement | null;
+    const freqToggle = document.getElementById('frequency-scale-toggle') as HTMLInputElement | null;
+    const ampToggle = document.getElementById('amplitude-scale-toggle') as HTMLInputElement | null;
 
     if (!freqToggle && !ampToggle) {
       return;
@@ -165,9 +180,7 @@ export class SettingsPhase {
       'confidence-threshold'
     ) as HTMLInputElement | null;
     const confidenceValue = document.getElementById('confidence-value');
-    const faultySlider = document.getElementById(
-      'faulty-threshold'
-    ) as HTMLInputElement | null;
+    const faultySlider = document.getElementById('faulty-threshold') as HTMLInputElement | null;
     const faultyValue = document.getElementById('faulty-value');
     const durationSelect = document.getElementById(
       'recording-duration'
@@ -270,7 +283,9 @@ export class SettingsPhase {
           setRecordingSettings({
             disableAudioTrigger: disableAudioTriggerToggle.checked,
           });
-          logger.info(`Audio-Trigger ${disableAudioTriggerToggle.checked ? 'deaktiviert' : 'aktiviert'}`);
+          logger.info(
+            `Audio-Trigger ${disableAudioTriggerToggle.checked ? 'deaktiviert' : 'aktiviert'}`
+          );
         } catch (error) {
           logger.error('Failed to save disable audio trigger setting:', error);
           notify.error(
@@ -283,6 +298,82 @@ export class SettingsPhase {
     }
   }
 
+  /**
+   * Bind the evaluation-engine selector. Default GMIA. Only affects which
+   * engine trains NEW references; existing models keep their own engine.
+   */
+  private initEvaluationEngineSettings(): void {
+    const select = document.getElementById(
+      'evaluation-engine-select'
+    ) as HTMLSelectElement | null;
+    if (!select) {
+      return;
+    }
+
+    // The description box above the selector explains the *currently selected*
+    // engine. We drive it by swapping the element's data-i18n key (not just its
+    // text) so the right description survives a later language switch, which
+    // re-runs translateDOM() over the data-i18n attributes.
+    const desc = document.getElementById('engine-method-desc');
+    const DESC_KEY: Record<EngineId, string> = {
+      gmia: 'settingsUI.gmaiMethodDesc',
+      'spectral-cosine': 'settingsUI.engineDescSpectral',
+      yamnet: 'settingsUI.engineDescYamnet',
+      temporal: 'settingsUI.engineDescTemporal',
+    };
+    const updateEngineDescription = (engineId: EngineId): void => {
+      if (!desc) {
+        return;
+      }
+      const key = DESC_KEY[engineId] ?? DESC_KEY.gmia;
+      desc.setAttribute('data-i18n', key);
+      desc.textContent = t(key);
+    };
+
+    select.value = getEvaluationEngine();
+    updateEngineDescription(select.value as EngineId);
+    select.addEventListener('change', () => {
+      try {
+        const engine = setEvaluationEngine(select.value as EngineId);
+        select.value = engine; // reflect validated value
+        updateEngineDescription(engine);
+        logger.info(`🔀 Evaluation engine set to "${engine}"`);
+      } catch (error) {
+        logger.error('Failed to save evaluation engine setting:', error);
+        notify.error(
+          t('settingsUI.evaluationEngineSaveError'),
+          error as Error,
+          { title: t('settingsUI.evaluationEngineSaveErrorTitle'), duration: 5000 }
+        );
+      }
+    });
+  }
+
+  /**
+   * Wire the Mess-Labor (engine benchmark) entry button. The whole lab is a
+   * lazily-imported, code-split module reached only here, and the entry is shown
+   * only on a desktop browser that can pick a directory (the lab decodes whole
+   * folders through every engine — too heavy for a phone). Purely additive: it
+   * never touches GMIA, the live loop or the database.
+   */
+  private initMessLaborEntry(): void {
+    const entry = document.getElementById('mess-labor-entry');
+    const btn = document.getElementById('mess-labor-open-btn');
+    if (!entry || !btn) return;
+
+    void import('@lab/index.js')
+      .then(({ isMessLaborSupported, launchMessLabor }) => {
+        if (!isMessLaborSupported()) return; // stays hidden on mobile / narrow
+        entry.style.display = '';
+        const handler = () => launchMessLabor();
+        btn.addEventListener('click', handler);
+        this.eventHandlers.set('mess-labor-open-btn', { element: btn as HTMLElement, handler });
+      })
+      .catch((error) => {
+        logger.warn('Mess-Labor entry unavailable:', error);
+      });
+  }
+
   private async initBannerSettings(): Promise<void> {
     const previewImage = document.getElementById('banner-preview-image') as HTMLImageElement | null;
     const uploadBtn = document.getElementById('banner-upload-btn');
@@ -293,8 +384,8 @@ export class SettingsPhase {
       return;
     }
 
-    // Import BannerManager dynamically to access instance
-    const { getBannerManager } = await import('../BannerManager.js');
+    // BannerManager is already loaded eagerly via main.ts, so use it directly
+    // (a dynamic import here cannot split it into its own chunk and only adds overhead).
     const bannerManager = getBannerManager();
 
     if (!bannerManager) {
@@ -302,53 +393,193 @@ export class SettingsPhase {
       return;
     }
 
-    // Update preview and reset button state
-    const updateBannerPreview = async () => {
-      const currentSrc = bannerManager.getCurrentBannerSrc();
-      if (currentSrc) {
-        previewImage.src = currentSrc;
-      }
+    const themeOf = () => document.documentElement.getAttribute('data-theme') || 'brand';
 
-      const hasCustom = await bannerManager.hasCustomBannerForCurrentTheme();
-      resetBtn.disabled = !hasCustom;
+    // Enable "reset" whenever there is anything to reset for this theme — a
+    // custom image, custom text, a moved text position, or the hide-text flag —
+    // not just an image. (Otherwise changing only the text or only the position
+    // left the button disabled, so it could never be reverted.)
+    const refreshResetEnabled = async () => {
+      const theme = themeOf();
+      const hasImage = await bannerManager.hasCustomBannerForCurrentTheme();
+      resetBtn.disabled = !(
+        hasImage ||
+        hasCustomBannerText(theme) ||
+        hasCustomBannerTextPosition(theme) ||
+        isBannerTextHidden(theme)
+      );
+    };
+
+    // Update preview and reset button state. Reads the actually stored banner
+    // (robust to crossfade timing) so the preview shows the new crop right away.
+    const updateBannerPreview = async () => {
+      const url = await bannerManager.getCurrentBannerPreviewUrl();
+      const previous = previewImage.dataset.bloburl;
+      previewImage.src = url;
+      if (url.startsWith('blob:')) previewImage.dataset.bloburl = url;
+      else delete previewImage.dataset.bloburl;
+      if (previous && previous !== url) URL.revokeObjectURL(previous);
+
+      await refreshResetEnabled();
     };
 
     // Initial update
     void updateBannerPreview();
+
+    // Text/hide changes elsewhere (initBannerTextSettings) re-evaluate the reset
+    // button without rebuilding the preview image.
+    window.addEventListener('bannercustomizationchange', () => {
+      void refreshResetEnabled();
+    });
 
     // Upload button click
     uploadBtn.addEventListener('click', () => {
       uploadInput.click();
     });
 
-    // Handle file selection
+    // Handle file selection → open the crop modal so any image can be framed to
+    // the banner size, then save the cropped result.
     uploadInput.addEventListener('change', async (event) => {
       const input = event.currentTarget as HTMLInputElement | null;
       const file = input?.files?.[0];
-
-      if (!file) {
-        return;
+      if (file) {
+        const cropped = await openBannerCropModal(file);
+        if (cropped) {
+          const success = await bannerManager.saveBannerBlob(cropped);
+          if (success) {
+            await updateBannerPreview();
+          }
+        }
       }
-
-      const success = await bannerManager.uploadBanner(file);
-      if (success) {
-        await updateBannerPreview();
-      }
-
-      // Clear input so same file can be selected again
-      input.value = '';
+      // Clear input so the same file can be selected again
+      if (input) input.value = '';
     });
 
-    // Reset button click
+    // Reset button click — reverts image AND custom text/position (resetBanner
+    // clears both). Refresh the preview image, then tell the text UI to reload
+    // its inputs/sliders/preview-text from the now-cleared store.
     resetBtn.addEventListener('click', async () => {
       await bannerManager.resetBanner();
       await updateBannerPreview();
+      window.dispatchEvent(new Event('bannertextreset'));
     });
 
     // Update preview when theme changes
     window.addEventListener('themechange', () => {
       void updateBannerPreview();
     });
+
+    this.initBannerTextSettings(bannerManager);
+  }
+
+  /**
+   * Wire the editable banner overlay text (headline + subline). Empty field =
+   * fall back to the translated default.
+   */
+  private initBannerTextSettings(bannerManager: ReturnType<typeof getBannerManager>): void {
+    const headlineInput = document.getElementById(
+      'banner-headline-input'
+    ) as HTMLInputElement | null;
+    const sublineInput = document.getElementById('banner-subline-input') as HTMLInputElement | null;
+    const posXInput = document.getElementById('banner-textx-input') as HTMLInputElement | null;
+    const posYInput = document.getElementById('banner-texty-input') as HTMLInputElement | null;
+    const hideInput = document.getElementById('banner-hidetext-input') as HTMLInputElement | null;
+    if (!headlineInput || !sublineInput) {
+      return;
+    }
+
+    // Preview elements (optional).
+    const previewContainer = document.getElementById('banner-preview-container');
+    const previewBlock = document.getElementById('banner-preview-textblock');
+    const previewHeadline = document.getElementById('banner-preview-headline');
+    const previewSubline = document.getElementById('banner-preview-subline');
+
+    const POS_X = { min: 0, max: 65 };
+    const POS_Y = { min: 12, max: 88 };
+    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+    const currentTheme = () => document.documentElement.getAttribute('data-theme') || 'brand';
+
+    const renderPreviewText = () => {
+      const txt = getBannerText(currentTheme());
+      if (previewHeadline) previewHeadline.textContent = txt.headline || t('banner.headline');
+      if (previewSubline) previewSubline.textContent = txt.subline || t('banner.subline');
+    };
+    const applyPreviewPosition = (x: number, y: number) => {
+      previewContainer?.style.setProperty('--banner-text-x', `${x}%`);
+      previewContainer?.style.setProperty('--banner-text-y', `${y}%`);
+    };
+    // Reflect the "hide text" toggle in the preview and disable the text/position
+    // controls (they have no effect while the text is hidden).
+    const applyHiddenState = (hidden: boolean) => {
+      if (previewBlock) previewBlock.style.display = hidden ? 'none' : '';
+      headlineInput.disabled = hidden;
+      sublineInput.disabled = hidden;
+      if (posXInput) posXInput.disabled = hidden;
+      if (posYInput) posYInput.disabled = hidden;
+    };
+
+    const loadForTheme = () => {
+      const current = getBannerText(currentTheme());
+      headlineInput.value = current.headline;
+      sublineInput.value = current.subline;
+      const pos = getBannerTextPosition(currentTheme());
+      if (posXInput) posXInput.value = String(pos.x);
+      if (posYInput) posYInput.value = String(pos.y);
+      const hidden = isBannerTextHidden(currentTheme());
+      if (hideInput) hideInput.checked = hidden;
+      renderPreviewText();
+      applyPreviewPosition(pos.x, pos.y);
+      applyHiddenState(hidden);
+    };
+    loadForTheme();
+
+    const commitText = () => {
+      setBannerText(currentTheme(), {
+        headline: headlineInput.value,
+        subline: sublineInput.value,
+      });
+      renderPreviewText();
+      bannerManager?.applyBannerText();
+      window.dispatchEvent(new Event('bannercustomizationchange'));
+    };
+    // Single source of truth for a position update (from sliders OR drag):
+    // persist, sync sliders, update the preview, and apply to the live hero.
+    const setPosition = (x: number, y: number) => {
+      setBannerTextPosition(currentTheme(), { x, y });
+      if (posXInput) posXInput.value = String(Math.round(x));
+      if (posYInput) posYInput.value = String(Math.round(y));
+      applyPreviewPosition(x, y);
+      bannerManager?.applyBannerText();
+      // Let the reset button re-evaluate: a moved position is now resettable.
+      window.dispatchEvent(new Event('bannercustomizationchange'));
+    };
+
+    headlineInput.addEventListener('input', commitText);
+    sublineInput.addEventListener('input', commitText);
+    posXInput?.addEventListener('input', () =>
+      setPosition(clamp(parseFloat(posXInput.value), POS_X.min, POS_X.max),
+        posYInput ? parseFloat(posYInput.value) : getBannerTextPosition(currentTheme()).y)
+    );
+    posYInput?.addEventListener('input', () =>
+      setPosition(posXInput ? parseFloat(posXInput.value) : getBannerTextPosition(currentTheme()).x,
+        clamp(parseFloat(posYInput.value), POS_Y.min, POS_Y.max))
+    );
+
+    // "Hide text" checkbox — show an image-only banner for this theme.
+    hideInput?.addEventListener('change', () => {
+      const hidden = hideInput.checked;
+      setBannerTextHidden(currentTheme(), hidden);
+      applyHiddenState(hidden);
+      bannerManager?.applyBannerText();
+      window.dispatchEvent(new Event('bannercustomizationchange'));
+    });
+
+    // Banner text + position are per-theme: reload on theme change.
+    window.addEventListener('themechange', loadForTheme);
+    // After a banner reset the store is cleared — reload so the fields/sliders
+    // and preview text snap back to the defaults.
+    window.addEventListener('bannertextreset', loadForTheme);
   }
 
   // ════════════════════════════════════════════════════════════
@@ -428,7 +659,7 @@ export class SettingsPhase {
 
         // Pause between chirps (let reverb decay)
         if (i < NUM_CHIRPS - 1) {
-          await new Promise(resolve => setTimeout(resolve, PAUSE_BETWEEN_MS));
+          await new Promise((resolve) => setTimeout(resolve, PAUSE_BETWEEN_MS));
         }
       }
 
@@ -436,7 +667,7 @@ export class SettingsPhase {
       if (progressBar) progressBar.style.width = '100%';
 
       // ── Cleanup audio ────────────────────────────────────
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       await audioContext.close();
       audioContext = null;
       stream = null;
@@ -455,26 +686,32 @@ export class SettingsPhase {
       const meanT60 = t60Values.reduce((a, b) => a + b, 0) / t60Values.length;
 
       // Standard deviation
-      const stddev = t60Values.length > 1
-        ? Math.sqrt(
-            t60Values.reduce((sum, v) => sum + (v - meanT60) ** 2, 0) / (t60Values.length - 1)
-          )
-        : 0;
+      const stddev =
+        t60Values.length > 1
+          ? Math.sqrt(
+              t60Values.reduce((sum, v) => sum + (v - meanT60) ** 2, 0) / (t60Values.length - 1)
+            )
+          : 0;
 
       const isStable = stddev < 0.15;
 
-      logger.info(`Room measurement result: T60 = ${meanT60.toFixed(3)}s ± ${stddev.toFixed(3)}s (${t60Values.length}/${NUM_CHIRPS} chirps)`);
+      logger.info(
+        `Room measurement result: T60 = ${meanT60.toFixed(3)}s ± ${stddev.toFixed(3)}s (${t60Values.length}/${NUM_CHIRPS} chirps)`
+      );
 
       // ── Show result ──────────────────────────────────────
       this.showRoomMeasurementResult(meanT60, stddev, t60Values, isStable);
-
     } catch (error) {
       logger.error('Room measurement error:', error);
 
       // Cleanup on error
-      if (stream) stream.getTracks().forEach(track => track.stop());
+      if (stream) stream.getTracks().forEach((track) => track.stop());
       if (audioContext && audioContext.state !== 'closed') {
-        try { await audioContext.close(); } catch { /* ignore */ }
+        try {
+          await audioContext.close();
+        } catch {
+          /* ignore */
+        }
       }
 
       let errorMsg = t('roomMeasure.errorGeneric');
@@ -486,15 +723,15 @@ export class SettingsPhase {
         }
       }
       this.showRoomMeasurementError(errorMsg);
-
     } finally {
       // ── Reset button ─────────────────────────────────────
       measureBtn.disabled = false;
       const resultVisible = document.getElementById('room-measure-result');
       if (btnText) {
-        btnText.textContent = resultVisible?.style.display !== 'none'
-          ? t('roomMeasure.measureAgain')
-          : t('roomMeasure.measureBtn');
+        btnText.textContent =
+          resultVisible?.style.display !== 'none'
+            ? t('roomMeasure.measureAgain')
+            : t('roomMeasure.measureBtn');
       }
       if (btnIcon) btnIcon.textContent = '\uD83D\uDD0A'; // 🔊
       if (progressSection) progressSection.style.display = 'none';
@@ -535,14 +772,14 @@ export class SettingsPhase {
     // Position scale marker (0.0s = 0%, 2.5s = 100%)
     const marker = document.getElementById('room-measure-scale-marker');
     if (marker) {
-      const pct = Math.min(Math.max(meanT60 / 2.5 * 100, 0), 100);
+      const pct = Math.min(Math.max((meanT60 / 2.5) * 100, 0), 100);
       marker.style.left = `calc(${pct}% - 2px)`;
     }
 
     // Individual measurements (Expert)
     const individualEl = document.getElementById('room-measure-individual');
     if (individualEl) {
-      individualEl.textContent = `${t('roomMeasure.individual')}: ${individual.map(v => v.toFixed(2) + 's').join(', ')}`;
+      individualEl.textContent = `${t('roomMeasure.individual')}: ${individual.map((v) => v.toFixed(2) + 's').join(', ')}`;
     }
 
     const stddevEl = document.getElementById('room-measure-stddev');
@@ -585,11 +822,11 @@ export class SettingsPhase {
 
   private getRoomMeasureClassLabel(classification: string): string {
     const labels: Record<string, string> = {
-      'very_dry': t('roomMeasure.classVeryDry'),
-      'dry': t('roomMeasure.classDry'),
-      'medium': t('roomMeasure.classMedium'),
-      'reverberant': t('roomMeasure.classReverberant'),
-      'very_reverberant': t('roomMeasure.classVeryReverberant'),
+      very_dry: t('roomMeasure.classVeryDry'),
+      dry: t('roomMeasure.classDry'),
+      medium: t('roomMeasure.classMedium'),
+      reverberant: t('roomMeasure.classReverberant'),
+      very_reverberant: t('roomMeasure.classVeryReverberant'),
     };
     return labels[classification] ?? getT60ClassificationLabel(classification);
   }
@@ -716,12 +953,350 @@ export class SettingsPhase {
     }
   }
 
+  // ════════════════════════════════════════════════════════════
+  // NOISE PROFILE SUBTRACTION (Lärmprofil-Subtraktion)
+  // ════════════════════════════════════════════════════════════
+
+  /** Duration of the guided ambient-noise recording (seconds) */
+  private static readonly NOISE_CAPTURE_SECONDS = 30;
+
+  /**
+   * Initialize noise profile subtraction settings (Expert only).
+   * Master toggle, profile selection, guided capture, delete, beta slider.
+   */
+  private initNoiseProfileSettings(): void {
+    const masterToggle = document.getElementById('noise-sub-toggle') as HTMLInputElement | null;
+    const detailsContainer = document.getElementById('noise-sub-details');
+
+    if (!masterToggle) {
+      return;
+    }
+
+    const settings = getNoiseSubtractionSettings();
+
+    masterToggle.checked = settings.enabled;
+    if (detailsContainer) {
+      detailsContainer.style.display = settings.enabled ? '' : 'none';
+    }
+
+    masterToggle.addEventListener('change', () => {
+      const enabled = masterToggle.checked;
+      setNoiseSubtractionSettings({ enabled });
+      if (detailsContainer) {
+        detailsContainer.style.display = enabled ? '' : 'none';
+      }
+      logger.info(`🎚️ Noise profile subtraction ${enabled ? 'enabled' : 'disabled'}`);
+    });
+
+    // Record hint (static text with duration placeholder)
+    const recordHint = document.getElementById('noise-sub-record-hint');
+    if (recordHint) {
+      recordHint.textContent = t('noiseSub.recordHint', {
+        seconds: String(SettingsPhase.NOISE_CAPTURE_SECONDS),
+      });
+    }
+
+    // Profile dropdown
+    const profileSelect = document.getElementById(
+      'noise-sub-profile-select'
+    ) as HTMLSelectElement | null;
+    if (profileSelect) {
+      this.refreshNoiseProfileDropdown();
+      profileSelect.addEventListener('change', () => {
+        const id = profileSelect.value || null;
+        setNoiseSubtractionSettings({ activeProfileId: id });
+        this.updateNoiseProfileMeta();
+      });
+    }
+
+    // Record button
+    const recordBtn = document.getElementById('noise-sub-record-btn') as HTMLButtonElement | null;
+    if (recordBtn) {
+      recordBtn.addEventListener('click', () => {
+        void this.performNoiseProfileCapture();
+      });
+    }
+
+    // Delete button
+    const deleteBtn = document.getElementById('noise-sub-delete-btn') as HTMLButtonElement | null;
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => {
+        const current = getNoiseSubtractionSettings();
+        if (!current.activeProfileId) return;
+        if (!confirm(t('noiseSub.deleteConfirm'))) return;
+        deleteNoiseProfile(current.activeProfileId);
+        this.refreshNoiseProfileDropdown();
+        this.updateNoiseProfileMeta();
+      });
+    }
+
+    // Beta slider
+    const betaSlider = document.getElementById(
+      'noise-sub-beta-slider'
+    ) as HTMLInputElement | null;
+    const betaValue = document.getElementById('noise-sub-beta-value');
+    if (betaSlider) {
+      betaSlider.value = String(settings.beta);
+      if (betaValue) {
+        betaValue.textContent = settings.beta.toFixed(1);
+      }
+      betaSlider.addEventListener('input', () => {
+        const val = parseFloat(betaSlider.value);
+        if (betaValue) {
+          betaValue.textContent = val.toFixed(1);
+        }
+        setNoiseSubtractionSettings({ beta: val });
+      });
+    }
+
+    // Minimum-Statistics fallback toggle (no profile needed)
+    const minStatsToggle = document.getElementById(
+      'noise-sub-minstats-toggle'
+    ) as HTMLInputElement | null;
+    if (minStatsToggle) {
+      minStatsToggle.checked = settings.minStatsEnabled;
+      minStatsToggle.addEventListener('change', () => {
+        setNoiseSubtractionSettings({ minStatsEnabled: minStatsToggle.checked });
+        logger.info(
+          `🎚️ Min-stats noise fallback ${minStatsToggle.checked ? 'enabled' : 'disabled'}`
+        );
+      });
+    }
+
+    this.updateNoiseProfileMeta();
+  }
+
+  /** Rebuild the profile dropdown from stored profiles. */
+  private refreshNoiseProfileDropdown(): void {
+    const profileSelect = document.getElementById(
+      'noise-sub-profile-select'
+    ) as HTMLSelectElement | null;
+    if (!profileSelect) return;
+
+    const settings = getNoiseSubtractionSettings();
+    const profiles = getNoiseProfiles();
+
+    profileSelect.innerHTML = '';
+
+    const noneOption = document.createElement('option');
+    noneOption.value = '';
+    noneOption.textContent = t('noiseSub.noProfile');
+    profileSelect.appendChild(noneOption);
+
+    for (const profile of profiles) {
+      const option = document.createElement('option');
+      option.value = profile.id;
+      option.textContent = profile.name;
+      if (profile.id === settings.activeProfileId) {
+        option.selected = true;
+      }
+      profileSelect.appendChild(option);
+    }
+  }
+
+  /** Show metadata (date, duration, frames) of the active profile. */
+  private updateNoiseProfileMeta(): void {
+    const metaEl = document.getElementById('noise-sub-profile-meta');
+    if (!metaEl) return;
+
+    const settings = getNoiseSubtractionSettings();
+    const profile = getNoiseProfiles().find((p) => p.id === settings.activeProfileId);
+    if (!profile) {
+      metaEl.textContent = '';
+      return;
+    }
+
+    metaEl.textContent = t('noiseSub.profileMeta', {
+      date: new Date(profile.createdAt).toLocaleString(),
+      duration: profile.durationSec.toFixed(0),
+      frames: String(profile.frameCount),
+    });
+  }
+
+  /**
+   * Guided ambient-noise capture: records NOISE_CAPTURE_SECONDS of raw audio
+   * (machine off!), extracts features, builds and stores the noise profile.
+   *
+   * Uses ScriptProcessorNode for capture – same proven pattern as
+   * playChirpAndRecord() in roomCompensation.ts.
+   */
+  private async performNoiseProfileCapture(): Promise<void> {
+    const recordBtn = document.getElementById('noise-sub-record-btn') as HTMLButtonElement | null;
+    if (!recordBtn) return;
+
+    const recordText = document.getElementById('noise-sub-record-text');
+    const progressSection = document.getElementById('noise-sub-progress');
+    const progressBar = document.getElementById('noise-sub-progress-bar') as HTMLElement | null;
+    const progressText = document.getElementById('noise-sub-progress-text');
+    const statusSection = document.getElementById('noise-sub-status');
+    const statusText = document.getElementById('noise-sub-status-text');
+
+    const showStatus = (msg: string): void => {
+      if (statusSection) statusSection.style.display = '';
+      if (statusText) statusText.textContent = msg;
+    };
+
+    // Profile limit check BEFORE recording (don't waste the user's 30 seconds)
+    if (getNoiseProfiles().length >= MAX_NOISE_PROFILES) {
+      showStatus(t('noiseSub.limitReached', { max: String(MAX_NOISE_PROFILES) }));
+      return;
+    }
+
+    recordBtn.disabled = true;
+    if (statusSection) statusSection.style.display = 'none';
+    if (progressSection) progressSection.style.display = '';
+    if (progressBar) progressBar.style.width = '0%';
+
+    const captureSeconds = SettingsPhase.NOISE_CAPTURE_SECONDS;
+
+    let audioContext: AudioContext | null = null;
+    let stream: MediaStream | null = null;
+    let progressTimer: ReturnType<typeof setInterval> | null = null;
+
+    try {
+      audioContext = new AudioContext({ sampleRate: DEFAULT_DSP_CONFIG.sampleRate });
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+      stream = await getRawAudioStream();
+
+      const sampleRate = audioContext.sampleRate;
+      const expectedSamples = Math.ceil(sampleRate * captureSeconds);
+
+      // Capture raw samples via ScriptProcessorNode (universally supported)
+      const scriptNode = audioContext.createScriptProcessor(4096, 1, 1);
+      const micSource = audioContext.createMediaStreamSource(stream);
+      const chunks: Float32Array[] = [];
+      let totalSamples = 0;
+
+      scriptNode.onaudioprocess = (event: AudioProcessingEvent) => {
+        const input = event.inputBuffer.getChannelData(0);
+        chunks.push(new Float32Array(input));
+        totalSamples += input.length;
+      };
+
+      micSource.connect(scriptNode);
+      scriptNode.connect(audioContext.destination);
+
+      // Progress feedback once per second
+      const startTime = Date.now();
+      progressTimer = setInterval(() => {
+        const elapsed = Math.min((Date.now() - startTime) / 1000, captureSeconds);
+        if (progressBar) {
+          progressBar.style.width = `${(elapsed / captureSeconds) * 100}%`;
+        }
+        if (progressText) {
+          progressText.textContent = t('noiseSub.recording', {
+            seconds: String(Math.floor(elapsed)),
+          });
+        }
+      }, 1000);
+
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, captureSeconds * 1000 + 100);
+      });
+
+      // Stop capture
+      clearInterval(progressTimer);
+      progressTimer = null;
+      scriptNode.onaudioprocess = null;
+      try {
+        micSource.disconnect(scriptNode);
+      } catch {
+        /* already disconnected */
+      }
+      try {
+        scriptNode.disconnect(audioContext.destination);
+      } catch {
+        /* already disconnected */
+      }
+
+      if (progressText) progressText.textContent = t('noiseSub.processing');
+      if (progressBar) progressBar.style.width = '100%';
+
+      // Concatenate chunks into an AudioBuffer for feature extraction
+      const length = Math.min(totalSamples, expectedSamples);
+      if (length < sampleRate) {
+        throw new Error('Recording too short');
+      }
+      const buffer = audioContext.createBuffer(1, length, sampleRate);
+      const channelData = buffer.getChannelData(0);
+      let offset = 0;
+      for (const chunk of chunks) {
+        if (offset >= length) break;
+        channelData.set(chunk.subarray(0, Math.min(chunk.length, length - offset)), offset);
+        offset += chunk.length;
+      }
+
+      // Mikrofon-Bezeichnung sichern (Warnung bei Gerätewechsel in der Diagnose)
+      const deviceLabel = stream.getAudioTracks()[0]?.label || undefined;
+
+      // Cleanup audio before the (CPU-bound) feature extraction
+      stream.getTracks().forEach((track) => track.stop());
+      await audioContext.close();
+      audioContext = null;
+      stream = null;
+
+      // Extract features and build the profile
+      const features = extractFeatures(buffer);
+      const profileName = t('noiseSub.defaultName', {
+        date: new Date().toLocaleString(),
+      });
+      const profile = buildNoiseProfileFromFeatures(
+        features,
+        sampleRate,
+        captureSeconds,
+        profileName,
+        deviceLabel
+      );
+
+      saveNoiseProfile(profile);
+      setNoiseSubtractionSettings({ activeProfileId: profile.id });
+      this.refreshNoiseProfileDropdown();
+      this.updateNoiseProfileMeta();
+
+      showStatus(isProfileStationary(profile) ? t('noiseSub.saved') : t('noiseSub.savedUnstable'));
+      logger.info(
+        `🎚️ Noise profile captured: "${profile.name}" ` +
+          `(${profile.frameCount} frames, stationarity=${profile.stationarity.toFixed(2)})`
+      );
+    } catch (error) {
+      logger.error('Noise profile capture error:', error);
+
+      if (progressTimer) clearInterval(progressTimer);
+      if (stream) stream.getTracks().forEach((track) => track.stop());
+      if (audioContext && audioContext.state !== 'closed') {
+        try {
+          await audioContext.close();
+        } catch {
+          /* ignore */
+        }
+      }
+
+      let errorMsg = t('noiseSub.errorGeneric');
+      if (error instanceof DOMException) {
+        if (error.name === 'NotAllowedError') {
+          errorMsg = t('noiseSub.errorMicPermission');
+        } else if (error.name === 'NotFoundError') {
+          errorMsg = t('noiseSub.errorNoMic');
+        }
+      }
+      showStatus(errorMsg);
+    } finally {
+      recordBtn.disabled = false;
+      if (recordText) recordText.textContent = t('noiseSub.recordBtn');
+      if (progressSection) progressSection.style.display = 'none';
+    }
+  }
+
   /**
    * Initialize cherry-picking settings (Expert only)
    * Reads settings from localStorage and binds UI toggle + slider.
    */
   private initCherryPickSettings(): void {
-    const cherryPickToggle = document.getElementById('cherry-pick-toggle') as HTMLInputElement | null;
+    const cherryPickToggle = document.getElementById(
+      'cherry-pick-toggle'
+    ) as HTMLInputElement | null;
     const cherryPickDetails = document.getElementById('cherry-pick-details');
 
     if (!cherryPickToggle) {
@@ -824,7 +1399,9 @@ export class SettingsPhase {
     }
 
     // Low-frequency cutoff slider (Room mode protection)
-    const lowFreqSlider = document.getElementById('drift-lowfreq-slider') as HTMLInputElement | null;
+    const lowFreqSlider = document.getElementById(
+      'drift-lowfreq-slider'
+    ) as HTMLInputElement | null;
     const lowFreqValue = document.getElementById('drift-lowfreq-value');
     const lowFreqHz = document.getElementById('drift-lowfreq-hz');
     // Compute Hz/bin from actual DSP config instead of hardcoding
@@ -896,42 +1473,27 @@ export class SettingsPhase {
    * Handle database export
    */
   private async handleExportData(): Promise<void> {
-    // Ask the user whether to include the current settings (banner, theme, …)
-    const checkbox = document.getElementById('export-include-settings') as HTMLInputElement | null;
-    if (checkbox) {
-      checkbox.checked = true; // default: include settings
-    }
-
-    const confirmed = await this.openChoiceModal({
-      modalId: 'export-options-modal',
-      confirmId: 'export-options-confirm',
-      cancelId: 'export-options-cancel',
-      closeId: 'export-options-close',
-    });
-
-    if (!confirmed) {
+    // Ask whether to bundle the current settings (banner, view level, thresholds …).
+    const choice = await openExportOptionsModal();
+    if (!choice.proceed) {
       return;
     }
 
-    const includeSettings = checkbox?.checked ?? true;
-
     try {
-      logger.info('📦 Exporting database...');
+      logger.info(`📦 Exporting database${choice.includeSettings ? ' (with settings)' : ''}...`);
 
-      const { data, includesSettings, filename, blob } =
-        await this.buildExportPayload(includeSettings);
+      const { data, filename, blob } = await this.buildExportPayload(choice.includeSettings);
 
       this.triggerDownload(blob, filename);
 
-      logger.info(`✅ Database exported: ${filename}${includesSettings ? ' (incl. settings)' : ''}`);
+      logger.info(`✅ Database exported: ${filename}`);
       notify.success(
         t('settings.export.success', {
           filename,
           machines: data.machines.length,
           recordings: data.recordings.length,
           diagnoses: data.diagnoses.length,
-        }) +
-          (includesSettings ? `\n\n${t('settings.export.withSettings')}` : ''),
+        }),
         { title: t('modals.databaseExported') }
       );
     } catch (error) {
@@ -1036,10 +1598,15 @@ export class SettingsPhase {
    */
   private async handleImportData(): Promise<void> {
     try {
-      // Create file input
+      // Create file input.
+      // NOTE: Intentionally NO `accept` filter. On Android the document picker
+      // greys out files whose provider-reported MIME type isn't an exact match
+      // for the filter, so a `zanobot-backup-*.json` sitting in Downloads often
+      // appears only under "Recent" and can't be picked from its folder. Without
+      // a filter the user can browse to any folder and select the file; the
+      // content is validated (JSON.parse + structure check) after selection.
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = 'application/json,.json';
 
       input.onchange = async (e: Event) => {
         const target = e.target as HTMLInputElement;
@@ -1061,41 +1628,22 @@ export class SettingsPhase {
             throw new Error('Invalid backup file format');
           }
 
-          // Does the backup contain stored settings (banner, theme, …)?
-          const backupHasSettings = hasSettingsBackup(data);
-
-          // Show the settings checkbox only when the backup actually contains settings
-          const settingsOption = document.getElementById('import-include-settings-option');
-          const settingsCheckbox = document.getElementById(
-            'import-include-settings'
-          ) as HTMLInputElement | null;
-          if (settingsOption) {
-            settingsOption.style.display = backupHasSettings ? '' : 'none';
-          }
-          if (settingsCheckbox) {
-            settingsCheckbox.checked = backupHasSettings; // default: take settings along when present
-          }
-
-          const confirmed = await this.openChoiceModal({
-            modalId: 'import-options-modal',
-            confirmId: 'import-options-confirm',
-            cancelId: 'import-options-cancel',
-            closeId: 'import-options-close',
-          });
-
-          if (!confirmed) {
+          // Ask whether to also apply the settings stored in the file. Machines
+          // are ALWAYS merged (added to the existing database), never replaced —
+          // the user can clear the database beforehand if they want a clean slate.
+          const fileHasSettings = backupHasSettings(data);
+          const choice = await openImportOptionsModal(fileHasSettings);
+          if (!choice.proceed) {
             return;
           }
 
-          const applyStoredSettings = backupHasSettings && (settingsCheckbox?.checked ?? false);
-
-          // Always merge: imported machines are ADDED next to the existing ones.
-          // (Users who want a clean slate can clear the database beforehand.)
+          // Import data (always merge: only add machines, keep existing ones)
           const result = await importData(data, true);
 
-          // Optionally restore the stored settings (banner, theme, view level, …)
-          if (applyStoredSettings) {
-            await applySettings((data as { settings: SettingsBackup }).settings);
+          // Optionally apply the bundled settings (banner, view level, thresholds …)
+          if (choice.includeSettings && fileHasSettings) {
+            await importSettings(data.settings as ExportedSettings);
+            logger.info('⚙️ Imported settings applied');
           }
 
           // Show success (or warning if some records were skipped)
@@ -1122,8 +1670,7 @@ export class SettingsPhase {
                 recordings: result.recordingsImported,
                 diagnoses: result.diagnosesImported,
                 mode,
-              }) +
-                (applyStoredSettings ? `\n\n${t('settings.import.withSettings')}` : ''),
+              }),
               { title: t('modals.databaseImported') }
             );
           }
@@ -1209,7 +1756,10 @@ export class SettingsPhase {
       btn.classList.remove('confirming');
       const label = btn.querySelector('span');
       if (label) label.textContent = t('settingsUI.resetButton');
-      if (confirmTimer) { clearTimeout(confirmTimer); confirmTimer = null; }
+      if (confirmTimer) {
+        clearTimeout(confirmTimer);
+        confirmTimer = null;
+      }
     };
 
     btn.addEventListener('click', () => {
@@ -1265,98 +1815,31 @@ export class SettingsPhase {
     }
   }
 
-  private async buildExportPayload(includeSettings: boolean = true): Promise<{
-    data: Awaited<ReturnType<typeof exportData>>;
-    includesSettings: boolean;
+  private async buildExportPayload(includeSettings: boolean = false): Promise<{
+    data: Awaited<ReturnType<typeof exportData>> & { settings?: ExportedSettings };
     filename: string;
     blob: Blob;
     file: File;
   }> {
     // Get all data
-    const data = await exportData();
+    const data: Awaited<ReturnType<typeof exportData>> & { settings?: ExportedSettings } =
+      await exportData();
 
-    // Optionally attach the current UI settings (theme, banner, view level, …)
-    let exportObject: Record<string, unknown> = { ...data };
-    let includesSettings = false;
+    // Optionally bundle the current UI settings (banner, view level, thresholds …)
     if (includeSettings) {
-      try {
-        const settings = await collectSettings();
-        exportObject = { ...data, settings };
-        includesSettings = true;
-      } catch (error) {
-        logger.warn('⚠️ Failed to collect settings for export, exporting data only', error);
-      }
+      data.settings = await exportSettings();
     }
 
     // Create JSON blob
-    const jsonString = JSON.stringify(exportObject, null, 2);
+    const jsonString = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
 
     // Create filename with timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const filename = `zanobo-backup-${timestamp}.json`;
+    const filename = `zanobot-backup-${timestamp}.json`;
     const file = new File([blob], filename, { type: 'application/json' });
 
-    return { data, includesSettings, filename, blob, file };
-  }
-
-  /**
-   * Show a modal and resolve to true if the user confirmed, false otherwise.
-   * Listeners are wired up per call and removed on close to avoid leaks.
-   */
-  private openChoiceModal(opts: {
-    modalId: string;
-    confirmId: string;
-    cancelId: string;
-    closeId: string;
-  }): Promise<boolean> {
-    return new Promise((resolve) => {
-      const modal = document.getElementById(opts.modalId);
-      if (!modal) {
-        resolve(false);
-        return;
-      }
-
-      const confirmBtn = document.getElementById(opts.confirmId);
-      const cancelBtn = document.getElementById(opts.cancelId);
-      const closeBtn = document.getElementById(opts.closeId);
-
-      // The export/import buttons live inside the settings modal, which shares
-      // the same z-index. Hide it while our dialog is open so it doesn't overlay
-      // the dialog (same convention as the NFC writer modal), then restore it.
-      const settingsModal = document.getElementById('settings-modal');
-      const settingsWasOpen =
-        !!settingsModal && window.getComputedStyle(settingsModal).display !== 'none';
-      if (settingsWasOpen && settingsModal) {
-        settingsModal.style.display = 'none';
-      }
-
-      const cleanup = (result: boolean): void => {
-        modal.style.display = 'none';
-        if (settingsWasOpen && settingsModal) {
-          settingsModal.style.display = 'flex';
-        }
-        confirmBtn?.removeEventListener('click', onConfirm);
-        cancelBtn?.removeEventListener('click', onCancel);
-        closeBtn?.removeEventListener('click', onCancel);
-        modal.removeEventListener('click', onBackdrop);
-        resolve(result);
-      };
-      const onConfirm = (): void => cleanup(true);
-      const onCancel = (): void => cleanup(false);
-      const onBackdrop = (e: MouseEvent): void => {
-        if (e.target === modal) {
-          cleanup(false);
-        }
-      };
-
-      confirmBtn?.addEventListener('click', onConfirm);
-      cancelBtn?.addEventListener('click', onCancel);
-      closeBtn?.addEventListener('click', onCancel);
-      modal.addEventListener('click', onBackdrop);
-
-      modal.style.display = 'flex';
-    });
+    return { data, filename, blob, file };
   }
 
   private triggerDownload(blob: Blob, filename: string): void {

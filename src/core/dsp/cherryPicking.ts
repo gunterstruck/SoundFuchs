@@ -322,7 +322,7 @@ export class RealtimeCherryPick {
 // SETTINGS PERSISTENCE
 // ============================================================================
 
-const STORAGE_KEY = 'zanobo-cherry-pick-settings';
+const STORAGE_KEY = 'zanobot-cherry-pick-settings';
 
 export function getCherryPickSettings(): CherryPickSettings {
   try {

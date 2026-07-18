@@ -1,5 +1,5 @@
 /**
- * ZANOBOT - GMIA (Gaussian Model Independent Attributes)
+ * ZANOBOT - GMIA (Generalized Mutual Interdependence Analysis)
  *
  * The CORE machine learning algorithm for acoustic diagnostics.
  *

@@ -20,6 +20,12 @@ import {
 } from '@utils/visualizerSettings.js';
 import { setCanvasSize } from '@utils/canvasUtils.js';
 
+/** Vertical gain for the reference "ghost". The reference uses a relative-energy
+ *  transform that reads visually taller than the dB-scaled live bars; in practice
+ *  the ghost sat nearly twice as high. 0.7 trims it ~30% so its silhouette lines
+ *  up much better with the live spectrum without flattening it. */
+const GHOST_AMPLITUDE_GAIN = 0.7;
+
 export class AudioVisualizer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -42,6 +48,13 @@ export class AudioVisualizer {
 
   // CRITICAL FIX: Store actual sample rate from AudioContext for correct frequency labels
   private sampleRate: number = 48000; // Default to 48 kHz, updated in start()
+
+  // Reference "ghost" overlay (Step 1: compare live spectrum against stored reference).
+  // Holds the reference model's spectrum (relative energy per frequency bin) so it can be
+  // drawn as a faint silhouette behind the live spectrum. Pure comparison – no interpretation.
+  private referenceVector: Float32Array | null = null;
+  private referenceMax: number = 1;
+  private referenceNyquist: number = 24000;
 
   constructor(canvasId: string) {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -148,6 +161,38 @@ export class AudioVisualizer {
   }
 
   /**
+   * Set (or clear) the reference spectrum drawn as a faint "ghost" behind the
+   * live spectrum. Pass the reference model's weight vector – which is, in
+   * effect, the averaged reference spectrum (relative energy per bin).
+   *
+   * The data is stored at its own resolution and re-mapped to the display bars
+   * by frequency at draw time, so the ghost stays aligned with the live bars
+   * regardless of the user's linear/log frequency-scale setting.
+   *
+   * @param vector - Reference spectrum (relative energy per frequency bin) or null to clear
+   * @param frequencyRangeMax - Upper frequency (Hz) the vector spans (typically Nyquist)
+   */
+  public setReferenceSpectrum(vector: ArrayLike<number> | null, frequencyRangeMax: number): void {
+    if (!vector || vector.length === 0) {
+      this.referenceVector = null;
+      return;
+    }
+
+    const arr = new Float32Array(vector.length);
+    let max = 0;
+    for (let i = 0; i < vector.length; i++) {
+      // Clamp tiny negatives that can arise from the GMIA math – a silhouette has no negative energy
+      const v = Math.max(0, vector[i]);
+      arr[i] = v;
+      if (v > max) max = v;
+    }
+
+    this.referenceVector = arr;
+    this.referenceMax = max > 0 ? max : 1;
+    this.referenceNyquist = frequencyRangeMax > 0 ? frequencyRangeMax : this.sampleRate / 2;
+  }
+
+  /**
    * Render frequency spectrum (60 FPS)
    *
    * Visual strategy:
@@ -174,6 +219,9 @@ export class AudioVisualizer {
 
     // Draw grid lines (optional, for professional look)
     this.drawGrid(width, height);
+
+    // Draw the reference "ghost" first, so the live spectrum sits on top of it
+    this.drawReferenceGhost(width, height);
 
     // Draw frequency spectrum
     this.drawSpectrum(width, height);
@@ -315,6 +363,104 @@ export class AudioVisualizer {
       this.ctx.lineWidth = 2;
       this.ctx.stroke();
     }
+  }
+
+  /**
+   * Draw the stored reference spectrum as a faint, filled silhouette ("ghost").
+   *
+   * This is the heart of the comparison: the live spectrum is drawn on top, so
+   * the user sees at a glance where "now" matches the reference shape and where
+   * it departs from it. The component never judges – it only makes the
+   * difference visible (stethoscope principle).
+   */
+  private drawReferenceGhost(width: number, height: number): void {
+    if (!this.referenceVector) return;
+
+    const points: { x: number; y: number }[] = [];
+    const barWidth = width / this.barCount;
+
+    for (let i = 0; i < this.barCount; i++) {
+      const value = this.getReferenceValueForBar(i);
+      points.push({
+        x: i * barWidth + barWidth / 2,
+        y: height - value * height,
+      });
+    }
+
+    if (points.length <= 1) return;
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(0, height);
+    this.ctx.lineTo(points[0].x, points[0].y);
+    for (let i = 0; i < points.length - 1; i++) {
+      const xc = (points[i].x + points[i + 1].x) / 2;
+      const yc = (points[i].y + points[i + 1].y) / 2;
+      this.ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+    }
+    const last = points[points.length - 1];
+    this.ctx.lineTo(last.x, last.y);
+    this.ctx.lineTo(width, height);
+    this.ctx.closePath();
+
+    // Bright, clearly visible silhouette (the live spectrum still reads on top
+    // thanks to the dashed style that distinguishes the ghost from the live line)
+    const computedStyle = getComputedStyle(document.documentElement);
+    const textColor = computedStyle.getPropertyValue('--viz-text').trim();
+    const rgb = this.hexToRgb(textColor) || { r: 235, g: 235, b: 235 };
+
+    this.ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.18)`;
+    this.ctx.fill();
+    this.ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)`;
+    this.ctx.setLineDash([5, 3]);
+    this.ctx.lineWidth = 2.5;
+    this.ctx.stroke();
+    this.ctx.setLineDash([]);
+  }
+
+  /**
+   * Map the stored reference spectrum onto display bar `barIndex`.
+   *
+   * Re-uses the same bin→bar logic as the live spectrum (so the ghost tracks
+   * the linear/log scale setting), translating bar → frequency → reference
+   * index. Returns a normalized [0,1] value. A mild square-root compression is
+   * applied so the relative-energy reference roughly matches the visual weight
+   * of the dB-scaled live bars.
+   */
+  private getReferenceValueForBar(barIndex: number): number {
+    if (!this.referenceVector) return 0;
+
+    const fftBins = this.dataArray ? this.dataArray.length : 1024;
+    const nyquist = this.sampleRate / 2;
+    const refLen = this.referenceVector.length;
+
+    const { start, end } = this.getFrequencyBinRange(barIndex);
+    const startFreq = (start / fftBins) * nyquist;
+    const endFreq = (Math.max(end, start + 1) / fftBins) * nyquist;
+
+    const refStart = Math.min(
+      refLen - 1,
+      Math.max(0, Math.floor((startFreq / this.referenceNyquist) * refLen))
+    );
+    const refEnd = Math.min(
+      refLen,
+      Math.max(refStart + 1, Math.ceil((endFreq / this.referenceNyquist) * refLen))
+    );
+
+    let sum = 0;
+    let count = 0;
+    for (let i = refStart; i < refEnd; i++) {
+      sum += this.referenceVector[i];
+      count++;
+    }
+
+    const meanVal = count > 0 ? sum / count : 0;
+    let amp = Math.max(0, meanVal / this.referenceMax);
+    // Use the SAME amplitude transform as the live spectrum so the ghost stays
+    // aligned with it (logarithmic by default – emphasizes quieter components).
+    if (this.visualizerSettings.amplitudeScale === 'log') {
+      amp = Math.log10(1 + amp * 9);
+    }
+    return Math.min(1, amp * GHOST_AMPLITUDE_GAIN);
   }
 
   /**

@@ -7,25 +7,69 @@
  *
  * The user MUST select a machine (Phase 1) before accessing Phase 2 or 3.
  *
- * Uses GMIA analysis (ReferencePhase, DiagnosePhase) for Gaussian model detection.
+ * Uses GMIA analysis (ReferencePhase, DiagnosePhase) for acoustic pattern comparison.
  */
 
 import { IdentifyPhase } from './phases/1-Identify.js';
-import { ReferencePhase } from './phases/2-Reference.js';
-import { DiagnosePhase } from './phases/3-Diagnose.js';
+import type { ReferencePhase } from './phases/2-Reference.js';
+import type { DiagnosePhase } from './phases/3-Diagnose.js';
 import { SettingsPhase } from './phases/4-Settings.js';
-import { AutoDetectionPhase } from './phases/AutoDetectionPhase.js';
+import type { AutoDetectionPhase } from './phases/AutoDetectionPhase.js';
+import { calculateFleetStats } from './phases/fleetStats.js';
 import { DiagnoseCardController } from './components/DiagnoseCardController.js';
 import { ReferenceCardController } from './components/ReferenceCardController.js';
-import { getAllMachines, getMachine, getLatestDiagnosis, getDiagnosesForMachine, deleteDiagnosis } from '@data/db.js';
+import {
+  getAllMachines,
+  getMachine,
+  getLatestDiagnosis,
+  getDiagnosesForMachine,
+  deleteDiagnosis,
+} from '@data/db.js';
 import type { AutoDetectionResult, MachineMatchResult } from '@data/types.js';
 import type { Machine } from '@data/types.js';
+import { isGMIAModel } from '@data/types.js';
 import { logger } from '@utils/logger.js';
 import { notify } from '@utils/notifications.js';
 import { escapeHtml } from '@utils/sanitize.js';
 import { t, getLocale, LANGUAGE_CHANGE_EVENT } from '../i18n/index.js';
 import { getRecordingSettings, RECORDING_SETTINGS_EVENT } from '@utils/recordingSettings.js';
 import { QuickCompareController } from './QuickCompareController.js';
+import { exportAsPrintablePDF, type ReportData, type ReportEntry } from '@utils/reportExport.js';
+import { hapticForScore } from '@utils/haptics.js';
+
+/**
+ * Lazy-load the heavy phase modules on demand and cache the module promise.
+ *
+ * Phase 1 (Identify) and Phase 4 (Settings) stay eagerly imported because they
+ * are needed at startup. Phases 2 (Reference), 3 (Diagnose) and Auto-Detection
+ * are only reached after user interaction, so they are split into their own
+ * chunks. preloadLazyPhases() warms these chunks during construction, so by the
+ * time a phase is actually instantiated the module is already available and the
+ * awaits at the instantiation sites resolve without a visible delay.
+ */
+let referencePhaseModulePromise: Promise<typeof import('./phases/2-Reference.js')> | null = null;
+function loadReferencePhaseModule(): Promise<typeof import('./phases/2-Reference.js')> {
+  return (referencePhaseModulePromise ??= import('./phases/2-Reference.js'));
+}
+
+let diagnosePhaseModulePromise: Promise<typeof import('./phases/3-Diagnose.js')> | null = null;
+function loadDiagnosePhaseModule(): Promise<typeof import('./phases/3-Diagnose.js')> {
+  return (diagnosePhaseModulePromise ??= import('./phases/3-Diagnose.js'));
+}
+
+let autoDetectionPhaseModulePromise: Promise<
+  typeof import('./phases/AutoDetectionPhase.js')
+> | null = null;
+function loadAutoDetectionPhaseModule(): Promise<typeof import('./phases/AutoDetectionPhase.js')> {
+  return (autoDetectionPhaseModulePromise ??= import('./phases/AutoDetectionPhase.js'));
+}
+
+/** Warm the lazily-loaded phase chunks ahead of first use. */
+function preloadLazyPhases(): void {
+  void loadReferencePhaseModule();
+  void loadDiagnosePhaseModule();
+  void loadAutoDetectionPhaseModule();
+}
 
 export class Router {
   private currentMachine: Machine | null = null;
@@ -59,6 +103,9 @@ export class Router {
   private quickCompareController: QuickCompareController;
 
   constructor() {
+    // Warm the lazily-loaded phase chunks so they are ready before first use.
+    preloadLazyPhases();
+
     // Initialize Phase 1 (always available)
     this.identifyPhase = new IdentifyPhase((machine) => this.onMachineSelected(machine));
 
@@ -76,6 +123,18 @@ export class Router {
     // Sprint 8: Wire up quick compare count-only deep link callback
     this.identifyPhase.onQuickCompareProvisioned = (count: number) => {
       this.handleQuickCompareCountDeepLink(count);
+    };
+
+    // Welle 2: Wire up dashboard "Jetzt prüfen" to diagnosis
+    this.identifyPhase.onStartDiagnosis = (machine: Machine) => {
+      this.onMachineSelected(machine);
+      // Auto-start diagnosis after a short delay to let phases initialize
+      setTimeout(() => {
+        const diagnoseBtn = document.getElementById('diagnose-btn');
+        if (diagnoseBtn) {
+          diagnoseBtn.click();
+        }
+      }, 300);
     };
 
     // Now initialize – deep link handler can safely invoke the callbacks above
@@ -107,8 +166,16 @@ export class Router {
       onScanRequested: () => this.handleDiagnoseScanRequest(),
       onSelectRequested: () => this.handleDiagnoseSelectRequest(),
       onCreateRequested: () => this.handleDiagnoseCreateRequest(),
-      onAutoDetectRequested: () => this.handleAutoDetectRequest(),
+      onAutoDetectRequested: () => void this.handleAutoDetectRequest(),
     });
+
+    // Sprint 9: Wire up Fleet Quick Check button (same pattern as Quick Compare button)
+    const fleetQcBtn = document.getElementById('fleet-quickcheck-btn');
+    if (fleetQcBtn) {
+      fleetQcBtn.addEventListener('click', () => {
+        void this.handleFleetQuickCheck();
+      });
+    }
 
     // Initialize ReferenceCardController for state-based UI (mirrors DiagnoseCardController)
     this.referenceCardController = new ReferenceCardController();
@@ -129,8 +196,10 @@ export class Router {
     this.ensureTileButtonsEnabled();
 
     // ZERO-FRICTION: Initialize reference phase without machine for zero-friction recording
-    // This allows users to start recording immediately without selecting a machine first
-    this.initializeZeroFrictionReferencePhase();
+    // This allows users to start recording immediately without selecting a machine first.
+    // Fire-and-forget: the reference module is prefetched, so it is ready almost
+    // immediately; the record button is only usable once its phase has initialised.
+    void this.initializeZeroFrictionReferencePhase();
 
     // CRITICAL FIX: Update duration-dependent UI texts on init and when settings change
     // This ensures the displayed recording duration always matches the user's settings
@@ -159,11 +228,13 @@ export class Router {
       machineName: machine.name,
       createdAt: new Date(machine.createdAt).toLocaleString(),
       numModels: machine.referenceModels?.length || 0,
-      models: machine.referenceModels?.map(m => ({
-        label: m.label,
-        trainingDate: new Date(m.trainingDate).toLocaleString(),
-        weightMagnitude: m.metadata?.weightMagnitude?.toFixed(6) || 'N/A',
-      })) || [],
+      models:
+        machine.referenceModels?.map((m) => ({
+          label: m.label,
+          trainingDate: new Date(m.trainingDate).toLocaleString(),
+          weightMagnitude:
+            (isGMIAModel(m) ? m.metadata.weightMagnitude?.toFixed(6) : undefined) || 'N/A',
+        })) || [],
     });
 
     // Stop any active IdentifyPhase resources (e.g., temporary microphone streams)
@@ -184,8 +255,10 @@ export class Router {
     // Collapse the machine selection container after successful selection
     this.collapseSection('select-machine-content');
 
-    // Initialize Phase 2 and 3 with the selected machine
-    this.initializePhases(machine);
+    // Initialize Phase 2 and 3 with the selected machine.
+    // Fire-and-forget: phase modules are prefetched; downstream auto-start paths
+    // already poll/delay for the diagnose button, so they tolerate async init.
+    void this.initializePhases(machine);
 
     // Quick Compare: auto-expand reference section and scroll to it so the
     // user lands directly on the recording UI instead of seeing the main page
@@ -196,7 +269,22 @@ export class Router {
         const refSection = document.getElementById('record-reference-content');
         refSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
+      return;
     }
+
+    // UX (geführter Fluss): Nach der Maschinen-Auswahl ist der nächste
+    // Schritt immer sichtbar — ohne Referenz öffnet sich die Aufnahme-
+    // Sektion („Normalzustand aufnehmen"), mit Referenz die Prüf-Sektion.
+    // Vorher klappte alles zu und der rote Faden riss genau an der Stelle,
+    // an der Neulinge ihn am dringendsten brauchen.
+    const nextSection =
+      (machine.referenceModels?.length ?? 0) > 0
+        ? 'run-diagnosis-content'
+        : 'record-reference-content';
+    this.expandSection(nextSection);
+    requestAnimationFrame(() => {
+      document.getElementById(nextSection)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
 
   /**
@@ -327,7 +415,8 @@ export class Router {
       // CRITICAL FIX: If originalDisplay was recorded as 'none' (e.g., collapseSection was
       // called on an already-hidden section), fall back to 'block' to actually show the section.
       const originalDisplay = content.dataset.originalDisplay;
-      content.style.display = (originalDisplay && originalDisplay !== 'none') ? originalDisplay : 'block';
+      content.style.display =
+        originalDisplay && originalDisplay !== 'none' ? originalDisplay : 'block';
     }
 
     const header = document.querySelector(`.section-header[data-target="${sectionId}"]`);
@@ -383,7 +472,7 @@ export class Router {
    * Handle auto-detect request from diagnose card
    * Starts the simplified flow where no machine pre-selection is needed
    */
-  private handleAutoDetectRequest(): void {
+  private async handleAutoDetectRequest(): Promise<void> {
     logger.info('🔍 Auto-detection requested');
 
     // Get selected microphone device ID from Phase 1
@@ -395,7 +484,8 @@ export class Router {
       this.autoDetectionPhase = null;
     }
 
-    // Create new auto-detection phase with callbacks
+    // Create new auto-detection phase with callbacks (module lazy-loaded on demand)
+    const { AutoDetectionPhase } = await loadAutoDetectionPhaseModule();
     this.autoDetectionPhase = new AutoDetectionPhase(
       {
         onMachineRecognized: (machine, result) => this.handleMachineRecognized(machine, result),
@@ -425,7 +515,10 @@ export class Router {
    * Fall B: Uncertain match (40-79%)
    * Show candidates for user selection
    */
-  private handleUncertainMatch(candidates: MachineMatchResult[], result: AutoDetectionResult): void {
+  private handleUncertainMatch(
+    candidates: MachineMatchResult[],
+    result: AutoDetectionResult
+  ): void {
     logger.info(`⚠️ Uncertain match with ${candidates.length} candidates`);
 
     // Show selection modal
@@ -434,13 +527,28 @@ export class Router {
 
   /**
    * Fall C: No match found (<40%)
-   * Show "unknown sound" modal with options
+   * Welle 3: Enhanced with unified flow - smart-routes based on machine state.
    */
-  private handleNoMatch(result: AutoDetectionResult): void {
-    logger.info('❌ No matching machine found');
+  private async handleNoMatch(result: AutoDetectionResult): Promise<void> {
+    logger.info('No matching machine found – unified flow');
 
-    // Show no-match modal
-    this.showNoMatchModal(result);
+    const machines = await getAllMachines();
+
+    // Check if any machine exists without reference models
+    const machinesWithoutRef = machines.filter(
+      (m) => !m.referenceModels || m.referenceModels.length === 0
+    );
+
+    if (machines.length === 0) {
+      // Case A: No machines at all → offer to create + record reference
+      this.showUnifiedFlowModal('no_machines', null, result);
+    } else if (machinesWithoutRef.length > 0) {
+      // Case B: Some machines exist without reference → offer to record for them
+      this.showUnifiedFlowModal('missing_reference', machinesWithoutRef, result);
+    } else {
+      // Case C: All machines have references, just no match → existing behavior
+      this.showNoMatchModal(result);
+    }
   }
 
   /**
@@ -476,11 +584,12 @@ export class Router {
     const statusEl = document.getElementById('recognized-status');
     if (statusEl && result.bestMatch) {
       const status = result.bestMatch.status;
-      statusEl.textContent = status === 'healthy'
-        ? t('status.healthy')
-        : status === 'faulty'
-          ? t('status.faulty')
-          : t('status.uncertain');
+      statusEl.textContent =
+        status === 'healthy'
+          ? t('status.healthy')
+          : status === 'faulty'
+            ? t('status.faulty')
+            : t('status.uncertain');
       statusEl.className = `recognized-status status-${status}`;
     }
 
@@ -513,7 +622,10 @@ export class Router {
   /**
    * Show modal for Fall B: Uncertain match with candidate selection
    */
-  private showCandidateSelectionModal(candidates: MachineMatchResult[], _result: AutoDetectionResult): void {
+  private showCandidateSelectionModal(
+    candidates: MachineMatchResult[],
+    _result: AutoDetectionResult
+  ): void {
     const modal = document.getElementById('candidate-selection-modal');
     if (!modal) return;
 
@@ -525,7 +637,7 @@ export class Router {
       const ALLOWED_STATUSES = ['healthy', 'faulty', 'uncertain'] as const;
 
       candidates.forEach((candidate) => {
-        const safeStatus = ALLOWED_STATUSES.includes(candidate.status as any)
+        const safeStatus = (ALLOWED_STATUSES as readonly string[]).includes(candidate.status)
           ? candidate.status
           : 'uncertain';
 
@@ -620,9 +732,167 @@ export class Router {
   }
 
   /**
+   * Welle 3: Show unified flow modal for no-match scenarios.
+   * Guides the user to create a machine and/or record a reference
+   * without ever using the word "Referenz".
+   */
+  private showUnifiedFlowModal(
+    scenario: 'no_machines' | 'missing_reference',
+    machinesWithoutRef: Machine[] | null,
+    _result: AutoDetectionResult
+  ): void {
+    const overlay = document.createElement('div');
+    overlay.className = 'fleet-result-overlay';
+
+    const modal = document.createElement('div');
+    modal.className = 'fleet-result-modal unified-flow-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+
+    // --- Header ---
+    const header = document.createElement('div');
+    header.className = 'fleet-result-header';
+
+    const titleContainer = document.createElement('div');
+    const title = document.createElement('h3');
+    title.textContent =
+      scenario === 'no_machines'
+        ? t('unifiedFlow.newMachineTitle')
+        : t('unifiedFlow.missingRefTitle');
+    titleContainer.appendChild(title);
+    header.appendChild(titleContainer);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'fleet-result-close';
+    closeBtn.innerHTML = '\u2715';
+    closeBtn.setAttribute('aria-label', t('buttons.close'));
+    header.appendChild(closeBtn);
+    modal.appendChild(header);
+
+    // --- Body ---
+    const body = document.createElement('div');
+    body.className = 'fleet-result-body';
+
+    if (scenario === 'no_machines') {
+      // Explanation
+      const explanation = document.createElement('p');
+      explanation.className = 'unified-flow-explanation';
+      explanation.textContent = t('unifiedFlow.noMachinesExplanation');
+      body.appendChild(explanation);
+
+      // Name input
+      const inputGroup = document.createElement('div');
+      inputGroup.className = 'unified-flow-input-group';
+
+      const label = document.createElement('label');
+      label.textContent = t('unifiedFlow.machineNameLabel');
+      label.className = 'unified-flow-label';
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'machine-input unified-flow-input';
+      input.placeholder = t('unifiedFlow.machineNamePlaceholder');
+      input.setAttribute('autocomplete', 'off');
+
+      inputGroup.appendChild(label);
+      inputGroup.appendChild(input);
+      body.appendChild(inputGroup);
+
+      // CTA button
+      const ctaBtn = document.createElement('button');
+      ctaBtn.className = 'result-action-btn result-action-primary unified-flow-cta';
+      ctaBtn.textContent = t('unifiedFlow.createAndRecord');
+      ctaBtn.disabled = true;
+
+      input.addEventListener('input', () => {
+        ctaBtn.disabled = input.value.trim().length === 0;
+      });
+
+      ctaBtn.addEventListener('click', async () => {
+        const name = input.value.trim();
+        if (!name) return;
+
+        overlay.remove();
+
+        // Create machine via IdentifyPhase
+        const machine = await this.identifyPhase.createMachineQuick(name);
+        if (machine) {
+          // Select machine and start reference recording flow
+          this.onMachineSelected(machine);
+          // Auto-expand reference section and trigger recording
+          setTimeout(() => {
+            this.expandSection('record-reference-content');
+            const refSection = document.getElementById('record-reference-content');
+            refSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            notify.info(t('unifiedFlow.recordingStarted', { name }));
+          }, 300);
+        }
+      });
+
+      body.appendChild(ctaBtn);
+    } else if (scenario === 'missing_reference' && machinesWithoutRef) {
+      // Explanation
+      const explanation = document.createElement('p');
+      explanation.className = 'unified-flow-explanation';
+      explanation.textContent = t('unifiedFlow.missingRefExplanation');
+      body.appendChild(explanation);
+
+      // Machine selection (if multiple)
+      for (const machine of machinesWithoutRef.slice(0, 5)) {
+        const machineBtn = document.createElement('button');
+        machineBtn.className = 'unified-flow-machine-btn';
+        machineBtn.innerHTML = `<strong>${escapeHtml(machine.name)}</strong><span>${escapeHtml(t('unifiedFlow.recordNormalState'))}</span>`;
+
+        machineBtn.addEventListener('click', () => {
+          overlay.remove();
+          this.onMachineSelected(machine);
+          // Auto-expand reference section
+          setTimeout(() => {
+            this.expandSection('record-reference-content');
+            const refSection = document.getElementById('record-reference-content');
+            refSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            notify.info(t('unifiedFlow.recordingStarted', { name: machine.name }));
+          }, 300);
+        });
+
+        body.appendChild(machineBtn);
+      }
+    }
+
+    // Cancel option
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'result-action-btn result-action-secondary unified-flow-cancel';
+    cancelBtn.textContent = t('buttons.cancel');
+    cancelBtn.addEventListener('click', () => overlay.remove());
+    body.appendChild(cancelBtn);
+
+    modal.appendChild(body);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Close handlers
+    closeBtn.addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+    const escHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        document.removeEventListener('keydown', escHandler);
+        overlay.remove();
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+    requestAnimationFrame(() => {
+      const firstInput = modal.querySelector('input');
+      if (firstInput) firstInput.focus();
+      else closeBtn.focus();
+    });
+  }
+
+  /**
    * Initialize Phase 2 (Reference) and Phase 3 (Diagnose)
    */
-  private initializePhases(machine: Machine): void {
+  private async initializePhases(machine: Machine): Promise<void> {
     // Cleanup all previous instances with error handling
     this.cleanupAllPhases();
 
@@ -631,21 +901,36 @@ export class Router {
     logger.info(`📱 Using microphone device: ${selectedDeviceId || 'default'}`);
 
     // Initialize GMIA analysis phases
-    this.initializeLevel1Phases(machine, selectedDeviceId);
+    await this.initializeLevel1Phases(machine, selectedDeviceId);
   }
 
   /**
    * Initialize GMIA phases
    */
-  private initializeLevel1Phases(machine: Machine, selectedDeviceId?: string): void {
+  private async initializeLevel1Phases(machine: Machine, selectedDeviceId?: string): Promise<void> {
     logger.info('📊 Initializing GMIA phases');
 
-    // Create phase instances
+    // Create phase instances (modules lazy-loaded, prefetched at construction)
+    const { ReferencePhase } = await loadReferencePhaseModule();
     this.referencePhase = new ReferencePhase(machine, selectedDeviceId);
     this.referencePhase.init();
 
+    const { DiagnosePhase } = await loadDiagnosePhaseModule();
     this.diagnosePhase = new DiagnosePhase(machine, selectedDeviceId);
     this.diagnosePhase.init();
+
+    // Welle 2: Refresh dashboard when result modal is dismissed (✕ button)
+    this.diagnosePhase.setOnResultModalClosed(() => {
+      this.identifyPhase.updateDashboard();
+    });
+
+    // UX-Fix: Reset to Grundansicht when explicit "Weiter" button is clicked
+    // Guard: in fleet queue mode the queue advances via onDiagnosisComplete – do not reset
+    this.diagnosePhase.setOnResultContinue(() => {
+      if (!this.isFleetQueueActive) {
+        this.resetToGrundansicht();
+      }
+    });
 
     // Sprint 5: Register fleet queue callbacks if queue is active
     if (this.isFleetQueueActive) {
@@ -653,21 +938,31 @@ export class Router {
         if (diagnosis?.id) {
           this.fleetQueueDiagnosisIds.push(diagnosis.id);
         }
+        // Welle 1 UX: Haptic feedback after each fleet diagnosis
+        if (diagnosis?.healthScore !== undefined) {
+          hapticForScore(diagnosis.healthScore);
+        }
         this.fleetQueueIndex++;
         // Short delay to show result, then advance
         setTimeout(() => this.advanceFleetQueue(), 1500);
       });
       // Sprint 5 Fix: Handle diagnosis errors in fleet queue (skip to next machine)
       this.diagnosePhase.setOnDiagnosisError((error) => {
-        logger.warn(`Fleet queue: diagnosis failed for machine ${this.fleetQueue[this.fleetQueueIndex]}, skipping`, error);
+        logger.warn(
+          `Fleet queue: diagnosis failed for machine ${this.fleetQueue[this.fleetQueueIndex]}, skipping`,
+          error
+        );
         this.fleetQueueIndex++;
         setTimeout(() => this.advanceFleetQueue(), 500);
       });
 
       // UX improvement: Set QC context for inspection modal hints
-      if (this.quickCompareController.isActive && this.quickCompareController.goldStandardMachineId) {
+      if (
+        this.quickCompareController.isActive &&
+        this.quickCompareController.goldStandardMachineId
+      ) {
         const goldId = this.quickCompareController.goldStandardMachineId;
-        getMachine(goldId).then(goldMachine => {
+        getMachine(goldId).then((goldMachine) => {
           if (goldMachine && this.diagnosePhase) {
             this.diagnosePhase.setQcContext(goldMachine.name);
           }
@@ -693,8 +988,10 @@ export class Router {
       this.unlockPhases();
 
       // Sprint 7: Quick Compare – handle reference recording complete
-      if (this.quickCompareController.isActive &&
-          updatedMachine.id === this.quickCompareController.goldStandardMachineId) {
+      if (
+        this.quickCompareController.isActive &&
+        updatedMachine.id === this.quickCompareController.goldStandardMachineId
+      ) {
         // Reference recording for gold standard machine 01 is complete.
         // Copy reference to remaining machines (async – wait before advancing).
         this.quickCompareController.onReferenceComplete(updatedMachine).then(() => {
@@ -704,6 +1001,23 @@ export class Router {
         });
         return; // Don't execute normal post-reference flow
       }
+
+      // Welle 3: Enhanced post-reference feedback + dashboard refresh
+      // (Only for normal flows, not Quick Compare)
+      this.identifyPhase.updateDashboard();
+      notify.info(t('unifiedFlow.referenceSavedHint', { name: updatedMachine.name }), {
+        duration: 5000,
+      });
+
+      // UX (geführter Fluss): Referenz gespeichert → direkt die Prüf-Sektion
+      // öffnen und hinscrollen. Schritt 3 liegt damit ohne Suchen vor dem
+      // Nutzer („Jetzt prüfen").
+      this.expandSection('run-diagnosis-content');
+      requestAnimationFrame(() => {
+        document
+          .getElementById('run-diagnosis-content')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     });
   }
 
@@ -712,18 +1026,19 @@ export class Router {
    * This allows users to start recording immediately without pre-selecting a machine.
    * A new machine will be auto-created when the recording is saved.
    */
-  private initializeZeroFrictionReferencePhase(): void {
+  private async initializeZeroFrictionReferencePhase(): Promise<void> {
     logger.info('🎯 Initializing zero-friction reference phase (no machine selected)');
 
     // Get selected microphone device ID
     const selectedDeviceId = this.identifyPhase.getSelectedDeviceId();
 
-    // Create reference phase without machine (null)
+    // Create reference phase without machine (null) – module lazy-loaded (prefetched)
+    const { ReferencePhase } = await loadReferencePhaseModule();
     this.referencePhase = new ReferencePhase(null, selectedDeviceId);
     this.referencePhase.init();
 
     // Register callback to handle machine creation during zero-friction flow
-    this.referencePhase.setOnMachineUpdated((newMachine) => {
+    this.referencePhase.setOnMachineUpdated(async (newMachine) => {
       logger.info(`🤖 Zero-friction: Machine created - ${newMachine.name}`);
 
       // Update router state with new machine
@@ -736,7 +1051,8 @@ export class Router {
       // Update UI display
       this.updateMachineDisplay(newMachine);
 
-      // Initialize diagnose phase with new machine
+      // Initialize diagnose phase with new machine (module lazy-loaded, prefetched)
+      const { DiagnosePhase } = await loadDiagnosePhaseModule();
       this.diagnosePhase = new DiagnosePhase(newMachine, selectedDeviceId);
       this.diagnosePhase.init();
 
@@ -745,6 +1061,12 @@ export class Router {
 
       // Collapse machine selection section
       this.collapseSection('select-machine-content');
+
+      // Welle 3: Enhanced post-reference feedback + dashboard refresh
+      this.identifyPhase.updateDashboard();
+      notify.info(t('unifiedFlow.referenceSavedHint', { name: newMachine.name }), {
+        duration: 5000,
+      });
     });
 
     // Ensure reference button is always enabled for zero-friction
@@ -831,6 +1153,10 @@ export class Router {
       if (btn.classList.contains('manual-selection-toggle')) {
         return;
       }
+      // Sprint 9: Fleet quick check (and inline help) must remain usable without machine pre-selection
+      if (btn.id === 'fleet-quickcheck-btn' || btn.id === 'help-fleet-quickcheck') {
+        return;
+      }
       // ZERO-FRICTION: Skip reference record button - always enabled for zero-friction recording
       if (btn.id === 'record-reference-btn') {
         return;
@@ -879,6 +1205,8 @@ export class Router {
       'diagnose-scan-btn',
       'diagnose-select-btn',
       'diagnose-create-btn',
+      'fleet-quickcheck-btn',
+      'help-fleet-quickcheck',
     ];
 
     for (const id of tileIds) {
@@ -926,7 +1254,11 @@ export class Router {
                 minute: '2-digit',
               })
             : t('common.unknown');
-          description.textContent = t('router.statesTrained', { count: String(count), plural: count > 1 ? 'e' : '', date: latestDate });
+          description.textContent = t('router.statesTrained', {
+            count: String(count),
+            plural: count > 1 ? 'e' : '',
+            date: latestDate,
+          });
         } else {
           const duration = getRecordingSettings().recordingDuration;
           description.textContent = t('router.referenceRequired', { duration });
@@ -967,9 +1299,12 @@ export class Router {
     if (referenceDurationText) {
       // Only update if the router hasn't overwritten it with machine-specific info
       // Check if a machine with models is selected - if so, don't overwrite the statesTrained text
-      const hasModels = this.currentMachine?.referenceModels && this.currentMachine.referenceModels.length > 0;
+      const hasModels =
+        this.currentMachine?.referenceModels && this.currentMachine.referenceModels.length > 0;
       if (!hasModels) {
-        referenceDurationText.textContent = t('reference.tenSecondRecording', { duration: recordingDuration });
+        referenceDurationText.textContent = t('reference.tenSecondRecording', {
+          duration: recordingDuration,
+        });
       }
     }
 
@@ -1021,8 +1356,13 @@ export class Router {
    * Sprint 6: Handle fleet provisioning completion.
    * Switches to fleet mode and shows the fleet ranking.
    */
-  private async handleFleetProvisioned(fleetName: string, autoStartCheck: boolean = false): Promise<void> {
-    logger.info(`🚢 Fleet provisioned: "${fleetName}" – switching to fleet mode (autoStart=${autoStartCheck})`);
+  private async handleFleetProvisioned(
+    fleetName: string,
+    autoStartCheck: boolean = false
+  ): Promise<void> {
+    logger.info(
+      `🚢 Fleet provisioned: "${fleetName}" – switching to fleet mode (autoStart=${autoStartCheck})`
+    );
 
     // Refresh machine data
     await this.identifyPhase.refreshMachineLists();
@@ -1036,14 +1376,18 @@ export class Router {
     // Auto-start guided fleet check via onboarding splash (only from NFC/deep link)
     if (autoStartCheck) {
       const allMachines = await getAllMachines();
-      const fleetMachines = allMachines.filter(m => m.fleetGroup === fleetName);
+      const fleetMachines = allMachines.filter((m) => m.fleetGroup === fleetName);
 
       if (fleetMachines.length === 0) {
         notify.info(t('fleet.onboarding.noMachines'));
         return;
       }
 
-      this.showFleetOnboardingSplash(fleetName, fleetMachines.map(m => m.id), fleetMachines.length);
+      this.showFleetOnboardingSplash(
+        fleetName,
+        fleetMachines.map((m) => m.id),
+        fleetMachines.length
+      );
     }
   }
 
@@ -1051,7 +1395,11 @@ export class Router {
    * Show onboarding splash overlay after NFC fleet provisioning.
    * Explains the fleet check concept and starts the guided queue on button tap.
    */
-  private showFleetOnboardingSplash(fleetName: string, machineIds: string[], machineCount: number): void {
+  private showFleetOnboardingSplash(
+    fleetName: string,
+    machineIds: string[],
+    machineCount: number
+  ): void {
     // Remove any existing splash
     const existing = document.getElementById('fleet-onboarding-overlay');
     if (existing) existing.remove();
@@ -1060,7 +1408,8 @@ export class Router {
     overlay.id = 'fleet-onboarding-overlay';
     overlay.className = 'fleet-onboarding-overlay';
 
-    const titleKey = machineCount === 1 ? 'fleet.onboarding.titleSingular' : 'fleet.onboarding.title';
+    const titleKey =
+      machineCount === 1 ? 'fleet.onboarding.titleSingular' : 'fleet.onboarding.title';
     const titleText = escapeHtml(t(titleKey, { count: String(machineCount) }));
 
     overlay.innerHTML = `
@@ -1127,13 +1476,16 @@ export class Router {
     overlay.id = 'qc-onboarding-overlay';
     overlay.className = 'fleet-onboarding-overlay';
 
-    const titleKey = count === 1 ? 'quickCompare.nfcOnboarding.titleSingular' : 'quickCompare.nfcOnboarding.title';
+    const titleKey =
+      count === 1 ? 'quickCompare.nfcOnboarding.titleSingular' : 'quickCompare.nfcOnboarding.title';
     const titleText = escapeHtml(t(titleKey, { count: String(count) }));
 
     // Calculate time estimate: ~15s per machine, rounded to nearest 0.5 min
     const totalSeconds = count * 15;
     const minutes = (Math.ceil(totalSeconds / 30) * 0.5).toFixed(1).replace('.0', '');
-    const timeEstimate = escapeHtml(t('quickCompare.nfcOnboarding.timeEstimate', { minutes, count: String(count) }));
+    const timeEstimate = escapeHtml(
+      t('quickCompare.nfcOnboarding.timeEstimate', { minutes, count: String(count) })
+    );
     const privacyHint = escapeHtml(t('quickCompare.nfcOnboarding.privacyHint'));
 
     overlay.innerHTML = `
@@ -1161,6 +1513,277 @@ export class Router {
         // Start the Quick Compare controller with count (creates machines + starts loop)
         this.quickCompareController.startWithCount(count);
       });
+    }
+  }
+
+  // ============================================================================
+  // SPRINT 9: FLEET QUICK CHECK FROM PHASE 3
+  // ============================================================================
+
+  /**
+   * Sprint 9: Handle fleet quick check button tap in Phase 3.
+   * Context-aware: starts Quick Compare, direct fleet check, or shows fleet selection.
+   */
+  private async handleFleetQuickCheck(): Promise<void> {
+    try {
+      const allMachines = await getAllMachines();
+      const fleetGroups = new Map<string, Machine[]>();
+
+      for (const m of allMachines) {
+        if (m.fleetGroup) {
+          const group = fleetGroups.get(m.fleetGroup) || [];
+          group.push(m);
+          fleetGroups.set(m.fleetGroup, group);
+        }
+      }
+
+      if (fleetGroups.size === 0) {
+        // No fleets → start Quick Compare directly
+        this.quickCompareController.start();
+        return;
+      }
+
+      if (fleetGroups.size === 1) {
+        const [fleetName, machines] = [...fleetGroups.entries()][0];
+        if (machines.length >= 2) {
+          // Exactly 1 fleet with ≥2 machines → start guided fleet check directly
+          this.startGuidedFleetCheckFromPhase3(fleetName, machines);
+          return;
+        }
+        // Only 1 machine in the fleet → show hint + offer Quick Compare
+        notify.info(t('fleetSelect.singleMachineHint', { name: fleetName }));
+        this.quickCompareController.start();
+        return;
+      }
+
+      // Multiple fleets → show selection sheet
+      await this.showFleetSelectionSheet(fleetGroups);
+    } catch (error) {
+      logger.error('[Router] Fleet quick check could not be started', error);
+      notify.error(t('alerts.genericError'));
+    }
+  }
+
+  /**
+   * Sprint 9: Show fleet selection bottom sheet.
+   */
+  private async showFleetSelectionSheet(fleetGroups: Map<string, Machine[]>): Promise<void> {
+    // Remove existing sheet
+    document.getElementById('fleet-select-overlay')?.remove();
+
+    // Build fleet info with last-checked timestamps
+    const fleetInfos: Array<{ name: string; machines: Machine[]; lastChecked: number | null }> = [];
+    for (const [name, machines] of fleetGroups) {
+      let latestTimestamp: number | null = null;
+      for (const m of machines) {
+        const diag = await getLatestDiagnosis(m.id);
+        if (diag && (latestTimestamp === null || diag.timestamp > latestTimestamp)) {
+          latestTimestamp = diag.timestamp;
+        }
+      }
+      fleetInfos.push({ name, machines, lastChecked: latestTimestamp });
+    }
+
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'fleet-select-overlay';
+    overlay.className = 'bottomsheet-overlay';
+
+    // Create sheet
+    const sheet = document.createElement('div');
+    sheet.className = 'bottomsheet';
+
+    // escHandler placeholder – assigned below, captured by dismiss via closure
+    let escHandler: (e: KeyboardEvent) => void = () => {
+      /* assigned below */
+    };
+
+    // Helper: animated dismissal (defined early so buttons can use it)
+    const dismiss = () => {
+      overlay.classList.remove('bottomsheet-overlay-visible');
+      sheet.classList.remove('bottomsheet-visible');
+      setTimeout(() => {
+        overlay.remove();
+      }, 350);
+      document.removeEventListener('keydown', escHandler);
+    };
+
+    // Handle
+    const handle = document.createElement('div');
+    handle.className = 'bottomsheet-handle';
+    sheet.appendChild(handle);
+
+    // Header with close button
+    const header = document.createElement('div');
+    header.className = 'bottomsheet-header';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'bottomsheet-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.addEventListener('click', () => dismiss());
+    header.appendChild(closeBtn);
+
+    const title = document.createElement('h3');
+    title.className = 'bottomsheet-title';
+    title.textContent = t('fleetSelect.title');
+    header.appendChild(title);
+
+    sheet.appendChild(header);
+
+    // Fleet list
+    const list = document.createElement('div');
+    list.className = 'fleet-select-list';
+
+    for (const info of fleetInfos) {
+      const item = document.createElement('button');
+      item.className = 'fleet-select-item';
+
+      const icon = document.createElement('span');
+      icon.className = 'fleet-select-icon';
+      icon.textContent = '\uD83C\uDFED'; // 🏭
+      item.appendChild(icon);
+
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'fleet-select-info';
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'fleet-select-name';
+      nameEl.textContent = info.name;
+      infoDiv.appendChild(nameEl);
+
+      const metaEl = document.createElement('div');
+      metaEl.className = 'fleet-select-meta';
+      const countText =
+        info.machines.length === 1
+          ? t('fleetSelect.machineCountSingular')
+          : t('fleetSelect.machineCount', { count: String(info.machines.length) });
+      const timeText = info.lastChecked
+        ? t('fleetSelect.lastChecked', { time: this.formatRelativeTimeForSheet(info.lastChecked) })
+        : t('fleetSelect.neverChecked');
+      metaEl.textContent = `${countText} \u00B7 ${timeText}`;
+      infoDiv.appendChild(metaEl);
+
+      item.appendChild(infoDiv);
+
+      item.addEventListener('click', () => {
+        dismiss();
+        if (info.machines.length < 2) {
+          notify.info(t('fleetSelect.singleMachineHint', { name: info.name }));
+          return;
+        }
+        this.startGuidedFleetCheckFromPhase3(info.name, info.machines);
+      });
+
+      list.appendChild(item);
+    }
+
+    sheet.appendChild(list);
+
+    // Separator
+    const separator = document.createElement('div');
+    separator.className = 'fleet-select-separator';
+    separator.textContent = t('diagnose.orFleet');
+    sheet.appendChild(separator);
+
+    // Quick Compare option
+    const qcItem = document.createElement('button');
+    qcItem.className = 'fleet-select-item';
+
+    const qcIcon = document.createElement('span');
+    qcIcon.className = 'fleet-select-icon';
+    qcIcon.textContent = '\u26A1'; // ⚡
+    qcItem.appendChild(qcIcon);
+
+    const qcInfo = document.createElement('div');
+    qcInfo.className = 'fleet-select-info';
+
+    const qcName = document.createElement('div');
+    qcName.className = 'fleet-select-name';
+    qcName.textContent = t('fleetSelect.newQuickCompare');
+    qcInfo.appendChild(qcName);
+
+    const qcMeta = document.createElement('div');
+    qcMeta.className = 'fleet-select-meta';
+    qcMeta.textContent = t('fleetSelect.newQuickCompareHint');
+    qcInfo.appendChild(qcMeta);
+
+    qcItem.appendChild(qcInfo);
+
+    qcItem.addEventListener('click', () => {
+      dismiss();
+      this.quickCompareController.start();
+    });
+
+    sheet.appendChild(qcItem);
+
+    // Assemble
+    overlay.appendChild(sheet);
+    document.body.appendChild(overlay);
+
+    // Trigger CSS transitions (must run after DOM append)
+    requestAnimationFrame(() => {
+      overlay.classList.add('bottomsheet-overlay-visible');
+      sheet.classList.add('bottomsheet-visible');
+    });
+
+    // Close on overlay click
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) dismiss();
+    });
+
+    // Assign the Escape handler (captured by dismiss via closure)
+    escHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') dismiss();
+    };
+    document.addEventListener('keydown', escHandler);
+  }
+
+  /**
+   * Sprint 9: Start a guided fleet check from Phase 3.
+   * Navigates to Phase 1, activates fleet mode, then starts the queue.
+   */
+  private startGuidedFleetCheckFromPhase3(fleetName: string, machines: Machine[]): void {
+    const machineIds = machines.map((m) => m.id);
+
+    // Expand the machine section (Phase 1) so DOM is ready
+    this.expandSection('select-machine-content');
+
+    // Activate fleet mode and start the queue after a short delay for DOM readiness
+    this.identifyPhase.activateFleetMode(fleetName).then(() => {
+      // Small delay to ensure DOM is settled before starting the fleet queue
+      setTimeout(() => {
+        this.startFleetQueue(machineIds, fleetName);
+      }, 300);
+    });
+  }
+
+  /**
+   * Sprint 9: Format a timestamp as relative time (e.g., "vor 2h", "vor 1d").
+   */
+  private formatRelativeTimeForSheet(timestamp: number): string {
+    const now = Date.now();
+    const diff = now - timestamp;
+
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const weeks = Math.floor(days / 7);
+
+    if (seconds < 60) {
+      return t('identify.time.justNow');
+    } else if (minutes < 60) {
+      return t('identify.time.minutesAgo', { minutes: String(minutes) });
+    } else if (hours < 24) {
+      return t('identify.time.hoursAgo', { hours: String(hours) });
+    } else if (days < 7) {
+      return days === 1
+        ? t('identify.time.dayAgo')
+        : t('identify.time.daysAgo', { days: String(days) });
+    } else {
+      return weeks === 1
+        ? t('identify.time.weekAgo')
+        : t('identify.time.weeksAgo', { weeks: String(weeks) });
     }
   }
 
@@ -1268,7 +1891,9 @@ export class Router {
           setTimeout(tryClick, 100);
         } else {
           // Button not found after retries - skip this machine
-          logger.warn(`Fleet queue: diagnose-btn not found after ${maxAttempts} attempts, skipping`);
+          logger.warn(
+            `Fleet queue: diagnose-btn not found after ${maxAttempts} attempts, skipping`
+          );
           this.fleetQueueIndex++;
           setTimeout(() => this.advanceFleetQueue(), 100);
           resolve();
@@ -1276,6 +1901,37 @@ export class Router {
       };
 
       // Start after one animation frame to let DOM settle
+      requestAnimationFrame(() => setTimeout(tryClick, 100));
+    });
+  }
+
+  /**
+   * Bugfix: Wait for reference record button to be ready and click it.
+   * Used in fleet queue context to skip the tile navigation and start recording directly.
+   * Tries both record-btn (State A) and record-reference-btn (State B / zero-friction).
+   */
+  private waitForRecordButton(): Promise<void> {
+    return new Promise((resolve) => {
+      let attempts = 0;
+      const maxAttempts = 20;
+
+      const tryClick = () => {
+        attempts++;
+        const recordBtn =
+          document.getElementById('record-btn') || document.getElementById('record-reference-btn');
+        if (recordBtn) {
+          recordBtn.click();
+          resolve();
+          return;
+        }
+        if (attempts < maxAttempts) {
+          setTimeout(tryClick, 100);
+        } else {
+          logger.warn(`Fleet queue: record button not found after ${maxAttempts} attempts`);
+          resolve();
+        }
+      };
+
       requestAnimationFrame(() => setTimeout(tryClick, 100));
     });
   }
@@ -1290,7 +1946,8 @@ export class Router {
     document.getElementById('fleet-guided-prompt')?.remove();
 
     // Detect if this is the gold standard machine in a Quick Compare flow
-    const isQcGoldStandard = this.quickCompareController.isActive &&
+    const isQcGoldStandard =
+      this.quickCompareController.isActive &&
       machine.id === this.quickCompareController.goldStandardMachineId;
 
     const prompt = document.createElement('div');
@@ -1358,12 +2015,13 @@ export class Router {
       if (isQcGoldStandard) {
         // Gold standard: select machine for REFERENCE phase (Phase 2)
         this.onMachineSelected(machine);
-        // Don't click diagnose button – user records reference manually
-        // The fleet queue will advance after onReferenceComplete
+        // Bugfix: Start recording directly – skip tile navigation
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        await this.waitForRecordButton();
       } else {
         // Normal comparison: select machine and auto-start diagnosis (Phase 3)
         this.onMachineSelected(machine);
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 300));
         await this.waitForDiagnoseButton();
       }
     });
@@ -1499,42 +2157,60 @@ export class Router {
   // ============================================================================
 
   /**
-   * Calculate fleet statistics from an array of scores.
-   * Mirrors IdentifyPhase.calculateFleetStats() logic.
+   * Welle 4: Export fleet report as PDF or CSV.
    */
-  private calculateFleetStats(scores: number[]): {
-    median: number;
-    outlierThreshold: number;
-    min: number;
-    max: number;
-    spread: number;
-  } | null {
-    if (scores.length < 2) return null;
+  private exportFleetReport(
+    groupName: string,
+    ranked: Array<{ machine: Machine; score: number | null }>,
+    stats: {
+      median: number;
+      outlierThreshold: number;
+      min: number;
+      max: number;
+      spread: number;
+    } | null
+  ): void {
+    const entries: ReportEntry[] = ranked
+      .filter((r): r is { machine: Machine; score: number } => r.score !== null)
+      .map((r) => {
+        const statusText =
+          r.score >= 75
+            ? t('status.healthy')
+            : r.score >= 50
+              ? t('status.uncertain')
+              : t('status.faulty');
+        return {
+          machineName: r.machine.name,
+          machineId: r.machine.id,
+          score: r.score,
+          status: statusText,
+          timestamp: Date.now(),
+          recommendation:
+            r.score >= 75
+              ? t('diagnose.recommendation.healthy')
+              : r.score >= 50
+                ? t('diagnose.recommendation.warning')
+                : t('diagnose.recommendation.critical'),
+        };
+      });
 
-    const sorted = [...scores].sort((a, b) => a - b);
-    const n = sorted.length;
-
-    const median = n % 2 === 0
-      ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
-      : sorted[Math.floor(n / 2)];
-
-    // MAD (Median Absolute Deviation)
-    const deviations = sorted.map(s => Math.abs(s - median));
-    deviations.sort((a, b) => a - b);
-    const mad = deviations.length % 2 === 0
-      ? (deviations[deviations.length / 2 - 1] + deviations[deviations.length / 2]) / 2
-      : deviations[Math.floor(deviations.length / 2)];
-
-    const effectiveMAD = mad > 0 ? mad : 2.5;
-    const outlierThreshold = median - 2 * effectiveMAD;
-
-    return {
-      median,
-      outlierThreshold,
-      min: sorted[0],
-      max: sorted[n - 1],
-      spread: sorted[n - 1] - sorted[0],
+    const data: ReportData = {
+      title: t('report.fleetTitle'),
+      subtitle: groupName,
+      date: new Date().toLocaleString(),
+      entries,
+      summary: {
+        total: ranked.length,
+        healthy: entries.filter((e) => e.score >= 75).length,
+        warning: entries.filter((e) => e.score >= 50 && e.score < 75).length,
+        critical: entries.filter((e) => e.score < 50).length,
+        unchecked: ranked.filter((r) => r.score === null).length,
+        medianScore: stats?.median,
+      },
     };
+
+    // Direct PDF export for fleet results (most common use case)
+    exportAsPrintablePDF(data);
   }
 
   /**
@@ -1568,14 +2244,14 @@ export class Router {
     });
 
     // Calculate statistics
-    const scores = ranked.map(r => r.score).filter((s): s is number => s !== null);
-    const stats = this.calculateFleetStats(scores);
-    const outlierCount = stats ? scores.filter(s => s < stats.outlierThreshold).length : 0;
+    const scores = ranked.map((r) => r.score).filter((s): s is number => s !== null);
+    const stats = calculateFleetStats(scores);
+    const outlierCount = stats ? scores.filter((s) => s < stats.outlierThreshold).length : 0;
     const hasOutliers = outlierCount > 0;
 
     // Detect gold standard machine
     let goldStandardId: string | null = null;
-    const refSourceIds = ranked.map(r => r.machine.fleetReferenceSourceId).filter(Boolean);
+    const refSourceIds = ranked.map((r) => r.machine.fleetReferenceSourceId).filter(Boolean);
     if (refSourceIds.length > 0) {
       const counts = new Map<string, number>();
       for (const id of refSourceIds) {
@@ -1643,9 +2319,11 @@ export class Router {
       total: String(total),
     });
     if (skipped > 0) {
-      statusSubtitle.textContent += ' · ' + t('fleet.result.summarySkipped', {
-        skipped: String(skipped),
-      });
+      statusSubtitle.textContent +=
+        ' · ' +
+        t('fleet.result.summarySkipped', {
+          skipped: String(skipped),
+        });
     }
     statusBanner.appendChild(statusSubtitle);
 
@@ -1658,15 +2336,15 @@ export class Router {
 
       const medianStat = this.createStatBlock(
         t('fleet.result.statsMedian'),
-        `${stats.median.toFixed(0)}%`,
+        `${stats.median.toFixed(0)}%`
       );
       const spreadStat = this.createStatBlock(
         t('fleet.result.statsSpread'),
-        `${stats.spread.toFixed(0)}%`,
+        `${stats.spread.toFixed(0)}%`
       );
       const worstStat = this.createStatBlock(
         t('fleet.result.statsWorst'),
-        `${stats.min.toFixed(0)}%`,
+        `${stats.min.toFixed(0)}%`
       );
 
       statsRow.appendChild(medianStat);
@@ -1685,11 +2363,14 @@ export class Router {
     rankingSection.appendChild(rankingTitle);
 
     for (const item of ranked) {
-      const isOutlier = stats !== null && item.score !== null
-        ? item.score < stats.outlierThreshold
-        : false;
+      const isOutlier =
+        stats !== null && item.score !== null ? item.score < stats.outlierThreshold : false;
       const rankItem = this.createFleetResultRankingItem(
-        item.machine, item.score, stats, isOutlier, goldStandardId,
+        item.machine,
+        item.score,
+        stats,
+        isOutlier,
+        goldStandardId
       );
       rankingSection.appendChild(rankItem);
     }
@@ -1708,6 +2389,25 @@ export class Router {
       this.showFleetHistory(groupName, machineIds);
     });
     actions.appendChild(historyBtn);
+
+    // Welle 4: Report export button
+    const reportBtn = document.createElement('button');
+    reportBtn.className = 'fleet-result-btn-history';
+    reportBtn.textContent = '\uD83D\uDCC4 ' + t('report.exportButton');
+    reportBtn.addEventListener('click', () => {
+      this.exportFleetReport(groupName, ranked, stats);
+    });
+    actions.appendChild(reportBtn);
+
+    const closeAndContinueBtn = document.createElement('button');
+    closeAndContinueBtn.className = 'fleet-result-btn-close';
+    closeAndContinueBtn.textContent = t('fleet.result.closeAndContinue');
+    closeAndContinueBtn.setAttribute('aria-label', t('fleet.result.closeAndContinue'));
+    closeAndContinueBtn.addEventListener('click', () => {
+      overlay.remove();
+      this.resetToGrundansicht();
+    });
+    actions.appendChild(closeAndContinueBtn);
 
     const btnRow = document.createElement('div');
     btnRow.className = 'fleet-result-btn-row';
@@ -1792,9 +2492,15 @@ export class Router {
   private createFleetResultRankingItem(
     machine: Machine,
     score: number | null,
-    stats: { median: number; outlierThreshold: number; min: number; max: number; spread: number } | null,
+    stats: {
+      median: number;
+      outlierThreshold: number;
+      min: number;
+      max: number;
+      spread: number;
+    } | null,
     isOutlier: boolean,
-    goldStandardId: string | null,
+    goldStandardId: string | null
   ): HTMLElement {
     const item = document.createElement('div');
     item.className = `fleet-rank-item${isOutlier ? ' fleet-outlier' : ''}`;
@@ -1870,7 +2576,11 @@ export class Router {
     for (const id of machineIds) {
       const diagnoses = await getDiagnosesForMachine(id);
       for (const d of diagnoses) {
-        allDiagnoses.push({ machineId: d.machineId, timestamp: d.timestamp, healthScore: d.healthScore });
+        allDiagnoses.push({
+          machineId: d.machineId,
+          timestamp: d.timestamp,
+          healthScore: d.healthScore,
+        });
       }
     }
 
@@ -1880,7 +2590,7 @@ export class Router {
     const runs: Array<{ timestamp: number; scores: number[]; machineCount: number }> = [];
 
     for (const d of allDiagnoses) {
-      const existingRun = runs.find(r => Math.abs(r.timestamp - d.timestamp) < FIVE_MINUTES);
+      const existingRun = runs.find((r) => Math.abs(r.timestamp - d.timestamp) < FIVE_MINUTES);
       if (existingRun) {
         existingRun.scores.push(d.healthScore);
         // Track unique machines
@@ -1941,21 +2651,24 @@ export class Router {
       list.className = 'fleet-history-list';
 
       for (const run of runs) {
-        const runStats = this.calculateFleetStats(run.scores);
+        const runStats = calculateFleetStats(run.scores);
         const li = document.createElement('li');
         li.className = 'fleet-history-item';
 
         const dateEl = document.createElement('span');
         dateEl.className = 'fleet-history-date';
         const dateObj = new Date(run.timestamp);
-        dateEl.textContent = dateObj.toLocaleDateString(getLocale(), {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        }) + ' ' + dateObj.toLocaleTimeString(getLocale(), {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
+        dateEl.textContent =
+          dateObj.toLocaleDateString(getLocale(), {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          }) +
+          ' ' +
+          dateObj.toLocaleTimeString(getLocale(), {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
         li.appendChild(dateEl);
 
         const statsEl = document.createElement('span');
@@ -2019,6 +2732,49 @@ export class Router {
     }
 
     notify.info(t('fleet.queue.cancelled'));
+  }
+
+  /**
+   * UX-Fix: Reset app to clean Grundansicht after a completed check process.
+   *
+   * Preserves: Machine info header with export option (top bar).
+   * Resets: Workflow mode, fleet queue, active diagnosis state, button states.
+   */
+  private resetToGrundansicht(): void {
+    logger.info('🏠 Resetting to Grundansicht after completed check');
+
+    // 1. Reset any active fleet queue state
+    if (this.isFleetQueueActive) {
+      this.cleanupFleetQueue();
+    }
+
+    // 2. Reset workflow mode to series (Übersicht)
+    this.identifyPhase.setWorkflowMode('series');
+
+    // 3. Clear machine from card controllers so the "no machine selected" state shows
+    this.diagnoseCardController.clearMachine();
+    this.referenceCardController.clearMachine();
+    this.currentMachine = null;
+
+    // 4. Reset section layout: collapse diagnosis/reference, re-expand machine selection
+    this.collapseSection('run-diagnosis-content');
+    this.collapseSection('record-reference-content');
+    this.expandSection('select-machine-content');
+
+    // 5. Reset diagnose/reference button states to default
+    const diagnoseBtn = document.getElementById('diagnose-btn');
+    const referenceBtn = document.getElementById('reference-btn');
+    if (diagnoseBtn) {
+      diagnoseBtn.classList.remove('active', 'ready');
+    }
+    if (referenceBtn) {
+      referenceBtn.classList.remove('active', 'ready');
+    }
+
+    // 6. Refresh machine overview
+    this.identifyPhase.updateDashboard();
+
+    logger.info('✅ Grundansicht restored');
   }
 
   /**

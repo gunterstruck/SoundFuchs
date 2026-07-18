@@ -1,0 +1,90 @@
+/* ZANOBOT — Ereignis-Zeitleiste (Expert Mode, Temporal-Engine / Tier 2) */
+
+.event-timeline {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.event-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-muted, #9aa0a6);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.event-timeline-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 400;
+  font-size: 0.72rem;
+}
+
+.event-timeline-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: 8px;
+}
+
+.event-timeline-dot--known {
+  background: var(--text-muted, #9aa0a6);
+}
+
+.event-timeline-dot--anomalous {
+  background: var(--color-faulty, #f44336);
+}
+
+.event-timeline-track {
+  position: relative;
+  height: 22px;
+  background: var(--bg-primary, rgba(0, 0, 0, 0.25));
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.event-timeline-marker {
+  position: absolute;
+  top: 3px;
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+.event-timeline-marker.event-timeline-dot--known {
+  background: var(--text-muted, #9aa0a6);
+}
+
+.event-timeline-marker.event-timeline-dot--anomalous {
+  background: var(--color-faulty, #f44336);
+}
+
+.event-timeline-empty {
+  display: block;
+  text-align: center;
+  line-height: 22px;
+  color: var(--text-muted, #9aa0a6);
+  font-size: 0.72rem;
+}
+
+.event-timeline-rate {
+  margin-top: 6px;
+  color: var(--text-muted, #9aa0a6);
+  font-size: 0.75rem;
+}
+
+.event-timeline-finding {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(244, 67, 54, 0.12);
+  color: var(--color-faulty, #f44336);
+  font-size: 0.75rem;
+}

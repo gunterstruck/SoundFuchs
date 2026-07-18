@@ -997,7 +997,7 @@ export function applyRoomCompensation(
 // SETTINGS PERSISTENCE
 // ============================================================================
 
-const STORAGE_KEY = 'zanobo-room-comp-settings';
+const STORAGE_KEY = 'zanobot-room-comp-settings';
 
 /**
  * Read room compensation settings from localStorage.

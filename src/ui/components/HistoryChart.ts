@@ -26,6 +26,13 @@ export class HistoryChart {
   private hoveredPoint: ChartDataPoint | null = null;
   private animationProgress: number = 0;
   private animationFrame: number | null = null;
+  private themeObserver: MutationObserver | null = null;
+
+  // Bound listener references so destroy() can actually remove them
+  private readonly onMouseMove = (e: MouseEvent): void => this.handleMouseMove(e);
+  private readonly onMouseLeave = (): void => this.handleMouseLeave();
+  private readonly onTouchStart = (e: TouchEvent): void => this.handleTouchStart(e);
+  private readonly onTouchMove = (e: TouchEvent): void => this.handleTouchMove(e);
 
   // Chart dimensions and padding
   private readonly padding = {
@@ -52,6 +59,10 @@ export class HistoryChart {
     healthy: 75,
     uncertain: 50
   };
+
+  // A "bad feature" (frequency anomaly) is flagged on the timeline once its
+  // strength reaches this share of unexplained energy.
+  private readonly anomalyStrengthThreshold = 50;
 
   constructor(canvasId: string) {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -98,7 +109,7 @@ export class HistoryChart {
    * Observe theme changes and update colors accordingly
    */
   private observeThemeChanges(): void {
-    const observer = new MutationObserver((mutations) => {
+    this.themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.attributeName === 'data-theme') {
           this.updateThemeColors();
@@ -107,7 +118,7 @@ export class HistoryChart {
       });
     });
 
-    observer.observe(document.documentElement, {
+    this.themeObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme']
     });
@@ -118,13 +129,13 @@ export class HistoryChart {
    */
   private setupEventListeners(): void {
     // Mouse move for hover effects
-    this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-    this.canvas.addEventListener('mouseleave', () => this.handleMouseLeave());
+    this.canvas.addEventListener('mousemove', this.onMouseMove);
+    this.canvas.addEventListener('mouseleave', this.onMouseLeave);
 
     // Touch support
-    this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: true });
-    this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: true });
-    this.canvas.addEventListener('touchend', () => this.handleMouseLeave(), { passive: true });
+    this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: true });
+    this.canvas.addEventListener('touchmove', this.onTouchMove, { passive: true });
+    this.canvas.addEventListener('touchend', this.onMouseLeave, { passive: true });
   }
 
   /**
@@ -284,8 +295,56 @@ export class HistoryChart {
     this.drawThresholdLines(width, height);
     this.drawAxes(width, height);
     this.drawTrendLine(width, height);
+    this.drawAnomalyOverlay(width, height);
     this.drawDataPoints(width, height);
     this.drawTooltip(width, height);
+  }
+
+  /**
+   * Strongest "bad feature" of a data point, or null if none was recorded.
+   */
+  private topAnomaly(point: ChartDataPoint): { frequency: number; strength: number } | null {
+    const list = point.diagnosis.analysis?.frequencyAnomalies;
+    if (!list || list.length === 0) return null;
+    return list.reduce((best, a) => (a.strength > best.strength ? a : best), list[0]);
+  }
+
+  /** True if a point carries a bad feature at or above the flag threshold. */
+  private hasStrongAnomaly(point: ChartDataPoint): boolean {
+    const top = this.topAnomaly(point);
+    return !!top && top.strength >= this.anomalyStrengthThreshold;
+  }
+
+  /**
+   * Overlay the bad-feature anomalies on the timeline: a red line connecting the
+   * checks where a strong feature (≥ threshold) was detected. The points
+   * themselves get a red ring in drawDataPoints. The health trend line and the
+   * reference threshold lines stay exactly as they are.
+   */
+  private drawAnomalyOverlay(width: number, height: number): void {
+    const chartWidth = width - this.padding.left - this.padding.right;
+    const chartHeight = height - this.padding.top - this.padding.bottom;
+
+    const animatedPoints = Math.ceil(this.dataPoints.length * this.animationProgress);
+    const strong = this.dataPoints
+      .slice(0, animatedPoints)
+      .filter((p) => this.hasStrongAnomaly(p));
+    if (strong.length < 2) return;
+
+    this.ctx.strokeStyle = this.colors.error;
+    this.ctx.lineWidth = 2;
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
+    this.ctx.setLineDash([6, 4]);
+    this.ctx.beginPath();
+    strong.forEach((point, i) => {
+      const x = this.getDataPointX(point, chartWidth);
+      const y = this.getDataPointY(point.healthScore, chartHeight);
+      if (i === 0) this.ctx.moveTo(x, y);
+      else this.ctx.lineTo(x, y);
+    });
+    this.ctx.stroke();
+    this.ctx.setLineDash([]);
   }
 
   /**
@@ -534,16 +593,28 @@ export class HistoryChart {
         this.ctx.fill();
       }
 
-      // Draw main circle
+      const strongAnomaly = this.hasStrongAnomaly(point);
+
+      // Draw main circle. A check with a strong "bad feature" is forced red so
+      // it reads as anomalous even when the overall health score is still high.
       this.ctx.beginPath();
       this.ctx.arc(x, y, isHovered ? 7 : 5, 0, 2 * Math.PI);
-      this.ctx.fillStyle = this.getHealthColor(point.healthScore);
+      this.ctx.fillStyle = strongAnomaly ? this.colors.error : this.getHealthColor(point.healthScore);
       this.ctx.fill();
 
       // Draw border
       this.ctx.strokeStyle = '#FFFFFF';
       this.ctx.lineWidth = 2;
       this.ctx.stroke();
+
+      // Extra red ring to highlight the bad feature.
+      if (strongAnomaly) {
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, isHovered ? 11 : 9, 0, 2 * Math.PI);
+        this.ctx.strokeStyle = this.colors.error;
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+      }
     }
   }
 
@@ -563,6 +634,13 @@ export class HistoryChart {
     const scoreText = `${Math.round(this.hoveredPoint.healthScore)}%`;
     const statusText = this.getStatusLabel(this.hoveredPoint.status);
     const timeText = this.formatTimestamp(this.hoveredPoint.timestamp, true);
+    const top = this.topAnomaly(this.hoveredPoint);
+    const anomalyText = top
+      ? t('historyChart.tooltipAnomaly', {
+          freq: this.formatHz(top.frequency),
+          strength: String(Math.round(top.strength)),
+        })
+      : '';
 
     // Measure tooltip size
     this.ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
@@ -570,9 +648,10 @@ export class HistoryChart {
     this.ctx.font = '12px system-ui, -apple-system, sans-serif';
     const statusWidth = this.ctx.measureText(statusText).width;
     const timeWidth = this.ctx.measureText(timeText).width;
+    const anomalyWidth = anomalyText ? this.ctx.measureText(anomalyText).width : 0;
 
-    const tooltipWidth = Math.max(scoreWidth, statusWidth, timeWidth) + 20;
-    const tooltipHeight = 70;
+    const tooltipWidth = Math.max(scoreWidth, statusWidth, timeWidth, anomalyWidth) + 20;
+    const tooltipHeight = anomalyText ? 90 : 70;
     const tooltipPadding = 10;
 
     // Position tooltip (avoid edges)
@@ -622,6 +701,17 @@ export class HistoryChart {
     // Timestamp
     this.ctx.fillStyle = this.colors.textMuted;
     this.ctx.fillText(timeText, tooltipX + tooltipPadding, tooltipY + tooltipPadding + 42);
+
+    // Top bad feature (if any)
+    if (anomalyText) {
+      this.ctx.fillStyle = this.colors.error;
+      this.ctx.fillText(anomalyText, tooltipX + tooltipPadding, tooltipY + tooltipPadding + 62);
+    }
+  }
+
+  /** Format a frequency in Hz as a compact "Hz" / "kHz" string. */
+  private formatHz(hz: number): string {
+    return hz >= 1000 ? `${(hz / 1000).toFixed(1)} kHz` : `${Math.round(hz)} Hz`;
   }
 
   /**
@@ -728,13 +818,20 @@ export class HistoryChart {
   public destroy(): void {
     if (this.animationFrame) {
       cancelAnimationFrame(this.animationFrame);
+      this.animationFrame = null;
     }
 
-    // Remove event listeners
-    this.canvas.removeEventListener('mousemove', this.handleMouseMove);
-    this.canvas.removeEventListener('mouseleave', this.handleMouseLeave);
-    this.canvas.removeEventListener('touchstart', this.handleTouchStart);
-    this.canvas.removeEventListener('touchmove', this.handleTouchMove);
-    this.canvas.removeEventListener('touchend', this.handleMouseLeave);
+    // Stop observing theme changes (otherwise the observer pins this instance forever)
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+      this.themeObserver = null;
+    }
+
+    // Remove event listeners (same references as registered in setupEventListeners)
+    this.canvas.removeEventListener('mousemove', this.onMouseMove);
+    this.canvas.removeEventListener('mouseleave', this.onMouseLeave);
+    this.canvas.removeEventListener('touchstart', this.onTouchStart);
+    this.canvas.removeEventListener('touchmove', this.onTouchMove);
+    this.canvas.removeEventListener('touchend', this.onMouseLeave);
   }
 }

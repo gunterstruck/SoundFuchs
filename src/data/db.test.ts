@@ -26,10 +26,6 @@ import {
   importData,
   getDBStats,
   clearAllData,
-  saveAppSetting,
-  getAppSetting,
-  exportAppSettings,
-  importAppSettings,
 } from './db.js';
 import type { Machine, GMIAModel, DiagnosisResult } from './types.js';
 
@@ -63,7 +59,7 @@ describe('Database Operations', () => {
       const db = await initDB();
 
       expect(db).toBeDefined();
-      expect(db.version).toBe(7); // Current DB version (NFC Machine Setup + Reference Database)
+      expect(db.version).toBe(8); // Current DB version (swappable evaluation engines)
     });
 
     it('should create all required object stores', async () => {
@@ -178,7 +174,7 @@ describe('Database Operations', () => {
       expect(updated?.referenceModels).toBeDefined();
       expect(updated?.referenceModels).toHaveLength(1);
       expect(updated?.referenceModels[0]?.label).toBe('Test Model');
-      expect(updated?.referenceModels[0]?.scalingConstant).toBe(2.5);
+      expect((updated?.referenceModels[0] as GMIAModel | undefined)?.scalingConstant).toBe(2.5);
       expect(updated?.referenceModels[0]?.featureDimension).toBe(3);
     });
   });
@@ -470,7 +466,7 @@ describe('Database Operations', () => {
       const machine = await getMachine('pump-2');
       expect(machine!.referenceModels).toHaveLength(1); // No duplicate added
       // Original model preserved (not overwritten with import version)
-      expect(machine!.referenceModels[0].weightVector).toBeInstanceOf(Float64Array);
+      expect((machine!.referenceModels[0] as GMIAModel).weightVector).toBeInstanceOf(Float64Array);
     });
 
     it('should overwrite placeholder name with imported name (merge mode)', async () => {
@@ -540,45 +536,6 @@ describe('Database Operations', () => {
       expect(exported.machines).toHaveLength(0);
       expect(exported.recordings).toHaveLength(0);
       expect(exported.diagnoses).toHaveLength(0);
-    });
-  });
-
-  describe('App Settings Export/Import', () => {
-    it('should round-trip primitive app settings', async () => {
-      await saveAppSetting('zanobo-theme-test', 'neon');
-
-      const exported = await exportAppSettings();
-      const themeSetting = exported.find((s) => s.key === 'zanobo-theme-test');
-      expect(themeSetting?.value).toBe('neon');
-
-      await clearAllData();
-      const imported = await importAppSettings(exported);
-      expect(imported).toBe(exported.length);
-
-      const restored = await getAppSetting<string>('zanobo-theme-test');
-      expect(restored?.value).toBe('neon');
-    });
-
-    it('should round-trip Blob app settings (e.g. custom banner)', async () => {
-      const bytes = new Uint8Array([137, 80, 78, 71, 1, 2, 3, 4]); // fake PNG-ish bytes
-      const banner = new Blob([bytes], { type: 'image/png' });
-      await saveAppSetting('hero_banner_neon', banner);
-
-      const exported = await exportAppSettings();
-      const bannerSetting = exported.find((s) => s.key === 'hero_banner_neon');
-      // Serialized form must be JSON-safe (not a raw Blob)
-      expect(bannerSetting?.value).not.toBeInstanceOf(Blob);
-      expect(JSON.stringify(exported)).toContain('hero_banner_neon');
-
-      await clearAllData();
-      await importAppSettings(exported);
-
-      const restored = await getAppSetting<Blob>('hero_banner_neon');
-      expect(restored?.value).toBeInstanceOf(Blob);
-      expect(restored?.value.type).toBe('image/png');
-
-      const restoredBytes = new Uint8Array(await restored!.value.arrayBuffer());
-      expect(Array.from(restoredBytes)).toEqual(Array.from(bytes));
     });
   });
 

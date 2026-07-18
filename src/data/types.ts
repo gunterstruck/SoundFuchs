@@ -13,7 +13,7 @@ export interface Machine {
   name: string; // Human-readable name
   createdAt: number; // Timestamp
   lastDiagnosisAt?: number; // Last diagnosis timestamp
-  referenceModels: GMIAModel[]; // Trained reference models (multiclass diagnosis)
+  referenceModels: ReferenceModel[]; // Trained reference models (multiclass diagnosis, possibly mixed engines)
   referenceImage?: Blob; // Optional reference image for visual positioning (Ghost Image Overlay)
 
   // Internal/Runtime Fields (derived from NFC deep link, not user-editable)
@@ -114,9 +114,21 @@ export interface Machine {
 }
 
 /**
+ * Identifier of the evaluation engine that produced a reference model.
+ * Existing GMIA models stored before the engine abstraction have no
+ * engineId and are interpreted as 'gmia' (see resolveEngineId()).
+ */
+export type EngineId = 'gmia' | 'spectral-cosine' | 'yamnet' | 'temporal';
+
+/**
  * GMIA Model - Trained reference for a machine
  */
 export interface GMIAModel {
+  /**
+   * Engine discriminant. Optional for backward compatibility: a model
+   * without engineId is a legacy GMIA model and read as 'gmia'.
+   */
+  engineId?: 'gmia';
   machineId: string;
   label: string; // State label (e.g., "Baseline", "Lagerschaden", "Unwucht")
   type: 'healthy' | 'faulty'; // State type: healthy = normal operation, faulty = known failure mode
@@ -133,6 +145,170 @@ export interface GMIAModel {
     targetScore: number; // Target score (e.g., 0.9)
     weightMagnitude?: number; // L2 norm of weight vector (for signal quality validation)
   };
+}
+
+/**
+ * Spectral one-class reference model (Tier 0 alternative engine).
+ *
+ * Uses a COSINE-to-mean distance with GMIA-style value calibration. (An earlier
+ * diagonal-Mahalanobis distance was tried and abandoned — report §11.9/§11.10 —
+ * because on relative-ESD features it over-weighted low-energy noise-floor bins
+ * and collapsed the score to 0 for a matching signal.)
+ *
+ * Model: the reference mean spectrum μ (relative ESD) + a tanh² scaling
+ * constant C. Diagnosis: cos(f, μ) → score = 100·tanh(C·cos)² (GMIA Eq. 4 form),
+ * calibrated so the mean training cosine maps to ~90%. `mean` is stored as plain
+ * number[] so it survives IndexedDB structured clone and JSON export untouched.
+ */
+export interface SpectralCosineModel {
+  engineId: 'spectral-cosine';
+  machineId: string;
+  label: string; // State label (e.g., "Baseline", "Lagerschaden")
+  type: 'healthy' | 'faulty';
+  mean: number[]; // reference mean spectrum (cosine reference / ghost overlay / fallback)
+  /**
+   * Memory bank of training sub-window spectra for k-NN scoring (Briefing
+   * §17.2): the live frame is compared to its k nearest reference sub-windows
+   * instead of a single mean. Robust to multimodal/"moving" recordings.
+   * Capped in size. Optional: when absent, scoring falls back to cosine-to-mean.
+   */
+  bank?: number[][];
+  scalingConstant: number; // C for tanh² value calibration (GMIA Eq. 4 form)
+  featureDimension: number; // 512
+  sampleRate: number; // bound to FFT bins, same constraint as GMIA
+  trainingDate: number; // Timestamp
+  trainingDuration: number; // Cumulative analysis time of training windows (s)
+  /** Mean self-recognition score over training data (quality gate + ranking parity). */
+  baselineScore?: number;
+  /**
+   * RMS amplitude of the raw reference audio. Used as an energy gate at
+   * diagnosis: cosine similarity is magnitude-invariant, so near-silence can
+   * still score moderately; scaling the score by the live/training energy ratio
+   * pushes a stopped (silent) machine back down. Optional — models trained
+   * before this carry none and are scored exactly as before (no gate).
+   */
+  trainingRms?: number;
+  metadata?: {
+    meanCosine?: number; // μ_cos used for C
+    targetScore?: number; // target self-score band (e.g. 0.9)
+  };
+}
+
+/**
+ * YAMNet embedding reference model (Tier 1 — third, separately selectable engine).
+ *
+ * Built from pretrained YAMNet audio embeddings (1024-dim, computed from raw
+ * audio resampled to 16 kHz). Diagnosis is distance-based against a memory bank
+ * of reference embeddings (cosine k-NN), value-calibrated like the spectral
+ * engines. Sample-rate independent (YAMNet resamples internally), so unlike GMIA
+ * its bins are not tied to the capture rate. Stored as plain number[][] for
+ * IndexedDB / JSON friendliness.
+ */
+export interface EmbeddingModel {
+  engineId: 'yamnet';
+  machineId: string;
+  label: string;
+  type: 'healthy' | 'faulty';
+  /** Memory bank of L2-normalized reference embeddings (k-NN). */
+  bank: number[][];
+  /** Mean reference embedding (L2-normalized) — fallback + ghost. */
+  mean: number[];
+  scalingConstant: number; // C for tanh² value calibration on cosine
+  embeddingDim: number; // 1024
+  featureDimension: number; // = embeddingDim (interface parity)
+  sampleRate: number; // original capture rate (informational; not bin-bound)
+  trainingDate: number;
+  trainingDuration: number;
+  baselineScore?: number;
+  metadata?: { meanCosine?: number; targetScore?: number };
+}
+
+/**
+ * Temporal reference model (Tier 2 — vierte Engine für nicht-stationäre,
+ * bewegte und transiente Geräusche; siehe docs/TIER2_TEMPORAL_ENGINE_KONZEPT.md).
+ *
+ * Kernidee: Zeit behalten statt mitteln. Die Referenz wird als zeitlich
+ * GEORDNETE Frame-Bank gespeichert (keine Mittelwert-Signatur); die Diagnose
+ * bildet pro Frame eine kNN-Anomalie und aggregiert die Anomalie-ZEITREIHE
+ * deviation-/max-bewusst (DMM aus AdaBEAM arXiv:2603.13749 + RDP aus
+ * arXiv:2603.04605) statt sie wegzumitteln. Kalibrierung Leave-One-
+ * Neighborhood-Out (Lehre aus dem Tier-0-Pivot: überlappende Fenster täuschen
+ * sonst eine winzige Trainings-Streuung vor). Stored as plain number[][] for
+ * IndexedDB / JSON friendliness.
+ */
+export interface TemporalModel {
+  engineId: 'temporal';
+  machineId: string;
+  label: string;
+  type: 'healthy' | 'faulty';
+  /** Zeitlich geordnete Frame-Bank (relative ESD, evenly subsampled). */
+  bank: number[][];
+  /** Mittelspektrum (nur Ghost-Overlay/Anzeige — NICHT fürs Scoring). */
+  mean: number[];
+  scalingConstant: number; // C für tanh²-Kennlinie auf der aggregierten Ähnlichkeit
+  featureDimension: number; // 512
+  sampleRate: number; // an FFT-Bins gebunden, wie GMIA
+  trainingDate: number;
+  trainingDuration: number;
+  /** Selbst-Erkennungs-Score (LONO-kalibriert, Quality-Gate + Ranking-Parität). */
+  baselineScore?: number;
+  /** RMS der Referenzaufnahme fürs Energy-Gate (wie SpectralCosineModel). */
+  trainingRms?: number;
+  /**
+   * T3 Ereignis-Bank (T2-a2, optional — Modelle ohne Events bleiben gültig,
+   * der Ereignis-Pfad ist dann inaktiv). Deskriptoren aus der Onset-
+   * Segmentierung der Referenz, Konzept §4.4.
+   */
+  events?: TemporalEventDescriptor[];
+  /** Erwartete Ereignisdichte der Referenz (z. B. Ventil-Takte pro Minute). */
+  eventRatePerMin?: number;
+  /**
+   * T4 Zyklus-Template (T2-a3, optional — nur wenn die Referenz stabil
+   * zyklisch ist): gain-normierte Energie-Hüllkurve EINES Zyklus, Konzept
+   * §4.5. Modelle ohne Zyklus-Felder laufen unverändert ohne Zyklus-Pfad.
+   */
+  cycleEnvelope?: number[];
+  /** Dominante Zyklusperiode der Referenz (Autokorrelation), Sekunden. */
+  cyclePeriodSec?: number;
+  metadata?: {
+    meanSimilarity?: number; // μ_sim (LONO) für C
+    targetScore?: number; // z. B. 0.9
+    bankSize?: number;
+    eventCount?: number; // Ereignisse in der Referenzaufnahme (vor Dedup)
+    cycleSelfDtwMean?: number; // Selbst-DTW-Kalibrierung (T4)
+    cycleSelfDtwStd?: number;
+  };
+}
+
+/** Ein Referenz-Ereignis (Transient) der Temporal-Engine, Konzept §4.4. */
+export interface TemporalEventDescriptor {
+  /** Mittelspektrum über die Ereignis-Frames (relative ESD, Σ=1). */
+  meanSpectrum: number[];
+  /** Ereignisdauer in Frames (Hop-Raster der Referenz-Extraktion). */
+  durationFrames: number;
+  /** Ereignis-RMS / Median-Frame-RMS (1, wenn kein Rohsignal verfügbar). */
+  energyRatio: number;
+}
+
+/**
+ * A trained reference model produced by one of the swappable engines.
+ * Backward compatible: legacy GMIAModel records (no engineId) are part of
+ * this union and read as 'gmia'.
+ */
+export type ReferenceModel = GMIAModel | SpectralCosineModel | EmbeddingModel | TemporalModel;
+
+/**
+ * Type guard: is this a GMIA model? Legacy models without engineId count as GMIA.
+ * Use to safely access GMIA-only fields (weightVector, scalingConstant, …) on
+ * the ReferenceModel union.
+ */
+export function isGMIAModel(model: ReferenceModel): model is GMIAModel {
+  return (model.engineId ?? 'gmia') === 'gmia';
+}
+
+/** Type guard: is this a YAMNet embedding model (Tier 1)? */
+export function isEmbeddingModel(model: ReferenceModel): model is EmbeddingModel {
+  return model.engineId === 'yamnet';
 }
 
 /**
@@ -175,6 +351,7 @@ export interface QualityResult {
     signalMagnitude?: number; // L2 norm of mean feature vector (used for brown noise detection)
     frameSimilarity?: number; // Median cosine similarity to median frame
     signalSnr?: number; // Peak-to-median ratio of mean spectrum
+    signalTooWeak?: boolean; // True when signal is weak AND noise-masked (unreliable measurement)
   };
 }
 
@@ -191,7 +368,14 @@ export interface DiagnosisResult {
   rawCosineSimilarity?: number; // Raw cosine value (optional for real-time)
   metadata?: Record<string, unknown>; // Flexible metadata
   analysis?: {
-    frequencyAnomalies?: Array<{ frequency: number; deviation: number }>;
+    /**
+     * "Bad features" of this check: frequency bands where the measurement adds
+     * energy the reference doesn't. `strength` is 0–100 (how much of the band's
+     * energy is unexplained by the reference). Populated on the result screen
+     * when reference + measurement spectra are available; shown as a list and as
+     * red timeline markers (when strength ≥ 50 %).
+     */
+    frequencyAnomalies?: Array<{ frequency: number; strength: number }>;
     hint?: string;
   };
 }
@@ -247,8 +431,8 @@ export interface AppSettings {
  * Every field marked as required MUST be present, otherwise import MUST fail.
  */
 export interface FleetDbFile {
-  /** Format identifier – MUST be exactly 'zanobo-fleet-db' */
-  format: 'zanobo-fleet-db';
+  /** Format identifier – MUST be exactly 'zanobot-fleet-db' */
+  format: 'zanobot-fleet-db';
 
   /** Schema version (SemVer). Import MUST reject files with major > 1. */
   schemaVersion: '1.0.0';
@@ -426,8 +610,8 @@ export const AUTO_DETECTION_THRESHOLDS = {
 export interface MachineMatchResult {
   /** The machine being compared */
   machine: Machine;
-  /** Best matching model from this machine */
-  bestModel: GMIAModel | null;
+  /** Best matching model from this machine (any engine) */
+  bestModel: ReferenceModel | null;
   /** Similarity score [0-100] */
   similarity: number;
   /** Raw cosine similarity */

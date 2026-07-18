@@ -5,13 +5,16 @@ export type VisualizerSettings = {
   amplitudeScale: VisualizerScale;
 };
 
-export const VISUALIZER_SETTINGS_EVENT = 'zanobo:visualizer-settings-change';
+export const VISUALIZER_SETTINGS_EVENT = 'zanobot:visualizer-settings-change';
 
-const STORAGE_KEY = 'zanobo.visualizer.settings';
+const STORAGE_KEY = 'zanobot.visualizer.settings';
 
+// Default to logarithmic on both axes: low/mid frequencies (where machine
+// tonal structure lives) and quieter components get more visual weight, which
+// matches how we perceive sound and yields a more informative spectrum/ghost.
 const defaultSettings: VisualizerSettings = {
-  frequencyScale: 'linear',
-  amplitudeScale: 'linear',
+  frequencyScale: 'log',
+  amplitudeScale: 'log',
 };
 
 const readFromStorage = (): VisualizerSettings => {

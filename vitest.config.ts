@@ -19,6 +19,7 @@ export default defineConfig({
       '@data': path.resolve(__dirname, './src/data'),
       '@ui': path.resolve(__dirname, './src/ui'),
       '@utils': path.resolve(__dirname, './src/utils'),
+      '@lab': path.resolve(__dirname, './src/lab'),
     },
   },
 });

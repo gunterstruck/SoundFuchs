@@ -15,11 +15,14 @@
  * - Machine 01 is always the reference – no separate reference step
  */
 
-import { saveMachine, getMachine, deleteMachine, getLatestDiagnosis } from '@data/db.js';
-import type { Machine } from '@data/types.js';
+import { saveMachine, getMachine, deleteMachine, getLatestDiagnosis, getRecordingsForMachine } from '@data/db.js';
+import type { Machine, ReferenceModel } from '@data/types.js';
+import { isGMIAModel, isEmbeddingModel } from '@data/types.js';
 import { t } from '../i18n/index.js';
 import { logger } from '@utils/logger.js';
 import { notify } from '@utils/notifications.js';
+import { averageSpectrum } from '@core/dsp/spectrumSummary.js';
+import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
 
 export class QuickCompareController {
   private machineCount: number = 0;
@@ -279,11 +282,21 @@ export class QuickCompareController {
       const machine = await getMachine(id);
       if (!machine) continue;
 
-      // Deep copy reference models (especially Float64Array weightVector!)
-      machine.referenceModels = goldMachine.referenceModels.map(m => ({
-        ...m,
-        weightVector: new Float64Array(m.weightVector),
-      }));
+      // Deep copy reference models (engine-aware: GMIA weightVector is a
+      // Float64Array; spectral-cosine/yamnet/temporal carry number[] mean/bank).
+      machine.referenceModels = goldMachine.referenceModels.map((m): ReferenceModel => {
+        if (isGMIAModel(m)) return { ...m, weightVector: new Float64Array(m.weightVector) };
+        if (isEmbeddingModel(m)) return { ...m, mean: [...m.mean], bank: m.bank.map((r) => [...r]) };
+        if (m.engineId === 'temporal')
+          return {
+            ...m,
+            mean: [...m.mean],
+            bank: m.bank.map((r) => [...r]),
+            events: m.events?.map((e) => ({ ...e, meanSpectrum: [...e.meanSpectrum] })),
+            cycleEnvelope: m.cycleEnvelope ? [...m.cycleEnvelope] : undefined,
+          };
+        return { ...m, mean: [...m.mean], bank: m.bank?.map((r) => [...r]) };
+      });
       machine.refLogMean = goldMachine.refLogMean ? [...goldMachine.refLogMean] : null;
       machine.refLogStd = goldMachine.refLogStd ? [...goldMachine.refLogStd] : null;
       machine.refLogResidualStd = goldMachine.refLogResidualStd ? [...goldMachine.refLogResidualStd] : null;
@@ -558,10 +571,55 @@ export class QuickCompareController {
       barContainer.appendChild(noData);
     }
 
-    item.appendChild(nameRow);
-    item.appendChild(barContainer);
+    // Fleet iris: each machine's own acoustic fingerprint, colour-coded.
+    // A differing machine's iris stands out from the others at a glance.
+    const irisCanvas = document.createElement('canvas');
+    irisCanvas.className = 'qc-result-iris';
+    irisCanvas.setAttribute('aria-hidden', 'true');
+    void this.getFleetIrisVector(machine, isGold).then((vector) => {
+      if (vector) {
+        requestAnimationFrame(() => renderMachineFingerprint(irisCanvas, vector));
+      } else {
+        irisCanvas.style.display = 'none';
+      }
+    });
+
+    const content = document.createElement('div');
+    content.className = 'qc-result-content';
+    content.appendChild(nameRow);
+    content.appendChild(barContainer);
+
+    item.appendChild(irisCanvas);
+    item.appendChild(content);
 
     return item;
+  }
+
+  /**
+   * Spectrum vector for a machine's fleet iris. Each machine uses its OWN sound:
+   * the gold standard from its reference recording, the others from their
+   * measurement recording (both audio-derived → fairly comparable). Falls back
+   * to the model weight vector if no audio was kept.
+   */
+  private async getFleetIrisVector(
+    machine: Machine,
+    isGold: boolean
+  ): Promise<ArrayLike<number> | null> {
+    try {
+      const recordings = await getRecordingsForMachine(machine.id);
+      const type = isGold ? 'reference' : 'diagnosis';
+      const rec = recordings
+        .filter((r) => r.type === type && r.audioBuffer)
+        .sort((a, b) => b.timestamp - a.timestamp)[0];
+      if (rec?.audioBuffer) return averageSpectrum(rec.audioBuffer);
+    } catch (error) {
+      logger.warn('Could not load audio for fleet iris:', error);
+    }
+    const baseline =
+      machine.referenceModels?.find((m) => m.label === 'Baseline') || machine.referenceModels?.[0];
+    return baseline && isGMIAModel(baseline) && baseline.weightVector.length
+      ? baseline.weightVector
+      : null;
   }
 
   // ============================================================================

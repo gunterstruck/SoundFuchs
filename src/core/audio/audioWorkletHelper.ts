@@ -108,7 +108,7 @@ export class AudioWorkletManager {
       await audioContext.audioWorklet.addModule(workletUrl.href);
 
       // Create AudioWorkletNode
-      this.workletNode = new AudioWorkletNode(audioContext, 'zanobo-audio-processor');
+      this.workletNode = new AudioWorkletNode(audioContext, 'zanobot-audio-processor');
 
       // Setup message handler
       this.workletNode.port.onmessage = (event) => {

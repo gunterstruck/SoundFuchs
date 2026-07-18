@@ -1,5 +1,5 @@
 /**
- * ZANOBO - MAIN APPLICATION ENTRY POINT
+ * ZANOBOT - MAIN APPLICATION ENTRY POINT
  *
  * Initializes the entire app:
  * - Database
@@ -13,6 +13,8 @@ import './styles/style.css';
 import './styles/toast.css';
 import './styles/pipeline-status.css';
 import './styles/drift-panel.css';
+import './styles/event-timeline.css';
+import './styles/spectrogram-3d.css';
 
 import { initDB, getDBStats } from '@data/db.js';
 import { toast } from '@ui/components/Toast.js';
@@ -25,6 +27,7 @@ import { BannerManager } from '@ui/BannerManager.js';
 import { notify } from '@utils/notifications.js';
 import { logger } from '@utils/logger.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
+import { initPwaUpdate } from '@utils/pwaUpdate.js';
 import {
   applyViewLevel,
   setViewLevel,
@@ -32,13 +35,18 @@ import {
   type ViewLevel,
 } from '@utils/viewLevelSettings.js';
 import { initI18n, t, translateDOM } from './i18n/index.js';
+import {
+  getDiagnosisAudioMode,
+  setDiagnosisAudioMode,
+  type DiagnosisAudioMode,
+} from '@utils/diagnosisAudioSettings.js';
 
 /**
  * Global type declarations for theme-bootstrap.js API
  */
 declare global {
   interface Window {
-    ZanoboTheme?: {
+    ZanobotTheme?: {
       setTheme: (theme: string) => void;
       getTheme: () => string;
       toggleTheme: () => string;
@@ -48,11 +56,11 @@ declare global {
       applyCustomColors: (colors: Record<string, string>) => void;
       reset: () => void;
     };
-    ZANOBO_CONFIG?: Record<string, unknown>;
+    ZANOBOT_CONFIG?: Record<string, unknown>;
   }
 }
 
-class ZanoboApp {
+class ZanobotApp {
   private router: Router | null = null;
   private bannerManager: BannerManager | null = null;
 
@@ -130,8 +138,10 @@ class ZanoboApp {
     const missing: string[] = [];
 
     // Check Web Audio API
-    const hasAudioContext = typeof AudioContext !== 'undefined' ||
-      typeof (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext !== 'undefined';
+    const hasAudioContext =
+      typeof AudioContext !== 'undefined' ||
+      typeof (window as typeof window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext !== 'undefined';
     if (!hasAudioContext) {
       missing.push('- Web Audio API (required for audio processing)');
     }
@@ -157,7 +167,7 @@ class ZanoboApp {
 
     return {
       isCompatible: missing.length === 0,
-      missing
+      missing,
     };
   }
 
@@ -174,7 +184,7 @@ class ZanoboApp {
     if (!compatibility.isCompatible) {
       logger.error('❌ Browser compatibility check failed');
       logger.error('   Missing features:');
-      compatibility.missing.forEach(feature => logger.error(`   ${feature}`));
+      compatibility.missing.forEach((feature) => logger.error(`   ${feature}`));
 
       notify.error(
         t('app.browserNotSupported', { features: compatibility.missing.join('\n') }),
@@ -201,19 +211,43 @@ class ZanoboApp {
       logger.info(`   Diagnoses: ${stats.diagnoses}`);
       dbAvailable = true;
 
+      // UX (geführter Erst-Lauf): Ohne Maschinen stehen die Startkarten in
+      // Workflow-Reihenfolge (①②③ mit Schritt-Badges) statt „Prüfen zuerst".
+      // Schon beim App-Start setzen — der Dashboard-Renderer hält die Klasse
+      // danach aktuell (DashboardRenderer.update()).
+      document.body.classList.toggle('zb-first-run', stats.machines === 0);
+
+      // UPDATE-/DATEN-SICHERHEIT (Betreiber-Anforderung): Persistenten
+      // Speicher anfordern. Ohne "persistent" darf der Browser die
+      // IndexedDB bei Speicherdruck STILL löschen (Best-Effort-Eviction) —
+      // das ist im Feld die reale Datenverlust-Ursache, nicht App-Updates
+      // (Migrationen sind ab v3 additiv, s. Policy in data/db.ts).
+      // Fire-and-forget: Ablehnung ist kein Fehler, nur ein Log.
+      if (navigator.storage?.persist) {
+        void navigator.storage
+          .persisted()
+          .then(async (already) => {
+            const granted = already || (await navigator.storage.persist());
+            logger.info(
+              granted
+                ? '🔒 Persistenter Speicher aktiv – Datenbank ist vor Browser-Eviction geschützt'
+                : 'ℹ️ Persistenter Speicher nicht gewährt (Browser-Heuristik) – Daten bleiben Best-Effort'
+            );
+          })
+          .catch(() => {
+            /* Storage-API nicht verfügbar – ignorieren */
+          });
+      }
+
       // Check for database migration notification
       this.checkMigrationNotification();
     } catch (error) {
       logger.error('❌ Database initialization failed:', error);
       logger.warn('⚠️ Continuing without database - functionality will be limited');
-      notify.error(
-        t('settings.databaseNotAvailable'),
-        error as Error,
-        {
-          title: t('modals.databaseError'),
-          duration: 0,
-        }
-      );
+      notify.error(t('settings.databaseNotAvailable'), error as Error, {
+        title: t('modals.databaseError'),
+        duration: 0,
+      });
     }
 
     // NFC IMPORT CHECK: Handle ?importUrl= parameter from NFC deep links
@@ -235,6 +269,15 @@ class ZanoboApp {
     // CRITICAL FIX: Always initialize UI components (even without database)
     // This ensures buttons have event listeners and the app is interactive
     try {
+      // Create the BannerManager BEFORE the router. The router constructs and
+      // init()s SettingsPhase, whose initBannerSettings() looks up the
+      // BannerManager via getBannerManager(); if it were created afterwards that
+      // lookup returned null and the banner upload / text controls were never
+      // wired (and the preview stayed blank). i18n is already initialized here.
+      if (dbAvailable) {
+        this.bannerManager = new BannerManager();
+      }
+
       // Initialize router (3-phase flow)
       logger.info('🔀 Initializing router...');
       this.router = new Router();
@@ -244,6 +287,7 @@ class ZanoboApp {
       this.setupThemeSwitcher();
       this.setupQuickThemeToggle();
       this.setupViewLevelSelector();
+      this.setupDiagnosisAudioSelector();
       this.setupFooterLinks();
 
       // Initialize About Modal with dynamic i18n content
@@ -252,12 +296,9 @@ class ZanoboApp {
       // Translate static DOM elements based on detected language
       translateDOM();
 
-      if (dbAvailable) {
-        this.bannerManager = new BannerManager();
-      }
-
-      // Note: Service Worker is automatically registered by VitePWA plugin
-      // See vite.config.ts and the auto-generated registerSW.js script
+      // Service Worker registration + active update handling (discreet prompt,
+      // measurement-safe reload, once-daily re-prompt). See utils/pwaUpdate.ts.
+      initPwaUpdate();
 
       if (dbAvailable) {
         logger.info('✅ Zanobo initialized successfully!');
@@ -281,7 +322,7 @@ class ZanoboApp {
    * the user that their data was cleared.
    */
   private checkMigrationNotification(): void {
-    const MIGRATION_KEY = 'zanobo-migration-v3-occurred';
+    const MIGRATION_KEY = 'zanobot-migration-v3-occurred';
 
     try {
       const migrationInfo = localStorage.getItem(MIGRATION_KEY);
@@ -356,10 +397,7 @@ class ZanoboApp {
 
       if (imported) {
         logger.info('✅ NFC import completed successfully');
-        notify.success(
-          t('nfcImport.success'),
-          { title: t('nfcImport.successTitle') }
-        );
+        notify.success(t('nfcImport.success'), { title: t('nfcImport.successTitle') });
 
         // Reload the page to reflect imported data
         // Small delay to show success notification
@@ -369,11 +407,7 @@ class ZanoboApp {
       }
     } catch (error) {
       logger.error('❌ NFC import failed:', error);
-      notify.error(
-        t('nfcImport.error'),
-        error as Error,
-        { title: t('nfcImport.errorTitle') }
-      );
+      notify.error(t('nfcImport.error'), error as Error, { title: t('nfcImport.errorTitle') });
     }
   }
 
@@ -439,13 +473,13 @@ class ZanoboApp {
       // Show success toast
       const meta = result.metadata;
       const details = meta
-        ? `${meta.machineCount} Maschinen, ${meta.recordingCount} Aufnahmen, ${meta.diagnosisCount} Diagnosen`
+        ? `${meta.machineCount} Maschinen, ${meta.recordingCount} Aufnahmen, ${meta.diagnosisCount} Prüfungen`
         : '';
 
       notify.success(
         details
           ? `${t('urlImport.success') || 'Datenbank erfolgreich importiert!'}\n\n${details}`
-          : (t('urlImport.success') || 'Datenbank erfolgreich importiert!'),
+          : t('urlImport.success') || 'Datenbank erfolgreich importiert!',
         { title: t('urlImport.successTitle') || 'Import abgeschlossen' }
       );
 
@@ -459,7 +493,7 @@ class ZanoboApp {
       // Error was already shown on overlay via onError callback
       // Also show as notification for persistence
       notify.error(
-        result.errorMessage || (t('urlImport.errorGeneric') || 'Import fehlgeschlagen.'),
+        result.errorMessage || t('urlImport.errorGeneric') || 'Import fehlgeschlagen.',
         undefined,
         { title: t('urlImport.errorTitle') || 'Import fehlgeschlagen' }
       );
@@ -506,10 +540,7 @@ class ZanoboApp {
     };
 
     // Helper: Update expanded class on secondary cards
-    const updateExpandedClass = (
-      container: Element | null,
-      shouldExpand: boolean
-    ): void => {
+    const updateExpandedClass = (container: Element | null, shouldExpand: boolean): void => {
       if (!container || !isSecondaryCard(container)) return;
       if (shouldExpand) {
         container.classList.add('expanded');
@@ -519,9 +550,7 @@ class ZanoboApp {
     };
 
     const updateCompactExpandedState = () => {
-      const contents = Array.from(
-        document.querySelectorAll<HTMLElement>('.collapsible-content')
-      );
+      const contents = Array.from(document.querySelectorAll<HTMLElement>('.collapsible-content'));
       const hasOpenSection = contents.some(
         (content) => window.getComputedStyle(content).display !== 'none'
       );
@@ -627,6 +656,18 @@ class ZanoboApp {
   }
 
   /**
+   * Sync the browser-chrome (status bar) colour with the active theme, so it
+   * blends with the app on the light themes instead of staying dark. Reads the
+   * theme's actual --bg-primary (also picks up brand config overrides).
+   */
+  private updateThemeColorMeta(): void {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) return;
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim();
+    if (bg) meta.setAttribute('content', bg);
+  }
+
+  /**
    * Setup theme switcher
    */
   private setupThemeSwitcher(): void {
@@ -639,9 +680,10 @@ class ZanoboApp {
 
         // Apply theme
         document.documentElement.setAttribute('data-theme', theme);
+        this.updateThemeColorMeta();
 
         // Save to localStorage
-        localStorage.setItem('zanobo-theme', theme);
+        localStorage.setItem('zanobot-theme', theme);
 
         // Update active state
         themeBtns.forEach((b) => b.classList.remove('active'));
@@ -649,12 +691,17 @@ class ZanoboApp {
 
         // Apply theme-appropriate banner (if no custom banner)
         this.bannerManager?.applyThemeBanner();
+
+        // Notify listeners (e.g. the Settings banner preview) so they refresh
+        // for the now-current theme.
+        window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
       });
     });
 
     // Load saved theme
-    const savedTheme = localStorage.getItem('zanobo-theme') || 'brand';
+    const savedTheme = localStorage.getItem('zanobot-theme') || 'brand';
     document.documentElement.setAttribute('data-theme', savedTheme);
+    this.updateThemeColorMeta();
 
     themeBtns.forEach((btn) => {
       if (btn.getAttribute('data-theme') === savedTheme) {
@@ -677,13 +724,17 @@ class ZanoboApp {
 
     quickToggleBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
-        // Use the global ZanoboTheme API from theme-bootstrap.js
-        if (window.ZanoboTheme?.toggleTheme) {
-          window.ZanoboTheme.toggleTheme();
+        // Use the global ZanobotTheme API from theme-bootstrap.js
+        if (window.ZanobotTheme?.toggleTheme) {
+          window.ZanobotTheme.toggleTheme();
           logger.debug('🎨 Theme toggled via quick toggle button');
 
           // Apply theme-appropriate banner (if no custom banner)
           this.bannerManager?.applyThemeBanner();
+
+          // Notify listeners (Settings banner preview, etc.) of the new theme.
+          const theme = document.documentElement.getAttribute('data-theme');
+          window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
         }
       });
     });
@@ -738,7 +789,38 @@ class ZanoboApp {
   }
 
   /**
-   * Setup footer links (Impressum, Datenschutz, Über Zanobo)
+   * Setup the diagnosis-audio retention selector (None / Latest / All).
+   * Controls whether measurement audio is kept so a past check can later be
+   * re-opened with A/B listening.
+   */
+  private setupDiagnosisAudioSelector(): void {
+    const btns = document.querySelectorAll<HTMLButtonElement>('.view-level-btn[data-audio-mode]');
+    if (btns.length === 0) return;
+
+    const current = getDiagnosisAudioMode();
+    const applyActive = (mode: DiagnosisAudioMode) => {
+      btns.forEach((b) => {
+        b.classList.toggle('active', b.getAttribute('data-audio-mode') === mode);
+      });
+    };
+    applyActive(current);
+
+    btns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const mode = btn.getAttribute('data-audio-mode') as DiagnosisAudioMode | null;
+        if (!mode) return;
+        try {
+          const saved = setDiagnosisAudioMode(mode);
+          applyActive(saved);
+        } catch (error) {
+          logger.warn('Could not save diagnosis audio setting:', error);
+        }
+      });
+    });
+  }
+
+  /**
+   * Setup footer links (Impressum, Datenschutz, Über Zanobot)
    */
   private setupFooterLinks(): void {
     // Helper function to close a modal
@@ -787,7 +869,7 @@ class ZanoboApp {
       closeDatenschutzBtn.addEventListener('click', () => closeModal(datenschutzModal));
     }
 
-    // Über Zanobo modal
+    // Über Zanobot modal
     const aboutBtn = document.getElementById('about-btn');
     const aboutModal = document.getElementById('about-modal');
     const closeAboutModal = document.getElementById('close-about-modal');
@@ -853,11 +935,11 @@ class ZanoboApp {
    * - Generates service-worker.js with Workbox
    * - Creates registerSW.js registration script
    * - Injects the script tag into index.html
-   * - Handles correct base path (/Zanobo/) and scope
+   * - Handles correct base path (/Zanobot/) and scope
    *
    * No manual registration needed here to avoid conflicts.
    */
 }
 
 // Start the app
-new ZanoboApp();
+new ZanobotApp();

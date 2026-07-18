@@ -5,9 +5,6 @@
 import type { TranslationDict } from '../index.js';
 
 export const zh: TranslationDict = {
-  // ============================================================================
-  // BUTTONS
-  // ============================================================================
   buttons: {
     stop: '停止',
     stopAndSave: '停止并保存',
@@ -23,20 +20,13 @@ export const zh: TranslationDict = {
     trainAnother: '训练另一个状态',
     newMachine: '新建机器',
     stopRecording: '停止录制',
-    saveReference: '保存参考',
+    saveReference: '保存正常状态',
+    continue: '继续',
   },
-
-  // ============================================================================
-  // BANNER
-  // ============================================================================
   banner: {
     headline: '系统听起来正常吗?',
     subline: '几秒内检查状态 – 直接在设备上，离线操作',
   },
-
-  // ============================================================================
-  // STATUS
-  // ============================================================================
   status: {
     healthy: '正常',
     uncertain: '偏差',
@@ -51,13 +41,9 @@ export const zh: TranslationDict = {
     significantChange: 'Significant change',
     strongDeviation: 'Strong deviation – check recommended',
   },
-
-  // ============================================================================
-  // MODAL TITLES
-  // ============================================================================
   modals: {
-    referenceRecording: '参考录制',
-    liveDiagnosis: '实时诊断 - 寻找最佳点',
+    referenceRecording: '录制正常状态',
+    liveDiagnosis: '实时检查 - 寻找最佳点',
     qrScanner: '二维码/条形码扫描器',
     databaseError: '数据库错误',
     browserIncompatible: '浏览器不兼容',
@@ -79,10 +65,6 @@ export const zh: TranslationDict = {
     nfcDiagnosisPrompt: '检测到机器。现在检查状态吗？',
     closeDialog: '关闭对话框',
   },
-
-  // ============================================================================
-  // PHASE 1: IDENTIFY (Machine Selection)
-  // ============================================================================
   identify: {
     selectMachine: '选择机器',
     scanQrCode: '扫描二维码',
@@ -95,10 +77,12 @@ export const zh: TranslationDict = {
     machineNameRequired: 'Please enter a machine name.',
     machineNamePlaceholder: 'e.g. Pump 3 – West Hall',
     machineIdHint: 'Optional: Internal ID (e.g. SAP number). Not used for analysis.',
+    machineDetails: '详情与管理',
     deleteMachine: 'Delete machine',
-    confirmDeleteMachine: 'Delete machine "{{name}}"? All diagnoses will be lost.',
-    confirmDeleteMachineWithData: 'Machine "{{name}}" has {{count}} recordings. Really delete EVERYTHING?',
-    machineDeleted: '\uD83D\uDDD1\uFE0F Machine "{{name}}" deleted',
+    confirmDeleteMachine: 'Delete machine "{{name}}"? All checks will be lost.',
+    confirmDeleteMachineWithData:
+      'Machine "{{name}}" has {{count}} recordings. Really delete EVERYTHING?',
+    machineDeleted: '🗑️ Machine "{{name}}" deleted',
     quickAccess: '快速访问',
     quickAccessDescription: '快速访问最近使用的机器',
     recentlyUsed: '最近使用',
@@ -108,12 +92,25 @@ export const zh: TranslationDict = {
     noMeasurements: '暂无测量数据',
     noMachines: '暂无可用机器',
     statesTrained: '{{count}} 个状态已训练',
-
+    tiles: {
+      savedMachines: '已保存的机器',
+      scanQR: 'QR / 条形码',
+      newMachine: '新建机器',
+    },
     machineDetail: {
       title: '机器',
       select: '加载机器',
     },
-
+    emptyGuide: {
+      title: 'Zanobot 的工作原理',
+      step1Title: '创建机器',
+      step1Desc: '为机器设置一个唯一的名称。',
+      step2Title: '录制正常状态',
+      step2Desc: '10 秒的正常运行。',
+      step3Title: '检查状态',
+      step3Desc: '随时与正常状态进行比较。',
+      cta: '创建第一台机器',
+    },
     errors: {
       scannerStart: '启动扫描器时出错',
       cameraAccessDenied: '摄像头访问被拒绝',
@@ -139,25 +136,21 @@ export const zh: TranslationDict = {
       microphoneLoad: '加载麦克风时出错',
       microphoneSwitch: '切换麦克风时出错',
     },
-
     success: {
       machineLoaded: '机器"{{name}}"已加载',
       machineCreated: '机器已创建：{{name}}',
       machineAutoCreated: '新机器"{{name}}"已自动创建。',
-      microphoneOptimized: '麦克风已自动设置为"{{label}}"以获得最佳诊断效果',
+      microphoneOptimized: '麦克风已自动设置为"{{label}}"以获得最佳检查效果',
       microphoneChanged: '麦克风已切换：{{label}}',
     },
-
     warnings: {
       preferredMicrophoneUnavailable: '首选麦克风已不可用，将使用默认麦克风。',
     },
-
     messages: {
       codeRecognized: '已识别代码：{{code}}',
       autoMachineName: '机器 {{id}}',
       loadingMachine: '正在加载机器...',
     },
-
     time: {
       justNow: '刚刚',
       minutesAgo: '{{minutes}}分钟前',
@@ -167,43 +160,36 @@ export const zh: TranslationDict = {
       weekAgo: '1周前',
       weeksAgo: '{{weeks}}周前',
     },
-
-    // Sprint 3 UX: Sparkline accessibility
     sparkline: {
-      ariaLabel: 'Trend of last {{count}} diagnoses',
+      ariaLabel: 'Trend of last {{count}} checks',
     },
   },
-
-  // ============================================================================
-  // PHASE 2: REFERENCE (Training)
-  // ============================================================================
   reference: {
-    recordReference: '录制参考',
-    tenSecondRecording: '{{duration}}秒参考录制',
-    noReferenceModel: '无可用的参考模型',
+    recordReference: '录制正常状态',
+    tenSecondRecording: '{{duration}}秒正常状态录制',
+    noReferenceModel: '无可用的正常状态',
     trainedStates: '已训练状态',
-    noModelsYet: '尚无参考模型',
+    noModelsYet: '尚无正常状态',
     existingModels: '现有模型：',
     statesTrainedCount: '{{count}} 个状态已训练',
     recordingStatusHighQuality: '检测到高音频质量',
-    explainBefore: 'The reference defines your machine\u2019s normal state. All future comparisons are based on it.',
-    explainDuring: 'Slowly move the smartphone around the machine. This helps filter out environmental influences.',
-    savedSuccess: '\u2705 Reference saved – Environment profile detected',
-    savedTitle: 'Reference created',
-    cherryPickingHint: '\uD83D\uDEE1\uFE0F Background noise is automatically detected and discarded.',
-    noModels: 'No references yet.',
-    unnamed: 'Reference #{{index}}',
-    deleteModel: 'Delete reference',
-    confirmDeleteModel: 'Delete reference "{{name}}"? This cannot be undone.',
-    modelDeleted: '\uD83D\uDDD1\uFE0F Reference "{{name}}" deleted',
-
-    // State-based card UI (mirrors diagnose card)
+    explainBefore: '正常状态定义了机器在正常运行时的声音。所有未来的比较都基于此。',
+    explainDuring: '缓慢移动智能手机围绕机器。这有助于过滤环境影响。',
+    savedSuccess: '✅ 正常状态已保存 – 环境配置已识别',
+    savedTitle: '正常状态已创建',
+    cherryPickingHint: '🛡️ Background noise is automatically detected and discarded.',
+    noModels: '尚无正常状态。',
+    unnamed: '正常状态 #{{index}}',
+    deleteModel: '删除正常状态',
+    confirmDeleteModel: '删除正常状态 "{{name}}"？此操作无法撤消。',
+    modelDeleted: '🗑️ 正常状态 "{{name}}" 已删除',
+    makeBaseline: '设为主参考',
+    baselinePromoted: '⭐ "{{name}}" 现在是主参考',
     statesRecorded: '{{count}} 个状态已录制',
-    noReferenceYet: '尚无参考',
+    noReferenceYet: '尚无正常状态',
     changeMachine: '更换机器',
     noMachinesYet: '尚未创建机器。',
     noMachinesHint: '请先创建一台新机器。',
-
     recording: {
       alreadyRunning: '录制已在进行中。',
       cameraNotAvailable: '摄像头不可用。录制将在无位置图像的情况下继续。',
@@ -213,69 +199,97 @@ export const zh: TranslationDict = {
       recording: '录制中',
       microphoneFailed: '麦克风访问失败',
       processingFailed: '无法处理录制',
+      failedFriendly: '这次录音没有成功。短暂的干扰后可能会发生这种情况——请再试一次。',
+      retryAction: '重新录音',
       noSignal: '请靠近机器并重试。',
       positionImage: '📷 位置图像将自动捕获',
       instruction: '将麦克风保持在机器前10-30厘米处。',
-      // iOS Audio Blocked (watchdog detection)
       iosAudioBlocked: '麦克风被阻止',
-      iosAudioBlockedMessage: '麦克风未提供音频数据。\n\n可能原因：\n• 其他应用正在使用麦克风\n• iOS 阻止了麦克风访问\n• 系统音量已静音\n\n请关闭其他应用并重试。',
+      iosAudioBlockedMessage:
+        '麦克风未提供音频数据。\n\n可能原因：\n• 其他应用正在使用麦克风\n• iOS 阻止了麦克风访问\n• 系统音量已静音\n\n请关闭其他应用并重试。',
       iosAudioBlockedRetry: '重试',
+      countdownTip: '将设备靠近机器',
     },
-
     quality: {
       signalStable: '✓ 信号稳定',
       slightUnrest: '⚠ 轻微不稳定',
       signalUnstable: '✗ 警告：信号不稳定！',
-      // Sprint 3 UX: Reference quality badge
       good: 'Ref: Good',
       ok: 'Ref: OK',
       unknown: 'Ref: ?',
-      ariaLabel: 'Reference quality: {{rating}}',
+      ariaLabel: '录制质量：{{rating}}',
     },
-
+    signalQuality: {
+      label: '信号',
+      good: '良好',
+      ok: '足够',
+      weak: '太弱',
+      hintCloser: '将智能手机靠近机器',
+      hintTooWeak: '信号太弱 – 靠近声源',
+    },
     errors: {
-      tooShort: '录制太短：{{duration}}秒总时长短于{{warmup}}秒预热阶段。最短时长：{{minDuration}}秒',
-      trainingTooShort: '训练数据太短：{{duration}}秒（预热阶段后）。最低要求：{{minDuration}}秒。请至少录制{{totalDuration}}秒。',
-      qualityTooLow: '录制质量太差，无法训练。请在安静环境中使用清晰的机器信号重新录制。\n\n问题：\n{{issues}}',
-      signalTooWeak: '信号太弱或分散（可能只是噪音）。\n\n信号强度（RMS）：{{magnitude}}（最小值：0.03）\n质量：{{quality}}%\n\n请确保：\n• 麦克风足够靠近机器（10-30厘米）\n• 机器以足够的音量运行\n• 没有只录制背景噪音\n\n问题：\n{{issues}}',
-      qualityWarning: '⚠️ 警告：录制质量差\n\n此录制的质量较差。训练可能不可靠。\n\n问题：\n{{issues}}\n\n您仍要保存吗？',
-      baselineTooLow: '参考录制太不清晰或有噪音。\n\n自我识别分数：{{score}}%\n最低要求：{{minScore}}%\n\n可能的原因：\n• 信号太弱或不稳定\n• 背景噪音太多\n• 机器运行不稳定\n\n请在更好的条件下重新录制：\n• 麦克风更靠近机器（10-30厘米）\n• 安静的环境\n• 机器在整个录制过程中稳定运行',
+      tooShort:
+        '录制太短：{{duration}}秒总时长短于{{warmup}}秒预热阶段。最短时长：{{minDuration}}秒',
+      trainingTooShort:
+        '训练数据太短：{{duration}}秒（预热阶段后）。最低要求：{{minDuration}}秒。请至少录制{{totalDuration}}秒。',
+      qualityTooLow:
+        '录制质量太差，无法训练。请在安静环境中使用清晰的机器信号重新录制。\n\n问题：\n{{issues}}',
+      signalTooWeak:
+        '信号太弱或分散（可能只是噪音）。\n\n信号强度（RMS）：{{magnitude}}（最小值：0.03）\n质量：{{quality}}%\n\n请确保：\n• 麦克风足够靠近机器（10-30厘米）\n• 机器以足够的音量运行\n• 没有只录制背景噪音\n\n问题：\n{{issues}}',
+      qualityWarning:
+        '⚠️ 警告：录制质量差\n\n此录制的质量较差。训练可能不可靠。\n\n问题：\n{{issues}}\n\n您仍要保存吗？',
+      baselineTooLow:
+        '参考录制太不清晰或有噪音。\n\n自我识别分数：{{score}}%\n最低要求：{{minScore}}%\n\n可能的原因：\n• 信号太弱或不稳定\n• 背景噪音太多\n• 机器运行不稳定\n\n请在更好的条件下重新录制：\n• 麦克风更靠近机器（10-30厘米）\n• 安静的环境\n• 机器在整个录制过程中稳定运行',
       noAudioFile: '请先创建参考录制。',
       exportFailed: '导出失败',
       saveFailed: '保存失败',
       machineDataMissing: '缺少机器数据',
     },
-
     success: {
-      modelTrained: '✅ 参考模型训练成功！\n\n机器：{{name}}\n\n您想下载参考音频文件吗？\n（建议备份）',
+      modelTrained:
+        '✅ 参考模型训练成功！\n\n机器：{{name}}\n\n您想下载参考音频文件吗？\n（建议备份）',
       canStartNew: '您可以开始新的参考录制。',
     },
-
     labels: {
       baseline: '参考',
-      prompt: '为此机器状态输入名称：\n\n示例：\n• 正常运行状态："空转"、"满载"、"部分负载"\n• 故障："模拟不平衡"、"轴承损坏"、"风扇故障"',
-      confirmType: '状态："{{label}}"\n\n这是正常运行状态吗？\n\n🟢 确定（是）→ 正常状态（如"空转"、"满载"）\n🔴 取消（否）→ 已知故障（如"不平衡"、"轴承损坏"）\n\n注意：此选择决定诊断显示为"健康"还是"故障"。',
+      formerBaseline: '先前的参考',
       enterName: '请输入名称',
       cancelled: '已取消',
     },
+    labelModal: {
+      title: '命名此状态',
+      hint: '正常状态示例："空转"、"满载"。故障示例："不平衡"、"轴承损坏"。',
+      placeholder: '此状态的名称',
+      healthyLabel: '正常状态',
+      faultyLabel: '已知故障',
+    },
   },
-
-  // ============================================================================
-  // PHASE 3: DIAGNOSE (Real-time)
-  // ============================================================================
+  machineList: {
+    statusHealthy: '正常',
+    statusWarning: '偏差',
+    statusCritical: '异常',
+    statusUnknown: '尚未检查',
+  },
   diagnose: {
-    alreadyRunning: '诊断已在进行中。',
+    faultDetected: '检测到故障：{{fault}}',
+    faultChecked: '故障"{{fault}}"：{{score}} % – 无匹配',
+    faultGeneric: '故障',
+    alreadyRunning: '检查已在进行中。',
     noReferenceModel: '未找到参考模型。请先创建参考录制。',
-    browserNotCompatible: '您的浏览器不支持实时诊断。请使用Chrome、Edge或Safari。',
+    browserNotCompatible: '您的浏览器不支持实时检查。请使用Chrome、Edge或Safari。',
     noValidSampleRate: '未找到具有有效采样率的参考模型。',
-    cameraNotAvailable: '摄像头不可用。诊断将在无位置指南的情况下继续。',
-    diagnosisRunning: '诊断运行中',
-    compareComplete: '\u2705 Comparison complete',
-    saveFailed: '无法保存诊断',
+    cameraNotAvailable: '摄像头不可用。检查将在无位置指南的情况下继续。',
+    diagnosisRunning: '检查运行中',
+    compareComplete: '✅ Comparison complete',
+    saveFailed: '无法保存检查',
     liveAnalysis: '执行实时分析',
-
-    sampleRateError: '音频设置错误：您的麦克风运行在{{actual}}Hz，但没有参考模型是在此采样率下训练的（模型：{{expected}}Hz）。请使用与训练时相同的音频设置，或使用当前采样率创建新的参考模型。',
-
+    recommendation: {
+      healthy: '未检测到异常',
+      warning: '观察 – 下次维护时检查',
+      critical: '建议现场检查',
+    },
+    sampleRateError:
+      '音频设置错误：您的麦克风运行在{{actual}}Hz，但没有参考模型是在此采样率下训练的（模型：{{expected}}Hz）。请使用与训练时相同的音频设置，或使用当前采样率创建新的参考模型。',
     display: {
       referenceModels: '参考模型：',
       statesTrainedCount: '{{count}} 个状态已训练',
@@ -287,13 +301,33 @@ export const zh: TranslationDict = {
       machineQuestion: '机器听起来正常吗？',
       reference: '参考',
       waitingForSignal: '等待信号...',
+      spectrumReveal: '👁 查看频谱',
+      spectrumHide: '隐藏频谱',
+      listenReference: '🔊 参考',
+      listenMeasurement: '🔊 本次测量',
+      listenStop: '⏹ 停止',
+      listenSlow: '🐢 慢速',
+      listenNormal: '▶ 正常',
+      listenFaster: '🐇 更高',
+      listenReopen: '收听',
+      irisReference: '参考',
+      irisMeasurement: '测量',
+      deviationFrequencyLabel: '⚠ 主要偏差频率：~{{freq}}',
+      operatingPointWarning:
+        '⚠ 工作点与参考不同（主导频率 ≈{{refFreq}} → {{measFreq}}）。匹配度较低可能源于转速/负载变化，而非故障。',
+      deviationFrequencyHint: '请检查该频率是来自设备还是来自环境。',
+      listenDifference: '🔍 仅差异',
+      listenComputing: '… 计算中 …',
+      listenDifferenceTooShort: '录音太短，无法进行差异分析。',
+      spectrumTitle: '频率对比（参考 ↔ 测量）',
+      spectrumReference: '参考',
+      spectrumMeasurement: '本次测量',
+      spectrumDifference: '额外能量',
     },
-
     smartStart: {
       stabilizing: '🎙️ {{message}}\n(麦克风调平中，系统滤波器稳定中...)',
       waiting: '🔍 {{message}}',
     },
-
     debug: {
       weightMagnitude: 'weightMagnitude: {{value}}',
       featureMagnitude: 'featureMagnitude: {{value}}',
@@ -304,31 +338,25 @@ export const zh: TranslationDict = {
       rawScore: 'RAW SCORE: {{value}}%',
       rawScorePlaceholder: 'RAW SCORE: --',
     },
-
     analysis: {
       healthyMatch: '声学特征与参考状态"{{state}}"匹配（{{score}}%）。无异常。',
-      faultyMatch: '检测到异常：特征与训练模式"{{state}}"匹配（{{score}}%）。建议检查。',
+      faultyMatch: '检测到异常：特征与训练模式"{{state}}"匹配（{{score}}%）。考虑检查。',
     },
-
-    // State-based card UI (horizontal tiles)
     scanCode: '扫描二维码',
     selectExisting: '选择机器',
     createNew: '新建机器',
     statesReady: '{{count}} 个状态已训练',
-    noReference: '尚无参考',
+    noReference: '尚无正常状态',
     changeMachine: '更换机器',
-    noMachinesYet: '\u5c1a\u672a\u521b\u5efa\u673a\u5668\u3002',
-    noMachinesHint: '\u8bf7\u5148\u521b\u5efa\u4e00\u53f0\u65b0\u673a\u5668\u3002',
-
-    // Sprint 3 UX: Operating point hint
+    noMachinesYet: '尚未创建机器。',
+    noMachinesHint: '请先创建一台新机器。',
     opHint: {
       changed: 'ℹ️ Operating point differed during measurement – consider when interpreting score',
     },
+    orFleet: 'or',
+    fleetQuickCheck: 'Fleet Quick Check',
+    fleetQuickCheckAria: 'Fleet Quick Check: Compare multiple machines',
   },
-
-  // ============================================================================
-  // SPRINT 3 UX: TREND
-  // ============================================================================
   trend: {
     improving: 'Trend: improving',
     stable: 'Trend: stable',
@@ -336,9 +364,6 @@ export const zh: TranslationDict = {
     uncertain: 'Trend: not yet reliable',
     noTrend: 'No trend yet',
   },
-
-  // ============================================================================
-  // PIPELINE STATUS DASHBOARD (Expert Mode)
   pipelineStatus: {
     title: '管道状态',
     room: '房间',
@@ -353,109 +378,109 @@ export const zh: TranslationDict = {
     t60Reverberant: '混响',
     t60VeryReverberant: '强混响',
   },
-
-  // OPERATING POINT MONITOR (Expert Mode)
-  // ============================================================================
+  envCompare: {
+    environment: '环境',
+    reference: '参考',
+    ok: '环境与参考相似',
+    moreReverberant: '环境的混响明显强于参考',
+    lesserReverberant: '环境的混响明显弱于参考',
+    muchMoreReverberant: '测试环境差异很大——结果可能受影响',
+    muchLessReverberant: '测试环境差异很大——结果可能受影响',
+    recommendCloser: '提示：靠近机器测量或启用房间补偿',
+    recommendCompensation: '提示：启用 Session Bias Match 或 T60 均衡',
+    recommendNote: '注意：评分偏差可能与环境有关',
+  },
   opMonitor: {
-    title: '\u8fd0\u884c\u72b6\u6001 / \u4fe1\u53f7\u8d28\u91cf',
-    initializingBaseline: '\u6b63\u5728\u6355\u83b7\u53c2\u8003\u8fd0\u884c\u70b9 \u2013 \u8bf7\u4fdd\u6301\u8bbe\u5907\u7a33\u5b9a\u2026',
-    operatingPointChanged: '\u8fd0\u884c\u70b9\u5df2\u53d8\u66f4 \u2013 \u53c2\u8003\u6bd4\u8f83\u53d7\u9650\u3002',
-    scoreInvalid: '\u26A0 \u8fd0\u884c\u70b9\u504f\u5dee \u2013 \u5206\u6570\u4e0d\u53ef\u6bd4\u8f83',
+    title: '运行状态 / 信号质量',
+    initializingBaseline: '正在捕获参考运行点 – 请保持设备稳定…',
+    operatingPointChanged: '运行点已变更 – 参考比较受限。',
+    scoreInvalid: '⚠ 运行点偏差 – 分数不可比较',
     similarityP10: {
-      shortLabel: '\u7a33\u5b9a\u6027',
-      description: '\u8bc4\u4f30\u5f55\u97f3\u4e2d\u201c\u6700\u5dee\u201d\u7684\u65f6\u523b\uff08\u7b2c10\u767e\u5206\u4f4d\uff09\u3002',
-      warning: '\u2139\uFE0F \u4fe1\u53f7\u4e0d\u7a33\u5b9a\uff1a\u5e73\u5747\u503c\u826f\u597d\uff0c\u4f46\u5b58\u5728\u77ed\u6682\u4e0b\u964d\u3002\u662f\u5426\u6709\u6ce2\u52a8\u7684\u566a\u58f0\u6216\u4e2d\u65ad\uff1f',
-      explain: '\u8bc4\u4f30\u5f55\u97f3\u4e2d\u201c\u6700\u5dee\u201d\u7684\u65f6\u523b\u3002\u4f4e\u503c\u8868\u793a\u58f0\u97f3\u4e0d\u7a33\u5b9a\uff0c\u5373\u4f7f\u5e73\u5747\u503c\u770b\u8d77\u6765\u5f88\u597d\u3002',
+      shortLabel: '稳定性',
+      description: '评估录音中“最差”的时刻（第10百分位）。',
+      warning: 'ℹ️ 信号不稳定：平均值良好，但存在短暂下降。是否有波动的噪声或中断？',
+      explain: '评估录音中“最差”的时刻。低值表示声音不稳定，即使平均值看起来很好。',
     },
     energyDelta: {
-      shortLabel: '\u80fd\u91cf \u0394',
-      description: '\u4e0e\u53c2\u8003\u7684\u97f3\u91cf\u5dee\u5f02\uff08\u5206\u8d1d\uff09\u3002',
-      warning: '\u26A0\uFE0F \u6ce8\u610f\uff1a\u4fe1\u53f7\u660e\u663e\u6bd4\u53c2\u8003\u66f4\u54cd/\u66f4\u5f31\u3002\u673a\u5668\u662f\u5426\u5728\u4e0d\u540c\u8d1f\u8f7d\u4e0b\u8fd0\u884c\uff0c\u6216\u8005\u9ea6\u514b\u98ce\u8ddd\u79bb\u662f\u5426\u6539\u53d8\uff1f\u5206\u6570\u53ef\u80fd\u4e0d\u53ef\u6bd4\u8f83\u3002',
-      explain: '\u663e\u793a\u4e0e\u53c2\u8003\u7684\u97f3\u91cf\u5dee\u5f02\u3002\u8f83\u5927\u504f\u5dee\u8868\u793a\u8d1f\u8f7d\u53d8\u5316\u3001\u4e0d\u540c\u8ddd\u79bb\u6216\u66f4\u5927\u7684\u73af\u5883\u566a\u58f0\u3002',
+      shortLabel: '能量 Δ',
+      description: '与参考的音量差异（分贝）。',
+      warning:
+        '⚠️ 注意：信号明显比参考更响/更弱。机器是否在不同负载下运行，或者麦克风距离是否改变？分数可能不可比较。',
+      explain: '显示与参考的音量差异。较大偏差表示负载变化、不同距离或更大的环境噪声。',
     },
     frequencyDelta: {
-      shortLabel: '\u9891\u7387 \u0394',
-      description: '\u4e3b\u97f3\uff08\u4e3b\u9891\u7387\uff09\u7684\u504f\u79fb\u3002',
-      warning: '\u26A0\uFE0F \u8fd0\u884c\u70b9\u504f\u5dee\uff1a\u57fa\u9891\u5df2\u504f\u79fb\u3002\u673a\u5668\u53ef\u80fd\u4ee5\u4e0e\u53c2\u8003\u4e0d\u540c\u7684\u8f6c\u901f\u8fd0\u884c\u3002',
-      explain: '\u5c06\u6700\u5f3a\u4e3b\u97f3\uff08\u4f8b\u5982\u7535\u673a\u8f6c\u901f\uff09\u4e0e\u53c2\u8003\u8fdb\u884c\u6bd4\u8f83\u3002\u504f\u79fb\u901a\u5e38\u610f\u5473\u7740\u673a\u5668\u8fd0\u884c\u5f97\u66f4\u5feb\u6216\u66f4\u6162\u3002',
+      shortLabel: '频率 Δ',
+      description: '主音（主频率）的偏移。',
+      warning: '⚠️ 运行点偏差：基频已偏移。机器可能以与参考不同的转速运行。',
+      explain: '将最强主音（例如电机转速）与参考进行比较。偏移通常意味着机器运行得更快或更慢。',
     },
     stability: {
-      shortLabel: '\u4fe1\u53f7\u7a33\u5b9a\u6027',
-      description: '\u6d4b\u91cf\u671f\u95f4\u7a33\u5b9a\u4fe1\u53f7\u6bb5\u7684\u6bd4\u4f8b\u3002',
-      warning: '\u26A0\uFE0F \u4fe1\u53f7\u4e0d\u7a33\u5b9a\uff1a\u68c0\u6d4b\u5230\u6ce2\u52a8\u566a\u58f0\u6216\u4e2d\u65ad\u3002\u8bf7\u5728\u7a33\u5b9a\u6761\u4ef6\u4e0b\u91cd\u590d\u6d4b\u91cf\u3002',
-      explain: '\u6d4b\u91cf\u58f0\u97f3\u968f\u65f6\u95f4\u7684\u4e00\u81f4\u6027\u3002\u4f4e\u503c\u8868\u793a\u8fd0\u884c\u6761\u4ef6\u6ce2\u52a8\u6216\u5e72\u6270\u3002',
+      shortLabel: '信号稳定性',
+      description: '测量期间稳定信号段的比例。',
+      warning: '⚠️ 信号不稳定：检测到波动噪声或中断。请在稳定条件下重复测量。',
+      explain: '测量声音随时间的一致性。低值表示运行条件波动或干扰。',
     },
   },
-
-  // ============================================================================
-  // PHASE 4: SETTINGS
-  // ============================================================================
   settings: {
     databaseNotAvailable: '数据库不可用。请在浏览器设置中允许IndexedDB或禁用严格隐私模式。',
     exportError: '导出数据库时出错',
     importError: '导入时出错',
     shareError: '分享数据库时出错',
-
     import: {
-      confirmMerge: '从以下位置导入数据库：{{filename}}\n\n您想合并数据吗？\n\n是 = 与现有数据合并\n否 = 替换所有现有数据',
+      modalTitle: '导入数据库',
+      modalDescription: '文件中的机器将添加到您现有的机器中。现有数据将保留。',
+      includeSettings: '应用已保存的设置',
+      includeSettingsHint: '应用文件中的横幅、视图级别、阈值及其他应用设置。',
+      confirmButton: '导入',
+      confirmMerge:
+        '从以下位置导入数据库：{{filename}}\n\n您想合并数据吗？\n\n是 = 与现有数据合并\n否 = 替换所有现有数据',
       confirmReplace: '⚠️ 警告！\n\n所有现有数据将被删除并替换为导入数据！\n\n您要继续吗？',
-      success: '机器：{{machines}}\n录制：{{recordings}}\n诊断：{{diagnoses}}\n\n模式：{{mode}}',
+      success: '机器：{{machines}}\n录制：{{recordings}}\n检查：{{diagnoses}}\n\n模式：{{mode}}',
       modeMerged: '已合并',
       modeReplaced: '已替换',
-      partialWarning: '机器：{{machinesImported}} 已导入，{{machinesSkipped}} 已跳过\n录制：{{recordingsImported}} 已导入，{{recordingsSkipped}} 已跳过\n诊断：{{diagnosesImported}} 已导入，{{diagnosesSkipped}} 已跳过\n\n{{totalSkipped}} 条记录无法导入。\n模式：{{mode}}',
+      partialWarning:
+        '机器：{{machinesImported}} 已导入，{{machinesSkipped}} 已跳过\n录制：{{recordingsImported}} 已导入，{{recordingsSkipped}} 已跳过\n检查：{{diagnosesImported}} 已导入，{{diagnosesSkipped}} 已跳过\n\n{{totalSkipped}} 条记录无法导入。\n模式：{{mode}}',
       setupError: '准备导入时出错',
-      withSettings: '已应用备份中的设置（横幅、主题、视图）。',
     },
-
-    exportOptions: {
-      title: '导出数据库',
-      description: '选择要包含在备份中的内容。',
-      includeSettings: '同时导出设置',
-      includeSettingsDetail: '按当前状态保存横幅、主题、视图以及所有其他设置。',
-    },
-
-    importOptions: {
-      title: '导入数据库',
-      description: '机器将添加到您现有的数据中。',
-      mergeNote: '现有机器将被保留——导入的机器会被添加进来。如果想重新开始，请先清空数据库。',
-      includeSettings: '应用存储的设置',
-      includeSettingsDetail: '应用备份中的横幅、主题和视图，并覆盖您当前的设置。',
-    },
-
     clear: {
-      confirmFirst: '⚠️ 警告！\n\n所有数据将被永久删除：\n- 所有机器\n- 所有参考模型\n- 所有录制\n- 所有诊断\n\n您要继续吗？',
+      confirmFirst:
+        '⚠️ 警告！\n\n所有数据将被永久删除：\n- 所有机器\n- 所有参考模型\n- 所有录制\n- 所有检查\n\n您要继续吗？',
       confirmSecond: '您绝对确定吗？\n\n此操作无法撤消！',
       success: '所有数据已删除',
       error: '删除数据时出错',
     },
-
     export: {
-      success: '文件：{{filename}}\n\n机器：{{machines}}\n录制：{{recordings}}\n诊断：{{diagnoses}}',
-      withSettings: '当前设置（横幅、主题、视图）也已一并保存。',
+      modalTitle: '导出数据库',
+      modalDescription: '将导出您的机器、录制和检查。是否同时保存当前设置？',
+      includeSettings: '包含设置',
+      includeSettingsHint: '将横幅、视图级别、阈值及其他应用设置一并写入文件。',
+      confirmButton: '导出',
+      success:
+        '文件：{{filename}}\n\n机器：{{machines}}\n录制：{{recordings}}\n检查：{{diagnoses}}',
     },
-
     share: {
-      title: 'Zanobo 数据库备份',
+      title: 'Zanobot 数据库备份',
       text: '数据库备份：{{filename}}',
       success: '备份已分享：{{filename}}',
       fallback: '无法分享，已改为下载 {{filename}}。',
       preparing: '正在准备导出...请稍候再试。',
     },
   },
-
-  // ============================================================================
-  // MAIN APP / STARTUP
-  // ============================================================================
+  update: {
+    available: {
+      title: '有新版本可用',
+      message: '新版本已就绪。您的数据将保留。',
+      action: '更新',
+    },
+    deferred: '将在当前测量结束后更新。',
+  },
   app: {
-    browserNotSupported: '您的浏览器与Zanobo不兼容。\n\n缺少的功能：\n{{features}}\n\n请使用现代浏览器，如Chrome、Edge、Firefox或Safari。',
+    browserNotSupported:
+      '您的浏览器与Zanobo不兼容。\n\n缺少的功能：\n{{features}}\n\n请使用现代浏览器，如Chrome、Edge、Firefox或Safari。',
     uiLoadFailed: '无法加载用户界面',
     fatalError: '致命错误',
     browserNotSupportedTitle: '浏览器不支持',
   },
-
-  // ============================================================================
-  // CORE ML / SCORING
-  // ============================================================================
   scoring: {
     matchesReference: '声学特征与参考匹配。无异常。',
     moderateDeviation: '与参考模式有中等偏差。建议检查。',
@@ -475,12 +500,8 @@ export const zh: TranslationDict = {
       faulty: '检测到状态"{{label}}"（{{score}}%匹配）。偏离正常状态。',
     },
   },
-
-  // ============================================================================
-  // HARDWARE CHECK
-  // ============================================================================
   hardware: {
-    suitable: '硬件适合机器诊断',
+    suitable: '硬件适合机器检查',
     voiceOptimized: '语音优化的硬件会过滤机器声音。',
     useStudioMic: '使用录音室麦克风或设备内置麦克风',
     headsetsOptimized: '耳机针对语音频率进行了优化',
@@ -491,23 +512,294 @@ export const zh: TranslationDict = {
     micReady: '麦克风就绪',
     iosMicHint: 'iOS需要短暂的相机访问权限来选择最佳麦克风——不会使用相机。',
   },
-
-
-  // ============================================================================
-  // ZERO-FRICTION RECORDING (Auto-Machine Creation)
-  // ============================================================================
+  common: {
+    machine: '机器',
+    error: '错误',
+    warning: '警告',
+    info: '信息',
+    success: '成功',
+    yes: '是',
+    no: '否',
+    or: '或',
+    ok: '确定',
+    loading: '加载中...',
+    initializing: '初始化中...',
+    saving: '保存中…',
+    unknown: '未知',
+  },
+  router: {
+    statesTrained: '{{count}} 个状态已训练（最近：{{date}}）- 添加更多',
+    referenceRequired: '{{duration}}秒正常状态录制（检查必需）',
+    liveAnalysis: '执行实时分析',
+    lastCheck: '上次检查 {{time}}',
+  },
+  diagnosisAudio: {
+    title: '保存检测音频',
+    description: '决定是否保存测量音频，以便日后回放某次检测。',
+    noneLabel: '不保存',
+    noneDesc: '精简',
+    latestLabel: '仅最新',
+    latestDesc: '推荐',
+    allLabel: '全部',
+    allDesc: '完整',
+  },
+  viewLevels: {
+    basic: '操作员简单交通灯显示',
+    advanced: '主管和维护人员详细信息',
+    expert: '工程师完整技术视图',
+    basicLabel: '基础',
+    basicDesc: '简单',
+    advancedLabel: '高级',
+    advancedDesc: '详细',
+    expertLabel: '专家',
+    expertDesc: '技术',
+    viewModeTitle: '显示模式',
+    viewModeDescription: '根据您的需求调整界面复杂度。',
+  },
+  notifications: {
+    confirmRequired: '需要确认',
+    closeNotification: '关闭通知',
+  },
+  errorBoundary: {
+    unexpectedError: '发生了意外错误。',
+    unexpectedErrorTitle: '意外错误',
+    permissionDenied: '访问被拒绝',
+    permissionHint: '请在浏览器设置中允许访问麦克风/摄像头。',
+    hardwareNotFound: '未找到硬件',
+    hardwareHint: '请确保您的麦克风/摄像头已连接。',
+    audioSystemError: '音频系统错误',
+    audioSystemHint: '请重新加载页面。如果问题仍然存在，请使用最新版本的浏览器。',
+    storageFull: '请删除旧的检查或参考录制。',
+    networkError: '请检查您的网络连接。',
+    technicalDetails: '技术详情',
+    noStackTrace: '无堆栈跟踪可用',
+  },
+  qualityCheck: {
+    noFeatures: '无可用特征',
+    noAudioData: '未提取到音频数据（帧数为0）',
+    highVariance: '频谱方差高 - 信号不稳定',
+    veryHighVariance: '方差非常高 - 请在更安静的环境中录制',
+    outliers: '检测到{{count}}个异常值（{{ratio}}%）- 可能存在干扰噪音',
+    weakSignal: '信号非常弱/分散 - 可能只是噪音。请靠近机器。',
+    weakTonal: '音调信号弱 - 信噪比可能过低。',
+    trainingSignalWeak:
+      '信号太弱或不一致，无法训练。请确保：麦克风靠近机器，机器正在运行，不只是背景噪音。（平均余弦相似度：{{value}}）',
+    invalidSampleRate: '无效的采样率：{{rate}}Hz。预期：8000-192000Hz（典型：44100Hz或48000Hz）',
+  },
+  healthGauge: {
+    normal: '正常',
+    deviation: '偏差',
+    abnormal: '异常',
+    explain:
+      'The score shows similarity to the reference state (0–100%). 100% = nearly identical. A declining trend matters more than a single value.',
+    explainTitle: 'What does the score mean?',
+  },
+  inspection: {
+    mainQuestion: '机器听起来正常吗？',
+    subtitle: '检查运行中 – 请保持靠近机器',
+    subtitleInitializing: '准备中 – 请稍候',
+    statusNormal: '正常',
+    statusUncertain: '不确定',
+    statusDeviation: '偏差',
+    referenceState: '参考状态',
+    referenceDefault: '正常运行',
+    hintMoveCloser: '请靠近机器',
+    hintChangePosition: '稍微改变位置',
+    hintHoldSteady: '保持设备稳定',
+    hintWaiting: '等待机器信号...',
+    stopButton: '停止',
+  },
+  audio: {
+    ready: '就绪',
+    stabilizing: '声学稳定中... {{seconds}}秒',
+    waitingForSignal: '等待信号...',
+    recordingRunning: '录制中',
+  },
+  settingsUI: {
+    title: '设置',
+    nfcWriterTitle: 'NFC 标签',
+    nfcWriterDescription: '为应用入口或选定机器写入 NFC 标签。',
+    appearance: '外观',
+    audioSettings: '音频设置',
+    audioHardware: '音频硬件',
+    detectingMic: '正在检测麦克风...',
+    detectingMicrophone: '正在检测麦克风...',
+    initHardwareCheck: '初始化硬件检查',
+    changeMicrophone: '更换麦克风',
+    confidenceThreshold: '置信度阈值',
+    faultyThreshold: '异常阈值',
+    recordingDuration: '录制时长',
+    recordingDurationDesc: '训练数据的净录制时间。额外增加5秒稳定时间以获得最佳音频质量。',
+    seconds5: '5秒',
+    seconds10: '10秒',
+    seconds15: '15秒',
+    seconds: '秒',
+    frequencyAxis: '频率轴',
+    frequencyAxisDesc: '对数（20-500 Hz范围更多细节）',
+    frequencyLogDesc: '对数（20-500 Hz范围更多细节）',
+    amplitudeAxis: 'Y轴/振幅',
+    amplitudeAxisDesc: '对数（dB）- 强调微弱信号',
+    amplitudeLogDesc: '对数（dB）- 强调微弱信号',
+    disableAudioTriggerLabel: '禁用音频触发',
+    disableAudioTriggerDesc:
+      '即使信号非常微弱，也立即开始测量，无需等待最小电平。适用于极其安静的机器或环境。',
+    analysisMethod: '分析方法',
+    analysisMethodDesc: '为您的机器选择合适的分析方法。',
+    gmaiMethodDesc:
+      'GMIA（广义互依赖分析）从多个时间窗口中提取共同的稳定成分，同时抑制设备特定效应。适用于结构化、时间稳定的机器声音。完全离线运行。',
+    engineDescSpectral:
+      '将声音频谱与平均参考进行比较，与音量无关。适用于单一、稳定的机器。完全离线运行。',
+    engineDescYamnet:
+      '通过 AI 模型生成神经声音指纹。适用于复杂或随时间变化的声音。首次使用时下载模型，之后可离线运行。',
+    engineDescTemporal:
+      '时间模式分析（Tier 2）：保留时间演变而非取平均——适用于有节拍、咔嗒声或工况变化的非稳态机器（如阀门、压力机）。完全离线运行。',
+    evaluationEngineLabel: '评估引擎',
+    evaluationEngineGmia: 'GMIA（标准）',
+    evaluationEngineSpectral: '频谱余弦（One-Class）',
+    evaluationEngineYamnet: 'YAMNet（神经网络，测试版）',
+    evaluationEngineTemporal: '时间模式（Tier 2，测试版）',
+    evaluationEngineDesc:
+      '选择用于"新"参考录制的评估方式。已训练的机器仍使用其原始引擎进行评估。GMIA 仍为默认。',
+    evaluationEngineSaveError: '无法保存评估引擎。存储可能已满，或您处于隐私模式。',
+    evaluationEngineSaveErrorTitle: '存储错误',
+    level1Info: '等级 1：上方的频率和振幅设置处于活动状态',
+    dataManagement: '数据管理',
+    exportDatabase: '导出数据库',
+    shareDatabase: '发送数据库',
+    importDatabase: '导入数据库',
+    statistics: '统计：',
+    machines: '机器',
+    recordings: '录制',
+    diagnoses: '检查',
+    clearAllData: '删除所有数据',
+    deleteAllData: '删除所有数据',
+    quickAccessDesc: '快速访问最近使用的机器',
+    noMachines: '没有可用的机器',
+    or: '或',
+    selectMicrophone: '选择麦克风',
+    microphoneAdvice:
+      '选择最佳麦克风进行机器检查。避免使用耳机和蓝牙设备，因为它们针对语音进行了优化。',
+    manualInput: '手动输入',
+    machineIdInput: '输入机器ID',
+    continue: '继续',
+    qrHint: '将二维码或条形码放入框内',
+    codeRecognized: '识别成功！',
+    bannerTitle: '横幅图片',
+    bannerDescription: '自定义首页横幅图片。每个主题可以有自己的横幅。',
+    bannerUpload: '上传横幅',
+    bannerReset: '恢复默认',
+    bannerHint: '上传任意图片——下一步裁剪所需区域。文字显示在右侧，请把主体放在偏左位置。',
+    bannerCropTitle: '裁剪横幅',
+    bannerCropHint: '拖动并缩放图片，使所需区域位于框内。',
+    bannerCropTextZone: '文字区域',
+    bannerCropZoom: '缩放',
+    bannerCropConfirm: '应用',
+    bannerHeadlineLabel: '横幅标题',
+    bannerSublineLabel: '横幅副标题',
+    bannerTextHint: '留空则使用默认文字。',
+    bannerHideText: '隐藏文字（仅图片）',
+    bannerTextPosX: '文字水平位置',
+    bannerTextPosY: '文字垂直位置',
+    bannerFormatError: '格式必须为 1024×400 或 1024×500 的 PNG。',
+    bannerUpdated: '横幅已更新。',
+    bannerSaveError: '无法保存横幅。',
+    bannerResetSuccess: '已恢复默认横幅。',
+    bannerResetError: '重置横幅时出错。',
+    themeToggle: '切换主题',
+    closeSettings: '关闭设置',
+    roomCompTitle: '房间补偿',
+    roomCompDescription: '补偿房间的声学影响（混响），使不同环境下的结果更稳定。',
+    roomCompEnabled: '启用房间补偿',
+    biasMatchEnabled: 'Session Bias Match',
+    biasMatchHint: '补偿不同录制场景（不同房间、麦克风位置）之间的频谱差异。换房间时推荐使用。',
+    cmnEnabled: 'CMN（实验性）',
+    cmnWarning: '⚠️ 对稳态机器可能降低评分。建议优先使用"Session Bias Match"或 T60/去混响。',
+    t60Enabled: '通过啁啾信号测量房间',
+    t60Hint: '自动播放短音以测量混响时间',
+    betaLabel: '补偿强度 (β)',
+    roomCompActiveHint: '🔧 房间补偿已启用',
+    cherryPickTitle: 'Cherry-Picking（择优）',
+    cherryPickDescription: '自动过滤录音中的瞬态干扰（喇叭、敲击、门声）。',
+    cherryPickEnabled: '启用 Cherry-Picking',
+    sigmaLabel: '灵敏度 (σ)',
+    sigmaHint: '低 = 更严格（拒绝更多帧），高 = 更宽容',
+    cherryPickActiveHint: 'Cherry-Picking 已启用：自动检测并去除瞬态干扰。',
+    resetSection: '默认设置',
+    resetDescription: '将所有显示选项重置为初始状态。机器数据将被保留。',
+    resetButton: '恢复默认设置',
+    resetConfirm: '确定要重置吗？',
+    resetSuccess: '已恢复默认设置。',
+    resetDescriptionShort: '机器数据将被保留。',
+  },
+  roomMeasure: {
+    title: '房间测量',
+    description: '使用啁啾信号测量当前环境的混响时间 (T60)。请将手机自由地举在房间中（不要遮挡）。',
+    measureBtn: '测量房间',
+    measureAgain: '重新测量',
+    measuring: '正在测量...',
+    chirpProgress: '啁啾 {{current}}/{{total}}...',
+    individual: '单次测量',
+    stddev: '标准差',
+    stable: '稳定',
+    unstable: '不稳定',
+    veryDry: '非常干（吸声强）',
+    dry: '干（吸声）',
+    medium: '中等混响',
+    reverberant: '混响较强',
+    veryReverberant: '混响很强',
+    classVeryDry: '非常干的房间——非常适合测量',
+    classDry: '干房间——条件良好',
+    classMedium: '中等混响——条件可接受',
+    classReverberant: '混响较强——结果可能受影响',
+    classVeryReverberant: '混响很强——请靠近机器',
+    errorNoResult:
+      '测量失败。可能原因：\n• 环境过于嘈杂（请关闭机器）\n• 手机扬声器音量太小\n• 请调高设备音量',
+    errorMicPermission: '无法访问麦克风。请在浏览器设置中允许访问。',
+    errorNoMic: '未找到麦克风。',
+    errorGeneric: '测量失败。请重试。',
+  },
+  noiseSub: {
+    title: '噪声轮廓消减',
+    description: '从测量中减去预先录制的环境噪声轮廓（机器关闭时录制）。当背景噪声与机器声音强度相近时特别有用。',
+    enabled: '启用噪声轮廓消减',
+    profileLabel: '当前噪声轮廓',
+    noProfile: '未选择轮廓',
+    recordBtn: '录制环境噪声',
+    recordHint: '重要：请关闭机器（或保持关闭）。将录制 {{seconds}} 秒纯环境噪声。',
+    recording: '录制中… {{seconds}}秒',
+    processing: '正在计算轮廓…',
+    saved: '噪声轮廓已保存。',
+    savedUnstable: '轮廓已保存——录制期间环境不稳定。建议在更安静时重新录制以获得更稳定的轮廓。',
+    defaultName: '噪声轮廓 {{date}}',
+    deleteBtn: '删除轮廓',
+    deleteConfirm: '确定删除所选噪声轮廓？',
+    betaLabel: '消减强度 (β)',
+    profileMeta: '{{date}} · {{duration}}秒 · {{frames}} 帧',
+    limitReached: '已达到轮廓数量上限（{{max}}）。请先删除旧轮廓。',
+    errorGeneric: '录制失败。请重试。',
+    errorMicPermission: '无法访问麦克风。请在浏览器设置中允许访问。',
+    errorNoMic: '未找到麦克风。',
+    rowLabel: '噪声轮廓',
+    incompatible: '噪声轮廓与当前录音配置（采样率）不匹配——已跳过消减。',
+    snrMachineDominates: '机器声占主导',
+    snrSimilarLevels: '声级相近——消减有效',
+    snrNoiseDominates: '背景噪声更响——可靠性有限',
+    warnStale: '轮廓已有 {{days}} 天——建议重新录制',
+    warnOverlap: '轮廓与机器声纹相似（相邻同型机器？）',
+    warnDevice: '与录制轮廓时使用的麦克风不同',
+    minStatsEnabled: '无轮廓回退（最小值统计）',
+    minStatsHint:
+      '没有匹配的噪声轮廓时，在检测过程中通过滑动能量最小值实时估计噪声底（仅在机器声较弱的频段；需要已有参考）。精度低于真实轮廓。',
+    minStatsName: '最小值统计（无轮廓）',
+  },
   zeroFriction: {
     autoMachineName: '机器 {{number}}',
-    referenceCreatedToast: '已为 {{machineName}} 创建参考',
+    referenceCreatedToast: '已为 {{machineName}} 创建正常状态',
     editMachineName: '编辑',
     editMachineNamePrompt: '输入机器的新名称：',
     machineRenamed: '机器已重命名为 "{{newName}}"',
     noMachineSelected: '未选择机器 – 将自动创建',
   },
-
-  // ============================================================================
-  // AUTO-DETECTION (Simplified "检查状态" Flow)
-  // ============================================================================
   autoDetect: {
     startButton: '立即检查',
     hint: '系统自动识别已知机器',
@@ -524,124 +816,9 @@ export const zh: TranslationDict = {
     uncertainMatch: '这是哪台机器？',
     selectMachine: '请选择匹配的机器',
     noMatch: '我还不认识这个声音',
-    noMatchHint: '您想录制参考吗？',
-    recordReference: '录制参考',
+    noMatchHint: '您想录制正常状态吗？',
+    recordReference: '录制正常状态',
     newMachine: '创建新机器',
-  },
-
-  // ============================================================================
-  // COMMON
-  // ============================================================================
-  common: {
-    machine: '机器',
-    error: '错误',
-    warning: '警告',
-    info: '信息',
-    success: '成功',
-    yes: '是',
-    no: '否',
-    or: '或',
-    ok: '确定',
-    loading: '加载中...',
-    initializing: '初始化中...',
-    unknown: '未知',
-  },
-
-  router: {
-    statesTrained: '{{count}} 个状态已训练（最近：{{date}}）- 添加更多',
-    referenceRequired: '{{duration}}秒参考录制（诊断必需）',
-    liveAnalysis: '执行实时分析',
-    lastCheck: '上次检查 {{time}}',
-  },
-  viewLevels: {
-    basic: '操作员简单交通灯显示',
-    advanced: '主管和维护人员详细信息',
-    expert: '工程师完整技术视图',
-    basicLabel: '基础', basicDesc: '简单',
-    advancedLabel: '高级', advancedDesc: '详细',
-    expertLabel: '专家', expertDesc: '技术',
-    viewModeTitle: '显示模式',
-    viewModeDescription: '根据您的需求调整界面复杂度。',
-  },
-  notifications: { confirmRequired: '需要确认', closeNotification: '关闭通知' },
-  errorBoundary: {
-    unexpectedError: '发生了意外错误。',
-    unexpectedErrorTitle: '意外错误',
-    permissionDenied: '访问被拒绝',
-    permissionHint: '请在浏览器设置中允许访问麦克风/摄像头。',
-    hardwareNotFound: '未找到硬件',
-    hardwareHint: '请确保您的麦克风/摄像头已连接。',
-    audioSystemError: '音频系统错误',
-    audioSystemHint: '请重新加载页面。如果问题仍然存在，请使用最新版本的浏览器。',
-    storageFull: '请删除旧的诊断或参考录制。',
-    networkError: '请检查您的网络连接。',
-    technicalDetails: '技术详情',
-    noStackTrace: '无堆栈跟踪可用',
-  },
-  qualityCheck: {
-    noFeatures: '无可用特征',
-    noAudioData: '未提取到音频数据（帧数为0）',
-    highVariance: '频谱方差高 - 信号不稳定',
-    veryHighVariance: '方差非常高 - 请在更安静的环境中录制',
-    outliers: '检测到{{count}}个异常值（{{ratio}}%）- 可能存在干扰噪音',
-    weakSignal: '信号非常弱/分散 - 可能只是噪音。请靠近机器。',
-    weakTonal: '音调信号弱 - 信噪比可能过低。',
-    trainingSignalWeak: '信号太弱或不一致，无法训练。请确保：麦克风靠近机器，机器正在运行，不只是背景噪音。（平均余弦相似度：{{value}}）',
-    invalidSampleRate: '无效的采样率：{{rate}}Hz。预期：8000-192000Hz（典型：44100Hz或48000Hz）',
-  },
-  healthGauge: {
-    normal: '正常',
-    deviation: '偏差',
-    abnormal: '异常',
-    explain: 'The score shows similarity to the reference state (0–100%). 100% = nearly identical. A declining trend matters more than a single value.',
-    explainTitle: 'What does the score mean?',
-  },
-  audio: { ready: '就绪', stabilizing: '声学稳定中... {{seconds}}秒', waitingForSignal: '等待信号...', recordingRunning: '录制中' },
-  settingsUI: {
-    title: '设置', nfcWriterTitle: 'NFC 标签', nfcWriterDescription: '为应用入口或选定机器写入 NFC 标签。', appearance: '外观',
-    audioSettings: '音频设置', audioHardware: '音频硬件',
-    detectingMic: '正在检测麦克风...', detectingMicrophone: '正在检测麦克风...', initHardwareCheck: '初始化硬件检查',
-    changeMicrophone: '更换麦克风', confidenceThreshold: '置信度阈值',
-    faultyThreshold: '异常阈值',
-    recordingDuration: '录制时长',
-    recordingDurationDesc: '训练数据的净录制时间。额外增加5秒稳定时间以获得最佳音频质量。',
-    seconds5: '5秒', seconds10: '10秒', seconds15: '15秒', seconds: '秒',
-    frequencyAxis: '频率轴', frequencyAxisDesc: '对数（20-500 Hz范围更多细节）', frequencyLogDesc: '对数（20-500 Hz范围更多细节）',
-    amplitudeAxis: 'Y轴/振幅', amplitudeAxisDesc: '对数（dB）- 强调微弱信号', amplitudeLogDesc: '对数（dB）- 强调微弱信号',
-    disableAudioTriggerLabel: '禁用音频触发', disableAudioTriggerDesc: '即使信号非常微弱，也立即开始测量，无需等待最小电平。适用于极其安静的机器或环境。',
-    analysisMethod: '分析方法', analysisMethodDesc: '为您的机器选择合适的分析方法。',
-    gmaiMethodDesc: 'GMIA（广义互依赖分析）从多个时间窗口中提取共同的稳定成分，同时抑制设备特定效应。适用于结构化、时间稳定的机器声音。',
-    level1Info: '等级 1：上方的频率和振幅设置处于活动状态',
-    dataManagement: '数据管理', exportDatabase: '导出数据库', shareDatabase: '发送数据库',
-    importDatabase: '导入数据库', statistics: '统计：',
-    machines: '机器', recordings: '录制', diagnoses: '诊断',
-    clearAllData: '删除所有数据', deleteAllData: '删除所有数据',
-    quickAccessDesc: '快速访问最近使用的机器',
-    noMachines: '没有可用的机器', or: '或',
-    selectMicrophone: '选择麦克风',
-    microphoneAdvice: '选择最佳麦克风进行机器诊断。避免使用耳机和蓝牙设备，因为它们针对语音进行了优化。',
-    manualInput: '手动输入', machineIdInput: '输入机器ID', continue: '继续',
-    qrHint: '将二维码或条形码放入框内', codeRecognized: '识别成功！',
-    // 横幅设置
-    bannerTitle: '横幅图片',
-    bannerDescription: '自定义首页横幅图片。每个主题可以有自己的横幅。',
-    bannerUpload: '上传横幅',
-    bannerReset: '恢复默认',
-    bannerHint: '推荐：1024×400 或 1024×500 像素，PNG 格式。左侧三分之一保留用于文字。',
-    bannerFormatError: '格式必须为 1024×400 或 1024×500 的 PNG。',
-    bannerUpdated: '横幅已更新。',
-    bannerSaveError: '无法保存横幅。',
-    bannerResetSuccess: '已恢复默认横幅。',
-    bannerResetError: '重置横幅时出错。',
-    themeToggle: '切换主题',
-    closeSettings: '关闭设置',
-    // Reset to Defaults
-    resetSection: '默认设置',
-    resetDescription: '将所有显示选项重置为初始状态。机器数据将被保留。',
-    resetButton: '恢复默认设置',
-    resetConfirm: '确定要重置吗？',
-    resetSuccess: '已恢复默认设置。',
-    resetDescriptionShort: '机器数据将被保留。',
   },
   nfc: {
     title: '写入 NFC 标签',
@@ -664,9 +841,9 @@ export const zh: TranslationDict = {
     unsupported: '此设备不支持 NFC 写入。',
     requiresSecureContext: 'NFC 写入需要安全（HTTPS）连接。',
     unsupportedBrowser: 'NFC 写入需要 Android 上的 Chrome。',
-    // Customer ID (Variant B)
     customerIdLabel: '客户 ID (c)',
-    customerIdDescription: '此 ID 决定扫描 NFC 标签时加载哪些参考数据。数据将自动从 GitHub Pages 加载。',
+    customerIdDescription:
+      '此 ID 决定扫描 NFC 标签时加载哪些参考数据。数据将自动从 GitHub Pages 加载。',
     customerIdPlaceholder: '例如 Customer_ID_1',
     customerIdRequired: '请输入客户 ID。',
     dbUrlPreview: '数据 URL：{{url}}',
@@ -679,17 +856,14 @@ export const zh: TranslationDict = {
     machine: 'machine',
     machines: 'machines',
     fleetRequiresCustomerId: 'Please enter a customer ID and select a fleet.',
-    // Quick Compare count-only option
     optionQuickCompareCount: 'Quick compare (count only)',
-    optionQuickCompareCountDetailDefault: 'Opens the app for a quick compare with a set number of machines. No internet needed.',
-    optionQuickCompareCountDetail: 'Opens a quick compare with {{count}} machines. No internet needed.',
+    optionQuickCompareCountDetailDefault:
+      'Opens the app for a quick compare with a set number of machines. No internet needed.',
+    optionQuickCompareCountDetail:
+      'Opens a quick compare with {{count}} machines. No internet needed.',
     quickCompareCountLabel: 'How many machines?',
     quickCompareCountHint: 'No internet needed when scanning. Machines are named automatically.',
   },
-
-  // ============================================================================
-  // QR CODE GENERATOR
-  // ============================================================================
   qrCode: {
     title: '创建二维码',
     description: '创建可打印或保存的二维码。只需贴在机器上即可。',
@@ -722,37 +896,41 @@ export const zh: TranslationDict = {
     fleetSelectLabel: 'Select fleet',
     fleetLabel: 'Fleet',
     fleetPrintTitle: 'Fleet QR Code',
-    // Quick Compare count-only option
     optionQuickCompareCount: 'Quick compare (count only)',
-    optionQuickCompareCountDetailDefault: 'Creates a QR code for a quick compare with a set number of machines.',
+    optionQuickCompareCountDetailDefault:
+      'Creates a QR code for a quick compare with a set number of machines.',
     optionQuickCompareCountDetail: 'Creates quick compare QR code for {{count}} machines.',
   },
-
   review: {
-    title: '检查录制', subtitle: '质量控制',
+    title: '检查录制',
+    subtitle: '质量控制',
     listenTitle: '听录制',
     browserNoAudio: '您的浏览器不支持音频播放。',
     recordingInfo: '{{total}}秒录制（5秒稳定 + {{duration}}秒训练）',
     positionImageTitle: '已保存的位置图像',
     savedPositionImage: '已保存的位置图像',
     positionImageCheck: '检查图像是否显示正确的位置。',
-    qualityTitle: '质量评估', quality: '质量',
-    issuesTitle: '检测到的问题：', discardNew: '丢弃/重新',
+    qualityTitle: '质量评估',
+    quality: '质量',
+    issuesTitle: '检测到的问题：',
+    discardNew: '丢弃/重新',
     saveAsReference: '保存为参考',
   },
   diagnosisResults: {
-    title: '诊断结果',
+    title: '检查结果',
     fingerprintLabel: '指纹',
     confidenceScoreLabel: '置信度分数',
     varianceTitle: '方差',
     frequencyAnomalyLabel: '频率异常',
     analysisHintDefault: '提示：约 20 kHz 附近信号略有升高',
-    referenceQualityTitle: '参考质量',
+    measurementQualityWarning:
+      '⚠ 测量信号非常弱——结果几乎不可用。请靠近机器并在更安静的环境中重新测量。',
+    referenceQualityTitle: '录制质量',
     referenceQualityStatusGood: '良好',
-    referenceQualityDescription: '参考录制符合推荐条件',
+    referenceQualityDescription: '录制符合推荐条件',
     featureModeLabel: '特征模式',
     viewHistory: '查看历史',
-    closeDialog: '关闭诊断',
+    closeDialog: '关闭检查',
   },
   results: {
     envMatch: {
@@ -767,11 +945,27 @@ export const zh: TranslationDict = {
     dataPoints: '数据点',
     timeRange: '时间范围',
     xAxisLabel: '时间',
-    yAxisLabel: '健康评分 (%)',
+    yAxisLabel: '相似度评分 (%)',
     noData: '暂无历史记录',
-    noDataMessage: '此机器尚未保存任何诊断记录。',
+    noDataMessage: '此机器尚未保存任何检查记录。',
     errorMessage: '加载历史记录时出错。',
     closeDialog: '关闭历史',
+    anomalyListTitle: '异常特征（最近一次检查）',
+    anomalyNone: '未检测到异常特征。',
+    tooltipAnomaly: '异常：{{freq}}（{{strength}}%）',
+  },
+  workPointRanking: {
+    title: '状态分析',
+    states: '状态',
+    ariaLabel: '检测到的机器状态排名',
+    statusHealthy: '正常',
+    statusFaulty: '异常',
+    noData: '没有可用的分析数据',
+    rank: '排名',
+    probability: '概率',
+    topMatch: '最佳匹配',
+    sectionTitle: '详细状态分布',
+    sectionDescription: '所有已训练机器状态的概率分布',
   },
   themes: {
     focusTitle: 'Steve Jobs',
@@ -787,6 +981,32 @@ export const zh: TranslationDict = {
     neonDescription: '高对比霓虹配色，适合弱光环境。强调色引导关键操作。',
     neonDesc: '高对比霓虹配色，适合弱光环境。强调色引导关键操作。',
   },
+  machineSetup: {
+    downloadFailedHint: '无法加载参考数据。您可以直接在机器旁录制正常状态，或重试下载。',
+    retryDownload: '重试下载',
+    urlEmpty: '请输入参考数据库链接。',
+    urlInvalid: '该链接似乎不是有效的 URL。',
+    urlNotHttps: '链接必须以 https:// 开头。',
+    urlNotOfficialSource: '仅接受官方数据源（gunterstruck.github.io）。',
+    downloadingReference: '正在加载参考数据...',
+    statusDownloading: '正在下载参考数据...',
+    statusParsing: '正在处理数据...',
+    statusValidating: '正在验证格式...',
+    statusSaving: '正在本地保存...',
+    statusComplete: '完成！',
+    errorMachineNotFound: '机器未设置。请联系服务技术人员。',
+    errorNoReferenceUrl: '未配置参考数据。请联系服务技术人员。',
+    errorDownloadFailed: '下载失败。请检查您的网络连接。',
+    errorInvalidFormat: '参考数据格式无效。',
+    errorInvalidStructure: '数据结构已损坏。',
+    errorNoModels: '数据中未找到参考模型。',
+    errorInvalidModel: '一个或多个参考模型已损坏。',
+    errorUnknown: '发生了未知错误。',
+    referenceLoaded: '参考数据加载成功！',
+    loadingTitle: '正在加载参考',
+    loadingSubtitle: '请稍候...',
+    testingBlocked: '只有在加载参考数据后才能进行测试。',
+  },
   footer: {
     impressum: '法律声明',
     privacy: '隐私政策',
@@ -796,8 +1016,6 @@ export const zh: TranslationDict = {
     closePrivacy: '关闭隐私政策',
     closeAbout: '关闭关于Zanobo',
   },
-
-  // NFC IMPORT (Deep Link Import via ?importUrl=)
   nfcImport: {
     modalTitle: '检测到NFC备份',
     warningOverwrite: '警告：本地数据库将被覆盖！',
@@ -815,102 +1033,10 @@ export const zh: TranslationDict = {
     errorInvalidJson: '错误：文件不包含有效的JSON格式。',
     errorInvalidStructure: '错误：文件格式不是预期的备份格式。',
     errorNetwork: '加载数据时出现网络错误。请检查您的网络连接。',
-    nfcMergeSuccess: '\u2705 Database updated – {{added}} new references added, {{skipped}} already present',
+    nfcMergeSuccess:
+      '✅ Database updated – {{added}} new references added, {{skipped}} already present',
     nfcMergeInfo: 'Existing machines and references are preserved.',
   },
-
-  // BADGES (UI Hints)
-  badges: {
-    recommended: '推荐',
-    nextStep: '下一步',
-  },
-
-  // WORK POINT RANKING
-  workPointRanking: {
-    title: '状态分析',
-    states: '状态',
-    ariaLabel: '检测到的机器状态排名',
-    statusHealthy: '正常',
-    statusFaulty: '故障',
-    noData: '没有可用的分析数据',
-    rank: '排名',
-    probability: '概率',
-    topMatch: '最佳匹配',
-    sectionTitle: '详细状态分布',
-    sectionDescription: '所有已训练机器状态的概率分布',
-  },
-
-  // DATABASE MIGRATION
-  migration: {
-    title: '数据库更新',
-    dataCleared:
-      '由于更新，数据库已被重置。所有机器、录音和诊断都已删除。',
-  },
-
-  // ============================================================================
-  // INSPECTION VIEW (Simplified PWA)
-  // ============================================================================
-  inspection: {
-    // Header
-    mainQuestion: '机器听起来正常吗？',
-    subtitle: '检查运行中 – 请保持靠近机器',
-    subtitleInitializing: '准备中 – 请稍候',
-    // Status words (simple, non-technical)
-    statusNormal: '正常',
-    statusUncertain: '不确定',
-    statusDeviation: '偏差',
-    // Reference info
-    referenceState: '参考状态',
-    referenceDefault: '正常运行',
-    // Dynamic hints for poor signal quality
-    hintMoveCloser: '请靠近机器',
-    hintChangePosition: '稍微改变位置',
-    hintHoldSteady: '保持设备稳定',
-    hintWaiting: '等待机器信号...',
-    // Button
-    stopButton: '停止',
-  },
-
-  // ============================================================================
-  // MACHINE SETUP (NFC Deep Link - Status/Error Messages)
-  // ============================================================================
-  machineSetup: {
-    // Validation errors
-    urlEmpty: '请输入参考数据库链接。',
-    urlInvalid: '该链接似乎不是有效的 URL。',
-    urlNotHttps: '链接必须以 https:// 开头。',
-    urlNotOfficialSource: '仅接受官方数据源（gunterstruck.github.io）。',
-
-    // Download status
-    downloadingReference: '正在加载参考数据...',
-    statusDownloading: '正在下载参考数据...',
-    statusParsing: '正在处理数据...',
-    statusValidating: '正在验证格式...',
-    statusSaving: '正在本地保存...',
-    statusComplete: '完成！',
-
-    // Download errors
-    errorMachineNotFound: '机器未设置。请联系服务技术人员。',
-    errorNoReferenceUrl: '未配置参考数据。请联系服务技术人员。',
-    errorDownloadFailed: '下载失败。请检查您的网络连接。',
-    errorInvalidFormat: '参考数据格式无效。',
-    errorInvalidStructure: '数据结构已损坏。',
-    errorNoModels: '数据中未找到参考模型。',
-    errorInvalidModel: '一个或多个参考模型已损坏。',
-    errorUnknown: '发生了未知错误。',
-
-    // Success messages
-    referenceLoaded: '参考数据加载成功！',
-
-    // Loading overlay
-    loadingTitle: '正在加载参考',
-    loadingSubtitle: '请稍候...',
-    testingBlocked: '只有在加载参考数据后才能进行测试。',
-  },
-
-  // ============================================================================
-  // URL IMPORT (Deep Link Import via #/import?url=)
-  // ============================================================================
   urlImport: {
     statusFetching: '正在加载数据库...',
     statusValidating: '正在验证数据...',
@@ -927,12 +1053,7 @@ export const zh: TranslationDict = {
     errorInvalidStructure: '文件不具有预期的数据库格式。',
     errorNetwork: '加载数据时出现网络错误。请检查您的互联网连接。',
   },
-
-  // ============================================================================
-  // ONBOARDING TRACE (Debug Protocol)
-  // ============================================================================
   trace: {
-    // UI
     title: '调试协议',
     toggle: '切换协议',
     copyToClipboard: '复制协议',
@@ -940,86 +1061,69 @@ export const zh: TranslationDict = {
     copied: '已复制！',
     copyFailed: '错误',
     noEntries: '暂无条目',
-
-    // Status
     statusRunning: '运行中...',
     statusComplete: '完成',
     statusFailed: '失败',
-
-    // Step labels - these map to TraceStepId
     steps: {
-      // Deep Link Processing
       deep_link_detected: '检测到深层链接',
       hash_parsed: '哈希已解析',
       machine_id_extracted: '已提取机器 ID',
       customer_id_extracted: '已提取客户 ID',
       db_url_derived: '已派生数据库 URL',
       import_url_detected: '检测到导入 URL',
-
-      // Download Process
       download_started: '下载已开始',
       download_complete: '下载完成',
       download_failed: '下载失败',
-
-      // JSON Processing
       json_parse_started: 'JSON 解析已开始',
       json_parse_complete: 'JSON 解析成功',
       json_parse_failed: 'JSON 解析失败',
-
-      // Validation
       schema_validation_started: '架构验证已开始',
       schema_validation_complete: '架构验证成功',
       schema_validation_failed: '架构验证失败',
-
-      // Database Operations
       db_reset_started: '数据库重置已开始',
       db_import_started: '数据库导入已开始',
       db_import_complete: '数据库导入完成',
       db_import_failed: '数据库导入失败',
-
-      // App State
       app_state_reload: '应用状态已重新加载',
-
-      // Machine Operations
       machine_lookup: '正在查找机器',
       machine_found: '已找到机器',
       machine_not_found: '未找到机器',
       machine_created: '机器已创建',
       machine_selected: '机器已选择',
-
-      // Final Steps
       test_dialog_shown: '测试对话框已显示',
       process_complete: '流程完成',
       process_failed: '流程失败',
     },
   },
-
-  // ============================================================================
-  // ABOUT MODAL
-  // ============================================================================
+  badges: {
+    recommended: '推荐',
+    nextStep: '下一步',
+  },
+  migration: {
+    title: '数据库更新',
+    dataCleared: '由于更新，数据库已被重置。所有机器、录音和检查都已删除。',
+  },
   about: {
     title: '关于 Zanobo',
     subtitle: '机器状态声学比较助手',
-
-    // Introduction
-    intro: '<strong>Zanobo 2.0</strong> 是一个注重隐私的渐进式 Web 应用（PWA），专为机器声学的比较分析而设计。该应用程序允许完全<strong>离线</strong>记录和比较机器声音 – 无需云服务、无需外部传感器、无需训练的 AI 模型。<br><br>Zanobo 刻意将自己理解为<strong>非诊断工具</strong>，而是作为支持人工评估的<strong>比较和指导工具</strong>。',
-
-    // Core Features
+    intro:
+      '<strong>Zanobo 2.0</strong> 是一个注重隐私的渐进式 Web 应用（PWA），专为机器声学的比较分析而设计。该应用程序允许完全<strong>离线</strong>记录和比较机器声音 – 无需云服务、无需外部传感器、无需训练的 AI 模型。<br><br>Zanobo 刻意将自己理解为<strong>非诊断工具</strong>，而是作为支持人工评估的<strong>比较和指导工具</strong>。',
     coreFeaturesTitle: '核心功能',
     coreFeatures: {
       offlineFirst: '<strong>离线优先：</strong>所有录音和计算都在浏览器本地进行。',
-      similarityScore: '<strong>相似度评分（0-100%）：</strong>Zanobo 计算参考录音和比较录音之间的数学相似度（余弦相似度）。',
-      userThreshold: '<strong>用户定义阈值：</strong>用户自行定义在什么评分下状态算作"正常"或"偏离"。',
+      similarityScore:
+        '<strong>相似度评分（0-100%）：</strong>Zanobo 计算参考录音和比较录音之间的数学相似度（余弦相似度）。',
+      userThreshold:
+        '<strong>用户定义阈值：</strong>用户自行定义在什么评分下状态算作"正常"或"偏离"。',
       visualFeedback: '<strong>可视化频谱反馈：</strong>实时显示频谱和比较结果。',
-      noDataLeaks: '<strong>本地数据存储：</strong>所有音频录音和评分都专门存储在设备的本地 IndexedDB 中。',
+      noDataLeaks:
+        '<strong>本地数据存储：</strong>所有音频录音和评分都专门存储在设备的本地 IndexedDB 中。',
     },
-
-    // Legal Position
     legalTitle: '法律地位和知识产权审查',
-    legalIntro: 'Zanobo 作为<strong>私人非商业开源项目</strong>独立开发，采用 <strong>MIT 许可证</strong>。其功能基于<strong>公开描述的数学程序</strong>（例如频率分析和类 GMIA 余弦比较），不包含<strong>任何专利系统逻辑</strong>、<strong>任何分类机制</strong>和<strong>任何学习模型</strong>。',
-    legalReview: '在发布之前进行了<strong>技术和内容审查</strong>，以确保 Zanobo 不与现有专利或已知的工业诊断方法冲突。',
-
-    // IP Table
+    legalIntro:
+      'Zanobo 作为<strong>私人非商业开源项目</strong>独立开发，采用 <strong>MIT 许可证</strong>。其功能基于<strong>公开描述的数学程序</strong>（例如频率分析和类 GMIA 余弦比较），不包含<strong>任何专利系统逻辑</strong>、<strong>任何分类机制</strong>和<strong>任何学习模型</strong>。',
+    legalReview:
+      '在发布之前进行了<strong>技术和内容审查</strong>，以确保 Zanobo 不与现有专利或已知的工业检查方法冲突。',
     ipTableTitle: '相关知识产权和技术差异',
     ipTable: {
       headers: {
@@ -1033,13 +1137,13 @@ export const zh: TranslationDict = {
           reference: '<strong>PAPDEOTT005125</strong><br><em>机器诊断程序</em>',
           source: '防御性出版物，西门子公司，2016',
           protectedScope: '使用中央数据库和移动传感器的基于云的诊断系统',
-          zanoboDiff: 'Zanobo 完全在本地运行，无云、无中央数据库、无诊断',
+          zanoboDiff: 'Zanobo 完全在本地运行，无云、无中央数据库、无检查',
         },
         '1': {
           reference: '<strong>EP3701708B1</strong><br><em>远程机器状态分析</em>',
           source: '欧洲专利，西门子公司，2022',
           protectedScope: '基于机器学习的远程诊断，带有训练模型和传感器',
-          zanoboDiff: 'Zanobo 不使用机器学习，无云、无嵌入式诊断逻辑',
+          zanoboDiff: 'Zanobo 不使用机器学习，无云、无嵌入式检查逻辑',
         },
         '2': {
           reference: '<strong>US9263041B2</strong><br><em>使用 GMIA 进行噪声中的信道检测</em>',
@@ -1063,27 +1167,67 @@ export const zh: TranslationDict = {
           reference: '<strong>ABB – Integration of Mobile Measurement</strong>',
           source: '公开工业演示，ABB，2015',
           protectedScope: '用于临时诊断的移动传感器，带有云和服务集成',
-          zanoboDiff: 'Zanobo 避免诊断、服务工作流程和云连接，专注于本地比较',
+          zanoboDiff: 'Zanobo 避免检查、服务工作流程和云连接，专注于本地比较',
         },
       },
     },
-
-    // Transparency
+    useCasesTitle: '应用场景',
+    useCasesIntro: 'Zanobo 支持两种基本的比较场景，它们在时间和空间结构上有所不同：',
+    serialComparisonTitle: 'a) 序列比较（时间比较 / 趋势）',
+    serialComparisonPrinciple:
+      '<strong>原理：</strong>将当前录音与之前为<strong>同一台机器</strong>创建的参考进行比较。',
+    serialComparisonGoal: '<strong>目标：</strong>使声学模式随时间的变化可见。',
+    serialComparisonApplication:
+      '<strong>应用：</strong><ul><li>在机器被判定为"正常"时创建参考录音</li><li>之后的录音与该参考进行比较</li><li>量化与原始模式的偏差（相似度评分）</li></ul>',
+    serialComparisonHint:
+      '<strong>注意：</strong>Zanobo 仅显示当前声音<strong>是否以及在多大程度上</strong>偏离参考。偏差是否相关由用户判断。系统不作任何评估，也不提供预测。',
+    parallelComparisonTitle: 'b) 并行比较（同型号机器比较 / 机群检查）',
+    parallelComparisonPrinciple: '<strong>原理：</strong>在相似工况下比较多台同型号机器。',
+    parallelComparisonGoal: '<strong>目标：</strong>在同型号机器组中识别声学异常者。',
+    parallelComparisonApplication:
+      '<strong>应用：</strong><ul><li>录制多台同型号机器（例如在生产车间）</li><li>Zanobo 计算机器之间的声学相似度</li><li>声音特征明显偏离群组的机器会被凸显出来</li></ul>',
+    parallelComparisonSpecial:
+      '<strong>特点：</strong><strong>即使没有历史参考</strong>也能工作。机器组本身即为比较基准。',
+    parallelComparisonHint:
+      '<strong>注意：</strong>Zanobo 不判定哪台机器有缺陷，也不判定哪台代表"目标状态"。它仅显示组内的<strong>相对偏差</strong>。是否进一步检查偏离的机器由用户评估。',
+    nfcTitle: '基于 NFC 的即时访问与情境化比较',
+    nfcIntro:
+      'Zanobo 支持在机器上<strong>使用 NFC 标签</strong>，以简化应用访问并可选地提供与机器相关的情境。',
+    nfcFunctionalityTitle: '工作方式',
+    nfcTagDescription:
+      '<strong>机器上的 NFC 标签：</strong>贴在外壳或检修点的 NFC 标签可包含以下信息：<ul><li>Zanobo PWA 的 URL（在浏览器中直接启动应用）</li><li>用于自动识别的机器 ID</li><li>可选：指向客户特定参考数据的引用（指向 JSON 文件的 URL）</li></ul>',
+    nfcInstantAccess:
+      '<strong>无需安装的即时访问：</strong><ul><li>用户将手机靠近 NFC 标签</li><li>Zanobo PWA 直接在浏览器中打开（无需应用商店、无需注册）</li><li>可选：自动加载存储的机器 ID</li></ul>',
+    nfcReferenceDataTitle: '可选的情境化参考数据',
+    nfcReferenceDataDescription:
+      'NFC 标签还可以包含<strong>指向参考数据库的 URL</strong>。该数据库由机器运营方或服务伙伴提供，可包含：<ul><li>机器各种工作状态的<strong>参考录音</strong></li><li><strong>机器特定的元数据</strong>（如类型、制造年份、位置）</li><li>用于同型号机器机群检查的<strong>比较参数</strong></li></ul>',
+    nfcAdvantageTitle: '对新用户或外部用户的优势',
+    nfcAdvantageDescription:
+      '首次检查机器的服务技术人员或操作员可以：<ul><li>无需自行录制参考即可<strong>立即进行声学检查</strong></li><li><strong>直接与运营方提供的现有参考数据进行比较</strong></li><li><strong>无需先验知识</strong>即可初步判断当前声音是否偏离已存储的参考</li></ul>',
+    nfcDataPrivacyTitle: '数据存储与隐私',
+    nfcDataPrivacyImportant:
+      '<strong>重要：</strong>参考数据<strong>不存储在 Zanobo 云中</strong>。它们提供于：<ul><li>运营方的<strong>本地网络</strong>（如内网服务器）</li><li><strong>客户自有环境</strong>（如 GitHub Pages、自有 Web 服务器）</li><li>可通过 HTTPS URL 访问的<strong>静态 JSON 文件</strong></li></ul>',
+    nfcDataPrivacyStorage:
+      '参考数据库在首次 NFC 扫描时下载，随后<strong>存储在设备本地</strong>（IndexedDB）。之后的所有比较均离线进行。',
+    nfcFocusTitle: '定位与界定',
+    nfcFocusDescription:
+      '基于 NFC 的访问仅用于<strong>可访问性与可比性</strong>。它支持：<ul><li>无需手动配置即可快速启动</li><li>无需自行录制即可使用现有参考数据</li><li>为多个用户或地点提供一致的比较基准</li></ul>',
+    nfcNoFeatures:
+      '<strong>即使使用基于 NFC 的参考数据，Zanobo 也：</strong><ul><li>不作<strong>任何评估</strong>（不对损坏原因或状态作出判断）</li><li>不进行<strong>任何决策自动化</strong>（不作"好/坏"判定）</li><li>不进行<strong>任何云端评估</strong>（所有计算均在本地）</li></ul>',
+    nfcInterpretation: '比较结果的解读始终由用户负责。',
     transparencyTitle: '透明度和意图',
-    transparencyText1: 'Zanobo <strong>不是诊断工具</strong>，<strong>不进行自动技术评估</strong>。它仅提供<strong>视觉和数学比较辅助</strong>。',
-    transparencyText2: '所有处理都<strong>离线</strong>进行。<strong>不传输、存储或评估用户数据</strong>。',
+    transparencyText1:
+      'Zanobo <strong>不是诊断工具</strong>，<strong>不进行自动技术评估</strong>。它仅提供<strong>视觉和数学比较辅助</strong>。',
+    transparencyText2:
+      '所有处理都<strong>离线</strong>进行。<strong>不传输、存储或评估用户数据</strong>。',
     transparencyText3: '这种透明度表达了对责任、数据保护和第三方权利的自觉态度。',
     transparencyList: {
       noClassification: '无状态分类',
       noCauseAnalysis: '无故障原因分析',
       noRepairRecommendations: '无维修建议',
     },
-
-    // Public Instance
     publicInstance: '公共实例：',
     publicInstanceUrl: 'https://zanobo.vercel.app',
-
-    // Version Info
     version: '版本：',
     versionNumber: '2.0.0 (2026)',
     developedBy: '开发者：',
@@ -1092,14 +1236,142 @@ export const zh: TranslationDict = {
     licenseType: 'MIT',
     stack: '技术栈：',
     stackTech: 'TypeScript、Vite、Web Audio API',
-
-    // Guiding Principle
     guidingPrincipleTitle: '指导原则',
     guidingPrincipleQuestion: '机器听起来正常吗？',
     guidingPrincipleStatement: '智能手机聆听机器声音。',
   },
+  // ============================================================================
+  // 事件时间线（Tier 2 时序引擎，T2-a2）
+  // ============================================================================
+  // 3D 频谱图“山景”（历史记录弹窗，专家模式）
+  // ============================================================================
+  spectro3d: {
+    show: '3D 视图（山景）',
+    hide: '关闭 3D 视图',
+    hint: '单指旋转 · 双指缩放',
+    axis: '频率 0–{{maxKhz}} kHz · 时长 {{seconds}} 秒 · 高度 = 强度',
+    sourceMeasurement: '测量',
+    sourceReference: '参考',
+  },
 
-  // Sprint 4 UX: Fleet Check Mode (English fallbacks)
+  // ============================================================================
+  // 将结果分享为图片
+  // ============================================================================
+  share: {
+    resultButton: '分享为图片',
+    resultFooter: 'Zanobot 声音检测',
+    resultFailed: '无法生成图片。',
+  },
+
+  // ============================================================================
+  temporalEvents: {
+    title: '事件时间线',
+    legendKnown: '已知',
+    legendAnomalous: '异常',
+    noEvents: '尚未检测到事件',
+    rateLine: '事件/分钟：{{observed}} · 参考：{{expected}}',
+    densityMissing: '缺少预期节拍：事件明显少于参考记录。',
+    densityExcess: '事件明显多于参考记录（外部噪声？）。',
+    cycleLine: '周期：{{period}} 秒 · 形状偏差：{{status}}',
+    cycleOk: '正常',
+    cycleDeviant: '偏高',
+    cyclePending: '观察中……',
+    recommendTitle: '检测到非平稳机器',
+    recommendBody: '这台机器听起来是非平稳的（音量变化、节拍或周期）。时序模式引擎（Tier 2）正是为此而设计。',
+    recommendAction: '启用时序引擎',
+    recommendSwitched: '时序引擎已启用——适用于新录制的参考。',
+  },
+
+  drift: {
+    settingsTitle: '🔍 变化分析',
+    settingsDescription: '分析评分变化是由环境（房间）还是机器引起。在检查过程中显示单独的评估。',
+    enabled: '启用变化分析',
+    howItWorks:
+      '系统将频谱变化分为两部分：平滑的宽带漂移（= 房间/环境）和局部的窄带变化（= 机器）。这有助于判断评分下降来自房间还是机器。',
+    smoothWindow: '平滑窗口',
+    smoothHint: '越大 = 房间与机器分离得越清楚。越小 = 对房间特性越敏感。',
+    lowFreqCutoff: '低频保护',
+    lowFreqHint:
+      '低于此值的频段在机器分析中被忽略。可防止低频房间模态被误判为机器变化。0 = 无保护。',
+    globalThreshold: '环境灵敏度',
+    globalThresholdHint: '低 = 房间变化时更早预警。高 = 更宽容。',
+    localThreshold: '机器灵敏度',
+    localThresholdHint: '低 = 检测机器的细微变化。高 = 更宽容。',
+    title: '变化分析',
+    environment: '环境',
+    machine: '机器',
+    globalOk: '环境一致',
+    globalWarning: '环境略有变化',
+    globalCritical: '环境变化很大',
+    localOk: '无结构性变化',
+    localWarning: '检测到轻微变化',
+    localCritical: '检测到明显变化',
+    allOk: '✅ 环境与机器均与参考一致',
+    roomChange: '🟡 检测到环境变化——机器未变',
+    machineChange: '🔴 检测到机器变化——请检查机器',
+    both: '🟠 环境与机器均发生变化——请谨慎解读结果',
+    uncertain: '🟡 情况不明确——请靠近机器测量或创建新参考',
+    recommendRoom:
+      '评分下降很可能由环境或麦克风位置引起。请靠近机器测量、使用与参考相同的位置，或在此环境中创建新参考。',
+    recommendMachine: '检测到机器的结构性变化。请检查维护情况。',
+    recommendBoth: '环境和机器都发生了变化。为获得可靠结果：请在当前环境中创建新参考。',
+    recommendUncertain:
+      '为获得更清晰的结果：请靠近机器测量、使用与参考相同的位置，或在当前环境中创建参考。',
+    roomChangeButScoreOk: '💡 检测到环境变化，但评分稳定——这是好迹象。',
+    roomChangeMayCauseScoreDrop:
+      '💡 评分下降可能源于环境或麦克风位置，而非机器。请使用与参考相同的位置，或在此处创建新参考。',
+    machineChangeDetected: '⚠️ 检测到机器的结构性变化。请检查。',
+    referenceHint:
+      '💡 变化分析已启用：本次录音同时定义参考环境和麦克风位置。后续检查将显示环境或机器是否发生变化。',
+    referenceStored: '✅ 已存储环境配置。后续检查将自动分析变化来自环境还是机器。',
+    initializing: '正在进行环境分析…',
+    summaryOk: '环境稳定',
+    summaryRoomChange: '环境已变化——评分可能偏移',
+    summaryMachineChange: '机器声音已发生变化',
+    summaryBoth: '环境与机器均已变化',
+    summaryUncertain: '环境分析尚无定论',
+  },
+  help: {
+    reference: {
+      title: '什么是正常状态？',
+      body: '<p>正常状态是机器在健康运行时的 10 秒录音。</p><p>所有后续检查都与此状态进行比较。录音越好，对变化的检测就越准确。</p><p><strong>提示：</strong>在正常运行时录制正常状态，并缓慢地围绕机器移动手机，以便过滤掉环境影响。</p>',
+    },
+    diagnose: {
+      title: '"检查状态"时会发生什么？',
+      body: '<p>应用会录制当前的机器声音，并将其与已存储的参考进行数学比较。</p><p>结果是相似度评分（0–100%）。100% 表示机器的声音与参考录音时完全一致。</p><p>多次测量的下降趋势比单个数值更有意义。</p>',
+    },
+    machines: {
+      title: '为什么要创建机器？',
+      body: '<p>每台机器都有自己的声学特征。通过为机器设置唯一名称，可以为其关联参考和检查历史。</p><p>这样你就能看到随时间的趋势并及早发现变化。</p>',
+    },
+    viewLevel: {
+      title: '视图模式',
+      body: '<p><strong>基础：</strong>简单的红绿灯显示。适合操作员日常使用。</p><p><strong>高级：</strong>提供频谱图、环境监测等更多细节。适合维护人员。</p><p><strong>专家：</strong>完整的技术视图，含 DSP 参数和调试信息。适合工程师。</p>',
+    },
+    spectrogram: {
+      title: '频谱图显示什么？',
+      body: '<p>频谱图实时显示机器声音的频率分布。</p><p>横轴表示时间，纵轴表示频率。明亮区域表示该频率上能量较高。</p><p>模式的变化可能预示机械问题（例如轴承损坏会产生新的频带）。</p>',
+    },
+    drift: {
+      title: '什么是漂移检测？',
+      body: '<p>漂移检测监控自参考录音以来环境或机器是否发生变化。</p><p><strong>环境漂移：</strong>位置、温度、声学——可能在机器无故障的情况下影响评分。</p><p><strong>机器漂移：</strong>机器声音的实际变化。</p><p>这种区分有助于避免误报。</p>',
+    },
+    fleet: {
+      title: '什么是机群检查？',
+      body: '<p><strong>机群检查</strong>将多台同型号机器相互比较——例如 24 台同型号的泵。</p><p>它不显示单台机器的趋势（那是"概览"），而是显示<strong>排名</strong>：哪台机器偏离？</p><p><strong>何时使用？</strong>当现场有许多相似机器、需要快速找出异常者时。</p><p><strong>提示：</strong>将机器分配到一个机群组（如"西区供暖"），以便一起比较。</p>',
+    },
+    fleetRanking: {
+      title: '理解排名',
+      body: '<p>每个<strong>条形</strong>显示相似度评分（0–100%）。机器按评分排序：最低分在最上方。</p><p><strong>橙色</strong>机器在统计上偏离其余机器。</p><p><strong>中位数：</strong>居中的评分——比平均值更稳健。</p><p><strong>离散度：</strong>最高分与最低分之差。</p><p><strong>提示：</strong>点击某台机器即可开始对它的检查。</p>',
+    },
+    fleetQuickCheck: {
+      title: 'Fleet Quick Check',
+      body: "<p><strong>What is this?</strong> Check multiple identical machines in one go. The app compares their sounds and instantly shows you which machine sounds different – the “odd one out”.</p><p><strong>When should I use this?</strong> When you're standing in front of several identical machines (e.g. 5 pumps in a row) and want to quickly find out if one stands out.</p><p><strong>How does it work?</strong></p><p>• <strong>Fleet exists:</strong> Select a saved fleet – the app guides you through machine by machine.</p><p>• <strong>No fleet:</strong> No problem! The app creates machines automatically, you just record. You can save the result as a fleet afterwards.</p><p><strong>Difference from single check:</strong> “Check now” compares one machine against its own reference (trend over time). The fleet quick check compares multiple machines against each other (find the outlier).</p>",
+    },
+  },
+  smartStartReady: {
+    signalDetected: '✅ 已检测到信号——正在开始分析',
+  },
   fleet: {
     toggle: {
       series: 'Overview',
@@ -1110,7 +1382,7 @@ export const zh: TranslationDict = {
       hint: 'e.g. "Heating West" – machines in the same group are compared',
       recent24h: 'Last 24 hours',
       noMachines: 'No machines for fleet check',
-      noMachinesHint: 'Run diagnoses or assign machines to a fleet group.',
+      noMachinesHint: 'Run checks or assign machines to a fleet group.',
     },
     ranking: {
       noData: '未检查',
@@ -1122,12 +1394,14 @@ export const zh: TranslationDict = {
       spread: 'Spread',
     },
     quickSave: {
-      hint: 'Quick Fleet – won\'t show tomorrow.',
+      hint: "Quick Fleet – won't show tomorrow.",
       button: 'Save as fleet…',
       prompt: 'Enter fleet name (e.g. "Heating West"):',
       success: '{{count}} machines saved as "{{name}}".',
     },
-    cta: { newFleet: 'New Fleet' },
+    cta: {
+      newFleet: 'New Fleet',
+    },
     create: {
       title: 'Create new fleet',
       nameLabel: 'Fleet name',
@@ -1149,27 +1423,30 @@ export const zh: TranslationDict = {
       resumed: 'Fleet check resumed.',
       guided: {
         goTo: 'Go to:',
-        startRecording: '\u25B6 Start recording',
+        startRecording: '▶ Start recording',
         skip: 'Skip',
         machineOf: '{{current}} of {{total}}',
         waitingForUser: 'Ready? Hold your smartphone near the machine.',
       },
     },
-    // Onboarding Splash (after NFC fleet provisioning)
     onboarding: {
       title: 'Fleet Check – {{count}} machines',
       titleSingular: 'Fleet Check – 1 machine',
       concept: 'Does one machine sound different from the others? This app finds out.',
-      method: 'You briefly record each machine – the app compares the sounds and shows you the \u201Codd one out\u201D.',
+      method:
+        'You briefly record each machine – the app compares the sounds and shows you the “odd one out”.',
       howTo: 'How it works:',
       step1: 'Go to the displayed machine',
       step2: 'Hold your smartphone close to the machine',
-      step3: 'Tap \u201CStart recording\u201D',
+      step3: 'Tap “Start recording”',
       step4: 'Hold still for 10 sec. – done',
       startButton: 'First machine',
       noMachines: 'No machines in the fleet.',
     },
-    goldStandard: { badge: '金标准（车队参考）', deleted: '金标准「{{name}}」已删除 – {{count}} 台机器现在使用自己的参考。' },
+    goldStandard: {
+      badge: '金标准（车队参考）',
+      deleted: '金标准「{{name}}」已删除 – {{count}} 台机器现在使用自己的参考。',
+    },
     export: {
       button: 'Export fleet',
       success: 'Fleet "{{name}}" exported. Upload file to GitHub Pages for NFC/QR.',
@@ -1182,10 +1459,10 @@ export const zh: TranslationDict = {
       error: 'Could not load fleet.',
       offline: 'No internet connection. Please connect to the network and scan the tag again.',
       rollbackComplete: 'Import failed – changes rolled back.',
-      updateRecommended: 'Fleet file was exported from a newer app version. App update recommended.',
+      updateRecommended:
+        'Fleet file was exported from a newer app version. App update recommended.',
       skippedDifferentFleet: '"{{name}}" belongs to fleet "{{fleet}}" – not reassigned.',
     },
-    // Fleet Result Modal (English fallback)
     result: {
       title: 'Fleet Result',
       complete: 'Fleet check complete',
@@ -1199,9 +1476,10 @@ export const zh: TranslationDict = {
       notChecked: 'Not checked',
       save: 'Save results',
       discard: 'Discard',
-      discardConfirm: 'Delete diagnoses from this run? Machines and references will be kept.',
-      discardDone: '{{count}} diagnoses discarded',
+      discardConfirm: 'Delete checks from this run? Machines and references will be kept.',
+      discardDone: '{{count}} checks discarded',
       viewHistory: 'View history',
+      closeAndContinue: '继续',
     },
     history: {
       title: 'Fleet Check History',
@@ -1214,8 +1492,6 @@ export const zh: TranslationDict = {
       close: 'Close',
     },
   },
-
-  // Sprint 7: Quick Compare (English fallback)
   quickCompare: {
     startButton: 'Quick Compare',
     hint: 'Compare machines – no setup needed',
@@ -1223,19 +1499,20 @@ export const zh: TranslationDict = {
       title: 'Quick Compare',
       howMany: 'How many machines do you want to compare?',
       customCount: 'Custom count',
-      explanation: 'Go to each machine in order and record it. The first recording is automatically used as the comparison baseline.',
+      explanation:
+        'Go to each machine in order and record it. The first recording is automatically used as the comparison baseline.',
       next: 'Next',
       minMachines: 'At least 2 machines',
       maxMachines: 'Maximum 30 machines',
     },
     reference: {
-      title: 'Record reference',
-      instruction: 'Record the first machine',
-      hint: 'Automatically used as the comparison baseline.',
-      startRecording: 'Record reference',
-      saved: 'Reference saved',
+      title: '录制正常状态',
+      instruction: '录制第一台机器',
+      hint: '自动用作比较基准。',
+      startRecording: '录制正常状态',
+      saved: '正常状态已保存',
       goldName: 'Reference (Gold)',
-      recordingHint: 'Record the reference machine now.',
+      recordingHint: '现在录制正常状态。',
     },
     compare: {
       goTo: 'Go to:',
@@ -1263,38 +1540,148 @@ export const zh: TranslationDict = {
       cleanupDone: '{{count}} machines deleted',
     },
     nfcOnboarding: {
-      title: 'Quick Compare \u2013 {{count}} machines',
-      titleSingular: 'Quick Compare \u2013 1 machine',
+      title: 'Quick Compare – {{count}} machines',
+      titleSingular: 'Quick Compare – 1 machine',
       concept: 'Does one machine sound different from the others? This app finds out.',
-      method: 'Go to each machine in order and briefly record it. The app compares all sounds and shows you which one sounds different.',
-      startButton: 'Let\u2019s go',
+      method:
+        'Go to each machine in order and briefly record it. The app compares all sounds and shows you which one sounds different.',
+      startButton: 'Let’s go',
       minMachines: 'At least 2 machines required for quick compare.',
-      timeEstimate: '\u65F6\u957F\uFF1A\u7EA6 {{minutes}} \u5206\u949F\uFF0C\u5171 {{count}} \u53F0\u673A\u5668\u3002',
-      privacyHint: '\u9EA6\u514B\u98CE\u548C\u6444\u50CF\u5934\u4EC5\u7528\u4E8E\u5206\u6790\u3002\u6240\u6709\u6570\u636E\u4FDD\u7559\u5728\u60A8\u7684\u8BBE\u5907\u4E0A\u3002',
+      timeEstimate: '时长：约 {{minutes}} 分钟，共 {{count}} 台机器。',
+      privacyHint: '麦克风和摄像头仅用于分析。所有数据保留在您的设备上。',
     },
     guidedPrompt: {
-      referenceHint: '\u6B64\u5F55\u97F3\u5C06\u4F5C\u4E3A\u6BD4\u8F83\u57FA\u51C6\u3002',
-      positionInstruction: '\u5C06\u624B\u673A\u4FDD\u6301\u5728\u8DDD\u673A\u5668\u7EA6 10\u201320 \u5398\u7C73\u5904\u3002\u8BF7\u4FDD\u6301\u5B89\u9759\u3002',
-      positionMemory: '\u63D0\u793A\uFF1A\u8BB0\u4F4F\u4F4D\u7F6E \u2013 \u6240\u6709\u673A\u5668\u4FDD\u6301\u76F8\u540C\u4F4D\u7F6E\u3002',
-      noiseHint: '\u5F55\u97F3\u671F\u95F4\u8BF7\u4FDD\u6301\u5B89\u9759\uFF0C\u907F\u514D\u79FB\u52A8\u3002',
+      referenceHint: '此录音将作为比较基准。',
+      positionInstruction: '将手机保持在距机器约 10–20 厘米处。请保持安静。',
+      positionMemory: '提示：记住位置 – 所有机器保持相同位置。',
+      noiseHint: '录音期间请保持安静，避免移动。',
     },
     inspectionReference: {
-      mainQuestion: '\u6B63\u5728\u5F55\u5236\u53C2\u8003...',
-      subtitle: '\u6B64\u5F55\u97F3\u5C06\u4FDD\u5B58\u4E3A\u6BD4\u8F83\u57FA\u51C6\u3002',
-      scorePlaceholder: '\u53C2\u8003 \u2013 \u65E0\u6BD4\u8F83',
-      comparingWith: '\u6B63\u5728\u4E0E {{name}} \u6BD4\u8F83...',
+      mainQuestion: '正在录制正常状态...',
+      subtitle: '此录音将保存为比较基准。',
+      scorePlaceholder: '正常状态 – 无比较',
+      comparingWith: '正在与 {{name}} 比较...',
     },
     ghostOverlay: {
-      hint: '\u4F4D\u7F6E\u5F15\u5BFC\uFF1A\u5C06\u5B9E\u65F6\u56FE\u50CF\u4E0E\u534A\u900F\u660E\u8F6E\u5ED3\u5BF9\u9F50\u3002',
+      hint: '位置引导：将实时图像与半透明轮廓对齐。',
     },
     scoreExplanation: {
-      hint: '{{score}}% = \u4E0E\u53C2\u8003\u7684\u76F8\u4F3C\u5EA6\u3002\u7EFF\u8272 = \u6B63\u5E38\uFF0C\u6A59\u8272 = \u68C0\u67E5\uFF0C\u7EA2\u8272 = \u5F02\u5E38\u3002',
+      hint: '{{score}}% = 与参考的相似度。绿色 = 正常，橙色 = 检查，红色 = 异常。',
     },
     resultContext: {
-      allGood: '\u6240\u6709\u673A\u5668\u58F0\u97F3\u76F8\u4F3C \u2013 \u672A\u68C0\u6D4B\u5230\u5F02\u5E38\u3002',
-      outlierWarning: '\u6CE8\u610F\uFF1A{{name}} \u663E\u793A\u663E\u8457\u504F\u5DEE\u3002\u5EFA\u8BAE\uFF1A\u8FDB\u4E00\u6B65\u68C0\u67E5\u3002',
-      outlierWarningMultiple: '\u6CE8\u610F\uFF1A{{count}} \u53F0\u673A\u5668\u663E\u793A\u663E\u8457\u504F\u5DEE\u3002\u5EFA\u8BAE\uFF1A\u8FDB\u4E00\u6B65\u68C0\u67E5\u3002',
-      fleetSaveHint: '\u4FDD\u5B58\u7684\u8F66\u961F\u53EF\u4EE5\u5B9A\u671F\u68C0\u67E5\u5E76\u63D0\u4F9B\u4F4D\u7F6E\u5F15\u5BFC\u3002',
+      allGood: '所有机器声音相似 – 未检测到异常。',
+      outlierWarning: '注意：{{name}} 显示显著偏差。建议：进一步检查。',
+      outlierWarningMultiple: '注意：{{count}} 台机器显示显著偏差。建议：进一步检查。',
+      fleetSaveHint: '保存的车队可以定期检查并提供位置引导。',
     },
+  },
+  dashboard: {
+    totalMachines: '台机器',
+    healthy: '正常',
+    warning: '偏差',
+    critical: '异常',
+    unchecked: '未检查',
+    checkNow: '立即检查',
+    attentionPrefix: '建议检查',
+    lastCheck: '上次检查',
+  },
+  resultAmpel: {
+    explanationHealthy: '机器声音正常。',
+    explanationWarning: '机器声音与正常状态不同。',
+    explanationCritical: '机器与正常状态偏差显著。',
+    trendStable: '在 {{count}} 次检查中保持稳定',
+    trendImproving: '{{delta}}% 在 {{count}} 次检查中',
+    trendDeclining: '{{delta}}% 在 {{count}} 次检查中',
+  },
+  resultActions: {
+    details: '详情',
+    newCheck: '新检查',
+    reportMaintenance: '报告维护',
+    copiedToClipboard: '维护报告已复制到剪贴板',
+    maintenanceReportTitle: '维护报告',
+    machine: '机器',
+    score: '分数',
+    status: '状态',
+    date: '日期',
+    recommendation: '建议',
+  },
+  history: {
+    openHistory: 'View history for {{name}}',
+    viewHistory: 'History',
+    diagnosisCount: '{{count}} checks',
+    noDiagnoses: '{{name}} has no checks yet.',
+    noMatchingDiagnoses: 'No checks match this filter.',
+    filterAll: 'All',
+    filter7d: '7 days',
+    filter30d: '30 days',
+    filterAbnormal: 'Abnormal',
+    chartAriaLabel: 'History chart with {{count}} data points',
+    stableVsPrevious: 'stable vs previous',
+    vsPrevious: 'vs previous',
+    detectedState: 'Detected state',
+  },
+  report: {
+    exportButton: '导出报告',
+    formatChoiceTitle: '报告格式',
+    formatPDF: 'PDF（可打印）',
+    formatCSV: 'CSV（Excel）',
+    formatJSON: 'JSON（工单系统）',
+    title: 'Zanobo 检查报告',
+    fleetTitle: '车队检查报告',
+    allMachinesTitle: '机器概览',
+    totalLabel: '总计',
+    healthyLabel: '正常',
+    warningLabel: '偏差',
+    criticalLabel: '异常',
+    medianLabel: '中位数',
+    colMachine: '机器',
+    colScore: '分数',
+    colStatus: '状态',
+    colTrend: '趋势',
+    colRecommendation: '建议',
+    colDate: '日期',
+    footer: '由 Zanobo 生成 · 声学机器检查',
+    exported: '报告已导出',
+  },
+  maintenance: {
+    exportTitle: '报告维护',
+    copyToClipboard: '复制到剪贴板',
+    exportJSON: '下载 JSON 报告',
+    exportCSV: '下载 CSV 报告',
+    reportButton: '报告维护',
+    reportTitle: '维护报告',
+  },
+  trendAnalysis: {
+    criticalDecline: '分数在 {{count}} 次检查中急剧下降（{{from}}% → {{to}}%）。建议立即检查。',
+    declining: '分数在 {{count}} 次检查中下降（{{from}}% → {{to}}%）。密切监控。',
+    improving: '分数在 {{count}} 次检查中上升（{{from}}% → {{to}}%）。',
+  },
+  unifiedFlow: {
+    newMachineTitle: 'New Machine',
+    missingRefTitle: 'Normal State Missing',
+    noMachinesExplanation:
+      'No known machine detected. Create a new machine – the normal state will be recorded right away.',
+    missingRefExplanation:
+      "The following machines don't have a normal state yet. Select one to record it now.",
+    machineNameLabel: 'Machine name',
+    machineNamePlaceholder: 'e.g. Pump 3 – West Hall',
+    createAndRecord: 'Create & Record Normal State',
+    recordNormalState: 'Record normal state →',
+    recordingStarted: 'Recording normal state for {{name}}...',
+    referenceSavedSuccess: 'Normal state saved for {{name}}.',
+    referenceSavedHint: 'Next time you check, {{name}} will be recognized automatically.',
+  },
+  fleetSelect: {
+    title: 'Select Fleet',
+    machineCount: '{{count}} machines',
+    machineCountSingular: '1 machine',
+    lastChecked: 'checked {{time}}',
+    neverChecked: 'never checked',
+    newQuickCompare: 'New Quick Compare',
+    newQuickCompareHint: 'Compare machines without setup',
+    singleMachineHint: 'Fleet "{{name}}" has only 1 machine. At least 2 required for comparison.',
+  },
+  alerts: {
+    genericError: '发生错误，请重试。',
   },
 };

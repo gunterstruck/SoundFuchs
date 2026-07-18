@@ -1,4 +1,5 @@
 import { t } from '../../i18n/index.js';
+import { escapeHtml } from '@utils/sanitize.js';
 
 /**
  * Sprint 2 UX: Reusable InfoBottomSheet for contextual help
@@ -64,11 +65,13 @@ export class InfoBottomSheet {
     this.sheet.setAttribute('aria-modal', 'true');
     this.sheet.setAttribute('aria-label', options.title);
 
+    // title/icon are escaped: callers may pass user-controlled data (e.g.
+    // machine names) here. content is documented as trusted HTML.
     this.sheet.innerHTML = `
       <div class="bottomsheet-handle"></div>
       <div class="bottomsheet-header">
-        ${options.icon ? `<span class="bottomsheet-icon">${options.icon}</span>` : ''}
-        <h3 class="bottomsheet-title">${options.title}</h3>
+        ${options.icon ? `<span class="bottomsheet-icon">${escapeHtml(options.icon)}</span>` : ''}
+        <h3 class="bottomsheet-title">${escapeHtml(options.title)}</h3>
         <button class="bottomsheet-close" aria-label="${t('buttons.close')}">✕</button>
       </div>
       <div class="bottomsheet-body">${options.content}</div>

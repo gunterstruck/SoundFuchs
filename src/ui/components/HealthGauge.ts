@@ -15,6 +15,7 @@ export class HealthGauge {
   private score: number = 0;
   private customStatus: string | undefined = undefined;
   private animationFrame: number | null = null;
+  private themeObserver: MutationObserver | null = null;
 
   // Theme-aware colors (read from CSS variables)
   private colors = {
@@ -66,7 +67,7 @@ export class HealthGauge {
    * Observe theme changes and update colors accordingly
    */
   private observeThemeChanges(): void {
-    const observer = new MutationObserver((mutations) => {
+    this.themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.attributeName === 'data-theme') {
           this.updateThemeColors();
@@ -75,7 +76,7 @@ export class HealthGauge {
       });
     });
 
-    observer.observe(document.documentElement, {
+    this.themeObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme']
     });
@@ -290,6 +291,13 @@ export class HealthGauge {
   public destroy(): void {
     if (this.animationFrame) {
       cancelAnimationFrame(this.animationFrame);
+      this.animationFrame = null;
+    }
+
+    // Stop observing theme changes (otherwise the observer pins this instance forever)
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+      this.themeObserver = null;
     }
   }
 }

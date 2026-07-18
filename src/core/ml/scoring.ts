@@ -22,6 +22,7 @@ import type {
 } from '@data/types.js';
 import { AUTO_DETECTION_THRESHOLDS } from '@data/types.js';
 import { inferGMIA } from './gmia.js';
+import { classifyWithEngines } from './engine/registry.js';
 import { vectorMagnitude } from './mathUtils.js';
 import { logger } from '@utils/logger.js';
 import { t } from '../../i18n/index.js';
@@ -35,14 +36,6 @@ const HEALTH_THRESHOLDS = {
   uncertain: 50, // 50-75% = Uncertain
   // < 50% = Faulty
 };
-
-/**
- * Minimum score for confident state detection
- * Below this threshold, detected state labels are hidden to avoid confusion
- *
- * @deprecated Use getMinConfidentMatchScore() instead to respect user settings
- */
-export const MIN_CONFIDENT_MATCH_SCORE = 70;
 
 /**
  * Get the minimum score for confident state detection from user settings
@@ -156,10 +149,7 @@ export function getClassificationDetails(
       (score - faultyThreshold) * CONFIDENCE_PARAMS.uncertainMultiplier;
     recommendation = t('scoring.moderateDeviation');
   } else {
-    confidence = Math.max(
-      20,
-      faultyThreshold - (faultyThreshold - score) * 0.6
-    );
+    confidence = Math.max(20, faultyThreshold - (faultyThreshold - score) * 0.6);
     recommendation = t('scoring.significantDeviation');
   }
 
@@ -588,17 +578,15 @@ export function classifyDiagnosticState(
   let bestLabel = 'UNKNOWN';
   let bestModel: GMIAModel | null = null;
   let bestCosine = 0;
-  let bestDebug:
-    | {
-        weightMagnitude: number;
-        featureMagnitude: number;
-        magnitudeFactor: number;
-        cosine: number;
-        adjustedCosine: number;
-        scalingConstant: number;
-        rawScore: number;
-      }
-    | null = null;
+  let bestDebug: {
+    weightMagnitude: number;
+    featureMagnitude: number;
+    magnitudeFactor: number;
+    cosine: number;
+    adjustedCosine: number;
+    scalingConstant: number;
+    rawScore: number;
+  } | null = null;
 
   // Loop through all models to find best match
   for (const model of models) {
@@ -607,10 +595,8 @@ export function classifyDiagnosticState(
     const cosineSimilarities = inferGMIA(model, [featureVector], testSampleRate);
     const cosine = cosineSimilarities[0];
 
-    // Step 2: Calculate magnitude adjustment + health score
-    const magnitudeFactor = calculateMagnitudeFactor(model.weightVector, featureVector.features);
-    const adjustedCosine = cosine * magnitudeFactor;
-    const rawScore = calculateHealthScore(adjustedCosine, model.scalingConstant);
+    // Step 2: Calculate health score (GMIA uses pure cosine similarity)
+    const rawScore = calculateHealthScore(cosine, model.scalingConstant);
     let score = rawScore;
 
     // Step 2.5: SCORE CALIBRATION - Normalize using baseline score
@@ -649,8 +635,6 @@ export function classifyDiagnosticState(
     // DEBUG LOGGING: Show comparison for each model
     logger.debug(`📊 Model "${model.label}" evaluation:`, {
       cosine: cosine.toFixed(4),
-      magnitudeFactor: magnitudeFactor.toFixed(4),
-      adjustedCosine: adjustedCosine.toFixed(4),
       rawScore: rawScore.toFixed(1),
       baselineScore: model.baselineScore?.toFixed(1) || 'N/A',
       calibratedScore: calibratedScore.toFixed(1),
@@ -665,9 +649,9 @@ export function classifyDiagnosticState(
       bestDebug = {
         weightMagnitude: vectorMagnitude(model.weightVector),
         featureMagnitude: vectorMagnitude(featureVector.features),
-        magnitudeFactor,
+        magnitudeFactor: 1,
         cosine,
-        adjustedCosine,
+        adjustedCosine: cosine,
         scalingConstant: model.scalingConstant,
         rawScore,
       };
@@ -709,7 +693,7 @@ export function classifyDiagnosticState(
       evaluatedModels: models.length,
       // DEBUG INFO: Add detailed calculation values for troubleshooting
       debug: bestModel
-        ? bestDebug ?? {
+        ? (bestDebug ?? {
             weightMagnitude: vectorMagnitude(bestModel.weightVector),
             featureMagnitude: vectorMagnitude(featureVector.features),
             magnitudeFactor: 1,
@@ -717,7 +701,7 @@ export function classifyDiagnosticState(
             adjustedCosine: bestCosine,
             scalingConstant: bestModel.scalingConstant,
             rawScore: bestScore,
-          }
+          })
         : undefined,
     },
     analysis: {
@@ -770,10 +754,8 @@ export function getAllModelScores(
       const cosineSimilarities = inferGMIA(model, [featureVector], testSampleRate);
       const cosine = cosineSimilarities[0];
 
-      // Calculate magnitude adjustment + health score
-      const magnitudeFactor = calculateMagnitudeFactor(model.weightVector, featureVector.features);
-      const adjustedCosine = cosine * magnitudeFactor;
-      let score = calculateHealthScore(adjustedCosine, model.scalingConstant);
+      // Calculate health score (GMIA uses pure cosine similarity)
+      let score = calculateHealthScore(cosine, model.scalingConstant);
 
       // Apply score calibration if baseline exists
       if (model.baselineScore && model.baselineScore > 0) {
@@ -799,35 +781,12 @@ export function getAllModelScores(
 }
 
 /**
- * Calculate magnitude factor for cosine similarity adjustment.
- *
- * NOTE: This function always returns 1.0 (no adjustment).
- * The original GMIA algorithm uses pure cosine similarity without magnitude scaling.
- *
- * Magnitude-based adjustments were considered but removed due to:
- * - Feature standardization produces very small weight magnitudes (~1e-6)
- * - Threshold-based rejection was too aggressive
- * - RMS amplitude check in qualityCheck.ts provides adequate signal validation
- *
- * @param _weightVector - Model weight vector (unused)
- * @param _featureVector - Test feature vector (unused)
- * @returns Always 1.0 (no magnitude adjustment)
- */
-export function calculateMagnitudeFactor(
-  _weightVector: Float64Array,
-  _featureVector: Float64Array
-): number {
-  return 1.0;
-}
-
-
-/**
  * Calculate confidence from score for multiclass diagnosis
  *
  * @param score - Health score [0, 100]
  * @returns Confidence [0, 100]
  */
-function calculateConfidenceFromScore(score: number): number {
+export function calculateConfidenceFromScore(score: number): number {
   // Higher scores = higher confidence
   // Use exponential curve to emphasize high scores
   const normalized = score / 100;
@@ -843,7 +802,7 @@ function calculateConfidenceFromScore(score: number): number {
  * @param status - Status category
  * @returns Hint text
  */
-function generateMulticlassHint(
+export function generateMulticlassHint(
   score: number,
   label: string,
   status: DiagnosisResult['status']
@@ -878,10 +837,14 @@ export function classifyAgainstMachine(
   featureVector: FeatureVector,
   testSampleRate: number
 ): MachineMatchResult {
-  // Filter models by sample rate
-  const compatibleModels = machine.referenceModels?.filter(
+  // Engine-aware auto-detection: compare against the machine's models with
+  // whatever engine produced them (GMIA or spectral-cosine one-class). Both
+  // deliver a calibrated 0–100 healthScore, so cross-machine comparison stays
+  // meaningful. (Previously GMIA-only, which made cosine-only machines invisible
+  // to auto-detection.)
+  const compatibleModels = (machine.referenceModels || []).filter(
     (model) => model.sampleRate === testSampleRate
-  ) || [];
+  );
 
   // No compatible models
   if (compatibleModels.length === 0) {
@@ -895,14 +858,17 @@ export function classifyAgainstMachine(
     };
   }
 
-  // Use existing multiclass classification
+  // Use the engine dispatcher for multiclass classification (per stored model engine)
   try {
-    const diagnosis = classifyDiagnosticState(compatibleModels, featureVector, testSampleRate);
+    const diagnosis = classifyWithEngines(compatibleModels, {
+      feature: featureVector,
+      sampleRate: testSampleRate,
+    });
 
     // Find the best matching model
-    const bestModel = compatibleModels.find(
-      (m) => m.label === diagnosis.metadata?.detectedState
-    ) || compatibleModels[0];
+    const bestModel =
+      compatibleModels.find((m) => m.label === diagnosis.metadata?.detectedState) ||
+      compatibleModels[0];
 
     return {
       machine,

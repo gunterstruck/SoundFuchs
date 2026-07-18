@@ -5,9 +5,6 @@
 import type { TranslationDict } from '../index.js';
 
 export const es: TranslationDict = {
-  // ============================================================================
-  // BUTTONS
-  // ============================================================================
   buttons: {
     stop: 'Detener',
     stopAndSave: 'Detener y guardar',
@@ -23,20 +20,13 @@ export const es: TranslationDict = {
     trainAnother: 'Entrenar otro estado',
     newMachine: 'Nueva máquina',
     stopRecording: 'Detener grabación',
-    saveReference: 'Guardar referencia',
+    saveReference: 'Guardar estado normal',
+    continue: 'Continuar',
   },
-
-  // ============================================================================
-  // BANNER
-  // ============================================================================
   banner: {
     headline: '¿El sistema suena normal?',
     subline: 'Verificar estado en segundos – directamente en el dispositivo, sin conexión',
   },
-
-  // ============================================================================
-  // STATUS
-  // ============================================================================
   status: {
     healthy: 'Normal',
     uncertain: 'Desviación',
@@ -51,13 +41,9 @@ export const es: TranslationDict = {
     significantChange: 'Significant change',
     strongDeviation: 'Strong deviation – check recommended',
   },
-
-  // ============================================================================
-  // MODAL TITLES
-  // ============================================================================
   modals: {
-    referenceRecording: 'Grabación de referencia',
-    liveDiagnosis: 'Diagnóstico en vivo - Encontrar punto óptimo',
+    referenceRecording: 'Grabar estado normal',
+    liveDiagnosis: 'Verificación en vivo - Encontrar punto óptimo',
     qrScanner: 'Escáner QR/Código de barras',
     databaseError: 'Error de base de datos',
     browserIncompatible: 'Navegador no compatible',
@@ -79,10 +65,6 @@ export const es: TranslationDict = {
     nfcDiagnosisPrompt: 'Máquina detectada. ¿Verificar estado ahora?',
     closeDialog: 'Cerrar diálogo',
   },
-
-  // ============================================================================
-  // PHASE 1: IDENTIFY (Machine Selection)
-  // ============================================================================
   identify: {
     selectMachine: 'Seleccionar máquina',
     scanQrCode: 'Escanear código QR',
@@ -95,10 +77,12 @@ export const es: TranslationDict = {
     machineNameRequired: 'Please enter a machine name.',
     machineNamePlaceholder: 'e.g. Pump 3 – West Hall',
     machineIdHint: 'Optional: Internal ID (e.g. SAP number). Not used for analysis.',
+    machineDetails: 'Detalles y gestión',
     deleteMachine: 'Delete machine',
-    confirmDeleteMachine: 'Delete machine "{{name}}"? All diagnoses will be lost.',
-    confirmDeleteMachineWithData: 'Machine "{{name}}" has {{count}} recordings. Really delete EVERYTHING?',
-    machineDeleted: '\uD83D\uDDD1\uFE0F Machine "{{name}}" deleted',
+    confirmDeleteMachine: 'Delete machine "{{name}}"? All checks will be lost.',
+    confirmDeleteMachineWithData:
+      'Machine "{{name}}" has {{count}} recordings. Really delete EVERYTHING?',
+    machineDeleted: '🗑️ Machine "{{name}}" deleted',
     quickAccess: 'Acceso rápido',
     quickAccessDescription: 'Acceso rápido a máquinas usadas recientemente',
     recentlyUsed: 'Usado recientemente',
@@ -108,16 +92,30 @@ export const es: TranslationDict = {
     noMeasurements: 'Sin mediciones todavía',
     noMachines: 'No hay máquinas disponibles',
     statesTrained: '{{count}} estados entrenados',
-
+    tiles: {
+      savedMachines: 'Máquinas guardadas',
+      scanQR: 'QR / Código',
+      newMachine: 'Nueva máquina',
+    },
     machineDetail: {
       title: 'Máquina',
       select: 'Cargar máquina',
     },
-
+    emptyGuide: {
+      title: 'Cómo funciona Zanobot',
+      step1Title: 'Crear máquina',
+      step1Desc: 'Asigna a tu máquina un nombre único.',
+      step2Title: 'Grabar estado normal',
+      step2Desc: '10 segundos de funcionamiento normal.',
+      step3Title: 'Comprobar estado',
+      step3Desc: 'Compara con el estado normal en cualquier momento.',
+      cta: 'Crear primera máquina',
+    },
     errors: {
       scannerStart: 'Error al iniciar el escáner',
       cameraAccessDenied: 'Acceso a la cámara denegado',
-      cameraAccessHint: 'Por favor permita el acceso a la cámara en la configuración de su navegador',
+      cameraAccessHint:
+        'Por favor permita el acceso a la cámara en la configuración de su navegador',
       noCameraFound: 'No se encontró cámara',
       noCameraHint: 'Por favor asegúrese de que su dispositivo tiene una cámara',
       qrProcessing: 'Error al procesar el código QR',
@@ -139,26 +137,23 @@ export const es: TranslationDict = {
       microphoneLoad: 'Error al cargar los micrófonos',
       microphoneSwitch: 'Error al cambiar el micrófono',
     },
-
     success: {
       machineLoaded: 'Máquina "{{name}}" cargada',
       machineCreated: 'Máquina creada: {{name}}',
       machineAutoCreated: 'Nueva máquina "{{name}}" creada automáticamente.',
-      microphoneOptimized: 'Micrófono configurado automáticamente a "{{label}}" para mejor diagnóstico',
+      microphoneOptimized:
+        'Micrófono configurado automáticamente a "{{label}}" para mejor verificación',
       microphoneChanged: 'Micrófono cambiado: {{label}}',
     },
-
     warnings: {
       preferredMicrophoneUnavailable:
         'El micrófono preferido ya no está disponible. Se usará el micrófono predeterminado.',
     },
-
     messages: {
       codeRecognized: 'Código reconocido: {{code}}',
       autoMachineName: 'Máquina {{id}}',
       loadingMachine: 'Cargando máquina...',
     },
-
     time: {
       justNow: 'ahora mismo',
       minutesAgo: 'hace {{minutes}} min.',
@@ -168,133 +163,181 @@ export const es: TranslationDict = {
       weekAgo: 'hace 1 semana',
       weeksAgo: 'hace {{weeks}} semanas',
     },
-
-    // Sprint 3 UX: Sparkline accessibility
     sparkline: {
-      ariaLabel: 'Trend of last {{count}} diagnoses',
+      ariaLabel: 'Trend of last {{count}} checks',
     },
   },
-
-  // ============================================================================
-  // PHASE 2: REFERENCE (Training)
-  // ============================================================================
   reference: {
-    recordReference: 'Grabar referencia',
-    tenSecondRecording: 'Grabación de referencia de {{duration}} segundos',
-    noReferenceModel: 'No hay modelo de referencia disponible',
+    recordReference: 'Grabar estado normal',
+    tenSecondRecording: 'Grabación del estado normal de {{duration}} segundos',
+    noReferenceModel: 'No hay estado normal disponible',
     trainedStates: 'Estados entrenados',
-    noModelsYet: 'Aún no hay modelos de referencia disponibles',
+    noModelsYet: 'Aún no hay estados normales disponibles',
     existingModels: 'MODELOS EXISTENTES:',
     statesTrainedCount: '{{count}} estado(s) ya entrenado(s)',
     recordingStatusHighQuality: 'Alta calidad de audio detectada',
-    explainBefore: 'The reference defines your machine\u2019s normal state. All future comparisons are based on it.',
-    explainDuring: 'Slowly move the smartphone around the machine. This helps filter out environmental influences.',
-    savedSuccess: '\u2705 Reference saved – Environment profile detected',
-    savedTitle: 'Reference created',
-    cherryPickingHint: '\uD83D\uDEE1\uFE0F Background noise is automatically detected and discarded.',
-    noModels: 'No references yet.',
-    unnamed: 'Reference #{{index}}',
-    deleteModel: 'Delete reference',
-    confirmDeleteModel: 'Delete reference "{{name}}"? This cannot be undone.',
-    modelDeleted: '\uD83D\uDDD1\uFE0F Reference "{{name}}" deleted',
-
-    // State-based card UI (mirrors diagnose card)
+    explainBefore:
+      'El estado normal define cómo suena su máquina durante el funcionamiento normal. Todas las comparaciones futuras se basan en él.',
+    explainDuring:
+      'Slowly move the smartphone around the machine. This helps filter out environmental influences.',
+    savedSuccess: '✅ Estado normal guardado – Perfil de entorno detectado',
+    savedTitle: 'Estado normal creado',
+    cherryPickingHint: '🛡️ Background noise is automatically detected and discarded.',
+    noModels: 'Aún no hay estados normales.',
+    unnamed: 'Estado normal #{{index}}',
+    deleteModel: 'Eliminar estado normal',
+    confirmDeleteModel: 'Eliminar estado normal "{{name}}"? Esta acción no se puede deshacer.',
+    modelDeleted: '🗑️ Estado normal "{{name}}" eliminado',
+    makeBaseline: 'Establecer como referencia principal',
+    baselinePromoted: '⭐ "{{name}}" es ahora la referencia principal',
     statesRecorded: '{{count}} estado grabado',
-    noReferenceYet: 'Sin referencia aún',
+    noReferenceYet: 'Sin estado normal aún',
     changeMachine: 'Cambiar máquina',
     noMachinesYet: 'No hay máquinas creadas aún.',
     noMachinesHint: 'Por favor cree una nueva máquina primero.',
-
     recording: {
       alreadyRunning: 'Ya hay una grabación en progreso.',
       cameraNotAvailable: 'Cámara no disponible. La grabación continuará sin imagen de posición.',
-      browserNotCompatible: 'Su navegador no soporta grabación de audio. Por favor use un navegador moderno.',
+      browserNotCompatible:
+        'Su navegador no soporta grabación de audio. Por favor use un navegador moderno.',
       stabilizing: 'Estabilizando...',
       waitingForSignal: 'Esperando señal',
       recording: 'Grabación en progreso',
       microphoneFailed: 'Acceso al micrófono fallido',
       processingFailed: 'No se pudo procesar la grabación',
+      failedFriendly:
+        'La grabación no funcionó esta vez. Puede ocurrir por una interrupción breve: inténtalo de nuevo.',
+      retryAction: 'Grabar de nuevo',
       noSignal: 'Por favor acérquese más a la máquina e intente de nuevo.',
       positionImage: '📷 La imagen de posición se capturará automáticamente',
       instruction: 'Sostenga el micrófono a 10-30 cm frente a la máquina.',
-      // iOS Audio Blocked (watchdog detection)
       iosAudioBlocked: 'Micrófono bloqueado',
-      iosAudioBlockedMessage: 'El micrófono no está proporcionando datos de audio.\n\nPosibles causas:\n• Otra aplicación está usando el micrófono\n• iOS está bloqueando el acceso al micrófono\n• El volumen del sistema está silenciado\n\nPor favor cierre otras aplicaciones e intente de nuevo.',
+      iosAudioBlockedMessage:
+        'El micrófono no está proporcionando datos de audio.\n\nPosibles causas:\n• Otra aplicación está usando el micrófono\n• iOS está bloqueando el acceso al micrófono\n• El volumen del sistema está silenciado\n\nPor favor cierre otras aplicaciones e intente de nuevo.',
       iosAudioBlockedRetry: 'Intentar de nuevo',
+      countdownTip: 'Mantenga el dispositivo cerca de la máquina',
     },
-
     quality: {
       signalStable: '✓ Señal estable',
       slightUnrest: '⚠ Ligera inestabilidad',
       signalUnstable: '✗ Advertencia: ¡Señal inestable!',
-      // Sprint 3 UX: Reference quality badge
       good: 'Ref: Good',
       ok: 'Ref: OK',
       unknown: 'Ref: ?',
-      ariaLabel: 'Reference quality: {{rating}}',
+      ariaLabel: 'Calidad de grabación: {{rating}}',
     },
-
+    signalQuality: {
+      label: 'Señal',
+      good: 'Buena',
+      ok: 'Suficiente',
+      weak: 'Demasiado débil',
+      hintCloser: 'Acerque el smartphone más a la máquina',
+      hintTooWeak: 'Señal demasiado débil – acérquese más a la fuente de sonido',
+    },
     errors: {
-      tooShort: 'Grabación demasiado corta: {{duration}}s de duración total es menor que la fase de calentamiento de {{warmup}}s. Duración mínima: {{minDuration}}s',
-      trainingTooShort: 'Datos de entrenamiento demasiado cortos: {{duration}}s (después de la fase de calentamiento). Mínimo requerido: {{minDuration}}s. Por favor grabe al menos {{totalDuration}}s.',
-      qualityTooLow: 'Calidad de grabación muy baja para entrenamiento. Por favor grabe de nuevo en un ambiente tranquilo con una señal clara de la máquina.\n\nProblemas:\n{{issues}}',
-      signalTooWeak: 'Señal muy débil o difusa (posiblemente solo ruido).\n\nFuerza de la señal (RMS): {{magnitude}} (Mínimo: 0.03)\nCalidad: {{quality}}%\n\nPor favor asegúrese:\n• El micrófono está lo suficientemente cerca de la máquina (10-30cm)\n• La máquina funciona con suficiente volumen\n• No está grabando solo ruido de fondo\n\nProblemas:\n{{issues}}',
-      qualityWarning: '⚠️ ADVERTENCIA: Mala calidad de grabación\n\nLa calidad de esta grabación es mala. El entrenamiento podría no ser confiable.\n\nProblemas:\n{{issues}}\n\n¿Desea guardar de todos modos?',
-      baselineTooLow: 'Grabación de referencia demasiado confusa o ruidosa.\n\nPuntuación de auto-reconocimiento: {{score}}%\nMínimo requerido: {{minScore}}%\n\nPosibles causas:\n• Señal demasiado débil o inestable\n• Demasiado ruido de fondo\n• Máquina no funcionando de manera constante\n\nPor favor repita la grabación en mejores condiciones:\n• Micrófono más cerca de la máquina (10-30cm)\n• Ambiente tranquilo\n• Máquina funcionando de manera estable durante toda la grabación',
+      tooShort:
+        'Grabación demasiado corta: {{duration}}s de duración total es menor que la fase de calentamiento de {{warmup}}s. Duración mínima: {{minDuration}}s',
+      trainingTooShort:
+        'Datos de entrenamiento demasiado cortos: {{duration}}s (después de la fase de calentamiento). Mínimo requerido: {{minDuration}}s. Por favor grabe al menos {{totalDuration}}s.',
+      qualityTooLow:
+        'Calidad de grabación muy baja para entrenamiento. Por favor grabe de nuevo en un ambiente tranquilo con una señal clara de la máquina.\n\nProblemas:\n{{issues}}',
+      signalTooWeak:
+        'Señal muy débil o difusa (posiblemente solo ruido).\n\nFuerza de la señal (RMS): {{magnitude}} (Mínimo: 0.03)\nCalidad: {{quality}}%\n\nPor favor asegúrese:\n• El micrófono está lo suficientemente cerca de la máquina (10-30cm)\n• La máquina funciona con suficiente volumen\n• No está grabando solo ruido de fondo\n\nProblemas:\n{{issues}}',
+      qualityWarning:
+        '⚠️ ADVERTENCIA: Mala calidad de grabación\n\nLa calidad de esta grabación es mala. El entrenamiento podría no ser confiable.\n\nProblemas:\n{{issues}}\n\n¿Desea guardar de todos modos?',
+      baselineTooLow:
+        'Grabación de referencia demasiado confusa o ruidosa.\n\nPuntuación de auto-reconocimiento: {{score}}%\nMínimo requerido: {{minScore}}%\n\nPosibles causas:\n• Señal demasiado débil o inestable\n• Demasiado ruido de fondo\n• Máquina no funcionando de manera constante\n\nPor favor repita la grabación en mejores condiciones:\n• Micrófono más cerca de la máquina (10-30cm)\n• Ambiente tranquilo\n• Máquina funcionando de manera estable durante toda la grabación',
       noAudioFile: 'Por favor cree primero una grabación de referencia.',
       exportFailed: 'Exportación fallida',
       saveFailed: 'Error al guardar',
       machineDataMissing: 'Faltan datos de la máquina',
     },
-
     success: {
-      modelTrained: '✅ ¡Modelo de referencia entrenado exitosamente!\n\nMáquina: {{name}}\n\n¿Desea descargar el archivo de audio de referencia?\n(Recomendado para respaldo)',
+      modelTrained:
+        '✅ ¡Modelo de referencia entrenado exitosamente!\n\nMáquina: {{name}}\n\n¿Desea descargar el archivo de audio de referencia?\n(Recomendado para respaldo)',
       canStartNew: 'Puede iniciar una nueva grabación de referencia.',
     },
-
     labels: {
       baseline: 'Referencia',
-      prompt: 'Ingrese un nombre para este estado de la máquina:\n\nEjemplos:\n• Estados de operación normales: "Ralentí", "Carga completa", "Carga parcial"\n• Fallas: "Desequilibrio simulado", "Daño en rodamiento", "Error de ventilador"',
-      confirmType: 'Estado: "{{label}}"\n\n¿Es este un estado de operación NORMAL?\n\n🟢 OK (Sí) → Estado normal (ej. "Ralentí", "Carga completa")\n🔴 Cancelar (No) → Falla conocida (ej. "Desequilibrio", "Daño en rodamiento")\n\nNota: Esta elección determina si un diagnóstico se muestra como "saludable" o "defectuoso".',
+      formerBaseline: 'Referencia anterior',
       enterName: 'Por favor ingrese un nombre',
       cancelled: 'Cancelado',
     },
+    labelModal: {
+      title: 'Nombrar este estado',
+      hint: 'Ejemplos de estados normales: "Ralentí", "Carga completa". Ejemplos de fallas: "Desequilibrio", "Daño en rodamiento".',
+      placeholder: 'Nombre de este estado',
+      healthyLabel: 'Estado normal',
+      faultyLabel: 'Falla conocida',
+    },
   },
-
-  // ============================================================================
-  // PHASE 3: DIAGNOSE (Real-time)
-  // ============================================================================
+  machineList: {
+    statusHealthy: 'Normal',
+    statusWarning: 'Desviación',
+    statusCritical: 'Anormal',
+    statusUnknown: 'Aún no verificado',
+  },
   diagnose: {
-    alreadyRunning: 'Ya hay un diagnóstico en progreso.',
-    noReferenceModel: 'No se encontró modelo de referencia. Por favor cree primero una grabación de referencia.',
-    browserNotCompatible: 'Su navegador no soporta diagnóstico en tiempo real. Por favor use Chrome, Edge o Safari.',
+    faultDetected: 'Fallo detectado: {{fault}}',
+    faultChecked: 'Fallo «{{fault}}»: {{score}} % – sin coincidencia',
+    faultGeneric: 'Fallo',
+    alreadyRunning: 'Ya hay una verificación en progreso.',
+    noReferenceModel:
+      'No se encontró modelo de referencia. Por favor cree primero una grabación de referencia.',
+    browserNotCompatible:
+      'Su navegador no soporta verificación en tiempo real. Por favor use Chrome, Edge o Safari.',
     noValidSampleRate: 'No se encontró modelo de referencia con frecuencia de muestreo válida.',
-    cameraNotAvailable: 'Cámara no disponible. El diagnóstico continuará sin guía de posición.',
-    diagnosisRunning: 'Diagnóstico en ejecución',
-    compareComplete: '\u2705 Comparison complete',
-    saveFailed: 'No se pudo guardar el diagnóstico',
+    cameraNotAvailable: 'Cámara no disponible. La verificación continuará sin guía de posición.',
+    diagnosisRunning: 'Verificación en ejecución',
+    compareComplete: '✅ Comparison complete',
+    saveFailed: 'No se pudo guardar la verificación',
     liveAnalysis: 'Realizar análisis en vivo',
-
-    sampleRateError: 'Error de configuración de audio: Su micrófono funciona a {{actual}}Hz, pero ningún modelo de referencia fue entrenado a esta frecuencia de muestreo (Modelos: {{expected}}Hz). Por favor use la misma configuración de audio que durante el entrenamiento o cree un nuevo modelo de referencia con la frecuencia de muestreo actual.',
-
+    recommendation: {
+      healthy: 'Sin anomalías detectadas',
+      warning: 'Observar – verificar en el próximo mantenimiento',
+      critical: 'Inspección in situ recomendada',
+    },
+    sampleRateError:
+      'Error de configuración de audio: Su micrófono funciona a {{actual}}Hz, pero ningún modelo de referencia fue entrenado a esta frecuencia de muestreo (Modelos: {{expected}}Hz). Por favor use la misma configuración de audio que durante el entrenamiento o cree un nuevo modelo de referencia con la frecuencia de muestreo actual.',
     display: {
       referenceModels: 'MODELO(S) DE REFERENCIA:',
       statesTrainedCount: '{{count}} estado(s) entrenado(s)',
       debugValues: '🔍 VALORES DE DEPURACIÓN:',
       signalHint: 'Acerque el teléfono a la máquina para una señal óptima',
       match: 'Coincidencia',
-      ghostHint: '👻 Mueva el teléfono hasta que la imagen en vivo y la imagen de referencia coincidan',
+      ghostHint:
+        '👻 Mueva el teléfono hasta que la imagen en vivo y la imagen de referencia coincidan',
       noCameraAvailable: 'No hay imagen de posición disponible',
       machineQuestion: '¿La máquina suena normal?',
       reference: 'Referencia',
       waitingForSignal: 'Esperando señal...',
+      spectrumReveal: '👁 Ver espectro',
+      spectrumHide: 'Ocultar espectro',
+      listenReference: '🔊 Referencia',
+      listenMeasurement: '🔊 Esta medición',
+      listenStop: '⏹ Detener',
+      listenSlow: '🐢 Lento',
+      listenNormal: '▶ Normal',
+      listenFaster: '🐇 Más agudo',
+      listenReopen: 'Escuchar',
+      irisReference: 'Referencia',
+      irisMeasurement: 'Medición',
+      deviationFrequencyLabel: '⚠ Frecuencia principal de desviación: ~{{freq}}',
+      operatingPointWarning:
+        '⚠ Punto de operación distinto al de la referencia (tono dominante ≈{{refFreq}} → {{measFreq}}). Una menor coincidencia puede deberse a una velocidad/carga diferente, no a un fallo.',
+      deviationFrequencyHint: 'Compruebe si esta frecuencia proviene de la máquina o del entorno.',
+      listenDifference: '🔍 Solo diferencia',
+      listenComputing: '… calculando …',
+      listenDifferenceTooShort: 'Grabaciones demasiado cortas para analizar la diferencia.',
+      spectrumTitle: 'Comparación de frecuencias (referencia ↔ medición)',
+      spectrumReference: 'Referencia',
+      spectrumMeasurement: 'Esta medición',
+      spectrumDifference: 'Energía adicional',
     },
-
     smartStart: {
       stabilizing: '🎙️ {{message}}\n(Ajustando micrófono, estabilizando filtros del sistema...)',
       waiting: '🔍 {{message}}',
     },
-
     debug: {
       weightMagnitude: 'weightMagnitude: {{value}}',
       featureMagnitude: 'featureMagnitude: {{value}}',
@@ -305,31 +348,27 @@ export const es: TranslationDict = {
       rawScore: 'RAW SCORE: {{value}}%',
       rawScorePlaceholder: 'RAW SCORE: --',
     },
-
     analysis: {
-      healthyMatch: 'La firma acústica coincide con el estado de referencia "{{state}}" ({{score}}%). Sin anomalías.',
-      faultyMatch: 'Anomalía detectada: La firma coincide con el patrón entrenado "{{state}}" ({{score}}%). Se recomienda inspección.',
+      healthyMatch:
+        'La firma acústica coincide con el estado de referencia "{{state}}" ({{score}}%). Sin anomalías.',
+      faultyMatch:
+        'Anomalía detectada: La firma coincide con el patrón entrenado "{{state}}" ({{score}}%). Considerar inspección.',
     },
-
-    // State-based card UI (horizontal tiles)
     scanCode: 'Escanear QR',
     selectExisting: 'Seleccionar máquina',
     createNew: 'Nueva máquina',
     statesReady: '{{count}} estado entrenado',
-    noReference: 'Sin referencia aún',
+    noReference: 'Sin estado normal aún',
     changeMachine: 'Cambiar máquina',
-    noMachinesYet: 'No hay m\u00e1quinas creadas a\u00fan.',
-    noMachinesHint: 'Cree una nueva m\u00e1quina primero.',
-
-    // Sprint 3 UX: Operating point hint
+    noMachinesYet: 'No hay máquinas creadas aún.',
+    noMachinesHint: 'Cree una nueva máquina primero.',
     opHint: {
       changed: 'ℹ️ Operating point differed during measurement – consider when interpreting score',
     },
+    orFleet: 'or',
+    fleetQuickCheck: 'Fleet Quick Check',
+    fleetQuickCheckAria: 'Fleet Quick Check: Compare multiple machines',
   },
-
-  // ============================================================================
-  // SPRINT 3 UX: TREND
-  // ============================================================================
   trend: {
     improving: 'Trend: improving',
     stable: 'Trend: stable',
@@ -337,9 +376,6 @@ export const es: TranslationDict = {
     uncertain: 'Trend: not yet reliable',
     noTrend: 'No trend yet',
   },
-
-  // ============================================================================
-  // PIPELINE STATUS DASHBOARD (Expert Mode)
   pipelineStatus: {
     title: 'Estado del pipeline',
     room: 'Sala',
@@ -354,161 +390,475 @@ export const es: TranslationDict = {
     t60Reverberant: 'reverberante',
     t60VeryReverberant: 'muy reverberante',
   },
-
-  // OPERATING POINT MONITOR (Expert Mode)
-  // ============================================================================
+  envCompare: {
+    environment: 'Entorno',
+    reference: 'Ref.',
+    ok: 'Entorno similar al de la referencia',
+    moreReverberant: 'Entorno mucho más reverberante que la referencia',
+    lesserReverberant: 'Entorno mucho menos reverberante que la referencia',
+    muchMoreReverberant: 'Entorno de prueba muy diferente — el resultado puede verse afectado',
+    muchLessReverberant: 'Entorno de prueba muy diferente — el resultado puede verse afectado',
+    recommendCloser: 'Aviso: mida más cerca de la máquina o active la compensación de sala',
+    recommendCompensation: 'Aviso: active Session Bias Match o la ecualización T60',
+    recommendNote: 'Nota: las desviaciones de puntuación pueden deberse al entorno',
+  },
   opMonitor: {
-    title: 'Estado operativo / Calidad de se\u00f1al',
-    initializingBaseline: 'Capturando punto de operaci\u00f3n de referencia \u2013 mantenga el dispositivo estable\u2026',
-    operatingPointChanged: 'Punto de operaci\u00f3n cambiado \u2013 comparaci\u00f3n de referencia limitada.',
-    scoreInvalid: '\u26A0 Punto de operaci\u00f3n desviado \u2013 puntuaci\u00f3n no comparable',
+    title: 'Estado operativo / Calidad de señal',
+    initializingBaseline:
+      'Capturando punto de operación de referencia – mantenga el dispositivo estable…',
+    operatingPointChanged: 'Punto de operación cambiado – comparación de referencia limitada.',
+    scoreInvalid: '⚠ Punto de operación desviado – puntuación no comparable',
     similarityP10: {
       shortLabel: 'Estabilidad',
-      description: 'Eval\u00faa los \u00abpeores\u00bb momentos de la grabaci\u00f3n (percentil 10).',
-      warning: '\u2139\uFE0F Se\u00f1al inestable: El promedio es bueno, pero hay ca\u00eddas breves. \u00bfHay ruidos fluctuantes o interrupciones?',
-      explain: 'Eval\u00faa los \u00abpeores\u00bb momentos de la grabaci\u00f3n. Un valor bajo indica que el sonido es inestable, aunque el promedio se vea bien.',
+      description: 'Evalúa los «peores» momentos de la grabación (percentil 10).',
+      warning:
+        'ℹ️ Señal inestable: El promedio es bueno, pero hay caídas breves. ¿Hay ruidos fluctuantes o interrupciones?',
+      explain:
+        'Evalúa los «peores» momentos de la grabación. Un valor bajo indica que el sonido es inestable, aunque el promedio se vea bien.',
     },
     energyDelta: {
-      shortLabel: 'Energ\u00eda \u0394',
+      shortLabel: 'Energía Δ',
       description: 'Diferencia de volumen respecto a la referencia en decibelios.',
-      warning: '\u26A0\uFE0F Atenci\u00f3n: La se\u00f1al es significativamente m\u00e1s fuerte/d\u00e9bil que la referencia. \u00bfLa m\u00e1quina funciona con diferente carga o se cambi\u00f3 la distancia del micr\u00f3fono? La puntuaci\u00f3n puede no ser comparable.',
-      explain: 'Muestra la diferencia de volumen respecto a la referencia. Grandes desviaciones indican cambio de carga, diferente distancia o un entorno m\u00e1s ruidoso.',
+      warning:
+        '⚠️ Atención: La señal es significativamente más fuerte/débil que la referencia. ¿La máquina funciona con diferente carga o se cambió la distancia del micrófono? La puntuación puede no ser comparable.',
+      explain:
+        'Muestra la diferencia de volumen respecto a la referencia. Grandes desviaciones indican cambio de carga, diferente distancia o un entorno más ruidoso.',
     },
     frequencyDelta: {
-      shortLabel: 'Frecuencia \u0394',
-      description: 'Desplazamiento medio de los picos espectrales dominantes respecto a la referencia. Puede indicar cambio de RPM o del punto de operaci\u00f3n.',
-      warning: '\u26A0\uFE0F Punto de operaci\u00f3n desviado: Las frecuencias dominantes han cambiado. La m\u00e1quina probablemente funciona a una velocidad diferente a la de la referencia.',
-      explain: 'Compara los picos espectrales dominantes (ej. RPM del motor y arm\u00f3nicos) con la referencia. Un desplazamiento generalmente significa que la m\u00e1quina funciona m\u00e1s r\u00e1pido o m\u00e1s lento.',
+      shortLabel: 'Frecuencia Δ',
+      description:
+        'Desplazamiento medio de los picos espectrales dominantes respecto a la referencia. Puede indicar cambio de RPM o del punto de operación.',
+      warning:
+        '⚠️ Punto de operación desviado: Las frecuencias dominantes han cambiado. La máquina probablemente funciona a una velocidad diferente a la de la referencia.',
+      explain:
+        'Compara los picos espectrales dominantes (ej. RPM del motor y armónicos) con la referencia. Un desplazamiento generalmente significa que la máquina funciona más rápido o más lento.',
     },
     stability: {
-      shortLabel: 'Estabilidad de se\u00f1al',
-      description: 'Proporci\u00f3n de segmentos de se\u00f1al estables durante la medici\u00f3n.',
-      warning: '\u26A0\uFE0F Se\u00f1al inestable: Ruidos fluctuantes o interrupciones detectadas. Repetir la medici\u00f3n en condiciones estables.',
-      explain: 'Mide la consistencia del sonido a lo largo del tiempo. Valores bajos indican condiciones operativas fluctuantes o interferencias.',
+      shortLabel: 'Estabilidad de señal',
+      description: 'Proporción de segmentos de señal estables durante la medición.',
+      warning:
+        '⚠️ Señal inestable: Ruidos fluctuantes o interrupciones detectadas. Repetir la medición en condiciones estables.',
+      explain:
+        'Mide la consistencia del sonido a lo largo del tiempo. Valores bajos indican condiciones operativas fluctuantes o interferencias.',
     },
   },
-
-  // ============================================================================
-  // PHASE 4: SETTINGS
-  // ============================================================================
   settings: {
-    databaseNotAvailable: 'Base de datos no disponible. Por favor permita IndexedDB en la configuración de su navegador o desactive el modo de privacidad estricto.',
+    databaseNotAvailable:
+      'Base de datos no disponible. Por favor permita IndexedDB en la configuración de su navegador o desactive el modo de privacidad estricto.',
     exportError: 'Error al exportar la base de datos',
     importError: 'Error al importar',
     shareError: 'Error al compartir la base de datos',
-
     import: {
-      confirmMerge: 'Importar base de datos desde: {{filename}}\n\n¿Desea FUSIONAR los datos?\n\nSÍ = Fusionar con datos existentes\nNO = REEMPLAZAR todos los datos existentes',
-      confirmReplace: '⚠️ ¡ADVERTENCIA!\n\n¡Todos los datos existentes serán ELIMINADOS y reemplazados con los datos importados!\n\n¿Desea continuar?',
-      success: 'Máquinas: {{machines}}\nGrabaciones: {{recordings}}\nDiagnósticos: {{diagnoses}}\n\nModo: {{mode}}',
+      modalTitle: 'Importar base de datos',
+      modalDescription:
+        'Las máquinas del archivo se añadirán a sus máquinas existentes. Los datos existentes se conservan.',
+      includeSettings: 'Aplicar los ajustes guardados',
+      includeSettingsHint:
+        'Aplicar el banner, el nivel de vista, los umbrales y otros ajustes de la app del archivo.',
+      confirmButton: 'Importar',
+      confirmMerge:
+        'Importar base de datos desde: {{filename}}\n\n¿Desea FUSIONAR los datos?\n\nSÍ = Fusionar con datos existentes\nNO = REEMPLAZAR todos los datos existentes',
+      confirmReplace:
+        '⚠️ ¡ADVERTENCIA!\n\n¡Todos los datos existentes serán ELIMINADOS y reemplazados con los datos importados!\n\n¿Desea continuar?',
+      success:
+        'Máquinas: {{machines}}\nGrabaciones: {{recordings}}\nVerificaciones: {{diagnoses}}\n\nModo: {{mode}}',
       modeMerged: 'Fusionado',
       modeReplaced: 'Reemplazado',
-      partialWarning: 'Máquinas: {{machinesImported}} importadas, {{machinesSkipped}} omitidas\nGrabaciones: {{recordingsImported}} importadas, {{recordingsSkipped}} omitidas\nDiagnósticos: {{diagnosesImported}} importados, {{diagnosesSkipped}} omitidos\n\n{{totalSkipped}} registro(s) no pudieron ser importados.\nModo: {{mode}}',
+      partialWarning:
+        'Máquinas: {{machinesImported}} importadas, {{machinesSkipped}} omitidas\nGrabaciones: {{recordingsImported}} importadas, {{recordingsSkipped}} omitidas\nVerificaciones: {{diagnosesImported}} importadas, {{diagnosesSkipped}} omitidas\n\n{{totalSkipped}} registro(s) no pudieron ser importados.\nModo: {{mode}}',
       setupError: 'Error al preparar la importación',
-      withSettings: 'Se aplicaron los ajustes almacenados (banner, tema, vista).',
     },
-
-    exportOptions: {
-      title: 'Exportar base de datos',
-      description: 'Elija qué incluir en la copia de seguridad.',
-      includeSettings: 'Incluir ajustes en la exportación',
-      includeSettingsDetail: 'Guardar el banner, el tema, la vista y todos los demás ajustes tal como están ahora.',
-    },
-
-    importOptions: {
-      title: 'Importar base de datos',
-      description: 'Las máquinas se añadirán a sus datos existentes.',
-      mergeNote: 'Las máquinas existentes se conservan: las importadas se añaden. Si desea empezar de cero, vacíe primero la base de datos.',
-      includeSettings: 'Aplicar los ajustes almacenados',
-      includeSettingsDetail: 'Aplicar el banner, el tema y la vista de la copia de seguridad, sobrescribiendo sus ajustes actuales.',
-    },
-
     clear: {
-      confirmFirst: '⚠️ ¡ADVERTENCIA!\n\nTodos los datos serán PERMANENTEMENTE eliminados:\n- Todas las máquinas\n- Todos los modelos de referencia\n- Todas las grabaciones\n- Todos los diagnósticos\n\n¿Desea continuar?',
+      confirmFirst:
+        '⚠️ ¡ADVERTENCIA!\n\nTodos los datos serán PERMANENTEMENTE eliminados:\n- Todas las máquinas\n- Todos los modelos de referencia\n- Todas las grabaciones\n- Todas las verificaciones\n\n¿Desea continuar?',
       confirmSecond: '¿Está ABSOLUTAMENTE SEGURO?\n\n¡Esta acción NO PUEDE deshacerse!',
       success: 'Todos los datos han sido eliminados',
       error: 'Error al eliminar los datos',
     },
-
     export: {
-      success: 'Archivo: {{filename}}\n\nMáquinas: {{machines}}\nGrabaciones: {{recordings}}\nDiagnósticos: {{diagnoses}}',
-      withSettings: 'Los ajustes actuales (banner, tema, vista) también se guardaron.',
+      modalTitle: 'Exportar base de datos',
+      modalDescription:
+        'Se exportarán sus máquinas, grabaciones y verificaciones. ¿Desea incluir también los ajustes actuales?',
+      includeSettings: 'Incluir los ajustes',
+      includeSettingsHint:
+        'Añadir al archivo el banner, el nivel de vista, los umbrales y otros ajustes de la app.',
+      confirmButton: 'Exportar',
+      success:
+        'Archivo: {{filename}}\n\nMáquinas: {{machines}}\nGrabaciones: {{recordings}}\nVerificaciones: {{diagnoses}}',
     },
-
     share: {
-      title: 'Copia de seguridad de la base de datos de Zanobo',
+      title: 'Copia de seguridad de la base de datos de Zanobot',
       text: 'Copia de seguridad de la base de datos: {{filename}}',
       success: 'Copia compartida: {{filename}}',
       fallback: 'No se puede compartir. Se descargó {{filename}} en su lugar.',
-      preparing: 'La exportación se está preparando... por favor espere un momento e intente de nuevo.',
+      preparing:
+        'La exportación se está preparando... por favor espere un momento e intente de nuevo.',
     },
   },
-
-  // ============================================================================
-  // MAIN APP / STARTUP
-  // ============================================================================
+  update: {
+    available: {
+      title: 'Nueva versión disponible',
+      message: 'Hay una nueva versión lista. Tus datos se conservan.',
+      action: 'Actualizar',
+    },
+    deferred: 'Se actualizará tras la medición en curso.',
+  },
   app: {
-    browserNotSupported: 'Su navegador no es compatible con Zanobo.\n\nCaracterísticas faltantes:\n{{features}}\n\nPor favor use un navegador moderno como Chrome, Edge, Firefox o Safari.',
+    browserNotSupported:
+      'Su navegador no es compatible con Zanobo.\n\nCaracterísticas faltantes:\n{{features}}\n\nPor favor use un navegador moderno como Chrome, Edge, Firefox o Safari.',
     uiLoadFailed: 'No se pudo cargar la interfaz de usuario',
     fatalError: 'Error fatal',
     browserNotSupportedTitle: 'Navegador no soportado',
   },
-
-  // ============================================================================
-  // CORE ML / SCORING
-  // ============================================================================
   scoring: {
     matchesReference: 'La firma acústica coincide con la referencia. Sin anomalías.',
     moderateDeviation: 'Desviación moderada del patrón de referencia. Se recomienda revisión.',
-    significantDeviation: 'Se detectó desviación significativa del patrón de referencia. Se recomienda inspección.',
-    noMatch: 'Desviación significativa del patrón de referencia ({{score}}%). La señal no coincide con ningún estado entrenado. Se recomienda inspección.',
+    significantDeviation:
+      'Se detectó desviación significativa del patrón de referencia. Considerar inspección.',
+    noMatch:
+      'Desviación significativa del patrón de referencia ({{score}}%). La señal no coincide con ningún estado entrenado. Considerar inspección.',
     hints: {
       matchesReference: 'La firma acústica coincide con la referencia.',
       minorDeviations: 'Desviaciones menores dentro del rango aceptable.',
       moderateDeviation: 'Se detectó desviación moderada del patrón de referencia.',
-      recommendInspection: 'Se recomienda inspección.',
+      recommendInspection: 'Considerar inspección.',
       significantAnomaly: 'Se detectó anomalía significativa.',
-      immediateInspection: 'Se recomienda inspección inmediata.',
+      immediateInspection: 'Considerar inspección inmediata.',
     },
     multiclass: {
       noMatch: 'Sin coincidencia con estados entrenados ({{score}}%). Señal no clara.',
-      healthy: 'Estado base "{{label}}" detectado ({{score}}% coincidencia). Máquina operando normalmente.',
-      faulty: 'Estado "{{label}}" detectado ({{score}}% coincidencia). Desviación del estado normal.',
+      healthy:
+        'Estado base "{{label}}" detectado ({{score}}% coincidencia). Máquina operando normalmente.',
+      faulty:
+        'Estado "{{label}}" detectado ({{score}}% coincidencia). Desviación del estado normal.',
     },
   },
-
-  // ============================================================================
-  // HARDWARE CHECK
-  // ============================================================================
   hardware: {
-    suitable: 'Hardware adecuado para diagnóstico de máquinas',
+    suitable: 'Hardware adecuado para verificación de máquinas',
     voiceOptimized: 'El hardware optimizado para voz filtra los sonidos de la máquina.',
     useStudioMic: 'Use un micrófono de estudio o el micrófono integrado del dispositivo',
     headsetsOptimized: 'Los auriculares están optimizados para frecuencias de voz',
     mayFilter: 'Los sonidos de la máquina podrían ser filtrados o suprimidos',
-    lowSampleRate: 'Las frecuencias de muestreo bajas no pueden capturar señales de máquina de alta frecuencia',
+    lowSampleRate:
+      'Las frecuencias de muestreo bajas no pueden capturar señales de máquina de alta frecuencia',
     microphoneDenied: 'Acceso al micrófono denegado o no disponible',
     iphoneBackMic: 'Micrófono trasero de iPhone',
     micReady: 'Micrófono listo',
-    iosMicHint: 'iOS necesita acceso breve a la cámara para seleccionar el mejor micrófono – la cámara no se usará.',
+    iosMicHint:
+      'iOS necesita acceso breve a la cámara para seleccionar el mejor micrófono – la cámara no se usará.',
   },
-
-
-  // ============================================================================
-  // ZERO-FRICTION RECORDING (Auto-Machine Creation)
-  // ============================================================================
+  common: {
+    machine: 'Máquina',
+    error: 'Error',
+    warning: 'Advertencia',
+    info: 'Info',
+    success: 'Éxito',
+    yes: 'Sí',
+    no: 'No',
+    or: 'o',
+    ok: 'OK',
+    loading: 'Cargando...',
+    initializing: 'Inicializando...',
+    saving: 'Guardando…',
+    unknown: 'desconocido',
+  },
+  router: {
+    statesTrained: '{{count}} estado{{plural}} entrenado(s) (último: {{date}}) - Agregar más',
+    referenceRequired:
+      'Grabación del estado normal de {{duration}} segundos (requerido para verificación)',
+    liveAnalysis: 'Realizar análisis en vivo',
+    lastCheck: 'Última verificación {{time}}',
+  },
+  diagnosisAudio: {
+    title: 'Guardar audio de la prueba',
+    description:
+      'Determina si se conserva el audio de la medición para poder reproducir una prueba más tarde.',
+    noneLabel: 'Sin audio',
+    noneDesc: 'Ligero',
+    latestLabel: 'Solo la última',
+    latestDesc: 'Recomendado',
+    allLabel: 'Todas',
+    allDesc: 'Completo',
+  },
+  viewLevels: {
+    basic: 'Pantalla simple de semáforo para operadores',
+    advanced: 'Detalles para supervisores y mantenimiento',
+    expert: 'Vista técnica completa para ingenieros',
+    basicLabel: 'Básico',
+    basicDesc: 'Simple',
+    advancedLabel: 'Avanzado',
+    advancedDesc: 'Detalles',
+    expertLabel: 'Experto',
+    expertDesc: 'Técnico',
+    viewModeTitle: 'Modo de vista',
+    viewModeDescription: 'Ajuste la complejidad de la interfaz a sus necesidades.',
+  },
+  notifications: {
+    confirmRequired: 'Confirmación requerida',
+    closeNotification: 'Cerrar notificación',
+  },
+  errorBoundary: {
+    unexpectedError: 'Se ha producido un error inesperado.',
+    unexpectedErrorTitle: 'Error inesperado',
+    permissionDenied: 'Acceso denegado',
+    permissionHint:
+      'Por favor permita el acceso al micrófono/cámara en la configuración de su navegador.',
+    hardwareNotFound: 'Hardware no encontrado',
+    hardwareHint: 'Por favor asegúrese de que su micrófono/cámara esté conectado.',
+    audioSystemError: 'Error del sistema de audio',
+    audioSystemHint:
+      'Por favor recargue la página. Si el problema persiste, use un navegador actualizado.',
+    storageFull: 'Por favor elimine verificaciones o grabaciones de referencia antiguas.',
+    networkError: 'Por favor verifique su conexión a internet.',
+    technicalDetails: 'Detalles técnicos',
+    noStackTrace: 'Sin traza de pila disponible',
+  },
+  qualityCheck: {
+    noFeatures: 'No hay features disponibles',
+    noAudioData: 'No se extrajeron datos de audio (Frame Count 0)',
+    highVariance: 'Alta varianza espectral - Señal inestable',
+    veryHighVariance: 'Varianza muy alta - Por favor grabe en un entorno más tranquilo',
+    outliers: '{{count}} valores atípicos detectados ({{ratio}}%) - Posible ruido de interferencia',
+    weakSignal: 'Señal muy débil/difusa - Posiblemente solo ruido. Acérquese más a la máquina.',
+    weakTonal: 'Señal tonal débil - La relación señal/ruido podría ser muy baja.',
+    trainingSignalWeak:
+      'Señal demasiado débil o inconsistente para entrenamiento. Asegúrese: micrófono cerca de la máquina, máquina funcionando, no solo ruido de fondo. (Similitud coseno promedio: {{value}})',
+    invalidSampleRate:
+      'Tasa de muestreo inválida: {{rate}}Hz. Esperada: 8000-192000Hz (típica: 44100Hz o 48000Hz)',
+  },
+  healthGauge: {
+    normal: 'NORMAL',
+    deviation: 'DESVIACION',
+    abnormal: 'ANORMAL',
+    explain:
+      'The score shows similarity to the reference state (0–100%). 100% = nearly identical. A declining trend matters more than a single value.',
+    explainTitle: 'What does the score mean?',
+  },
+  inspection: {
+    mainQuestion: '¿La máquina suena normal?',
+    subtitle: 'Inspección en curso – por favor permanezca cerca de la máquina',
+    subtitleInitializing: 'Preparando – por favor espere',
+    statusNormal: 'Normal',
+    statusUncertain: 'Incierto',
+    statusDeviation: 'Desviación',
+    referenceState: 'Estado de referencia',
+    referenceDefault: 'Operación normal',
+    hintMoveCloser: 'Por favor acérquese más a la máquina',
+    hintChangePosition: 'Cambie ligeramente de posición',
+    hintHoldSteady: 'Mantenga el dispositivo firme',
+    hintWaiting: 'Esperando señal de la máquina...',
+    stopButton: 'DETENER',
+  },
+  audio: {
+    ready: 'Listo',
+    stabilizing: 'Estabilización acústica... {{seconds}}s',
+    waitingForSignal: 'Esperando señal...',
+    recordingRunning: 'Grabación en curso',
+  },
+  settingsUI: {
+    title: 'Configuración',
+    nfcWriterTitle: 'Etiquetas NFC',
+    nfcWriterDescription:
+      'Escribe etiquetas NFC para acceder a la app o a una máquina seleccionada.',
+    appearance: 'Apariencia',
+    audioSettings: 'Configuración de audio',
+    audioHardware: 'Hardware de audio',
+    detectingMic: 'Detectando micrófono...',
+    detectingMicrophone: 'Detectando micrófono...',
+    initHardwareCheck: 'Inicializando verificación de hardware',
+    changeMicrophone: 'Cambiar micrófono',
+    confidenceThreshold: 'Umbral de confianza',
+    faultyThreshold: 'Umbral de anomalía',
+    recordingDuration: 'Duración de grabación',
+    recordingDurationDesc:
+      'Tiempo neto de grabación para datos de entrenamiento. Se añaden 5 segundos adicionales de estabilización para una calidad de audio óptima.',
+    seconds5: '5 segundos',
+    seconds10: '10 segundos',
+    seconds15: '15 segundos',
+    seconds: 'segundos',
+    frequencyAxis: 'Eje de frecuencia',
+    frequencyAxisDesc: 'Logarítmico (más detalle en rango 20-500 Hz)',
+    frequencyLogDesc: 'Logarítmico (más detalle en rango 20-500 Hz)',
+    amplitudeAxis: 'Eje Y / Amplitud',
+    amplitudeAxisDesc: 'Logarítmico (dB) – enfatiza señales débiles',
+    amplitudeLogDesc: 'Logarítmico (dB) – enfatiza señales débiles',
+    disableAudioTriggerLabel: 'Desactivar disparador de audio',
+    disableAudioTriggerDesc:
+      'Inicia la medición inmediatamente, incluso con señales muy débiles, sin esperar un nivel mínimo. Para máquinas o entornos extremadamente silenciosos.',
+    analysisMethod: 'Método de análisis',
+    analysisMethodDesc: 'Seleccione el método de análisis apropiado para su máquina.',
+    gmaiMethodDesc:
+      'GMIA (Generalized Mutual Interdependence Analysis) extrae los componentes comunes y estables de múltiples ventanas de tiempo mientras suprime efectos específicos del dispositivo. Ideal para sonidos de máquinas estructurados y estables en el tiempo. Funciona totalmente sin conexión.',
+    engineDescSpectral:
+      'Compara el espectro sonoro con una referencia promediada, independientemente del volumen. Ideal para máquinas individuales y uniformes. Funciona totalmente sin conexión.',
+    engineDescYamnet:
+      'Huella sonora neuronal mediante un modelo de IA. Ideal para sonidos complejos o variables en el tiempo. Descarga un modelo la primera vez y luego funciona sin conexión.',
+    engineDescTemporal:
+      'Análisis de patrones temporales (Tier 2): conserva la evolución temporal en lugar de promediar; para máquinas no estacionarias con ciclos, chasquidos o puntos de operación cambiantes (p. ej., válvulas, prensas). Funciona totalmente sin conexión.',
+    evaluationEngineLabel: 'Motor de evaluación',
+    evaluationEngineGmia: 'GMIA (Estándar)',
+    evaluationEngineSpectral: 'Espectral-Coseno (One-Class)',
+    evaluationEngineYamnet: 'YAMNet (Neuronal, Beta)',
+    evaluationEngineTemporal: 'Patrones temporales (Tier 2, Beta)',
+    evaluationEngineDesc:
+      'Selecciona la evaluación para NUEVAS grabaciones de referencia. Las máquinas ya entrenadas se siguen evaluando con su motor original. GMIA sigue siendo el estándar.',
+    evaluationEngineSaveError:
+      'No se pudo guardar el motor de evaluación. Es posible que el almacenamiento esté lleno o que se encuentre en modo privado.',
+    evaluationEngineSaveErrorTitle: 'Error de almacenamiento',
+    level1Info: 'Nivel 1: Los ajustes de frecuencia y amplitud de arriba están activos',
+    dataManagement: 'Gestión de datos',
+    exportDatabase: 'Exportar base de datos',
+    shareDatabase: 'Enviar base de datos',
+    importDatabase: 'Importar base de datos',
+    statistics: 'Estadísticas:',
+    machines: 'Máquinas',
+    recordings: 'Grabaciones',
+    diagnoses: 'Verificaciones',
+    clearAllData: 'Eliminar todos los datos',
+    deleteAllData: 'Eliminar todos los datos',
+    quickAccessDesc: 'Acceso rápido a máquinas usadas recientemente',
+    noMachines: 'No hay máquinas disponibles',
+    or: 'o',
+    selectMicrophone: 'Seleccionar micrófono',
+    microphoneAdvice:
+      'Seleccione el mejor micrófono para verificación de máquinas. Evite auriculares y dispositivos Bluetooth ya que están optimizados para voz.',
+    manualInput: 'Introducir manualmente',
+    machineIdInput: 'Introducir ID de máquina',
+    continue: 'Continuar',
+    qrHint: 'Coloque el código QR o código de barras en el marco',
+    codeRecognized: '¡Código reconocido!',
+    bannerTitle: 'Imagen del banner',
+    bannerDescription:
+      'Personalice la imagen del banner de la página de inicio. Cada tema puede tener su propio banner.',
+    bannerUpload: 'Subir banner',
+    bannerReset: 'Restablecer a predeterminado',
+    bannerHint:
+      'Suba cualquier imagen: en el siguiente paso recorta la parte que quiera. El texto aparece a la derecha; coloque el motivo más bien a la izquierda.',
+    bannerCropTitle: 'Recortar banner',
+    bannerCropHint: 'Arrastre y haga zoom hasta que la parte deseada quede dentro del marco.',
+    bannerCropTextZone: 'Zona de texto',
+    bannerCropZoom: 'Zoom',
+    bannerCropConfirm: 'Aplicar',
+    bannerHeadlineLabel: 'Título del banner',
+    bannerSublineLabel: 'Subtítulo del banner',
+    bannerTextHint: 'Déjelo vacío para el texto predeterminado.',
+    bannerHideText: 'Ocultar texto (solo imagen)',
+    bannerTextPosX: 'Texto horizontal',
+    bannerTextPosY: 'Texto vertical',
+    bannerFormatError: 'El formato debe ser 1024×400 o 1024×500 PNG.',
+    bannerUpdated: 'El banner ha sido actualizado.',
+    bannerSaveError: 'No se pudo guardar el banner.',
+    bannerResetSuccess: 'Banner predeterminado restaurado.',
+    bannerResetError: 'Error al restablecer el banner.',
+    themeToggle: 'Cambiar tema',
+    closeSettings: 'Cerrar configuración',
+    roomCompTitle: 'Compensación de sala',
+    roomCompDescription:
+      'Compensa los efectos acústicos de la sala (reverberación) para obtener resultados más estables en distintos entornos.',
+    roomCompEnabled: 'Activar compensación de sala',
+    biasMatchEnabled: 'Session Bias Match',
+    biasMatchHint:
+      'Compensa diferencias espectrales entre sesiones de grabación (distintas salas, posiciones del micrófono). Recomendado para cambios de sala.',
+    cmnEnabled: 'CMN (experimental)',
+    cmnWarning:
+      '⚠️ Puede empeorar las puntuaciones de máquinas estacionarias. Prefiera "Session Bias Match" o T60/Dereverb.',
+    t60Enabled: 'Medición de sala mediante chirp',
+    t60Hint: 'Reproduce automáticamente un tono corto para medir el tiempo de reverberación',
+    betaLabel: 'Intensidad de compensación (β)',
+    roomCompActiveHint: '🔧 Compensación de sala activa',
+    cherryPickTitle: 'Cherry-Picking',
+    cherryPickDescription:
+      'Filtra automáticamente interferencias transitorias (bocinas, golpes, puertas) de las grabaciones.',
+    cherryPickEnabled: 'Cherry-Picking activado',
+    sigmaLabel: 'Sensibilidad (σ)',
+    sigmaHint: 'Bajo = más estricto (se rechazan más fotogramas), Alto = más tolerante',
+    cherryPickActiveHint:
+      'Cherry-Picking activo: las interferencias transitorias se detectan y eliminan automáticamente.',
+    resetSection: 'Configuración predeterminada',
+    resetDescription:
+      'Restablece todas las opciones de visualización al estado inicial. Los datos de la máquina se conservan.',
+    resetButton: 'Restaurar configuración predeterminada',
+    resetConfirm: '¿Realmente restablecer?',
+    resetSuccess: 'Configuración predeterminada restaurada.',
+    resetDescriptionShort: 'Los datos de la máquina se conservan.',
+  },
+  roomMeasure: {
+    title: 'Medición de sala',
+    description:
+      'Mide el tiempo de reverberación (T60) de tu entorno actual mediante una señal chirp. Sostén el smartphone libremente en la sala (sin taparlo).',
+    measureBtn: 'Medir sala',
+    measureAgain: 'Medir de nuevo',
+    measuring: 'Midiendo...',
+    chirpProgress: 'Chirp {{current}}/{{total}}...',
+    individual: 'Mediciones individuales',
+    stddev: 'Desviación estándar',
+    stable: 'estable',
+    unstable: 'inestable',
+    veryDry: 'muy seca',
+    dry: 'seca',
+    medium: 'reverberación media',
+    reverberant: 'reverberante',
+    veryReverberant: 'muy reverberante',
+    classVeryDry: 'Sala muy seca: ideal para mediciones',
+    classDry: 'Sala seca: buenas condiciones',
+    classMedium: 'Reverberación media: condiciones aceptables',
+    classReverberant: 'Reverberante: los resultados pueden verse afectados',
+    classVeryReverberant: 'Muy reverberante: acércate más a la máquina',
+    errorNoResult:
+      'La medición falló. Posibles causas:\n• Entorno demasiado ruidoso (apague la máquina)\n• Altavoz del smartphone demasiado bajo\n• Suba el volumen del dispositivo',
+    errorMicPermission:
+      'Sin acceso al micrófono. Permita el acceso en la configuración del navegador.',
+    errorNoMic: 'No se encontró ningún micrófono.',
+    errorGeneric: 'La medición falló. Inténtelo de nuevo.',
+  },
+  noiseSub: {
+    title: 'Sustracción de perfil de ruido',
+    description:
+      'Resta de la medición un perfil de ruido ambiental grabado previamente (máquina apagada). Útil cuando el ruido de fondo y la máquina tienen un volumen similar.',
+    enabled: 'Activar sustracción de perfil de ruido',
+    profileLabel: 'Perfil de ruido activo',
+    noProfile: 'Ningún perfil seleccionado',
+    recordBtn: 'Grabar ruido ambiental',
+    recordHint:
+      'Importante: apague la máquina (o déjela apagada). Se grabarán {{seconds}} segundos de ruido ambiental puro.',
+    recording: 'Grabando… {{seconds}}s',
+    processing: 'Calculando perfil…',
+    saved: 'Perfil de ruido guardado.',
+    savedUnstable:
+      'Perfil guardado: el entorno estuvo inestable durante la grabación. Vuelva a grabar cuando haya más silencio para obtener un perfil más estable.',
+    defaultName: 'Perfil de ruido {{date}}',
+    deleteBtn: 'Eliminar perfil',
+    deleteConfirm: '¿Eliminar realmente el perfil de ruido seleccionado?',
+    betaLabel: 'Intensidad de sustracción (β)',
+    profileMeta: '{{date}} · {{duration}}s · {{frames}} frames',
+    limitReached:
+      'Se alcanzó el número máximo de perfiles ({{max}}). Elimine primero un perfil antiguo.',
+    errorGeneric: 'La grabación falló. Inténtelo de nuevo.',
+    errorMicPermission:
+      'Sin acceso al micrófono. Permita el acceso en la configuración del navegador.',
+    errorNoMic: 'No se encontró ningún micrófono.',
+    rowLabel: 'Perfil de ruido',
+    incompatible:
+      'El perfil de ruido no coincide con la configuración de grabación actual (frecuencia de muestreo); sustracción omitida.',
+    snrMachineDominates: 'La máquina domina',
+    snrSimilarLevels: 'Niveles similares: sustracción efectiva',
+    snrNoiseDominates: 'Fondo más ruidoso: fiabilidad limitada',
+    warnStale: 'Perfil de hace {{days}} días; considere grabarlo de nuevo',
+    warnOverlap: 'El perfil se parece a la firma de la máquina (¿máquina vecina?)',
+    warnDevice: 'Micrófono distinto al de la grabación del perfil',
+    minStatsEnabled: 'Alternativa sin perfil (estadística de mínimos)',
+    minStatsHint:
+      'Si no hay un perfil compatible, el nivel de ruido se estima en vivo durante la comprobación a partir del mínimo de energía deslizante (solo en rangos de frecuencia donde la máquina es débil; requiere una referencia existente). Menos preciso que un perfil real.',
+    minStatsName: 'Estadística de mínimos (sin perfil)',
+  },
   zeroFriction: {
     autoMachineName: 'Máquina {{number}}',
-    referenceCreatedToast: 'Referencia para {{machineName}} creada',
+    referenceCreatedToast: 'Estado normal para {{machineName}} creado',
     editMachineName: 'Editar',
     editMachineNamePrompt: 'Introduzca un nuevo nombre para la máquina:',
     machineRenamed: 'Máquina renombrada a "{{newName}}"',
     noMachineSelected: 'No hay máquina seleccionada – se creará automáticamente',
   },
-
-  // ============================================================================
-  // AUTO-DETECTION (Simplified "Verificar estado" Flow)
-  // ============================================================================
   autoDetect: {
     startButton: 'Verificar ahora',
     hint: 'El sistema reconoce automáticamente las máquinas conocidas',
@@ -525,127 +875,9 @@ export const es: TranslationDict = {
     uncertainMatch: '¿Qué máquina es esta?',
     selectMachine: 'Por favor, seleccione la máquina correspondiente',
     noMatch: 'No reconozco este sonido todavía',
-    noMatchHint: '¿Desea grabar una referencia?',
-    recordReference: 'Grabar referencia',
+    noMatchHint: '¿Desea grabar un estado normal?',
+    recordReference: 'Grabar estado normal',
     newMachine: 'Crear nueva máquina',
-  },
-
-  // ============================================================================
-  // COMMON
-  // ============================================================================
-  common: {
-    machine: 'Máquina',
-    error: 'Error',
-    warning: 'Advertencia',
-    info: 'Info',
-    success: 'Éxito',
-    yes: 'Sí',
-    no: 'No',
-    or: 'o',
-    ok: 'OK',
-    loading: 'Cargando...',
-    initializing: 'Inicializando...',
-    unknown: 'desconocido',
-  },
-
-  router: {
-    statesTrained: '{{count}} estado{{plural}} entrenado(s) (último: {{date}}) - Agregar más',
-    referenceRequired: 'Grabación de referencia de {{duration}} segundos (requerido para diagnóstico)',
-    liveAnalysis: 'Realizar análisis en vivo',
-    lastCheck: 'Última verificación {{time}}',
-  },
-  viewLevels: {
-    basic: 'Pantalla simple de semáforo para operadores',
-    advanced: 'Detalles para supervisores y mantenimiento',
-    expert: 'Vista técnica completa para ingenieros',
-    basicLabel: 'Básico', basicDesc: 'Simple',
-    advancedLabel: 'Avanzado', advancedDesc: 'Detalles',
-    expertLabel: 'Experto', expertDesc: 'Técnico',
-    viewModeTitle: 'Modo de vista',
-    viewModeDescription: 'Ajuste la complejidad de la interfaz a sus necesidades.',
-  },
-  notifications: {
-    confirmRequired: 'Confirmación requerida',
-    closeNotification: 'Cerrar notificación',
-  },
-  errorBoundary: {
-    unexpectedError: 'Se ha producido un error inesperado.',
-    unexpectedErrorTitle: 'Error inesperado',
-    permissionDenied: 'Acceso denegado',
-    permissionHint: 'Por favor permita el acceso al micrófono/cámara en la configuración de su navegador.',
-    hardwareNotFound: 'Hardware no encontrado',
-    hardwareHint: 'Por favor asegúrese de que su micrófono/cámara esté conectado.',
-    audioSystemError: 'Error del sistema de audio',
-    audioSystemHint: 'Por favor recargue la página. Si el problema persiste, use un navegador actualizado.',
-    storageFull: 'Por favor elimine diagnósticos o grabaciones de referencia antiguos.',
-    networkError: 'Por favor verifique su conexión a internet.',
-    technicalDetails: 'Detalles técnicos',
-    noStackTrace: 'Sin traza de pila disponible',
-  },
-  qualityCheck: {
-    noFeatures: 'No hay features disponibles',
-    noAudioData: 'No se extrajeron datos de audio (Frame Count 0)',
-    highVariance: 'Alta varianza espectral - Señal inestable',
-    veryHighVariance: 'Varianza muy alta - Por favor grabe en un entorno más tranquilo',
-    outliers: '{{count}} valores atípicos detectados ({{ratio}}%) - Posible ruido de interferencia',
-    weakSignal: 'Señal muy débil/difusa - Posiblemente solo ruido. Acérquese más a la máquina.',
-    weakTonal: 'Señal tonal débil - La relación señal/ruido podría ser muy baja.',
-    trainingSignalWeak: 'Señal demasiado débil o inconsistente para entrenamiento. Asegúrese: micrófono cerca de la máquina, máquina funcionando, no solo ruido de fondo. (Similitud coseno promedio: {{value}})',
-    invalidSampleRate: 'Tasa de muestreo inválida: {{rate}}Hz. Esperada: 8000-192000Hz (típica: 44100Hz o 48000Hz)',
-  },
-  healthGauge: {
-    normal: 'NORMAL',
-    deviation: 'DESVIACION',
-    abnormal: 'ANORMAL',
-    explain: 'The score shows similarity to the reference state (0–100%). 100% = nearly identical. A declining trend matters more than a single value.',
-    explainTitle: 'What does the score mean?',
-  },
-  audio: { ready: 'Listo', stabilizing: 'Estabilización acústica... {{seconds}}s', waitingForSignal: 'Esperando señal...', recordingRunning: 'Grabación en curso' },
-  settingsUI: {
-    title: 'Configuración', nfcWriterTitle: 'Etiquetas NFC', nfcWriterDescription: 'Escribe etiquetas NFC para acceder a la app o a una máquina seleccionada.', appearance: 'Apariencia',
-    audioSettings: 'Configuración de audio', audioHardware: 'Hardware de audio',
-    detectingMic: 'Detectando micrófono...', detectingMicrophone: 'Detectando micrófono...', initHardwareCheck: 'Inicializando verificación de hardware',
-    changeMicrophone: 'Cambiar micrófono', confidenceThreshold: 'Umbral de confianza',
-    faultyThreshold: 'Umbral de anomalía',
-    recordingDuration: 'Duración de grabación',
-    recordingDurationDesc: 'Tiempo neto de grabación para datos de entrenamiento. Se añaden 5 segundos adicionales de estabilización para una calidad de audio óptima.',
-    seconds5: '5 segundos', seconds10: '10 segundos', seconds15: '15 segundos', seconds: 'segundos',
-    frequencyAxis: 'Eje de frecuencia', frequencyAxisDesc: 'Logarítmico (más detalle en rango 20-500 Hz)', frequencyLogDesc: 'Logarítmico (más detalle en rango 20-500 Hz)',
-    amplitudeAxis: 'Eje Y / Amplitud', amplitudeAxisDesc: 'Logarítmico (dB) – enfatiza señales débiles', amplitudeLogDesc: 'Logarítmico (dB) – enfatiza señales débiles',
-    disableAudioTriggerLabel: 'Desactivar disparador de audio', disableAudioTriggerDesc: 'Inicia la medición inmediatamente, incluso con señales muy débiles, sin esperar un nivel mínimo. Para máquinas o entornos extremadamente silenciosos.',
-    analysisMethod: 'Método de análisis', analysisMethodDesc: 'Seleccione el método de análisis apropiado para su máquina.',
-    gmaiMethodDesc: 'GMIA (Generalized Mutual Interdependence Analysis) extrae los componentes comunes y estables de múltiples ventanas de tiempo mientras suprime efectos específicos del dispositivo. Ideal para sonidos de máquinas estructurados y estables en el tiempo.',
-    level1Info: 'Nivel 1: Los ajustes de frecuencia y amplitud de arriba están activos',
-    dataManagement: 'Gestión de datos', exportDatabase: 'Exportar base de datos', shareDatabase: 'Enviar base de datos',
-    importDatabase: 'Importar base de datos', statistics: 'Estadísticas:',
-    machines: 'Máquinas', recordings: 'Grabaciones', diagnoses: 'Diagnósticos',
-    clearAllData: 'Eliminar todos los datos', deleteAllData: 'Eliminar todos los datos',
-    quickAccessDesc: 'Acceso rápido a máquinas usadas recientemente',
-    noMachines: 'No hay máquinas disponibles', or: 'o',
-    selectMicrophone: 'Seleccionar micrófono',
-    microphoneAdvice: 'Seleccione el mejor micrófono para diagnóstico de máquinas. Evite auriculares y dispositivos Bluetooth ya que están optimizados para voz.',
-    manualInput: 'Introducir manualmente', machineIdInput: 'Introducir ID de máquina', continue: 'Continuar',
-    qrHint: 'Coloque el código QR o código de barras en el marco', codeRecognized: '¡Código reconocido!',
-    // Configuración del banner
-    bannerTitle: 'Imagen del banner',
-    bannerDescription: 'Personalice la imagen del banner de la página de inicio. Cada tema puede tener su propio banner.',
-    bannerUpload: 'Subir banner',
-    bannerReset: 'Restablecer a predeterminado',
-    bannerHint: 'Recomendado: 1024×400 o 1024×500 píxeles, formato PNG. El tercio izquierdo queda libre para texto.',
-    bannerFormatError: 'El formato debe ser 1024×400 o 1024×500 PNG.',
-    bannerUpdated: 'El banner ha sido actualizado.',
-    bannerSaveError: 'No se pudo guardar el banner.',
-    bannerResetSuccess: 'Banner predeterminado restaurado.',
-    bannerResetError: 'Error al restablecer el banner.',
-    themeToggle: 'Cambiar tema',
-    closeSettings: 'Cerrar configuración',
-    // Reset to Defaults
-    resetSection: 'Configuración predeterminada',
-    resetDescription: 'Restablece todas las opciones de visualización al estado inicial. Los datos de la máquina se conservan.',
-    resetButton: 'Restaurar configuración predeterminada',
-    resetConfirm: '¿Realmente restablecer?',
-    resetSuccess: 'Configuración predeterminada restaurada.',
-    resetDescriptionShort: 'Los datos de la máquina se conservan.',
   },
   nfc: {
     title: 'Escribir etiqueta NFC',
@@ -668,9 +900,9 @@ export const es: TranslationDict = {
     unsupported: 'La escritura NFC no es compatible con este dispositivo.',
     requiresSecureContext: 'La escritura NFC requiere una conexión segura (HTTPS).',
     unsupportedBrowser: 'La escritura NFC requiere Chrome en Android.',
-    // Customer ID (Variante B)
     customerIdLabel: 'ID de cliente (c)',
-    customerIdDescription: 'Este ID determina qué datos de referencia se cargan al escanear la etiqueta NFC. Los datos se cargan automáticamente desde GitHub Pages.',
+    customerIdDescription:
+      'Este ID determina qué datos de referencia se cargan al escanear la etiqueta NFC. Los datos se cargan automáticamente desde GitHub Pages.',
     customerIdPlaceholder: 'ej. ID_Cliente_1',
     customerIdRequired: 'Por favor ingrese un ID de cliente.',
     dbUrlPreview: 'URL de datos: {{url}}',
@@ -683,20 +915,18 @@ export const es: TranslationDict = {
     machine: 'machine',
     machines: 'machines',
     fleetRequiresCustomerId: 'Please enter a customer ID and select a fleet.',
-    // Quick Compare count-only option
     optionQuickCompareCount: 'Quick compare (count only)',
-    optionQuickCompareCountDetailDefault: 'Opens the app for a quick compare with a set number of machines. No internet needed.',
-    optionQuickCompareCountDetail: 'Opens a quick compare with {{count}} machines. No internet needed.',
+    optionQuickCompareCountDetailDefault:
+      'Opens the app for a quick compare with a set number of machines. No internet needed.',
+    optionQuickCompareCountDetail:
+      'Opens a quick compare with {{count}} machines. No internet needed.',
     quickCompareCountLabel: 'How many machines?',
     quickCompareCountHint: 'No internet needed when scanning. Machines are named automatically.',
   },
-
-  // ============================================================================
-  // QR CODE GENERATOR
-  // ============================================================================
   qrCode: {
     title: 'Crear código QR',
-    description: 'Cree un código QR para imprimir o guardar. Simplemente colóquelo en la máquina — listo.',
+    description:
+      'Cree un código QR para imprimir o guardar. Simplemente colóquelo en la máquina — listo.',
     openGenerator: 'Crear código QR',
     optionGeneric: 'Enlace de la app (genérico)',
     optionGenericDetail: 'Abre la app sin un ID de máquina.',
@@ -726,37 +956,42 @@ export const es: TranslationDict = {
     fleetSelectLabel: 'Select fleet',
     fleetLabel: 'Fleet',
     fleetPrintTitle: 'Fleet QR Code',
-    // Quick Compare count-only option
     optionQuickCompareCount: 'Quick compare (count only)',
-    optionQuickCompareCountDetailDefault: 'Creates a QR code for a quick compare with a set number of machines.',
+    optionQuickCompareCountDetailDefault:
+      'Creates a QR code for a quick compare with a set number of machines.',
     optionQuickCompareCountDetail: 'Creates quick compare QR code for {{count}} machines.',
   },
-
   review: {
-    title: 'Revisar grabación', subtitle: 'Control de calidad',
+    title: 'Revisar grabación',
+    subtitle: 'Control de calidad',
     listenTitle: 'Escuchar grabación',
     browserNoAudio: 'Su navegador no admite reproducción de audio.',
-    recordingInfo: '{{total}} segundos de grabación (5s estabilización + {{duration}}s entrenamiento)',
+    recordingInfo:
+      '{{total}} segundos de grabación (5s estabilización + {{duration}}s entrenamiento)',
     positionImageTitle: 'Imagen de posición guardada',
     savedPositionImage: 'Imagen de posición guardada',
     positionImageCheck: 'Verifique si la imagen muestra la posición correcta.',
-    qualityTitle: 'Evaluación de calidad', quality: 'Calidad',
-    issuesTitle: 'Problemas detectados:', discardNew: 'Descartar / Nuevo',
+    qualityTitle: 'Evaluación de calidad',
+    quality: 'Calidad',
+    issuesTitle: 'Problemas detectados:',
+    discardNew: 'Descartar / Nuevo',
     saveAsReference: 'Guardar como referencia',
   },
   diagnosisResults: {
-    title: 'Resultados del diagnóstico',
+    title: 'Resultados de la verificación',
     fingerprintLabel: 'Huella',
     confidenceScoreLabel: 'Puntuación de confianza',
     varianceTitle: 'Varianza',
     frequencyAnomalyLabel: 'Anomalía de frecuencia',
     analysisHintDefault: 'Consejo: señal ligeramente elevada alrededor de 20 kHz',
-    referenceQualityTitle: 'Calidad de referencia',
+    measurementQualityWarning:
+      '⚠ Señal de medición muy débil: resultado poco fiable. Acércate a la máquina y vuelve a medir en un entorno más silencioso.',
+    referenceQualityTitle: 'Calidad de grabación',
     referenceQualityStatusGood: 'BUENA',
-    referenceQualityDescription: 'La grabación de referencia cumple las condiciones recomendadas',
+    referenceQualityDescription: 'La grabación cumple las condiciones recomendadas',
     featureModeLabel: 'Modo de características',
     viewHistory: 'Ver historial',
-    closeDialog: 'Cerrar diagnóstico',
+    closeDialog: 'Cerrar verificación',
   },
   results: {
     envMatch: {
@@ -771,25 +1006,74 @@ export const es: TranslationDict = {
     dataPoints: 'Puntos de datos',
     timeRange: 'Período de tiempo',
     xAxisLabel: 'Tiempo',
-    yAxisLabel: 'Puntuación de salud (%)',
+    yAxisLabel: 'Puntuación de similitud (%)',
     noData: 'Aún no hay historial disponible',
-    noDataMessage: 'Todavía no se han guardado diagnósticos para esta máquina.',
+    noDataMessage: 'Todavía no se han guardado verificaciones para esta máquina.',
     errorMessage: 'Error al cargar el historial.',
     closeDialog: 'Cerrar historial',
+    anomalyListTitle: 'Características llamativas (última comprobación)',
+    anomalyNone: 'No se detectaron características llamativas.',
+    tooltipAnomaly: 'Llamativo: {{freq}} ({{strength}}%)',
+  },
+  workPointRanking: {
+    title: 'Análisis de estados',
+    states: 'Estados',
+    ariaLabel: 'Ranking de estados detectados de la máquina',
+    statusHealthy: 'Normal',
+    statusFaulty: 'Anormal',
+    noData: 'No hay datos de análisis disponibles',
+    rank: 'Rango',
+    probability: 'Probabilidad',
+    topMatch: 'Mejor coincidencia',
+    sectionTitle: 'Distribución detallada de estados',
+    sectionDescription:
+      'Distribución de probabilidad de todos los estados entrenados de la máquina',
   },
   themes: {
     focusTitle: 'Steve Jobs',
     focusDescription: 'Una acción. Sin ruido. Enfoque en lo esencial – todo lo demás desaparece.',
     focusDesc: 'Una acción. Sin ruido. Claridad que funciona.',
     daylightTitle: 'Daylight',
-    daylightDescription: 'Tema claro y anti‑deslumbramiento para exteriores. Contraste nítido para leer a la luz del sol.',
-    daylightDesc: 'Tema claro y anti‑deslumbramiento para exteriores. Contraste nítido para leer a la luz del sol.',
+    daylightDescription:
+      'Tema claro y anti‑deslumbramiento para exteriores. Contraste nítido para leer a la luz del sol.',
+    daylightDesc:
+      'Tema claro y anti‑deslumbramiento para exteriores. Contraste nítido para leer a la luz del sol.',
     brandTitle: 'Zanobo',
     brandDescription: 'Claro, amigable, confiable. IA en la que puedes confiar.',
     brandDesc: 'Claro, amigable, confiable. IA en la que puedes confiar.',
     neonTitle: 'Neon Industrial',
-    neonDescription: 'Paleta neón de alto contraste para entornos con poca luz. Los acentos guían a las acciones clave.',
-    neonDesc: 'Paleta neón de alto contraste para entornos con poca luz. Los acentos guían a las acciones clave.',
+    neonDescription:
+      'Paleta neón de alto contraste para entornos con poca luz. Los acentos guían a las acciones clave.',
+    neonDesc:
+      'Paleta neón de alto contraste para entornos con poca luz. Los acentos guían a las acciones clave.',
+  },
+  machineSetup: {
+    downloadFailedHint:
+      'No se pudieron cargar los datos de referencia. Puedes grabar el estado normal directamente en la máquina, o reintentar la descarga.',
+    retryDownload: 'Reintentar descarga',
+    urlEmpty: 'Por favor ingrese un enlace de BD de referencia.',
+    urlInvalid: 'El enlace no parece ser una URL válida.',
+    urlNotHttps: 'El enlace debe comenzar con https://.',
+    urlNotOfficialSource: 'Solo se aceptan fuentes de datos oficiales (gunterstruck.github.io).',
+    downloadingReference: 'Cargando datos de referencia...',
+    statusDownloading: 'Descargando datos de referencia...',
+    statusParsing: 'Procesando datos...',
+    statusValidating: 'Validando formato...',
+    statusSaving: 'Guardando localmente...',
+    statusComplete: '¡Completado!',
+    errorMachineNotFound: 'Máquina no configurada. Por favor contacte al técnico de servicio.',
+    errorNoReferenceUrl:
+      'No hay datos de referencia configurados. Por favor contacte al técnico de servicio.',
+    errorDownloadFailed: 'Descarga fallida. Por favor verifique su conexión a internet.',
+    errorInvalidFormat: 'Los datos de referencia tienen un formato inválido.',
+    errorInvalidStructure: 'La estructura de datos está corrupta.',
+    errorNoModels: 'No se encontraron modelos de referencia en los datos.',
+    errorInvalidModel: 'Uno o más modelos de referencia están corruptos.',
+    errorUnknown: 'Ocurrió un error desconocido.',
+    referenceLoaded: '¡Datos de referencia cargados exitosamente!',
+    loadingTitle: 'Cargando referencia',
+    loadingSubtitle: 'Por favor espere...',
+    testingBlocked: 'Las pruebas solo están disponibles después de cargar los datos de referencia.',
   },
   footer: {
     impressum: 'Aviso legal',
@@ -800,8 +1084,6 @@ export const es: TranslationDict = {
     closePrivacy: 'Cerrar política de privacidad',
     closeAbout: 'Cerrar acerca de Zanobo',
   },
-
-  // NFC IMPORT (Deep Link Import via ?importUrl=)
   nfcImport: {
     modalTitle: 'Copia de seguridad NFC detectada',
     warningOverwrite: '¡Atención: La base de datos local será sobrescrita!',
@@ -815,106 +1097,15 @@ export const es: TranslationDict = {
     errorTitle: 'Error de importación',
     errorGitHubBlob: 'Error: Por favor use el enlace "Raw" de GitHub, no el enlace web.',
     errorFetchFailed: 'Descarga fallida. Por favor verifique la URL.',
-    errorNotJson: 'Error: La URL devuelve HTML en lugar de JSON.\n\nPor favor use el enlace "Raw" de GitHub.',
+    errorNotJson:
+      'Error: La URL devuelve HTML en lugar de JSON.\n\nPor favor use el enlace "Raw" de GitHub.',
     errorInvalidJson: 'Error: El archivo no contiene un formato JSON válido.',
     errorInvalidStructure: 'Error: El archivo no tiene el formato de copia de seguridad esperado.',
     errorNetwork: 'Error de red al cargar los datos. Por favor verifique su conexión.',
-    nfcMergeSuccess: '\u2705 Database updated – {{added}} new references added, {{skipped}} already present',
+    nfcMergeSuccess:
+      '✅ Database updated – {{added}} new references added, {{skipped}} already present',
     nfcMergeInfo: 'Existing machines and references are preserved.',
   },
-
-  // BADGES (UI Hints)
-  badges: {
-    recommended: 'Recomendado',
-    nextStep: 'Siguiente paso',
-  },
-
-  // WORK POINT RANKING
-  workPointRanking: {
-    title: 'Análisis de estados',
-    states: 'Estados',
-    ariaLabel: 'Ranking de estados detectados de la máquina',
-    statusHealthy: 'Normal',
-    statusFaulty: 'Fallo',
-    noData: 'No hay datos de análisis disponibles',
-    rank: 'Rango',
-    probability: 'Probabilidad',
-    topMatch: 'Mejor coincidencia',
-    sectionTitle: 'Distribución detallada de estados',
-    sectionDescription: 'Distribución de probabilidad de todos los estados entrenados de la máquina',
-  },
-
-  // DATABASE MIGRATION
-  migration: {
-    title: 'Actualización de base de datos',
-    dataCleared:
-      'La base de datos se ha restablecido debido a una actualización. Se han eliminado todas las máquinas, grabaciones y diagnósticos.',
-  },
-
-  // ============================================================================
-  // INSPECTION VIEW (Simplified PWA)
-  // ============================================================================
-  inspection: {
-    // Header
-    mainQuestion: '¿La máquina suena normal?',
-    subtitle: 'Inspección en curso – por favor permanezca cerca de la máquina',
-    subtitleInitializing: 'Preparando – por favor espere',
-    // Status words (simple, non-technical)
-    statusNormal: 'Normal',
-    statusUncertain: 'Incierto',
-    statusDeviation: 'Desviación',
-    // Reference info
-    referenceState: 'Estado de referencia',
-    referenceDefault: 'Operación normal',
-    // Dynamic hints for poor signal quality
-    hintMoveCloser: 'Por favor acérquese más a la máquina',
-    hintChangePosition: 'Cambie ligeramente de posición',
-    hintHoldSteady: 'Mantenga el dispositivo firme',
-    hintWaiting: 'Esperando señal de la máquina...',
-    // Button
-    stopButton: 'DETENER',
-  },
-
-  // ============================================================================
-  // MACHINE SETUP (NFC Deep Link - Status/Error Messages)
-  // ============================================================================
-  machineSetup: {
-    // Validation errors
-    urlEmpty: 'Por favor ingrese un enlace de BD de referencia.',
-    urlInvalid: 'El enlace no parece ser una URL válida.',
-    urlNotHttps: 'El enlace debe comenzar con https://.',
-    urlNotOfficialSource: 'Solo se aceptan fuentes de datos oficiales (gunterstruck.github.io).',
-
-    // Download status
-    downloadingReference: 'Cargando datos de referencia...',
-    statusDownloading: 'Descargando datos de referencia...',
-    statusParsing: 'Procesando datos...',
-    statusValidating: 'Validando formato...',
-    statusSaving: 'Guardando localmente...',
-    statusComplete: '¡Completado!',
-
-    // Download errors
-    errorMachineNotFound: 'Máquina no configurada. Por favor contacte al técnico de servicio.',
-    errorNoReferenceUrl: 'No hay datos de referencia configurados. Por favor contacte al técnico de servicio.',
-    errorDownloadFailed: 'Descarga fallida. Por favor verifique su conexión a internet.',
-    errorInvalidFormat: 'Los datos de referencia tienen un formato inválido.',
-    errorInvalidStructure: 'La estructura de datos está corrupta.',
-    errorNoModels: 'No se encontraron modelos de referencia en los datos.',
-    errorInvalidModel: 'Uno o más modelos de referencia están corruptos.',
-    errorUnknown: 'Ocurrió un error desconocido.',
-
-    // Success messages
-    referenceLoaded: '¡Datos de referencia cargados exitosamente!',
-
-    // Loading overlay
-    loadingTitle: 'Cargando referencia',
-    loadingSubtitle: 'Por favor espere...',
-    testingBlocked: 'Las pruebas solo están disponibles después de cargar los datos de referencia.',
-  },
-
-  // ============================================================================
-  // URL IMPORT (Deep Link Import via #/import?url=)
-  // ============================================================================
   urlImport: {
     statusFetching: 'Cargando base de datos...',
     statusValidating: 'Validando datos...',
@@ -931,12 +1122,7 @@ export const es: TranslationDict = {
     errorInvalidStructure: 'El archivo no tiene el formato de base de datos esperado.',
     errorNetwork: 'Error de red al cargar los datos. Por favor, compruebe su conexión a Internet.',
   },
-
-  // ============================================================================
-  // ONBOARDING TRACE (Debug Protocol)
-  // ============================================================================
   trace: {
-    // UI
     title: 'Protocolo de depuración',
     toggle: 'Alternar protocolo',
     copyToClipboard: 'Copiar protocolo',
@@ -944,86 +1130,72 @@ export const es: TranslationDict = {
     copied: '¡Copiado!',
     copyFailed: 'Error',
     noEntries: 'Sin entradas aún',
-
-    // Status
     statusRunning: 'En ejecución...',
     statusComplete: 'Completado',
     statusFailed: 'Fallido',
-
-    // Step labels - these map to TraceStepId
     steps: {
-      // Deep Link Processing
       deep_link_detected: 'Deep link detectado',
       hash_parsed: 'Hash analizado',
       machine_id_extracted: 'ID de máquina extraído',
       customer_id_extracted: 'ID de cliente extraído',
       db_url_derived: 'URL de BD derivada',
       import_url_detected: 'URL de importación detectada',
-
-      // Download Process
       download_started: 'Descarga iniciada',
       download_complete: 'Descarga completada',
       download_failed: 'Descarga fallida',
-
-      // JSON Processing
       json_parse_started: 'Análisis JSON iniciado',
       json_parse_complete: 'Análisis JSON exitoso',
       json_parse_failed: 'Análisis JSON fallido',
-
-      // Validation
       schema_validation_started: 'Validación de esquema iniciada',
       schema_validation_complete: 'Validación de esquema exitosa',
       schema_validation_failed: 'Validación de esquema fallida',
-
-      // Database Operations
       db_reset_started: 'Reinicio de BD iniciado',
       db_import_started: 'Importación de BD iniciada',
       db_import_complete: 'Importación de BD completada',
       db_import_failed: 'Importación de BD fallida',
-
-      // App State
       app_state_reload: 'Estado de la app recargado',
-
-      // Machine Operations
       machine_lookup: 'Buscando máquina',
       machine_found: 'Máquina encontrada',
       machine_not_found: 'Máquina no encontrada',
       machine_created: 'Máquina creada',
       machine_selected: 'Máquina seleccionada',
-
-      // Final Steps
       test_dialog_shown: 'Diálogo de prueba mostrado',
       process_complete: 'Proceso completado',
       process_failed: 'Proceso fallido',
     },
   },
-
-  // ============================================================================
-  // ABOUT MODAL
-  // ============================================================================
+  badges: {
+    recommended: 'Recomendado',
+    nextStep: 'Siguiente paso',
+  },
+  migration: {
+    title: 'Actualización de base de datos',
+    dataCleared:
+      'La base de datos se ha restablecido debido a una actualización. Se han eliminado todas las máquinas, grabaciones y verificaciones.',
+  },
   about: {
     title: 'Acerca de Zanobo',
     subtitle: 'Asistente para comparación acústica de estados de máquinas',
-
-    // Introduction
-    intro: '<strong>Zanobo 2.0</strong> es una Progressive Web App (PWA) respetuosa con la privacidad, diseñada para el análisis comparativo de acústica de máquinas. La aplicación permite grabar y comparar sonidos de máquinas completamente <strong>offline</strong> – sin servicios en la nube, sin sensores externos y sin modelos de IA entrenados.<br><br>Zanobo se entiende deliberadamente <strong>no como una herramienta de diagnóstico</strong>, sino como un <strong>instrumento de comparación y orientación</strong> que apoya la evaluación humana.',
-
-    // Core Features
+    intro:
+      '<strong>Zanobo 2.0</strong> es una Progressive Web App (PWA) respetuosa con la privacidad, diseñada para el análisis comparativo de acústica de máquinas. La aplicación permite grabar y comparar sonidos de máquinas completamente <strong>offline</strong> – sin servicios en la nube, sin sensores externos y sin modelos de IA entrenados.<br><br>Zanobo se entiende deliberadamente <strong>no como una herramienta de diagnóstico</strong>, sino como un <strong>instrumento de comparación y orientación</strong> que apoya la evaluación humana.',
     coreFeaturesTitle: 'Características principales',
     coreFeatures: {
-      offlineFirst: '<strong>Offline-First:</strong> Todas las grabaciones y cálculos se realizan localmente en el navegador.',
-      similarityScore: '<strong>Puntuación de similitud (0–100%):</strong> Zanobo calcula una similitud matemática (similitud del coseno) entre grabación de referencia y de comparación.',
-      userThreshold: '<strong>Umbral definido por el usuario:</strong> Los usuarios definen ellos mismos a partir de qué puntuación un estado cuenta como "normal" o "desviado".',
-      visualFeedback: '<strong>Retroalimentación visual del espectro:</strong> Visualización en tiempo real del espectro de frecuencia y resultado de comparación.',
-      noDataLeaks: '<strong>Almacenamiento local de datos:</strong> Todas las grabaciones de audio y puntuaciones se almacenan exclusivamente en la IndexedDB local del dispositivo.',
+      offlineFirst:
+        '<strong>Offline-First:</strong> Todas las grabaciones y cálculos se realizan localmente en el navegador.',
+      similarityScore:
+        '<strong>Puntuación de similitud (0–100%):</strong> Zanobo calcula una similitud matemática (similitud del coseno) entre grabación de referencia y de comparación.',
+      userThreshold:
+        '<strong>Umbral definido por el usuario:</strong> Los usuarios definen ellos mismos a partir de qué puntuación un estado cuenta como "normal" o "desviado".',
+      visualFeedback:
+        '<strong>Retroalimentación visual del espectro:</strong> Visualización en tiempo real del espectro de frecuencia y resultado de comparación.',
+      noDataLeaks:
+        '<strong>Almacenamiento local de datos:</strong> Todas las grabaciones de audio y puntuaciones se almacenan exclusivamente en la IndexedDB local del dispositivo.',
     },
-
-    // Legal Position
     legalTitle: 'Posición legal y revisión de propiedad intelectual',
-    legalIntro: 'Zanobo fue desarrollado independientemente como un <strong>proyecto privado de código abierto no comercial</strong> bajo la <strong>licencia MIT</strong>. Su funcionalidad se basa en <strong>procedimientos matemáticos descritos abiertamente</strong> (p. ej., análisis de frecuencia y comparaciones de coseno similares a GMIA) y no incorpora <strong>ninguna lógica de sistema patentada</strong>, <strong>ningún mecanismo de clasificación</strong> ni <strong>ningún modelo de aprendizaje</strong>.',
-    legalReview: 'Antes del lanzamiento, se realizó una <strong>revisión técnica y de contenido</strong> para garantizar que Zanobo no entre en conflicto con patentes existentes o enfoques de diagnóstico industrial conocidos.',
-
-    // IP Table
+    legalIntro:
+      'Zanobo fue desarrollado independientemente como un <strong>proyecto privado de código abierto no comercial</strong> bajo la <strong>licencia MIT</strong>. Su funcionalidad se basa en <strong>procedimientos matemáticos descritos abiertamente</strong> (p. ej., análisis de frecuencia y comparaciones de coseno similares a GMIA) y no incorpora <strong>ninguna lógica de sistema patentada</strong>, <strong>ningún mecanismo de clasificación</strong> ni <strong>ningún modelo de aprendizaje</strong>.',
+    legalReview:
+      'Antes del lanzamiento, se realizó una <strong>revisión técnica y de contenido</strong> para garantizar que Zanobo no entre en conflicto con patentes existentes o enfoques de diagnóstico industrial conocidos.',
     ipTableTitle: 'Propiedad intelectual relevante y diferenciación técnica',
     ipTable: {
       headers: {
@@ -1034,22 +1206,29 @@ export const es: TranslationDict = {
       },
       rows: {
         '0': {
-          reference: '<strong>PAPDEOTT005125</strong><br><em>Procedimiento para diagnóstico de máquinas</em>',
+          reference:
+            '<strong>PAPDEOTT005125</strong><br><em>Procedimiento para diagnóstico de máquinas</em>',
           source: 'Publicación defensiva, Siemens AG, 2016',
-          protectedScope: 'Sistema de diagnóstico basado en la nube que utiliza bases de datos centrales y sensores móviles',
-          zanoboDiff: 'Zanobo opera completamente local, sin nube, sin base de datos central, sin diagnósticos',
+          protectedScope:
+            'Sistema de diagnóstico basado en la nube que utiliza bases de datos centrales y sensores móviles',
+          zanoboDiff:
+            'Zanobo opera completamente local, sin nube, sin base de datos central, sin diagnósticos',
         },
         '1': {
-          reference: '<strong>EP3701708B1</strong><br><em>Análisis remoto del estado de la máquina</em>',
+          reference:
+            '<strong>EP3701708B1</strong><br><em>Análisis remoto del estado de la máquina</em>',
           source: 'Patente europea, Siemens AG, 2022',
           protectedScope: 'Diagnóstico remoto basado en ML con modelos entrenados y sensores',
-          zanoboDiff: 'Zanobo no usa aprendizaje automático, sin nube, sin lógica de diagnóstico integrada',
+          zanoboDiff:
+            'Zanobo no usa aprendizaje automático, sin nube, sin lógica de diagnóstico integrada',
         },
         '2': {
-          reference: '<strong>US9263041B2</strong><br><em>Detección de canales en ruido usando GMIA</em>',
+          reference:
+            '<strong>US9263041B2</strong><br><em>Detección de canales en ruido usando GMIA</em>',
           source: 'Siemens Corp., 2016',
           protectedScope: 'Aplicación de GMIA para sistemas de voz y audición',
-          zanoboDiff: 'Zanobo usa matemáticas similares a GMIA exclusivamente para no-voz y comparaciones locales',
+          zanoboDiff:
+            'Zanobo usa matemáticas similares a GMIA exclusivamente para no-voz y comparaciones locales',
         },
         '3': {
           reference: '<strong>US9443201B2</strong><br><em>Aprendizaje de firmas de sensores</em>',
@@ -1058,7 +1237,8 @@ export const es: TranslationDict = {
           zanoboDiff: 'Zanobo no realiza clasificación ni entrenamiento de modelos',
         },
         '4': {
-          reference: '<strong>US9602781B2</strong><br><em>Desmezcla de señales sísmicas (GMIA)</em>',
+          reference:
+            '<strong>US9602781B2</strong><br><em>Desmezcla de señales sísmicas (GMIA)</em>',
           source: 'Schlumberger, 2017',
           protectedScope: 'Separación de señales sísmicas usando GMIA',
           zanoboDiff: 'Dominio y tipo de señal diferentes, no relacionados',
@@ -1066,28 +1246,77 @@ export const es: TranslationDict = {
         '5': {
           reference: '<strong>ABB – Integration of Mobile Measurement</strong>',
           source: 'Presentación industrial pública, ABB, 2015',
-          protectedScope: 'Sensores móviles para diagnóstico ad-hoc con integración de nube y servicio',
-          zanoboDiff: 'Zanobo evita diagnósticos, flujos de trabajo de servicio y conectividad a la nube, enfocándose en la comparación local',
+          protectedScope:
+            'Sensores móviles para diagnóstico ad-hoc con integración de nube y servicio',
+          zanoboDiff:
+            'Zanobo evita diagnósticos, flujos de trabajo de servicio y conectividad a la nube, enfocándose en la comparación local',
         },
       },
     },
-
-    // Transparency
+    useCasesTitle: 'Casos de uso',
+    useCasesIntro:
+      'Zanobo permite dos escenarios de comparación fundamentales que se diferencian por su estructura temporal y espacial:',
+    serialComparisonTitle: 'a) Comparación en serie (comparación temporal / tendencia)',
+    serialComparisonPrinciple:
+      '<strong>Principio:</strong> comparación de una grabación actual con una referencia creada previamente de <strong>la misma máquina</strong>.',
+    serialComparisonGoal:
+      '<strong>Objetivo:</strong> hacer visibles los cambios en el patrón acústico a lo largo del tiempo.',
+    serialComparisonApplication:
+      '<strong>Aplicación:</strong><ul><li>Se crea una grabación de referencia cuando la máquina se considera "normal"</li><li>Las grabaciones posteriores se comparan con esta referencia</li><li>Las desviaciones del patrón original se cuantifican (puntuación de similitud)</li></ul>',
+    serialComparisonHint:
+      '<strong>Nota:</strong> Zanobo solo muestra <strong>si y en qué medida</strong> el sonido actual difiere de la referencia. La interpretación de si una desviación es relevante la realiza el usuario. El sistema no hace ninguna valoración ni ofrece pronóstico.',
+    parallelComparisonTitle:
+      'b) Comparación en paralelo (comparación de máquinas idénticas / chequeo de flota)',
+    parallelComparisonPrinciple:
+      '<strong>Principio:</strong> comparación de varias máquinas idénticas en condiciones de funcionamiento similares.',
+    parallelComparisonGoal:
+      '<strong>Objetivo:</strong> identificación de valores atípicos acústicos dentro de un grupo de máquinas idénticas.',
+    parallelComparisonApplication:
+      '<strong>Aplicación:</strong><ul><li>Se crean grabaciones de varias máquinas idénticas (p. ej., en una nave de producción)</li><li>Zanobo calcula la similitud acústica entre las máquinas</li><li>Las máquinas cuya firma sonora se desvía significativamente del grupo se hacen visibles</li></ul>',
+    parallelComparisonSpecial:
+      '<strong>Particularidad:</strong> funciona <strong>incluso sin referencia histórica</strong>. El propio grupo constituye la base de comparación.',
+    parallelComparisonHint:
+      '<strong>Nota:</strong> Zanobo no decide qué máquina es defectuosa ni cuál representa el "estado objetivo". Solo muestra <strong>desviaciones relativas</strong> dentro del grupo. La valoración de si una máquina desviada debe investigarse más corresponde al usuario.',
+    nfcTitle: 'Acceso instantáneo basado en NFC y comparación contextual',
+    nfcIntro:
+      'Zanobo admite el <strong>uso de etiquetas NFC</strong> en las máquinas para simplificar el acceso a la app y, opcionalmente, proporcionar un contexto específico de la máquina.',
+    nfcFunctionalityTitle: 'Cómo funciona',
+    nfcTagDescription:
+      '<strong>Etiqueta NFC en la máquina:</strong> una etiqueta NFC colocada en la carcasa o el punto de acceso puede contener la siguiente información:<ul><li>URL de la PWA de Zanobo (inicio directo de la app en el navegador)</li><li>ID de máquina para identificación automática</li><li>Opcional: referencia a datos de referencia específicos del cliente (URL a un archivo JSON)</li></ul>',
+    nfcInstantAccess:
+      '<strong>Acceso instantáneo sin instalación:</strong><ul><li>El usuario acerca el smartphone a la etiqueta NFC</li><li>La PWA de Zanobo se abre directamente en el navegador (sin tienda de apps ni registro)</li><li>Opcional: el ID de máquina almacenado se carga automáticamente</li></ul>',
+    nfcReferenceDataTitle: 'Datos de referencia contextuales opcionales',
+    nfcReferenceDataDescription:
+      'La etiqueta NFC puede contener además una <strong>URL a una base de datos de referencia</strong>. Esta base de datos la proporciona el operador de la máquina o el socio de servicio y puede incluir:<ul><li><strong>Grabaciones de referencia</strong> para distintos estados de funcionamiento de la máquina</li><li><strong>Metadatos específicos de la máquina</strong> (p. ej., tipo, año de fabricación, ubicación)</li><li><strong>Parámetros de comparación</strong> para chequeos de flota de máquinas idénticas</li></ul>',
+    nfcAdvantageTitle: 'Ventaja para usuarios nuevos o externos',
+    nfcAdvantageDescription:
+      'Un técnico de servicio u operador que revisa la máquina por primera vez puede:<ul><li><strong>Realizar de inmediato un chequeo acústico</strong> sin tener que grabar él mismo una referencia</li><li><strong>Comparar directamente con datos de referencia existentes</strong> proporcionados por el operador</li><li><strong>Sin conocimientos previos</strong>, hacer una primera valoración de si el sonido actual difiere de la referencia almacenada</li></ul>',
+    nfcDataPrivacyTitle: 'Almacenamiento de datos y privacidad',
+    nfcDataPrivacyImportant:
+      '<strong>Importante:</strong> los datos de referencia <strong>no se almacenan en una nube de Zanobo</strong>. Se proporcionan:<ul><li>En la <strong>red local</strong> del operador (p. ej., servidor de intranet)</li><li>En un <strong>entorno propio del cliente</strong> (p. ej., GitHub Pages, servidor web propio)</li><li>Como un <strong>archivo JSON estático</strong> accesible mediante una URL HTTPS</li></ul>',
+    nfcDataPrivacyStorage:
+      'La base de datos de referencia se descarga en el primer escaneo NFC y luego se almacena <strong>localmente en el dispositivo</strong> (IndexedDB). Todas las comparaciones posteriores se realizan sin conexión.',
+    nfcFocusTitle: 'Enfoque y delimitación',
+    nfcFocusDescription:
+      'El acceso basado en NFC sirve exclusivamente para la <strong>accesibilidad y la comparabilidad</strong>. Permite:<ul><li>Inicio rápido sin configuración manual</li><li>Uso de datos de referencia existentes sin grabación propia</li><li>Base de comparación coherente para varios usuarios o ubicaciones</li></ul>',
+    nfcNoFeatures:
+      '<strong>Incluso al usar datos de referencia basados en NFC, Zanobo:</strong><ul><li>No realiza <strong>ninguna valoración</strong> (ninguna afirmación sobre la causa del daño o el estado)</li><li>No realiza <strong>ninguna automatización</strong> de decisiones (ningún juicio "bueno/malo")</li><li>No realiza <strong>ninguna evaluación en la nube</strong> (todos los cálculos son locales)</li></ul>',
+    nfcInterpretation:
+      'La interpretación de los resultados de comparación siempre corresponde al usuario.',
     transparencyTitle: 'Transparencia e intención',
-    transparencyText1: 'Zanobo <strong>no es una herramienta de diagnóstico</strong> y <strong>no realiza evaluaciones técnicas automatizadas</strong>. Proporciona exclusivamente una <strong>ayuda de comparación visual y matemática</strong>.',
-    transparencyText2: 'Todo el procesamiento ocurre <strong>offline</strong>. <strong>No se transmiten, almacenan ni evalúan datos del usuario</strong>.',
-    transparencyText3: 'Esta transparencia expresa un enfoque consciente hacia la responsabilidad, la protección de datos y los derechos de terceros.',
+    transparencyText1:
+      'Zanobo <strong>no es una herramienta de diagnóstico</strong> y <strong>no realiza evaluaciones técnicas automatizadas</strong>. Proporciona exclusivamente una <strong>ayuda de comparación visual y matemática</strong>.',
+    transparencyText2:
+      'Todo el procesamiento ocurre <strong>offline</strong>. <strong>No se transmiten, almacenan ni evalúan datos del usuario</strong>.',
+    transparencyText3:
+      'Esta transparencia expresa un enfoque consciente hacia la responsabilidad, la protección de datos y los derechos de terceros.',
     transparencyList: {
       noClassification: 'sin clasificación de estados',
       noCauseAnalysis: 'sin análisis de causas de fallas',
       noRepairRecommendations: 'sin recomendaciones de reparación',
     },
-
-    // Public Instance
     publicInstance: 'Instancia pública:',
     publicInstanceUrl: 'https://zanobo.vercel.app',
-
-    // Version Info
     version: 'Versión:',
     versionNumber: '2.0.0 (2026)',
     developedBy: 'Desarrollado por:',
@@ -1096,14 +1325,151 @@ export const es: TranslationDict = {
     licenseType: 'MIT',
     stack: 'Stack tecnológico:',
     stackTech: 'TypeScript, Vite, Web Audio API',
-
-    // Guiding Principle
     guidingPrincipleTitle: 'Principio rector',
     guidingPrincipleQuestion: '¿La máquina suena normal?',
     guidingPrincipleStatement: 'Los teléfonos inteligentes escuchan los sonidos de las máquinas.',
   },
+  // ============================================================================
+  // LÍNEA DE TIEMPO DE EVENTOS (motor temporal Tier 2, T2-a2)
+  // ============================================================================
+  // ESPECTROGRAMA 3D "MONTAÑA" (modal de historial, experto)
+  // ============================================================================
+  spectro3d: {
+    show: 'Vista 3D (montaña)',
+    hide: 'Cerrar vista 3D',
+    hint: '1 dedo: girar · 2 dedos: zoom',
+    axis: 'Frecuencia 0–{{maxKhz}} kHz · duración {{seconds}} s · altura = intensidad',
+    sourceMeasurement: 'Medición',
+    sourceReference: 'Referencia',
+  },
 
-  // Sprint 4 UX: Fleet Check Mode (English fallbacks)
+  // ============================================================================
+  // COMPARTIR RESULTADO COMO IMAGEN
+  // ============================================================================
+  share: {
+    resultButton: 'Compartir como imagen',
+    resultFooter: 'Comprobación acústica Zanobot',
+    resultFailed: 'No se pudo crear la imagen.',
+  },
+
+  // ============================================================================
+  temporalEvents: {
+    title: 'Línea de tiempo de eventos',
+    legendKnown: 'conocido',
+    legendAnomalous: 'anómalo',
+    noEvents: 'Aún no se han detectado eventos',
+    rateLine: 'Eventos/min: {{observed}} · referencia: {{expected}}',
+    densityMissing:
+      'Falta el ritmo esperado: muchos menos eventos que en la referencia.',
+    densityExcess:
+      'Muchos más eventos que en la referencia (¿ruido externo?).',
+    cycleLine: 'Ciclo: {{period}} s · desviación de forma: {{status}}',
+    cycleOk: 'ok',
+    cycleDeviant: 'alta',
+    cyclePending: 'observando …',
+    recommendTitle: 'Máquina no estacionaria detectada',
+    recommendBody:
+      'Esta máquina suena no estacionaria (nivel variable, ritmo o ciclo). El motor de patrones temporales (Tier 2) está hecho para esto.',
+    recommendAction: 'Activar motor temporal',
+    recommendSwitched:
+      'Motor temporal activado — se aplica a las referencias nuevas.',
+  },
+
+  drift: {
+    settingsTitle: '🔍 Análisis de cambios',
+    settingsDescription:
+      'Analiza si los cambios de puntuación se deben al entorno (sala) o a la máquina. Muestra una valoración separada durante la comprobación.',
+    enabled: 'Análisis de cambios activado',
+    howItWorks:
+      'El sistema separa los cambios espectrales en dos componentes: deriva suave y de banda ancha (= sala/entorno) y cambios locales de banda estrecha (= máquina). Esto ayuda a ver si una caída de puntuación proviene de la sala o de la máquina.',
+    smoothWindow: 'Ventana de suavizado',
+    smoothHint:
+      'Mayor = más separación entre sala y máquina. Menor = más sensible a las características de la sala.',
+    lowFreqCutoff: 'Protección de bajas frecuencias',
+    lowFreqHint:
+      'Los bins por debajo de este valor se ignoran para el análisis de la máquina. Protege contra modos de sala en los graves que podrían interpretarse erróneamente como cambios de la máquina. 0 = sin protección.',
+    globalThreshold: 'Sensibilidad del entorno',
+    globalThresholdHint: 'Baja = avisa antes ante un cambio de sala. Alta = más tolerante.',
+    localThreshold: 'Sensibilidad de la máquina',
+    localThresholdHint: 'Baja = detecta pequeños cambios de la máquina. Alta = más tolerante.',
+    title: 'Análisis de cambios',
+    environment: 'Entorno',
+    machine: 'Máquina',
+    globalOk: 'Entorno consistente',
+    globalWarning: 'Entorno ligeramente cambiado',
+    globalCritical: 'Entorno muy cambiado',
+    localOk: 'Sin cambios estructurales',
+    localWarning: 'Cambio menor detectado',
+    localCritical: 'Cambio significativo detectado',
+    allOk: '✅ Entorno y máquina consistentes con la referencia',
+    roomChange: '🟡 Cambio de entorno detectado – máquina sin cambios',
+    machineChange: '🔴 Cambio de máquina detectado – revise la máquina',
+    both: '🟠 Entorno y máquina cambiaron – interprete los resultados con cautela',
+    uncertain: '🟡 Situación poco clara – mida más cerca de la máquina o cree una nueva referencia',
+    recommendRoom:
+      'La caída de puntuación probablemente se deba al entorno o a la posición del micrófono. Mida más cerca de la máquina, use la misma posición que en la referencia o cree una nueva referencia en este entorno.',
+    recommendMachine: 'Cambio estructural en la máquina detectado. Revise el mantenimiento.',
+    recommendBoth:
+      'Tanto el entorno como la máquina cambiaron. Para obtener resultados fiables: cree una nueva referencia en el entorno actual.',
+    recommendUncertain:
+      'Para resultados más claros: mida más cerca de la máquina, use la misma posición que en la referencia o cree una referencia en el entorno actual.',
+    roomChangeButScoreOk:
+      '💡 Cambio de entorno detectado, pero la puntuación es estable: es una buena señal.',
+    roomChangeMayCauseScoreDrop:
+      '💡 La caída de puntuación puede deberse al entorno o a la posición del micrófono, no a la máquina. Use la misma posición que en la referencia o cree una nueva referencia aquí.',
+    machineChangeDetected: '⚠️ Cambio estructural en la máquina detectado. Compruébelo.',
+    referenceHint:
+      '💡 Análisis de cambios activo: esta grabación también define el entorno de referencia y la posición del micrófono. Las comprobaciones futuras mostrarán si el entorno o la máquina han cambiado.',
+    referenceStored:
+      '✅ Perfil de entorno almacenado. Las comprobaciones futuras analizarán automáticamente si los cambios provienen del entorno o de la máquina.',
+    initializing: 'Análisis de entorno en curso…',
+    summaryOk: 'Entorno estable',
+    summaryRoomChange: 'Entorno cambiado – la puntuación puede desviarse',
+    summaryMachineChange: 'El sonido de la máquina ha cambiado',
+    summaryBoth: 'Entorno y máquina cambiaron',
+    summaryUncertain: 'El análisis de entorno aún no es concluyente',
+  },
+  help: {
+    reference: {
+      title: '¿Qué es el estado normal?',
+      body: '<p>El estado normal es una grabación de 10 segundos de tu máquina durante un funcionamiento sano.</p><p>Todas las comprobaciones futuras se comparan con este estado. Cuanto mejor sea la grabación, con más precisión se detectarán los cambios.</p><p><strong>Consejo:</strong> graba el estado normal durante el funcionamiento normal y mueve lentamente el smartphone alrededor de la máquina para poder filtrar las influencias del entorno.</p>',
+    },
+    diagnose: {
+      title: '¿Qué ocurre durante "Comprobar estado"?',
+      body: '<p>La app graba el sonido actual de la máquina y lo compara matemáticamente con la referencia almacenada.</p><p>El resultado es una puntuación de similitud (0–100 %). 100 % significa que la máquina suena exactamente como durante la grabación de referencia.</p><p>Una tendencia decreciente a lo largo de varias mediciones es más significativa que un valor aislado.</p>',
+    },
+    machines: {
+      title: '¿Por qué crear una máquina?',
+      body: '<p>Cada máquina tiene su propio perfil acústico. Al crear una máquina con un nombre único, se pueden asignar referencias e historial de comprobaciones.</p><p>Así puedes ver tendencias a lo largo del tiempo y detectar cambios a tiempo.</p>',
+    },
+    viewLevel: {
+      title: 'Modo de vista',
+      body: '<p><strong>Básico:</strong> indicación sencilla tipo semáforo. Para el uso diario por parte de operadores.</p><p><strong>Avanzado:</strong> detalles adicionales como espectrograma y monitorización del entorno. Para personal de mantenimiento.</p><p><strong>Experto:</strong> vista técnica completa con parámetros DSP e información de depuración. Para ingenieros.</p>',
+    },
+    spectrogram: {
+      title: '¿Qué muestra el espectrograma?',
+      body: '<p>El espectrograma muestra la distribución de frecuencias del sonido de la máquina en tiempo real.</p><p>El eje horizontal muestra el tiempo y el vertical, la frecuencia. Las zonas claras indican alta energía en esa frecuencia.</p><p>Los cambios en el patrón pueden indicar problemas mecánicos (p. ej., un daño en un rodamiento crea nuevas bandas de frecuencia).</p>',
+    },
+    drift: {
+      title: '¿Qué es la detección de deriva?',
+      body: '<p>La detección de deriva monitoriza si el entorno o la máquina han cambiado desde la grabación de referencia.</p><p><strong>Deriva del entorno:</strong> posición, temperatura, acústica: pueden afectar a la puntuación sin que la máquina esté defectuosa.</p><p><strong>Deriva de la máquina:</strong> cambio real en el sonido de la máquina.</p><p>Esta distinción ayuda a evitar falsas alarmas.</p>',
+    },
+    fleet: {
+      title: '¿Qué es el chequeo de flota?',
+      body: '<p><strong>El chequeo de flota</strong> compara varias máquinas idénticas entre sí, p. ej., 24 bombas del mismo tipo.</p><p>En lugar de mostrar la tendencia de una sola máquina (eso es la Vista general), el chequeo de flota muestra una <strong>clasificación</strong>: ¿qué máquina se desvía?</p><p><strong>¿Cuándo usarlo?</strong> Cuando tienes muchas máquinas similares en el sitio y quieres encontrar rápidamente los valores atípicos.</p><p><strong>Consejo:</strong> asigna las máquinas a un grupo de flota (p. ej., "Calefacción Oeste") para que se comparen juntas.</p>',
+    },
+    fleetRanking: {
+      title: 'Entender la clasificación',
+      body: '<p>Cada <strong>barra</strong> muestra la puntuación de similitud (0–100 %). Las máquinas se ordenan: la puntuación más baja arriba.</p><p>Las máquinas <strong>naranjas</strong> se desvían estadísticamente del resto.</p><p><strong>Mediana:</strong> la puntuación central, más robusta que un promedio.</p><p><strong>Dispersión:</strong> diferencia entre la mejor y la peor puntuación.</p><p><strong>Consejo:</strong> toca una máquina para iniciar su comprobación.</p>',
+    },
+    fleetQuickCheck: {
+      title: 'Fleet Quick Check',
+      body: "<p><strong>What is this?</strong> Check multiple identical machines in one go. The app compares their sounds and instantly shows you which machine sounds different – the “odd one out”.</p><p><strong>When should I use this?</strong> When you're standing in front of several identical machines (e.g. 5 pumps in a row) and want to quickly find out if one stands out.</p><p><strong>How does it work?</strong></p><p>• <strong>Fleet exists:</strong> Select a saved fleet – the app guides you through machine by machine.</p><p>• <strong>No fleet:</strong> No problem! The app creates machines automatically, you just record. You can save the result as a fleet afterwards.</p><p><strong>Difference from single check:</strong> “Check now” compares one machine against its own reference (trend over time). The fleet quick check compares multiple machines against each other (find the outlier).</p>",
+    },
+  },
+  smartStartReady: {
+    signalDetected: '✅ Señal detectada – Iniciando análisis',
+  },
   fleet: {
     toggle: {
       series: 'Overview',
@@ -1114,7 +1480,7 @@ export const es: TranslationDict = {
       hint: 'e.g. "Heating West" – machines in the same group are compared',
       recent24h: 'Last 24 hours',
       noMachines: 'No machines for fleet check',
-      noMachinesHint: 'Run diagnoses or assign machines to a fleet group.',
+      noMachinesHint: 'Run checks or assign machines to a fleet group.',
     },
     ranking: {
       noData: 'No verificado',
@@ -1126,12 +1492,14 @@ export const es: TranslationDict = {
       spread: 'Spread',
     },
     quickSave: {
-      hint: 'Quick Fleet – won\'t show tomorrow.',
+      hint: "Quick Fleet – won't show tomorrow.",
       button: 'Save as fleet…',
       prompt: 'Enter fleet name (e.g. "Heating West"):',
       success: '{{count}} machines saved as "{{name}}".',
     },
-    cta: { newFleet: 'New Fleet' },
+    cta: {
+      newFleet: 'New Fleet',
+    },
     create: {
       title: 'Create new fleet',
       nameLabel: 'Fleet name',
@@ -1153,27 +1521,31 @@ export const es: TranslationDict = {
       resumed: 'Fleet check resumed.',
       guided: {
         goTo: 'Go to:',
-        startRecording: '\u25B6 Start recording',
+        startRecording: '▶ Start recording',
         skip: 'Skip',
         machineOf: '{{current}} of {{total}}',
         waitingForUser: 'Ready? Hold your smartphone near the machine.',
       },
     },
-    // Onboarding Splash (after NFC fleet provisioning)
     onboarding: {
       title: 'Fleet Check – {{count}} machines',
       titleSingular: 'Fleet Check – 1 machine',
       concept: 'Does one machine sound different from the others? This app finds out.',
-      method: 'You briefly record each machine – the app compares the sounds and shows you the \u201Codd one out\u201D.',
+      method:
+        'You briefly record each machine – the app compares the sounds and shows you the “odd one out”.',
       howTo: 'How it works:',
       step1: 'Go to the displayed machine',
       step2: 'Hold your smartphone close to the machine',
-      step3: 'Tap \u201CStart recording\u201D',
+      step3: 'Tap “Start recording”',
       step4: 'Hold still for 10 sec. – done',
       startButton: 'First machine',
       noMachines: 'No machines in the fleet.',
     },
-    goldStandard: { badge: 'Gold Standard (referencia para la flota)', deleted: 'El Gold Standard "{{name}}" fue eliminado – {{count}} máquinas ahora usan su propia referencia.' },
+    goldStandard: {
+      badge: 'Gold Standard (referencia para la flota)',
+      deleted:
+        'El Gold Standard "{{name}}" fue eliminado – {{count}} máquinas ahora usan su propia referencia.',
+    },
     export: {
       button: 'Export fleet',
       success: 'Fleet "{{name}}" exported. Upload file to GitHub Pages for NFC/QR.',
@@ -1186,10 +1558,10 @@ export const es: TranslationDict = {
       error: 'Could not load fleet.',
       offline: 'No internet connection. Please connect to the network and scan the tag again.',
       rollbackComplete: 'Import failed – changes rolled back.',
-      updateRecommended: 'Fleet file was exported from a newer app version. App update recommended.',
+      updateRecommended:
+        'Fleet file was exported from a newer app version. App update recommended.',
       skippedDifferentFleet: '"{{name}}" belongs to fleet "{{fleet}}" – not reassigned.',
     },
-    // Fleet Result Modal (English fallback)
     result: {
       title: 'Fleet Result',
       complete: 'Fleet check complete',
@@ -1203,9 +1575,10 @@ export const es: TranslationDict = {
       notChecked: 'Not checked',
       save: 'Save results',
       discard: 'Discard',
-      discardConfirm: 'Delete diagnoses from this run? Machines and references will be kept.',
-      discardDone: '{{count}} diagnoses discarded',
+      discardConfirm: 'Delete checks from this run? Machines and references will be kept.',
+      discardDone: '{{count}} checks discarded',
       viewHistory: 'View history',
+      closeAndContinue: 'Continuar',
     },
     history: {
       title: 'Fleet Check History',
@@ -1218,8 +1591,6 @@ export const es: TranslationDict = {
       close: 'Close',
     },
   },
-
-  // Sprint 7: Quick Compare (English fallback)
   quickCompare: {
     startButton: 'Quick Compare',
     hint: 'Compare machines – no setup needed',
@@ -1227,19 +1598,20 @@ export const es: TranslationDict = {
       title: 'Quick Compare',
       howMany: 'How many machines do you want to compare?',
       customCount: 'Custom count',
-      explanation: 'Go to each machine in order and record it. The first recording is automatically used as the comparison baseline.',
+      explanation:
+        'Go to each machine in order and record it. The first recording is automatically used as the comparison baseline.',
       next: 'Next',
       minMachines: 'At least 2 machines',
       maxMachines: 'Maximum 30 machines',
     },
     reference: {
-      title: 'Record reference',
+      title: 'Grabar estado normal',
       instruction: 'Record the first machine',
       hint: 'Automatically used as the comparison baseline.',
-      startRecording: 'Record reference',
-      saved: 'Reference saved',
+      startRecording: 'Grabar estado normal',
+      saved: 'Estado normal guardado',
       goldName: 'Reference (Gold)',
-      recordingHint: 'Record the reference machine now.',
+      recordingHint: 'Grabe el estado normal ahora.',
     },
     compare: {
       goTo: 'Go to:',
@@ -1267,38 +1639,154 @@ export const es: TranslationDict = {
       cleanupDone: '{{count}} machines deleted',
     },
     nfcOnboarding: {
-      title: 'Quick Compare \u2013 {{count}} machines',
-      titleSingular: 'Quick Compare \u2013 1 machine',
+      title: 'Quick Compare – {{count}} machines',
+      titleSingular: 'Quick Compare – 1 machine',
       concept: 'Does one machine sound different from the others? This app finds out.',
-      method: 'Go to each machine in order and briefly record it. The app compares all sounds and shows you which one sounds different.',
-      startButton: 'Let\u2019s go',
+      method:
+        'Go to each machine in order and briefly record it. The app compares all sounds and shows you which one sounds different.',
+      startButton: 'Let’s go',
       minMachines: 'At least 2 machines required for quick compare.',
-      timeEstimate: 'Duraci\u00F3n: aprox. {{minutes}} minutos para {{count}} m\u00E1quinas.',
-      privacyHint: 'El micr\u00F3fono y la c\u00E1mara solo se usan para el an\u00E1lisis. Todos los datos permanecen en su dispositivo.',
+      timeEstimate: 'Duración: aprox. {{minutes}} minutos para {{count}} máquinas.',
+      privacyHint:
+        'El micrófono y la cámara solo se usan para el análisis. Todos los datos permanecen en su dispositivo.',
     },
     guidedPrompt: {
-      referenceHint: 'Esta grabaci\u00F3n se usar\u00E1 como base de comparaci\u00F3n.',
-      positionInstruction: 'Sostenga el smartphone a aprox. 10\u201320 cm de la m\u00E1quina. Por favor, no hable.',
-      positionMemory: 'Consejo: recuerde el lugar \u2013 misma posici\u00F3n para todas las m\u00E1quinas.',
-      noiseHint: 'Por favor, no hable ni se mueva durante la grabaci\u00F3n.',
+      referenceHint: 'Esta grabación se usará como base de comparación.',
+      positionInstruction:
+        'Sostenga el smartphone a aprox. 10–20 cm de la máquina. Por favor, no hable.',
+      positionMemory: 'Consejo: recuerde el lugar – misma posición para todas las máquinas.',
+      noiseHint: 'Por favor, no hable ni se mueva durante la grabación.',
     },
     inspectionReference: {
-      mainQuestion: 'Grabando referencia...',
-      subtitle: 'Esta grabaci\u00F3n se guardar\u00E1 como base de comparaci\u00F3n.',
-      scorePlaceholder: 'Referencia \u2013 sin comparaci\u00F3n',
+      mainQuestion: 'Grabando estado normal...',
+      subtitle: 'Esta grabación se guardará como base de comparación.',
+      scorePlaceholder: 'Estado normal – sin comparación',
       comparingWith: 'Comparando con {{name}}...',
     },
     ghostOverlay: {
-      hint: 'Gu\u00EDa de posici\u00F3n: alinee la imagen en vivo con el contorno semitransparente.',
+      hint: 'Guía de posición: alinee la imagen en vivo con el contorno semitransparente.',
     },
     scoreExplanation: {
-      hint: '{{score}}% = Similitud con la referencia. Verde = normal, Naranja = revisar, Rojo = anomal\u00EDa.',
+      hint: '{{score}}% = Similitud con la referencia. Verde = normal, Naranja = revisar, Rojo = anomalía.',
     },
     resultContext: {
-      allGood: 'Todas las m\u00E1quinas suenan similar \u2013 no se detectaron anomal\u00EDas.',
-      outlierWarning: 'Atenci\u00F3n: {{name}} muestra una desviaci\u00F3n significativa. Recomendaci\u00F3n: inspeccionar m\u00E1s a fondo.',
-      outlierWarningMultiple: 'Atenci\u00F3n: {{count}} m\u00E1quinas muestran una desviaci\u00F3n significativa. Recomendaci\u00F3n: inspeccionar m\u00E1s a fondo.',
-      fleetSaveHint: 'Las flotas guardadas permiten revisiones regulares con gu\u00EDa de posici\u00F3n.',
+      allGood: 'Todas las máquinas suenan similar – no se detectaron anomalías.',
+      outlierWarning:
+        'Atención: {{name}} muestra una desviación significativa. Recomendación: inspeccionar más a fondo.',
+      outlierWarningMultiple:
+        'Atención: {{count}} máquinas muestran una desviación significativa. Recomendación: inspeccionar más a fondo.',
+      fleetSaveHint: 'Las flotas guardadas permiten revisiones regulares con guía de posición.',
     },
+  },
+  dashboard: {
+    totalMachines: 'máquinas',
+    healthy: 'normal',
+    warning: 'desviación',
+    critical: 'anormal',
+    unchecked: 'no verificado',
+    checkNow: 'Verificar ahora',
+    attentionPrefix: 'Verificación recomendada',
+    lastCheck: 'Última verificación',
+  },
+  resultAmpel: {
+    explanationHealthy: 'La máquina suena como se esperaba.',
+    explanationWarning: 'La máquina suena diferente al estado normal.',
+    explanationCritical: 'La máquina se desvía significativamente del estado normal.',
+    trendStable: 'Estable en {{count}} verificaciones',
+    trendImproving: '{{delta}}% en {{count}} verificaciones',
+    trendDeclining: '{{delta}}% en {{count}} verificaciones',
+  },
+  resultActions: {
+    details: 'Detalles',
+    newCheck: 'Nueva verificación',
+    reportMaintenance: 'Reportar mantenimiento',
+    copiedToClipboard: 'Informe de mantenimiento copiado al portapapeles',
+    maintenanceReportTitle: 'Informe de mantenimiento',
+    machine: 'Máquina',
+    score: 'Puntuación',
+    status: 'Estado',
+    date: 'Fecha',
+    recommendation: 'Recomendación',
+  },
+  history: {
+    openHistory: 'View history for {{name}}',
+    viewHistory: 'History',
+    diagnosisCount: '{{count}} checks',
+    noDiagnoses: '{{name}} has no checks yet.',
+    noMatchingDiagnoses: 'No checks match this filter.',
+    filterAll: 'All',
+    filter7d: '7 days',
+    filter30d: '30 days',
+    filterAbnormal: 'Abnormal',
+    chartAriaLabel: 'History chart with {{count}} data points',
+    stableVsPrevious: 'stable vs previous',
+    vsPrevious: 'vs previous',
+    detectedState: 'Detected state',
+  },
+  report: {
+    exportButton: 'Exportar informe',
+    formatChoiceTitle: 'Formato del informe',
+    formatPDF: 'PDF (Imprimible)',
+    formatCSV: 'CSV (Excel)',
+    formatJSON: 'JSON (Sistema de tickets)',
+    title: 'Informe de inspección Zanobo',
+    fleetTitle: 'Informe de verificación de flota',
+    allMachinesTitle: 'Resumen de máquinas',
+    totalLabel: 'Total',
+    healthyLabel: 'Normal',
+    warningLabel: 'Desviación',
+    criticalLabel: 'Anormal',
+    medianLabel: 'Mediana',
+    colMachine: 'Máquina',
+    colScore: 'Puntuación',
+    colStatus: 'Estado',
+    colTrend: 'Tendencia',
+    colRecommendation: 'Recomendación',
+    colDate: 'Fecha',
+    footer: 'Generado por Zanobo · Verificación acústica de máquinas',
+    exported: 'Informe exportado',
+  },
+  maintenance: {
+    exportTitle: 'Reportar mantenimiento',
+    copyToClipboard: 'Copiar al portapapeles',
+    exportJSON: 'Descargar informe JSON',
+    exportCSV: 'Descargar informe CSV',
+    reportButton: 'Reportar mantenimiento',
+    reportTitle: 'Informe de mantenimiento',
+  },
+  trendAnalysis: {
+    criticalDecline:
+      'Puntuación cayendo fuertemente en {{count}} verificaciones ({{from}}% → {{to}}%). Inspección inmediata recomendada.',
+    declining:
+      'Puntuación en descenso en {{count}} verificaciones ({{from}}% → {{to}}%). Monitorear de cerca.',
+    improving: 'Puntuación mejorando en {{count}} verificaciones ({{from}}% → {{to}}%).',
+  },
+  unifiedFlow: {
+    newMachineTitle: 'New Machine',
+    missingRefTitle: 'Normal State Missing',
+    noMachinesExplanation:
+      'No known machine detected. Create a new machine – the normal state will be recorded right away.',
+    missingRefExplanation:
+      "The following machines don't have a normal state yet. Select one to record it now.",
+    machineNameLabel: 'Machine name',
+    machineNamePlaceholder: 'e.g. Pump 3 – West Hall',
+    createAndRecord: 'Create & Record Normal State',
+    recordNormalState: 'Record normal state →',
+    recordingStarted: 'Recording normal state for {{name}}...',
+    referenceSavedSuccess: 'Normal state saved for {{name}}.',
+    referenceSavedHint: 'Next time you check, {{name}} will be recognized automatically.',
+  },
+  fleetSelect: {
+    title: 'Select Fleet',
+    machineCount: '{{count}} machines',
+    machineCountSingular: '1 machine',
+    lastChecked: 'checked {{time}}',
+    neverChecked: 'never checked',
+    newQuickCompare: 'New Quick Compare',
+    newQuickCompareHint: 'Compare machines without setup',
+    singleMachineHint: 'Fleet "{{name}}" has only 1 machine. At least 2 required for comparison.',
+  },
+  alerts: {
+    genericError: 'Se produjo un error. Por favor, inténtalo de nuevo.',
   },
 };

@@ -12,6 +12,7 @@
 
 import { t } from '../../i18n/index.js';
 import type { EnvironmentComparisonResult } from '@core/dsp/roomCompensation.js';
+import { classifyNoiseSnr } from '@core/dsp/noiseProfile.js';
 
 /**
  * Live data the dashboard displays.
@@ -52,6 +53,17 @@ export interface PipelineStatusData {
     message: string;
     referenceOnly: boolean;        // true when only ref info shown (no live T60)
     referenceClassification: string; // e.g. "trocken"
+  };
+
+  // Noise Profile Subtraction (Pipeline-Stufe 1.5)
+  noiseSub: {
+    enabled: boolean;             // Feature active with a selected profile
+    active: boolean;              // Was subtraction actually applied?
+    profileName: string;          // Name of the active profile
+    snrDb: number | null;         // Broadband SNR estimate (live diagnosis only)
+    staleDays: number | null;     // Profile age in days when stale, else null
+    overlapWarning: boolean;      // Profile spectrum resembles machine reference
+    deviceMismatch: boolean;      // Different mic than during profile capture
   };
 }
 
@@ -103,6 +115,15 @@ export class PipelineStatusDashboard {
         referenceOnly: false,
         referenceClassification: '',
       },
+      noiseSub: {
+        enabled: false,
+        active: false,
+        profileName: '',
+        snrDb: null,
+        staleDays: null,
+        overlapWarning: false,
+        deviceMismatch: false,
+      },
     };
   }
 
@@ -136,6 +157,10 @@ export class PipelineStatusDashboard {
           <span class="pipeline-item-icon">\u{1F352}</span>
           <span class="pipeline-item-label" id="ps-cherry-label">\u2014</span>
         </div>
+        <div class="pipeline-item" id="ps-noise" style="display:none;">
+          <span class="pipeline-item-icon">\u{1F39A}\ufe0f</span>
+          <span class="pipeline-item-label" id="ps-noise-label">\u2014</span>
+        </div>
         <div class="pipeline-item" id="ps-bias" style="display:none;">
           <span class="pipeline-item-icon">\u{1F504}</span>
           <span class="pipeline-item-label" id="ps-bias-label">\u2014</span>
@@ -159,7 +184,8 @@ export class PipelineStatusDashboard {
    */
   public show(): void {
     if (!this.container) return;
-    const hasAnyFeature = this.data.cherryPick.enabled || this.data.roomComp.enabled;
+    const hasAnyFeature =
+      this.data.cherryPick.enabled || this.data.roomComp.enabled || this.data.noiseSub.enabled;
     if (!hasAnyFeature) {
       this.container.style.display = 'none';
       this.isVisible = false;
@@ -284,6 +310,50 @@ export class PipelineStatusDashboard {
   }
 
   /**
+   * Set noise profile subtraction status (Pipeline-Stufe 1.5).
+   * Called once when the stage is initialized (enabled + profile name)
+   * and per-frame during live diagnosis (active + SNR estimate).
+   * Re-renders only when the displayed values actually change.
+   */
+  public setNoiseSubStatus(
+    enabled: boolean,
+    profileName: string,
+    active: boolean = false,
+    snrDb: number | null = null
+  ): void {
+    const prev = this.data.noiseSub;
+    const snrRounded = snrDb === null ? null : Math.round(snrDb);
+    const prevSnrRounded = prev.snrDb === null ? null : Math.round(prev.snrDb);
+    const unchanged =
+      prev.enabled === enabled &&
+      prev.profileName === profileName &&
+      prev.active === active &&
+      prevSnrRounded === snrRounded;
+
+    this.data.noiseSub = { ...prev, enabled, profileName, active, snrDb };
+
+    if (!unchanged) {
+      this.render();
+    }
+  }
+
+  /**
+   * Set one-time context warnings for the noise profile
+   * (staleness, machine-signature overlap, device mismatch).
+   * Called once at diagnosis initialization.
+   */
+  public setNoiseSubContext(
+    staleDays: number | null,
+    overlapWarning: boolean,
+    deviceMismatch: boolean
+  ): void {
+    this.data.noiseSub.staleDays = staleDays;
+    this.data.noiseSub.overlapWarning = overlapWarning;
+    this.data.noiseSub.deviceMismatch = deviceMismatch;
+    this.render();
+  }
+
+  /**
    * Load settings and initialize data
    */
   public loadFromSettings(
@@ -293,7 +363,9 @@ export class PipelineStatusDashboard {
     t60Enabled: boolean,
     sigma: number,
     beta: number,
-    biasMatchEnabled: boolean = false
+    biasMatchEnabled: boolean = false,
+    noiseSubEnabled: boolean = false,
+    noiseSubProfileName: string = ''
   ): void {
     this.data.cherryPick.enabled = cherryPickEnabled;
     this.data.cherryPick.sigmaThreshold = sigma;
@@ -302,6 +374,8 @@ export class PipelineStatusDashboard {
     this.data.roomComp.biasMatchEnabled = biasMatchEnabled;
     this.data.roomComp.t60Enabled = t60Enabled;
     this.data.roomComp.beta = beta;
+    this.data.noiseSub.enabled = noiseSubEnabled;
+    this.data.noiseSub.profileName = noiseSubProfileName;
   }
 
   /**
@@ -417,6 +491,62 @@ export class PipelineStatusDashboard {
         }
       } else {
         cherryRow.style.display = 'none';
+      }
+    }
+
+    // --- Noise Profile Subtraction Row (mit SNR-Konfidenz-Ampel) ---
+    const noiseRow = this.container.querySelector('#ps-noise') as HTMLElement;
+    const noiseLabel = this.container.querySelector('#ps-noise-label') as HTMLElement;
+    if (noiseRow && noiseLabel) {
+      if (this.data.noiseSub.enabled) {
+        noiseRow.style.display = '';
+        const ns = this.data.noiseSub;
+        const state = ns.active ? t('pipelineStatus.active') : t('pipelineStatus.waiting');
+
+        // SNR-Ampel: Klassifikation + Farbe
+        let snrPart = '';
+        let colorClass = '';
+        if (ns.snrDb !== null) {
+          const classification = classifyNoiseSnr(ns.snrDb);
+          const snrValue = `${ns.snrDb >= 0 ? '+' : ''}${ns.snrDb.toFixed(0)} dB`;
+          switch (classification) {
+            case 'machine_dominates':
+              colorClass = 'status-healthy';
+              snrPart = ` (SNR ${snrValue} · ${t('noiseSub.snrMachineDominates')})`;
+              break;
+            case 'similar_levels':
+              colorClass = 'status-healthy';
+              snrPart = ` (SNR ${snrValue} · ${t('noiseSub.snrSimilarLevels')})`;
+              break;
+            case 'noise_dominates':
+              colorClass = 'status-faulty';
+              snrPart = ` (SNR ${snrValue} · ${t('noiseSub.snrNoiseDominates')})`;
+              break;
+          }
+        }
+
+        // Kontext-Warnungen (Staleness, Überlappung, Gerätewechsel)
+        const warnings: string[] = [];
+        if (ns.staleDays !== null) {
+          warnings.push(t('noiseSub.warnStale', { days: String(ns.staleDays) }));
+        }
+        if (ns.overlapWarning) {
+          warnings.push(t('noiseSub.warnOverlap'));
+        }
+        if (ns.deviceMismatch) {
+          warnings.push(t('noiseSub.warnDevice'));
+        }
+        const warnPart = warnings.length > 0 ? ` ⚠️ ${warnings.join(' · ')}` : '';
+        if (warnings.length > 0 && colorClass !== 'status-faulty') {
+          colorClass = 'status-uncertain';
+        }
+
+        noiseLabel.textContent =
+          `${t('noiseSub.rowLabel')}: ${state}` +
+          `${ns.profileName ? ` · ${ns.profileName}` : ''}${snrPart}${warnPart}`;
+        noiseLabel.className = `pipeline-item-label ${colorClass}`.trim();
+      } else {
+        noiseRow.style.display = 'none';
       }
     }
 

@@ -132,11 +132,21 @@ export function assessRecordingQuality(features: FeatureVector[]): QualityResult
   );
 
   logger.info(`   Quality Score: ${score.toFixed(1)}% - Rating: ${rating}`);
-  logger.info(`   Signal RMS Amplitude: ${signalMagnitude.toFixed(4)} (${signalMagnitude >= 0.03 ? 'SUFFICIENT' : 'LOW - possible noise/weak signal'})`);
-  logger.info(`   Median frame similarity: ${frameSimilarity.toFixed(3)} | Peak/median SNR: ${signalSnr.toFixed(2)}`);
+  logger.info(
+    `   Signal RMS Amplitude: ${signalMagnitude.toFixed(4)} (${signalMagnitude >= 0.03 ? 'SUFFICIENT' : 'LOW - possible noise/weak signal'})`
+  );
+  logger.info(
+    `   Median frame similarity: ${frameSimilarity.toFixed(3)} | Peak/median SNR: ${signalSnr.toFixed(2)}`
+  );
   if (issues.length > 0) {
     logger.warn(`   Issues detected: ${issues.join(', ')}`);
   }
+
+  // Unambiguous "bad measurement" flag: weak signal masked by noise (mic too
+  // far, machine off, mostly background noise). Deliberately ignores variance/
+  // outliers, which a genuinely anomalous-but-valid machine can also produce.
+  const signalTooWeak =
+    signalMagnitude < QUALITY_THRESHOLDS.RMS_WARNING && signalSnr < QUALITY_THRESHOLDS.SNR_WEAK_MIN;
 
   return {
     score: Math.round(score),
@@ -149,6 +159,7 @@ export function assessRecordingQuality(features: FeatureVector[]): QualityResult
       signalMagnitude,
       frameSimilarity,
       signalSnr,
+      signalTooWeak,
     },
   };
 }
@@ -514,7 +525,10 @@ function determineRating(
   // Check for specific issues
   const outlierRatio = outlierCount / numFrames;
 
-  if (variance > QUALITY_THRESHOLDS.VARIANCE_HIGH && frameSimilarity < QUALITY_THRESHOLDS.STABILITY_MIN_FRAME_SIM) {
+  if (
+    variance > QUALITY_THRESHOLDS.VARIANCE_HIGH &&
+    frameSimilarity < QUALITY_THRESHOLDS.STABILITY_MIN_FRAME_SIM
+  ) {
     issues.push('Hohe Spektralvarianz - Signal instabil');
   }
 
@@ -524,7 +538,10 @@ function determineRating(
     );
   }
 
-  if (variance > QUALITY_THRESHOLDS.VARIANCE_VERY_HIGH && frameSimilarity < QUALITY_THRESHOLDS.STABILITY_MIN_FRAME_SIM) {
+  if (
+    variance > QUALITY_THRESHOLDS.VARIANCE_VERY_HIGH &&
+    frameSimilarity < QUALITY_THRESHOLDS.STABILITY_MIN_FRAME_SIM
+  ) {
     issues.push('Sehr hohe Varianz - Bitte in ruhigerer Umgebung aufnehmen');
   }
 
@@ -533,16 +550,22 @@ function determineRating(
   // Typical RMS values: 0.001-0.01 (silent), 0.01-0.05 (quiet), 0.05-0.2 (normal), 0.2+ (loud)
 
   // DEBUG LOGGING: Show actual RMS value
-  logger.debug(`🔊 RMS Amplitude Check: ${signalMagnitude.toFixed(4)} (threshold warnings: <${QUALITY_THRESHOLDS.RMS_CRITICAL} critical, <${QUALITY_THRESHOLDS.RMS_WARNING} warning)`);
+  logger.debug(
+    `🔊 RMS Amplitude Check: ${signalMagnitude.toFixed(4)} (threshold warnings: <${QUALITY_THRESHOLDS.RMS_CRITICAL} critical, <${QUALITY_THRESHOLDS.RMS_WARNING} warning)`
+  );
 
-  if (signalMagnitude < QUALITY_THRESHOLDS.RMS_CRITICAL && signalSnr < QUALITY_THRESHOLDS.SNR_WEAK_MIN) {
+  if (
+    signalMagnitude < QUALITY_THRESHOLDS.RMS_CRITICAL &&
+    signalSnr < QUALITY_THRESHOLDS.SNR_WEAK_MIN
+  ) {
     issues.push(
       'Sehr schwaches/diffuses Signal - Möglicherweise nur Rauschen. Bitte näher an die Maschine gehen.'
     );
-  } else if (signalMagnitude < QUALITY_THRESHOLDS.RMS_WARNING && signalSnr < QUALITY_THRESHOLDS.SNR_WEAK_MIN) {
-    issues.push(
-      'Schwaches tonales Signal - Signal-Rausch-Verhältnis könnte zu niedrig sein.'
-    );
+  } else if (
+    signalMagnitude < QUALITY_THRESHOLDS.RMS_WARNING &&
+    signalSnr < QUALITY_THRESHOLDS.SNR_WEAK_MIN
+  ) {
+    issues.push('Schwaches tonales Signal - Signal-Rausch-Verhältnis könnte zu niedrig sein.');
   }
 
   // Determine rating based on score

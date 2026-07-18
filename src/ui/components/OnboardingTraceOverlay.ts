@@ -62,9 +62,13 @@ export class OnboardingTraceOverlay {
 
     if (this.container) {
       this.container.style.display = 'block';
+      // Restore interactivity (hide() sets pointerEvents to 'none')
+      this.container.style.pointerEvents = 'auto';
     }
 
-    // Subscribe to trace updates
+    // Subscribe to trace updates (release any previous subscription first,
+    // otherwise repeated show() calls leak orphaned subscriptions)
+    this.unsubscribe?.();
     this.unsubscribe = onboardingTrace.subscribe((session) => {
       this.update(session);
     });
@@ -210,7 +214,7 @@ export class OnboardingTraceOverlay {
           const truncated = displayValue.length > 60
             ? displayValue.substring(0, 60) + '...'
             : displayValue;
-          return `<span class="trace-detail-key">${key}:</span> ${escapeHtml(truncated)}`;
+          return `<span class="trace-detail-key">${escapeHtml(key)}:</span> ${escapeHtml(truncated)}`;
         })
         .join('<br>');
       detailsHtml = `<div class="trace-entry-details">${detailLines}</div>`;

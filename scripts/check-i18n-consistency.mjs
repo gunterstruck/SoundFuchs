@@ -20,92 +20,31 @@ const LOCALES_DIR = join(__dirname, '../src/i18n/locales');
 function extractKeyPaths(filePath) {
   const content = readFileSync(filePath, 'utf-8');
 
-  // Remove comments
-  const cleaned = content
-    .replace(/\/\/.*$/gm, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '');
-
-  // Extract the object content
-  const match = cleaned.match(/export const \w+: TranslationDict = \{([\s\S]*)\};/);
+  // Match the exported translation object literal (up to the final `};`).
+  const match = content.match(/export const \w+: TranslationDict = (\{[\s\S]*\});\s*$/);
   if (!match) {
     throw new Error('Could not find TranslationDict export');
   }
 
-  const objContent = match[1];
+  // The locale objects are pure data (strings and nested objects, no function
+  // calls or template literals), so evaluating the literal is safe and far more
+  // accurate than the previous line/regex parser, which produced phantom
+  // missing/extra keys for inline vs. expanded notation.
+  const obj = eval('(' + match[1] + ')');
+
   const keys = new Set();
-
-  /**
-   * Parse inline objects like: key: { sub1: 'val1', sub2: 'val2' }
-   */
-  function parseInlineObject(parentKey, objString) {
-    // Match key-value pairs inside the inline object
-    const inlinePattern = /(\w+):\s*['\"`]([^'\"`]*)['\"`]/g;
-    let match;
-
-    while ((match = inlinePattern.exec(objString)) !== null) {
-      const key = match[1];
-      const fullPath = `${parentKey}.${key}`;
-      keys.add(fullPath);
-    }
-  }
-
-  /**
-   * Main parsing logic
-   */
-  const lines = objContent.split('\n');
-  const stack = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('//')) continue;
-
-    // Check for inline object notation: key: { ... }
-    const inlineObjMatch = trimmed.match(/^(\w+):\s*\{([^}]+)\}/);
-    if (inlineObjMatch) {
-      const parentKey = inlineObjMatch[1];
-      const objContent = inlineObjMatch[2];
-
-      // Build full path with stack
-      const fullParentPath = stack.length > 0 ? [...stack, parentKey].join('.') : parentKey;
-
-      // Parse the inline object
-      parseInlineObject(fullParentPath, objContent);
-      continue;
-    }
-
-    // Count indent level
-    const indent = line.match(/^\s*/)[0].length;
-    const currentLevel = Math.floor(indent / 2) - 1;
-
-    // Adjust stack to current level
-    while (stack.length > currentLevel) {
-      stack.pop();
-    }
-
-    // Extract key name
-    const keyMatch = trimmed.match(/^(\w+):\s*(?:\{|['\"`]|[\w\d])/);
-    if (keyMatch) {
-      const keyName = keyMatch[1];
-
-      // Check if this starts a nested object block
-      const isObjectBlock = trimmed.match(/^(\w+):\s*\{?\s*$/);
-
-      if (isObjectBlock) {
-        // This is a nested object (not inline)
-        stack.push(keyName);
-      } else if (!trimmed.includes('{')) {
-        // This is a leaf value - record the full path
-        const fullPath = stack.length > 0 ? [...stack, keyName].join('.') : keyName;
-        keys.add(fullPath);
+  const walk = (node, prefix) => {
+    for (const key of Object.keys(node)) {
+      const path = prefix ? `${prefix}.${key}` : key;
+      const value = node[key];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        walk(value, path);
+      } else {
+        keys.add(path);
       }
     }
-
-    // Handle closing braces
-    const closeBraces = (trimmed.match(/\}/g) || []).length;
-    for (let i = 0; i < closeBraces && stack.length > 0; i++) {
-      stack.pop();
-    }
-  }
+  };
+  walk(obj, '');
 
   return Array.from(keys).sort();
 }

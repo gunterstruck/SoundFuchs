@@ -24,6 +24,7 @@ import {
   getAllMachines,
 } from './db.js';
 import type { Machine, ReferenceDatabase, GMIAModel, ReferenceDbFile, ReferenceDbMeta, FleetDbFile } from './types.js';
+import { isGMIAModel } from './types.js';
 import { logger } from '@utils/logger.js';
 import { onboardingTrace } from '@utils/onboardingTrace.js';
 
@@ -667,7 +668,7 @@ export class ReferenceDbService {
     const d = data as Record<string, unknown>;
 
     // Check for full database export format first (from manual export)
-    if (this.isFullDatabaseExport(d)) return 'zanobo_export_v1';
+    if (this.isFullDatabaseExport(d)) return 'zanobot_export_v1';
 
     if (d.db_meta && d.models) return 'new_format_with_models';
     if (d.db_meta) return 'new_format_partial';
@@ -737,7 +738,7 @@ export class ReferenceDbService {
 
     // Trace: Schema validation complete - using shared import path
     onboardingTrace.success('schema_validation_complete', {
-      detectedFormat: 'zanobo_export_v1',
+      detectedFormat: 'zanobot_export_v1',
       importPath: 'shared_manual_import',
       machineCount: data.machines?.length || 0,
       recordingCount: data.recordings?.length || 0,
@@ -1123,8 +1124,13 @@ export class ReferenceDbService {
     }
   }
 
+  /** Timeout pro Download-Versuch — ohne ihn hinge das Lade-Overlay bei
+   *  toter Verbindung (Funkloch in der Halle, Captive Portal) ENDLOS. */
+  private static readonly FETCH_TIMEOUT_MS = 15000;
+
   /**
-   * Fetch with retry logic for network resilience
+   * Fetch with retry logic for network resilience.
+   * Jeder Versuch ist per AbortController auf FETCH_TIMEOUT_MS begrenzt.
    */
   private static async fetchWithRetry(
     url: string,
@@ -1133,11 +1139,14 @@ export class ReferenceDbService {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), this.FETCH_TIMEOUT_MS);
       try {
         const response = await fetch(url, {
           method: 'GET',
           // Don't follow redirects automatically for Google Drive
           redirect: 'follow',
+          signal: controller.signal,
         });
 
         // Handle Google Drive virus scan warning page
@@ -1147,7 +1156,7 @@ export class ReferenceDbService {
             // Likely a Google Drive warning page, try with confirm parameter
             const confirmUrl = this.addGoogleDriveConfirm(url);
             if (confirmUrl !== url) {
-              return await fetch(confirmUrl);
+              return await fetch(confirmUrl, { signal: controller.signal });
             }
           }
         }
@@ -1161,6 +1170,8 @@ export class ReferenceDbService {
         if (attempt < maxRetries - 1) {
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
         }
+      } finally {
+        clearTimeout(timeout);
       }
     }
 
@@ -1395,7 +1406,9 @@ export class ReferenceDbService {
         const goldMachine = await getMachine(goldStandardId);
         if (goldMachine && goldMachine.referenceModels && goldMachine.referenceModels.length > 0) {
           goldStandardModels = {
-            referenceModels: goldMachine.referenceModels.map(m => ({
+            // Fleet/NFC provisioning is GMIA-only for now (Tier 0): non-GMIA
+            // models are skipped from the gold-standard export.
+            referenceModels: goldMachine.referenceModels.filter(isGMIAModel).map(m => ({
               ...m,
               // Serialize Float64Array to number[] for JSON
               weightVector: Array.from(m.weightVector) as unknown as Float64Array,
@@ -1411,7 +1424,7 @@ export class ReferenceDbService {
       }
 
       const exportData: FleetDbFile = {
-        format: 'zanobo-fleet-db',
+        format: 'zanobot-fleet-db',
         schemaVersion: '1.0.0',
         exportDbVersion: 7,
         exportedAt: new Date().toISOString(),
