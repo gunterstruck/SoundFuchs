@@ -12,6 +12,8 @@ import type { GMIAModel, ReferenceModel, FeatureVector } from '@data/types.js';
 import type { WorkPointScore } from '../scoring.js';
 import { trainGMIA } from '../gmia.js';
 import { classifyDiagnosticState, getAllModelScores } from '../scoring.js';
+import { computeBaselineSpread } from '../baselineSpread.js';
+import { CURRENT_FEATURE_LAYOUT } from '@core/dsp/filterBank.js';
 import { logger } from '@utils/logger.js';
 
 /** Number of training samples used for the baseline self-test (unchanged GMIA behavior). */
@@ -23,6 +25,9 @@ export class GmiaEngine implements DiagnosisEngine {
   train(input: TrainInput, machineId: string): ReferenceModel {
     const model = trainGMIA(input.trainingData, machineId);
     model.engineId = 'gmia';
+    // Bandaufteilung festhalten: derselbe 512er-Vektor bedeutet unter einem
+    // anderen Layout andere Frequenzen (siehe core/ml/modelCompatibility.ts).
+    model.featureLayout = CURRENT_FEATURE_LAYOUT;
 
     // Baseline self-test (identical to the historical 2-Reference logic):
     // score the fresh model against a spread of its own training features.
@@ -46,7 +51,13 @@ export class GmiaEngine implements DiagnosisEngine {
       throw new Error('Self-test failed: No valid scores could be calculated');
     }
 
-    model.baselineScore = testScores.reduce((sum, s) => sum + s, 0) / testScores.length;
+    // Mean (unchanged) PLUS the robust spread of the same self-test scores: the
+    // mean alone cannot say how wide this reference's own normal is, which is
+    // what a threshold has to be measured against (baselineSpread.ts).
+    const spread = computeBaselineSpread(testScores);
+    model.baselineScore = spread.mean;
+    model.baselineMedian = spread.median;
+    model.baselineMad = spread.mad;
     return model;
   }
 

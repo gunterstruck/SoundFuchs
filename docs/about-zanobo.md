@@ -128,11 +128,9 @@ Die Interpretation der Vergleichsergebnisse liegt stets beim Nutzer.
 
 ---
 
-## Rechtliche Position und IP-Überprüfung
+## Technische Abgrenzung
 
 Zanobo wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Projekt** unter der **MIT-Lizenz** entwickelt. Die Funktionalität basiert auf **offen beschriebenen mathematischen Verfahren** (z. B. Frequenzanalyse und GMIA-ähnliche Kosinus-Vergleiche) und integriert **keine patentierte Systemlogik**, **keine Klassifikationsmechanismen** und **keine Lernmodelle**.
-
-Vor der Veröffentlichung wurde eine **technische und inhaltliche Prüfung** durchgeführt, um sicherzustellen, dass Zanobo nicht mit bestehenden Patenten oder bekannten industriellen Diagnoseansätzen kollidiert.
 
 ### Relevante IP und technische Abgrenzung
 

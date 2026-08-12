@@ -299,8 +299,14 @@ export async function deleteAppSetting(key: string): Promise<void> {
  * @throws Error if estimated size exceeds available quota (with 10% safety margin)
  */
 export async function checkStorageQuota(estimatedSizeBytes: number): Promise<void> {
-  // Check if StorageManager API is available
-  if (!navigator.storage || !navigator.storage.estimate) {
+  // Check if StorageManager API is available.
+  //
+  // `typeof navigator` zuerst, nicht `navigator.storage`: In einer Umgebung
+  // ohne `navigator` wirft schon der Eigenschaftszugriff – ausgerechnet in der
+  // Zeile, die das Fehlen der API abfangen soll. Node kennt das globale
+  // `navigator` erst ab Version 21; unter Node 20 fiel deshalb jeder Test, der
+  // schreibend auf die Datenbank geht.
+  if (typeof navigator === 'undefined' || !navigator.storage || !navigator.storage.estimate) {
     logger.debug('StorageManager API not available - skipping quota check');
     return;
   }
@@ -349,7 +355,8 @@ export async function getStorageUsage(): Promise<{
   availableBytes: number;
   percentUsed: number;
 } | undefined> {
-  if (!navigator.storage || !navigator.storage.estimate) {
+  // Siehe checkStorageQuota: erst prüfen, ob es `navigator` überhaupt gibt.
+  if (typeof navigator === 'undefined' || !navigator.storage || !navigator.storage.estimate) {
     return undefined;
   }
 

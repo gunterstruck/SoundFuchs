@@ -38,6 +38,7 @@ import type {
   FeatureVector,
 } from '@data/types.js';
 import { logger } from '@utils/logger.js';
+import { isLayoutCompatible } from '@core/ml/modelCompatibility.js';
 import { stopMediaStream, closeAudioContext } from '@utils/streamHelper.js';
 import { t } from '../../i18n/index.js';
 
@@ -104,10 +105,32 @@ export class AutoDetectionPhase {
       this.allMachines = await getAllMachines();
       logger.info(`🔍 Auto-detection: Loaded ${this.allMachines.length} machines`);
 
-      // Check if any machines have reference models
-      const machinesWithModels = this.allMachines.filter(
-        (m) => m.referenceModels && m.referenceModels.length > 0
+      // Maschinen mit brauchbaren Referenzen. „Brauchbar" heißt hier NUR
+      // Layout-kompatibel — die Sample-Rate steht erst fest, wenn der
+      // AudioContext läuft (weiter unten), und sie wird ohnehin aus diesen
+      // Modellen abgeleitet. Ein Modell aus einer fremden Bandaufteilung darf
+      // dagegen gar nicht in die Auswahl: die Erkennung würde es mitvergleichen
+      // und könnte eine Maschine „erkennen", deren Referenz nichts mehr bedeutet.
+      const machinesWithModels = this.allMachines
+        .map((m) => ({
+          machine: m,
+          models: (m.referenceModels ?? []).filter(isLayoutCompatible),
+        }))
+        .filter((entry) => entry.models.length > 0)
+        .map((entry) => entry.machine);
+
+      const skippedByLayout = this.allMachines.filter(
+        (m) =>
+          (m.referenceModels?.length ?? 0) > 0 &&
+          !(m.referenceModels ?? []).some(isLayoutCompatible)
       );
+      if (skippedByLayout.length > 0) {
+        logger.warn(
+          `⚠️ Auto-Erkennung: ${skippedByLayout.length} Maschine(n) übersprungen – ` +
+            `Referenzen aus fremder Bandaufteilung: ` +
+            skippedByLayout.map((m) => m.name).join(', ')
+        );
+      }
 
       if (machinesWithModels.length === 0) {
         logger.info('🔍 Auto-detection: No machines with references found');

@@ -391,6 +391,10 @@ export const de: TranslationDict = {
       listenDifference: '🔍 Nur Unterschied',
       listenComputing: '… rechne …',
       listenDifferenceTooShort: 'Aufnahmen zu kurz für die Differenz-Analyse.',
+      listenTune: '🎧 Auf hörbaren Bereich',
+      listenTuneResult: '🎧 {{peak}} → {{target}}',
+      listenTuneClamped: 'Faktor begrenzt, damit ein Takt hörbar bleibt — die Zielfrequenz wird deshalb nicht ganz erreicht.',
+      listenTuneExact: 'Größter Unterschied auf den Bereich gezogen, in dem das Ohr am besten auflöst.',
       spectrumTitle: 'Frequenzvergleich (Referenz ↔ Messung)',
       spectrumReference: 'Referenz',
       spectrumMeasurement: 'Diese Messung',
@@ -1100,12 +1104,20 @@ export const de: TranslationDict = {
     requiresSecureContext: 'NFC-Schreiben erfordert eine sichere (HTTPS) Verbindung.',
     unsupportedBrowser: 'NFC-Schreiben erfordert Chrome auf Android.',
     closeDialog: 'NFC-Dialog schließen',
-    // Customer ID (Variante B)
-    customerIdLabel: 'Kundenkennung (c)',
+    // Referenz-Sammlung (im Code weiterhin `customerId`, Parameter `c`).
+    //
+    // „Kundenkennung" war das falsche Wort für das, was hier passiert: der Name
+    // zeigt auf einen Ordner mit Referenzen im Netz, und wer diesen Namen kennt,
+    // lädt sie. Das ist kein Kundenkonto, das ist eine geteilte Sammlung — die
+    // einzige Stelle, an der Zanobo aus einer Einzelmessung etwas Gemeinsames
+    // machen kann. Der Schlüsselname bleibt `customerId`, damit gespeicherte
+    // Links, NFC-Tags und der HashRouter unberührt bleiben. Siehe
+    // docs/geteilte-referenzen.md.
+    customerIdLabel: 'Referenz-Sammlung (c)',
     customerIdDescription:
-      'Diese Kennung bestimmt, welche Referenzdaten beim NFC-Scan geladen werden. Die Daten werden automatisch von GitHub Pages geladen.',
-    customerIdPlaceholder: 'z.B. Kundenkennung_nr1',
-    customerIdRequired: 'Bitte geben Sie eine Kundenkennung ein.',
+      'Der Name der Sammlung, aus der beim NFC-Scan die Referenzen geladen werden. Eine eigene oder eine geteilte: Wer eine Sammlung veröffentlicht, gibt seinen Normalzustand an alle weiter, die den Namen kennen.',
+    customerIdPlaceholder: 'z.B. golf-7-tdi-leerlauf',
+    customerIdRequired: 'Bitte einen Namen für die Referenz-Sammlung eingeben.',
     dbUrlPreview: 'Daten-URL: {{url}}',
     // Fleet option
     optionFleet: 'Flotten-Link (Flottencheck)',
@@ -1115,7 +1127,7 @@ export const de: TranslationDict = {
     noFleets: 'Keine Flotten vorhanden',
     machine: 'Maschine',
     machines: 'Maschinen',
-    fleetRequiresCustomerId: 'Bitte Kundenkennung und Flotte auswählen.',
+    fleetRequiresCustomerId: 'Bitte Referenz-Sammlung und Flotte auswählen.',
     // Quick Compare count-only option
     optionQuickCompareCount: 'Schnellvergleich (nur Anzahl)',
     optionQuickCompareCountDetailDefault:
@@ -1142,10 +1154,12 @@ export const de: TranslationDict = {
     optionSpecificDetail: 'Öffnet die App für "{{name}}" (ID: {{id}}).',
     optionSpecificUnavailable:
       'Wählen Sie zuerst eine Maschine aus, um einen spezifischen QR-Code zu erstellen.',
-    customerIdLabel: 'Kundenkennung (c)',
-    customerIdDescription: 'Diese Kennung bestimmt, welche Referenzdaten beim Scan geladen werden.',
-    customerIdPlaceholder: 'z.B. Kundenkennung_nr1',
-    customerIdRequired: 'Bitte geben Sie eine Kundenkennung ein.',
+    // Siehe die Begründung im NFC-Block oben: Sammlung statt Kunde.
+    customerIdLabel: 'Referenz-Sammlung (c)',
+    customerIdDescription:
+      'Der Name der Sammlung, aus der beim Scan die Referenzen geladen werden — eine eigene oder eine geteilte.',
+    customerIdPlaceholder: 'z.B. golf-7-tdi-leerlauf',
+    customerIdRequired: 'Bitte einen Namen für die Referenz-Sammlung eingeben.',
     dbUrlPreview: 'Daten-URL: {{url}}',
     urlPreview: 'Link-Vorschau',
     downloadPng: 'Als Bild speichern',
@@ -1418,7 +1432,7 @@ export const de: TranslationDict = {
       deep_link_detected: 'Deep-Link erkannt',
       hash_parsed: 'Hash geparst',
       machine_id_extracted: 'Maschinen-ID extrahiert',
-      customer_id_extracted: 'Kunden-ID extrahiert',
+      customer_id_extracted: 'Referenz-Sammlung erkannt',
       db_url_derived: 'DB-URL abgeleitet',
       import_url_detected: 'Import-URL erkannt',
 
@@ -1503,12 +1517,10 @@ export const de: TranslationDict = {
         '<strong>Lokale Datenspeicherung:</strong> Alle Audioaufnahmen und Scores werden ausschließlich in der lokalen IndexedDB des Geräts gespeichert.',
     },
 
-    // Legal Position
-    legalTitle: 'Rechtliche Position und IP-Überprüfung',
+    // Technische Abgrenzung
+    legalTitle: 'Technische Abgrenzung',
     legalIntro:
       'Zanobo wurde unabhängig als <strong>privates, nicht-kommerzielles Open-Source-Projekt</strong> unter der <strong>MIT-Lizenz</strong> entwickelt. Die Funktionalität basiert auf <strong>offen beschriebenen mathematischen Verfahren</strong> (z.B. Frequenzanalyse und GMIA-ähnliche Kosinus-Vergleiche) und integriert <strong>keine patentierte Systemlogik</strong>, <strong>keine Klassifikationsmechanismen</strong> und <strong>keine Lernmodelle</strong>.',
-    legalReview:
-      'Vor der Veröffentlichung wurde eine <strong>technische und inhaltliche Prüfung</strong> durchgeführt, um sicherzustellen, dass Zanobo nicht mit bestehenden Patenten oder bekannten industriellen Diagnoseansätzen kollidiert.',
 
     // IP Table
     ipTableTitle: 'Relevante IP und technische Abgrenzung',
@@ -1669,13 +1681,27 @@ export const de: TranslationDict = {
   // ============================================================================
   // 3D-SPEKTROGRAMM "GEBIRGE" (Verlaufs-Modal, Expert)
   // ============================================================================
+  // ============================================================================
+  // MERKMALS-LAYOUT: Referenz passt nicht zur aktuellen Bandaufteilung
+  // ============================================================================
+  models: {
+    layoutOutdatedTitle: 'Referenz nicht mehr vergleichbar',
+    layoutOutdated:
+      'Die Bandaufteilung der Analyse hat sich geändert. {{count}} gespeicherte Referenz(en) dieser Maschine stammen aus der alten Aufteilung und lassen sich nicht mehr vergleichen. Bitte Normalzustand neu aufnehmen.',
+    layoutOutdatedPartial:
+      '{{count}} Referenz(en) aus der alten Bandaufteilung werden übersprungen. Für ein vollständiges Bild neu anlernen.',
+  },
+
   spectro3d: {
     show: '3D-Ansicht (Gebirge)',
     hide: '3D-Ansicht schließen',
     hint: '1 Finger: drehen · 2 Finger: zoomen',
-    axis: 'Frequenz 0–{{maxKhz}} kHz · Dauer {{seconds}} s · Höhe = Intensität',
+    axis: 'Achsen: Frequenz (logarithmisch) · Zeit · Höhe = Intensität (dB)',
     sourceMeasurement: 'Messung',
     sourceReference: 'Referenz',
+    sourceDifference: 'Differenz',
+    computing: '… rechne …',
+    unavailable: 'Für diese Aufnahmen lässt sich keine Ansicht bilden.',
   },
 
   // ============================================================================
@@ -2095,6 +2121,15 @@ export const de: TranslationDict = {
     trendStable: 'Stabil seit {{count}} Prüfungen',
     trendImproving: '{{delta}}% seit {{count}} Prüfungen',
     trendDeclining: '{{delta}}% seit {{count}} Prüfungen',
+    // Auflösung DIESER Referenz — was der Vergleich trennen kann. Der Satz sagt
+    // absichtlich, was Zanobo LEISTET, nicht nur was es nicht tut: „ich
+    // diagnostiziere nicht" ist ohne diese Zahl bloß eine Ausrede.
+    resolution:
+      'Auflösung dieser Referenz: {{points}} Punkte. Kleinere Abstände sind Streuung der Messung, nicht der Maschine.',
+    resolutionUnknown:
+      'Auflösung dieser Referenz unbekannt — sie wurde angelernt, bevor die Eigenstreuung gemessen wurde. Neu anlernen sagt, welche Unterschiede der Vergleich trennt.',
+    resolutionDetail:
+      'Aus der Wiederholstreuung der Referenz „{{label}}" selbst: {{k}} · MAD ihrer Selbsttest-Scores, auf die angezeigte Skala gestreckt. Keine Schwelle — die Ampel entscheidet unverändert.',
   },
 
   // Welle 2 UX: Result action buttons
@@ -2109,6 +2144,18 @@ export const de: TranslationDict = {
     status: 'Status',
     date: 'Datum',
     recommendation: 'Empfehlung',
+  },
+
+  // ============================================================================
+  // REFERENZ-SAMMLUNG TEILEN (Maschinen-Detail)
+  // ============================================================================
+  shareCollection: {
+    button: '📤 Sammlung teilen',
+    hint: 'Gibt die Referenzen dieser Maschine als Datei heraus. Unter <name>/db-latest.json veröffentlicht, kann sie jeder laden, der den Sammlungsnamen kennt.',
+    working: '… bereite vor …',
+    doneTitle: 'Sammlung bereit',
+    done: 'Datei erstellt. Als db-latest.json in den Ordner der Sammlung legen — dann laden andere sie über den Sammlungsnamen.',
+    failed: 'Die Sammlung konnte nicht herausgegeben werden.',
   },
 
   // ============================================================================

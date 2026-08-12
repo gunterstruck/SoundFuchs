@@ -3,9 +3,15 @@
  *
  * Variant B measures Zanobot's ACTUAL field workflow (not the one-class AUC):
  * per machine section it randomly registers N good + M bad recordings as
- * SEPARATE reference fingerprints, then classifies disjoint random test clips by
- * best match, applying the user's confidence threshold (healthy/uncertain/
- * faulty). Repeated over several seeded runs and averaged.
+ * SEPARATE reference fingerprints, then classifies disjoint random test clips
+ * with `phoneVerdict` — the live loop's own two-pool rule, using BOTH user
+ * thresholds. Repeated over several seeded runs and averaged.
+ *
+ * `nBad: 0` is explicitly supported and is the FIELD CASE: in practice a machine
+ * carries one silently-created 'Baseline' plus maybe a few more good references
+ * and zero fault references — nobody has ten recordings of a broken machine. The
+ * runner used to refuse exactly that configuration, so the most common real
+ * setup had no measurement at all.
  *
  * HARD INVARIANTS (identical to the AUC runner): the real engines and the real
  * feature pipeline are reused (no engine logic reimplemented); strictly read-
@@ -34,7 +40,7 @@ import {
   YAMNET_HOP_SEC,
 } from './runnerShared.js';
 import {
-  decideClip,
+  phoneVerdict,
   emptyConfusion,
   addDecision,
   metricsOf,
@@ -42,6 +48,7 @@ import {
   type FingerprintScore,
   type TrueClass,
 } from './classifyEval.js';
+import { summarizeBaselineSpread } from '@core/ml/baselineSpread.js';
 import type {
   BenchmarkProgress,
   ClassifyResult,
@@ -51,9 +58,13 @@ import type {
 
 export interface ClassifyOptions {
   engines: EngineId[];
-  /** Good fingerprints registered per run (default 10). */
+  /** Good fingerprints registered per run (default 10). At least 1 is required. */
   nGood?: number;
-  /** Bad fingerprints registered per run (default 10). */
+  /**
+   * Bad fingerprints registered per run (default 10). `0` is valid and models
+   * the field case (no fault references at all); the whole abnormal pool then
+   * becomes test material.
+   */
   nBad?: number;
   /** Number of seeded random draws to average over (default 5). */
   runs?: number;
@@ -207,13 +218,14 @@ export async function runClassifyBenchmark(
   options: ClassifyOptions
 ): Promise<ClassifyResult> {
   const nGood = options.nGood ?? DEFAULTS.nGood;
+  // `?? ` (not `||`) so an explicit 0 survives — 0 bad fingerprints is the field case.
   const nBad = options.nBad ?? DEFAULTS.nBad;
   const runs = Math.max(1, options.runs ?? DEFAULTS.runs);
   const maxTest = options.maxTestPerClass ?? DEFAULTS.maxTestPerClass;
   const seed = options.seed ?? DEFAULTS.seed;
   const poolCap = options.poolCap ?? DEFAULTS.poolCap;
   const signal = options.signal;
-  const confidenceThreshold = getRecordingSettings().confidenceThreshold;
+  const { confidenceThreshold, faultyThreshold } = getRecordingSettings();
   const startedAt = Date.now();
 
   const ctx = await makeAudioContext();
@@ -240,7 +252,9 @@ export async function runClassifyBenchmark(
     const normals = [...s.normalPaths, ...s.trainNormalPaths, ...s.testNormalPaths].sort().slice(0, poolCap);
     const abnormals = [...s.abnormalPaths].sort().slice(0, poolCap);
     const effGood = Math.min(nGood, Math.max(0, normals.length - 1));
-    const effBad = Math.min(nBad, Math.max(0, abnormals.length - 1));
+    // nBad === 0 stays 0 (field case: no fault references). Otherwise keep at
+    // least one abnormal clip out of training so there is something to test on.
+    const effBad = nBad === 0 ? 0 : Math.min(nBad, Math.max(0, abnormals.length - 1));
     const testGood = Math.min(maxTest, normals.length - effGood);
     const testBad = Math.min(maxTest, abnormals.length - effBad);
     return { s, normals, abnormals, effGood, effBad, testGood, testBad };
@@ -253,14 +267,19 @@ export async function runClassifyBenchmark(
   let filesDone = 0;
   let totalClipsScored = 0;
   const sections: ClassifySectionResult[] = [];
+  // Every fingerprint of the whole run, per engine — the exact population for the
+  // run-level baseline distribution (a median of section medians would not be).
+  const allTrainedModels = new Map<EngineId, ReferenceModel[]>();
+  for (const id of engines.keys()) allTrainedModels.set(id, []);
 
   try {
     for (let si = 0; si < sectionsPrep.length; si++) {
-      const { s, normals, abnormals, effGood, effBad } = sectionsPrep[si];
+      const { s, normals, abnormals, effGood, effBad, testGood, testBad } = sectionsPrep[si];
       throwIfAborted(signal);
 
-      // Not enough data to both train and test a class → report as an error.
-      if (effGood < 1 || effBad < 1) {
+      // Not enough data to both train and test → report as an error. Note what
+      // is NOT required: fault fingerprints. `effBad === 0` is a valid run.
+      if (effGood < 1 || testGood < 1 || testBad < 1) {
         const perEngine: ClassifySectionResult['perEngine'] = {};
         const err = `Zu wenige Clips (gut ${normals.length}, schlecht ${abnormals.length})`;
         for (const id of engines.keys()) {
@@ -271,7 +290,13 @@ export async function runClassifyBenchmark(
       }
 
       const confusions = new Map<EngineId, Confusion>();
-      for (const id of engines.keys()) confusions.set(id, emptyConfusion());
+      // Every fingerprint trained in this section, per engine — so the report can
+      // show the baselineScore and own-spread distribution a threshold needs.
+      const trainedModels = new Map<EngineId, ReferenceModel[]>();
+      for (const id of engines.keys()) {
+        confusions.set(id, emptyConfusion());
+        trainedModels.set(id, []);
+      }
 
       for (let r = 0; r < runs; r++) {
         throwIfAborted(signal);
@@ -304,7 +329,11 @@ export async function runClassifyBenchmark(
           const clip = await cache.get(path);
           for (const [id, engine] of engines) {
             const fp = await trainFingerprint(engine, clip, type, `${type}#${idx}`, s.key);
-            if (fp) fpsByEngine.get(id)?.push(fp);
+            if (fp) {
+              fpsByEngine.get(id)?.push(fp);
+              trainedModels.get(id)?.push(fp.model);
+              allTrainedModels.get(id)?.push(fp.model);
+            }
           }
           filesDone++;
           await yieldToUi();
@@ -333,12 +362,21 @@ export async function runClassifyBenchmark(
           if (clip) {
             for (const [id, engine] of engines) {
               const fps = fpsByEngine.get(id) ?? [];
-              // Need at least one healthy AND one faulty fingerprint to decide.
-              const hasBoth = fps.some((f) => f.type === 'healthy') && fps.some((f) => f.type === 'faulty');
-              if (!hasBoth) continue;
+              // The gauge is the best HEALTHY score, so one healthy fingerprint
+              // is all that is required. Fault fingerprints are optional — with
+              // none, phoneVerdict decides on the healthy score alone, exactly
+              // as the phone does for a machine that only has a Baseline.
+              if (!fps.some((f) => f.type === 'healthy')) continue;
               try {
                 const scores = await fingerprintScores(engine, fps, clip);
-                addDecision(confusions.get(id)!, truth, decideClip(scores, confidenceThreshold));
+                // phoneVerdict needs the fingerprint identity; fingerprintScores
+                // returns index-aligned with `fps`.
+                const labeled = scores.map((sc, i) => ({ ...sc, label: fps[i].label }));
+                const verdict = phoneVerdict(labeled, confidenceThreshold, faultyThreshold);
+                addDecision(confusions.get(id)!, truth, {
+                  predicted: verdict.status,
+                  predictedFree: verdict.predictedFree,
+                });
               } catch (err) {
                 logger.warn(`Mess-Labor (Klassifikation): Scoring fehlgeschlagen (${id}/${path}):`, err);
               }
@@ -353,7 +391,11 @@ export async function runClassifyBenchmark(
       const perEngine: ClassifySectionResult['perEngine'] = {};
       for (const id of engines.keys()) {
         const confusion = confusions.get(id) ?? emptyConfusion();
-        const result: ClassifyEngineResult = { confusion, metrics: metricsOf(confusion) };
+        const result: ClassifyEngineResult = {
+          confusion,
+          metrics: metricsOf(confusion),
+          baseline: summarizeBaselineSpread(trainedModels.get(id) ?? []) ?? undefined,
+        };
         perEngine[id] = result;
       }
       sections.push({
@@ -373,13 +415,21 @@ export async function runClassifyBenchmark(
     }
   }
 
+  const baselinePerEngine: ClassifyResult['baselinePerEngine'] = {};
+  for (const [id, models] of allTrainedModels) {
+    const summary = summarizeBaselineSpread(models);
+    if (summary) baselinePerEngine[id] = summary;
+  }
+
   return {
     engines: options.engines,
     sections,
+    baselinePerEngine,
     runs,
     nGood,
     nBad,
     confidenceThreshold,
+    faultyThreshold,
     seed,
     startedAt,
     finishedAt: Date.now(),

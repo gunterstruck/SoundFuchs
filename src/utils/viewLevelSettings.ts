@@ -100,6 +100,17 @@ export const getViewLevel = (): ViewLevel => {
 };
 
 /**
+ * Ist das aktive View-Level mindestens `min`?
+ *
+ * Die Reihenfolge basic < advanced < expert steckt bisher nur implizit in
+ * `validLevels` und wurde an den Aufrufstellen als `=== 'advanced' || ===
+ * 'expert'` ausgeschrieben — eine Kette, die beim Hinzufügen einer Stufe an
+ * jeder Stelle einzeln vergessen werden kann.
+ */
+export const isViewLevelAtLeast = (min: ViewLevel): boolean =>
+  validLevels.indexOf(getViewLevel()) >= validLevels.indexOf(min);
+
+/**
  * Set the view level and persist to localStorage
  * Also updates the data attribute on the HTML element
  */

@@ -388,6 +388,10 @@ export const en: TranslationDict = {
       listenDifference: '🔍 Difference only',
       listenComputing: '… computing …',
       listenDifferenceTooShort: 'Recordings too short for difference analysis.',
+      listenTune: '🎧 Into audible range',
+      listenTuneResult: '🎧 {{peak}} → {{target}}',
+      listenTuneClamped: 'Factor limited so a rhythm stays perceivable — the target frequency is therefore not fully reached.',
+      listenTuneExact: 'Largest difference pulled into the range where the ear resolves best.',
       spectrumTitle: 'Frequency comparison (reference ↔ measurement)',
       spectrumReference: 'Reference',
       spectrumMeasurement: 'This measurement',
@@ -1439,12 +1443,10 @@ export const en: TranslationDict = {
         "<strong>Local Data Storage:</strong> All audio recordings and scores are stored exclusively in the device's local IndexedDB.",
     },
 
-    // Legal Position
-    legalTitle: 'Legal Position and IP Review',
+    // Technische Abgrenzung
+    legalTitle: 'Technical Delimitation',
     legalIntro:
       'Zanobo was independently developed as a <strong>private, non-commercial open-source project</strong> under the <strong>MIT license</strong>. Its functionality is based on <strong>openly described mathematical procedures</strong> (e.g., frequency analysis and GMIA-like cosine comparisons) and incorporates <strong>no patented system logic</strong>, <strong>no classification mechanisms</strong>, and <strong>no learning models</strong>.',
-    legalReview:
-      'Prior to release, a <strong>technical and content review</strong> was conducted to ensure that Zanobo does not conflict with existing patents or known industrial diagnostic approaches.',
 
     // IP Table
     ipTableTitle: 'Relevant IP and Technical Differentiation',
@@ -1605,13 +1607,32 @@ export const en: TranslationDict = {
   // ============================================================================
   // 3D SPECTROGRAM "MOUNTAIN" (history modal, expert)
   // ============================================================================
+  // Deutscher Text bewusst auch hier: Übersetzung ausgesetzt (abgestimmt). t()
+  // liefert bei fehlendem Schlüssel den rohen Schlüsselnamen zurück – deutscher
+  // Klartext ist besser als "models.layoutOutdated" auf dem Bildschirm, und die
+  // Paritätsprüfung (check-i18n) bleibt grün.
+
+  // ============================================================================
+  // MERKMALS-LAYOUT: Referenz passt nicht zur aktuellen Bandaufteilung
+  // ============================================================================
+  models: {
+    layoutOutdatedTitle: 'Referenz nicht mehr vergleichbar',
+    layoutOutdated:
+      'Die Bandaufteilung der Analyse hat sich geändert. {{count}} gespeicherte Referenz(en) dieser Maschine stammen aus der alten Aufteilung und lassen sich nicht mehr vergleichen. Bitte Normalzustand neu aufnehmen.',
+    layoutOutdatedPartial:
+      '{{count}} Referenz(en) aus der alten Bandaufteilung werden übersprungen. Für ein vollständiges Bild neu anlernen.',
+  },
+
   spectro3d: {
     show: '3D view (mountain)',
     hide: 'Close 3D view',
     hint: '1 finger: rotate · 2 fingers: zoom',
-    axis: 'Frequency 0–{{maxKhz}} kHz · duration {{seconds}} s · height = intensity',
+    axis: 'Axes: frequency (logarithmic) · time · height = intensity (dB)',
     sourceMeasurement: 'Measurement',
     sourceReference: 'Reference',
+    sourceDifference: 'Difference',
+    computing: '… computing …',
+    unavailable: 'No view can be built from these recordings.',
   },
 
   // ============================================================================
@@ -2024,6 +2045,15 @@ export const en: TranslationDict = {
     trendStable: 'Stable across {{count}} checks',
     trendImproving: '{{delta}}% across {{count}} checks',
     trendDeclining: '{{delta}}% across {{count}} checks',
+    // Deutscher Text bewusst auch hier: Übersetzung ausgesetzt (abgestimmt). t()
+    // liefert bei fehlendem Schlüssel den rohen Schlüsselnamen zurück – deutscher
+    // Klartext ist besser als „resultAmpel.resolution" auf dem Bildschirm.
+    resolution:
+      'Auflösung dieser Referenz: {{points}} Punkte. Kleinere Abstände sind Streuung der Messung, nicht der Maschine.',
+    resolutionUnknown:
+      'Auflösung dieser Referenz unbekannt — sie wurde angelernt, bevor die Eigenstreuung gemessen wurde. Neu anlernen sagt, welche Unterschiede der Vergleich trennt.',
+    resolutionDetail:
+      'Aus der Wiederholstreuung der Referenz „{{label}}" selbst: {{k}} · MAD ihrer Selbsttest-Scores, auf die angezeigte Skala gestreckt. Keine Schwelle — die Ampel entscheidet unverändert.',
   },
 
   // Welle 2 UX: Result action buttons
@@ -2038,6 +2068,20 @@ export const en: TranslationDict = {
     status: 'Status',
     date: 'Date',
     recommendation: 'Notice',
+  },
+
+  // ============================================================================
+  // REFERENZ-SAMMLUNG TEILEN (Maschinen-Detail)
+  // ============================================================================
+  // Deutscher Text bewusst auch hier: Übersetzung ausgesetzt (abgestimmt). t()
+  // liefert bei fehlendem Schlüssel den rohen Schlüsselnamen zurück.
+  shareCollection: {
+    button: '📤 Sammlung teilen',
+    hint: 'Gibt die Referenzen dieser Maschine als Datei heraus. Unter <name>/db-latest.json veröffentlicht, kann sie jeder laden, der den Sammlungsnamen kennt.',
+    working: '… bereite vor …',
+    doneTitle: 'Sammlung bereit',
+    done: 'Datei erstellt. Als db-latest.json in den Ordner der Sammlung legen — dann laden andere sie über den Sammlungsnamen.',
+    failed: 'Die Sammlung konnte nicht herausgegeben werden.',
   },
 
   // ============================================================================

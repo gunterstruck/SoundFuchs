@@ -4,6 +4,22 @@
   margin-top: 12px;
 }
 
+/* Leinwand + Etiketten-Ebene übereinander. Die Etiketten werden je Bild aus der
+   MVP-Matrix positioniert, damit sie beim Drehen an ihren Teilstrichen bleiben.
+   Der Rand ringsum ist NICHT Kosmetik: die Teilstriche liegen am Rand der
+   Grundfläche, ihre Etiketten also teils außerhalb der Leinwand. Ohne diesen
+   Platz waren „0 dB" oben und 5/10/20 kHz unten abgeschnitten — eine Achse,
+   deren Enden fehlen, ist keine Achse. */
+.spectro3d-stage {
+  position: relative;
+  padding: 16px 34px 44px;
+  /* Beschnitten wird an der Bühne, nicht an der Leinwand: Etiketten dürfen über
+     den Leinwandrand hinausragen (dort liegen ihre Teilstriche), aber sie dürfen
+     nicht in den Hinweistext darunter laufen. Bei extremen Kamerawinkeln wird
+     ein Etikett dann abgeschnitten statt etwas anderes zu überdecken. */
+  overflow: hidden;
+}
+
 .spectro3d-canvas {
   display: block;
   width: 100%;
@@ -11,6 +27,36 @@
   border-radius: 8px;
   background: #0d1420;
   cursor: grab;
+}
+
+.spectro3d-labels {
+  position: absolute;
+  /* Deckt die GANZE Bühne, nicht nur die Leinwand: die Teilstriche liegen am Rand
+     der Grundfläche, ihre Etiketten also teils außerhalb der Leinwand. Weil die
+     Ebene bis zur Bühnenkante reicht, kann der Renderer Randmarken hineinklemmen
+     statt sie abschneiden zu lassen. */
+  inset: 0;
+  pointer-events: none; /* Drehen/Zoomen darf nicht an einem Etikett hängenbleiben */
+  overflow: hidden;
+}
+
+.spectro3d-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* transform trägt die projizierte Position (translate) — hier keine setzen */
+  font-size: 0.62rem;
+  line-height: 1;
+  white-space: nowrap;
+  /* Eigene dunkle Pille statt Textschatten. Grund: Etiketten an den Achsenenden
+     liegen NEBEN der Leinwand, also auf dem Hintergrund des umgebenden Modals —
+     und der ist im hellen Thema weiß. Ein für dunklen Grund gemachter Schatten
+     war dort unlesbar (auf einem echten Telefon gesehen). Die Pille trägt ihren
+     Kontrast selbst und funktioniert über der Leinwand wie daneben. */
+  color: #e6ebf2;
+  background: rgba(13, 20, 32, 0.78);
+  padding: 1px 3px;
+  border-radius: 3px;
 }
 
 .spectro3d-canvas:active {
@@ -36,4 +82,17 @@
   margin-top: 10px;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+.spectro3d-panel {
+  width: 100%;
+}
+
+/* Quelle, aus der sich keine Ansicht bilden lässt (z. B. eine Differenz, die bei
+   zu ähnlichen Aufnahmen leer bleibt) — sichtbar sagen statt stumm nichts tun. */
+.spectro3d-empty {
+  margin: 12px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted, #9aa0a6);
+  text-align: center;
 }

@@ -1,0 +1,86 @@
+Zanobo
+Copyright (c) 2026 Günter Struck
+
+Der Quellcode steht unter der MIT-Lizenz (siehe LICENSE). Diese Datei haelt
+fest, was die Lizenz nicht regelt: was dieses Projekt ist, was es
+ausdruecklich NICHT ist, und welche fremden Lizenzen unabhaengig davon
+fortgelten.
+
+
+1. WAS DAS HIER IST
+
+Zanobo ist ein privates Projekt. Es entsteht unentgeltlich in der Freizeit,
+wird nicht verkauft, und es steht kein Unternehmen dahinter.
+
+Daraus folgt:
+- Es gibt keinen Support, keine zugesagte Reaktionszeit und keine Zusage,
+  dass eine Funktion erhalten bleibt oder ein Fehler behoben wird.
+- Es gibt keinen Vertrag und keine Abnahme. Wer Zanobo betrieblich einsetzt,
+  tut das in eigener Verantwortung und klaert das intern selbst.
+- Namensnennung ist von der MIT-Lizenz verlangt: Der Copyright-Hinweis gehoert
+  in jede Kopie und in jede abgeleitete Fassung.
+
+Die MIT-Lizenz erlaubt ausdruecklich auch die kommerzielle Nutzung. Das ist
+gewollt: Die Anwendung soll weitergegeben werden koennen, ohne dass jemand
+erst eine Rechtsabteilung fragen muss.
+
+
+2. WAS ZANOBO NICHT IST
+
+Das ist keine Formalie, sondern die wichtigste Aussage dieser Datei.
+
+Zanobo ist KEIN medizinisches Geraet und KEIN technisches Diagnosesystem. Es
+ist ein Werkzeug, das zwei Audioaufnahmen miteinander vergleicht und die
+Aehnlichkeit sichtbar macht.
+
+Zanobo leistet ausdruecklich nicht:
+- keine Diagnose von Schaeden oder deren Ursachen
+- keine Zustandsklassifikation und keine Fehlerursachenanalyse
+- keine Wartungs-, Handlungs- oder Reparaturempfehlungen
+- keine automatisierte Bewertung, ob ein Zustand in Ordnung ist
+
+Die Ergebnisse sind musterbasierte Visualisierungen von Aehnlichkeit und
+Abweichung. Die Interpretationshoheit liegt stets beim Nutzer. Wer aufgrund
+einer Anzeige eine Maschine weiterlaufen laesst oder abschaltet, trifft diese
+Entscheidung selbst.
+
+
+3. KEINE GEWAEHR, KEINE HAFTUNG
+
+Die MIT-Lizenz schliesst Gewaehrleistung und Haftung bereits aus. Zur
+Klarstellung, weil hier Messwerte angezeigt werden:
+
+Es wird - soweit gesetzlich zulaessig - keine Haftung uebernommen,
+insbesondere nicht fuer
+
+- die Richtigkeit oder Aussagekraft der angezeigten Aehnlichkeitswerte,
+- Entscheidungen, die auf Grundlage der Anwendung getroffen werden,
+- Schaeden, Datenverluste oder Ausfaelle, die aus der Nutzung oder
+  Nichtverfuegbarkeit der Anwendung entstehen.
+
+Zanobo verarbeitet Audioaufnahmen ausschliesslich im Browser des Geraets und
+speichert sie in der lokalen IndexedDB. Es findet keine Uebertragung an einen
+Server statt.
+
+
+4. DRITTKOMPONENTEN
+
+Diese Lizenzen gelten unabhaengig von der MIT-Lizenz dieses Projekts fort.
+
+- TensorFlow.js (@tensorflow/tfjs) .... Apache-2.0 .... (c) Google LLC
+- html5-qrcode ....................... Apache-2.0 .... (c) Minhaz
+- idb ................................ ISC ........... (c) Jake Archibald
+- idb-keyval ......................... Apache-2.0 .... (c) Jake Archibald
+- qrcode ............................. MIT ........... (c) Ryan Day
+
+Die Werkzeuge der Entwicklungsumgebung (Vite, TypeScript, ESLint, Prettier,
+Vitest, vite-plugin-pwa/Workbox) sind nicht Bestandteil der ausgelieferten
+Anwendung; ihre Lizenzen stehen in der jeweiligen package.json.
+
+
+5. WAS DIESE DATEI NICHT SAGT
+
+Sie trifft keine Aussage ueber Schutzrechte Dritter und keine Aussage darueber,
+ob der Einsatz in einem bestimmten Umfeld zulaessig ist. Der Abschnitt
+"Technische Abgrenzung" in README und Anwendung beschreibt die eigene Bauweise
+- er ist eine Beschreibung, kein Gutachten.

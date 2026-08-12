@@ -6,6 +6,7 @@ import type { EngineId } from '@data/types.js';
 import type { ClipAggMode } from './clipAggregate.js';
 import type { SplitPlan, SplitMode } from './parseFolder.js';
 import type { Confusion, ClassifyMetrics } from './classifyEval.js';
+import type { BaselineSpreadSummary } from '@core/ml/baselineSpread.js';
 
 /**
  * The quantity AUC/pAUC were computed on:
@@ -74,6 +75,14 @@ export interface ClassifyEngineResult {
   confusion: Confusion;
   /** Derived headline metrics. */
   metrics: ClassifyMetrics;
+  /**
+   * baselineScore + own-spread distribution over every fingerprint this engine
+   * trained in this section. This is the measurement a threshold decision needs
+   * FIRST: it says whether `baselineScore` really sits where the tanh² curve
+   * anchors it (~90) or scatters — and what a k·MAD threshold would come out at.
+   * Absent for engines whose models carry no spread (temporal).
+   */
+  baseline?: BaselineSpreadSummary;
   /** Set when this engine could not be evaluated on this section. */
   error?: string;
 }
@@ -92,6 +101,13 @@ export interface ClassifySectionResult {
 export interface ClassifyResult {
   engines: EngineId[];
   sections: ClassifySectionResult[];
+  /**
+   * Own-spread distribution per engine over EVERY fingerprint trained in the
+   * whole run (all sections, all draws) — not a median of section medians, so it
+   * is the exact distribution and not an approximation. Engines whose models
+   * carry no spread (temporal) are absent.
+   */
+  baselinePerEngine: Partial<Record<EngineId, BaselineSpreadSummary>>;
   /** Requested random draws per section. */
   runs: number;
   /** Requested good/bad fingerprints per run. */
@@ -99,6 +115,13 @@ export interface ClassifyResult {
   nBad: number;
   /** Confidence threshold used for the healthy/uncertain/faulty decision. */
   confidenceThreshold: number;
+  /**
+   * Second user threshold, below which the healthy score reads 'faulty'. The
+   * shipped live loop uses BOTH; the benchmark previously ignored this one
+   * entirely, which hid every alarm the phone would raise on a poorly matching
+   * clip.
+   */
+  faultyThreshold: number;
   seed: number;
   startedAt: number;
   finishedAt: number;

@@ -9,11 +9,20 @@
  * comfortable band reveal a characteristic difference between a good and a bad
  * machine.
  *
+ * Plus one factor that is NOT chosen by feel: "auf hörbaren Bereich" reads the
+ * frequency of the largest difference out of the measurement itself and pulls
+ * exactly that spot towards ~3 kHz (see core/audio/audibleTranspose.ts). Because
+ * resampling moves pitch and tempo together, a rhythm is stretched along with it
+ * – which is the point for a knock that vanishes inside a continuous hum.
+ *
  * Perception aid only – it makes differences audible, it does not judge.
  */
 
 import { SlowListenPlayer } from '@core/audio/slowListen.js';
-import { isolateDifference } from '@core/audio/differenceIsolation.js';
+import { getDifferenceTake } from '@core/audio/differenceTake.js';
+import { planTranspose } from '@core/audio/audibleTranspose.js';
+import { peakFrequencyFine } from '@core/dsp/fineSpectrogram.js';
+import { formatHz } from '@utils/formatHz.js';
 import { t } from '../../i18n/index.js';
 import { logger } from '@utils/logger.js';
 import { notify } from '@utils/notifications.js';
@@ -21,18 +30,6 @@ import { notify } from '@utils/notifications.js';
 export interface ListenPanelOptions {
   reference?: AudioBuffer | null;
   measurement?: AudioBuffer | null;
-}
-
-/** Wrap a mono sample buffer into a playable AudioBuffer. */
-function samplesToAudioBuffer(samples: Float32Array, sampleRate: number): AudioBuffer {
-  const AudioCtx =
-    window.AudioContext ||
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  const ctx = new AudioCtx();
-  const buffer = ctx.createBuffer(1, samples.length, sampleRate);
-  buffer.getChannelData(0).set(samples);
-  void ctx.close();
-  return buffer;
 }
 
 export class ListenPanel {
@@ -128,24 +125,16 @@ export class ListenPanel {
         computing = true;
         diffBtn.textContent = t('diagnose.display.listenComputing');
         setTimeout(() => {
-          try {
-            const result = isolateDifference(reference, measurement);
-            if (result.samples.length === 0) {
-              notify.info(t('diagnose.display.listenDifferenceTooShort'));
-              diffBtn.textContent = diffLabel;
-              computing = false;
-              return;
-            }
-            this.buffers['difference'] = samplesToAudioBuffer(result.samples, result.sampleRate);
-            computed = true;
-            computing = false;
-            diffBtn.textContent = diffLabel;
-            startPlayback('difference');
-          } catch (error) {
-            logger.warn('Difference isolation failed:', error);
-            diffBtn.textContent = diffLabel;
-            computing = false;
+          const take = getDifferenceTake(reference, measurement);
+          computing = false;
+          diffBtn.textContent = diffLabel;
+          if (!take) {
+            notify.info(t('diagnose.display.listenDifferenceTooShort'));
+            return;
           }
+          this.buffers['difference'] = take.buffer;
+          computed = true;
+          startPlayback('difference');
         }, 50);
       };
       container.appendChild(diffBtn);
@@ -181,6 +170,50 @@ export class ListenPanel {
     fastToggle.textContent = t('diagnose.display.listenFaster');
     fastToggle.onclick = () => applySpeed(2);
     container.appendChild(fastToggle);
+
+    // Faktor AUS DER MESSUNG statt 0,5/1/2 nach Gefühl: die Frequenz mit dem
+    // größten Unterschied wird in den Bereich gezogen, in dem das Ohr am besten
+    // auflöst (~3 kHz). Weil Resampling Tonhöhe und Tempo gemeinsam bewegt, wird
+    // eine Rhythmik dabei mitverlangsamt — genau das macht ein Klopfen hörbar,
+    // das bei Originalgeschwindigkeit im Dauergeräusch untergeht.
+    if (reference && measurement) {
+      const tuneBtn = document.createElement('button');
+      tuneBtn.type = 'button';
+      tuneBtn.className = 'listen-btn listen-btn-tune';
+      tuneBtn.textContent = t('diagnose.display.listenTune');
+      let tuning = false;
+      tuneBtn.onclick = () => {
+        if (tuning) return;
+        tuning = true;
+        tuneBtn.textContent = t('diagnose.display.listenComputing');
+        setTimeout(() => {
+          tuning = false;
+          const take = getDifferenceTake(reference, measurement);
+          // Feine Auflösung: 2,93 Hz statt 46,875 Hz. Der Transponier-Faktor folgt
+          // direkt aus dieser Frequenz, ein 16-faches Raster war dort zu grob.
+          const peakHz = take ? peakFrequencyFine(take.buffer) : null;
+          if (!take || peakHz === null) {
+            tuneBtn.textContent = t('diagnose.display.listenTune');
+            notify.info(t('diagnose.display.listenDifferenceTooShort'));
+            return;
+          }
+          this.buffers['difference'] = take.buffer;
+          const plan = planTranspose(peakHz);
+          tuneBtn.textContent = t('diagnose.display.listenTuneResult', {
+            peak: formatHz(plan.peakHz),
+            target: formatHz(plan.resultHz),
+          });
+          // Kein Etikett-Versprechen ohne Deckung: wenn der Faktor begrenzt wurde,
+          // wird die Zielfrequenz nicht erreicht, und das steht dann auch da.
+          tuneBtn.title = plan.clamped
+            ? t('diagnose.display.listenTuneClamped')
+            : t('diagnose.display.listenTuneExact');
+          applySpeed(plan.factor);
+          startPlayback('difference');
+        }, 50);
+      };
+      container.appendChild(tuneBtn);
+    }
 
     updateSpeedActive(); // Normal active by default
   }

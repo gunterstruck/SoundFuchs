@@ -17,11 +17,9 @@ import { analyzeTrend } from '@utils/trendAnalysis.js';
 import { exportAsCSV, type ReportData, type ReportEntry } from '@utils/reportExport.js';
 import { ListenPanel } from '../components/ListenPanel.js';
 import { SpectrumComparison } from '../components/SpectrumComparison.js';
-import { Spectrogram3D } from '../components/Spectrogram3D.js';
+import { Spectrogram3DPanel } from '../components/Spectrogram3DPanel.js';
 import { buildResultCardBlob, shareResultImage } from '@utils/resultShareImage.js';
-import { buildSpectrogramMatrix } from '@core/dsp/spectrogram.js';
-import { extractFeatures, DEFAULT_DSP_CONFIG } from '@core/dsp/features.js';
-import { getViewLevel } from '@utils/viewLevelSettings.js';
+import { getViewLevel, isViewLevelAtLeast } from '@utils/viewLevelSettings.js';
 import { generateHistoryChart, getHistoryStatusClass } from './historyRender.js';
 import type { Machine, DiagnosisResult } from '@data/types.js';
 
@@ -429,82 +427,17 @@ export class MachineHistoryModal {
       }
     }
 
-    // 3D-Spektrogramm „Gebirge" (Expert): Zeit × Frequenz × Intensität der
-    // gespeicherten Aufnahme, per Finger drehbar/zoombar. Additiv und lazy —
-    // Matrix und WebGL entstehen erst beim ersten Tap auf den Toggle.
-    let spectro3d: Spectrogram3D | null = null;
-    if (getViewLevel() === 'expert' && (measurement || reference) && Spectrogram3D.isSupported()) {
-      const row = document.createElement('div');
-      row.className = 'spectro3d-toggle-row';
-      const host = document.createElement('div');
-
-      const sources: Array<{ key: 'measurement' | 'reference'; buffer: AudioBuffer }> = [];
-      if (measurement) sources.push({ key: 'measurement', buffer: measurement });
-      if (reference) sources.push({ key: 'reference', buffer: reference });
-
-      const matrixCache = new Map<string, ReturnType<typeof buildSpectrogramMatrix>>();
-      const mount = (key: 'measurement' | 'reference'): void => {
-        const source = sources.find((s) => s.key === key);
-        if (!source) return;
-        try {
-          let matrix = matrixCache.get(key);
-          if (matrix === undefined) {
-            matrix = buildSpectrogramMatrix(
-              extractFeatures(source.buffer, {
-                ...DEFAULT_DSP_CONFIG,
-                sampleRate: source.buffer.sampleRate,
-              }),
-              DEFAULT_DSP_CONFIG.hopSize
-            );
-            matrixCache.set(key, matrix);
-          }
-          if (!matrix) return;
-          spectro3d?.destroy();
-          spectro3d = new Spectrogram3D(matrix);
-          host.appendChild(spectro3d.element);
-        } catch (error) {
-          logger.warn('3D-Spektrogramm konnte nicht erstellt werden:', error);
-        }
-      };
-
-      let shown = false;
-      const makeChip = (label: string, onClick: () => void): HTMLButtonElement => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'listen-btn';
-        b.textContent = label;
-        b.onclick = onClick;
-        return b;
-      };
-
-      const toggle = makeChip(`🏔️ ${t('spectro3d.show')}`, () => {
-        shown = !shown;
-        if (shown) {
-          toggle.textContent = `🏔️ ${t('spectro3d.hide')}`;
-          mount(sources[0].key);
-          sourceChips.forEach((c) => (c.style.display = sources.length > 1 ? '' : 'none'));
-        } else {
-          toggle.textContent = `🏔️ ${t('spectro3d.show')}`;
-          spectro3d?.destroy();
-          spectro3d = null;
-          sourceChips.forEach((c) => (c.style.display = 'none'));
-        }
-      });
-      row.appendChild(toggle);
-
-      const sourceChips: HTMLButtonElement[] = sources.map((s) =>
-        makeChip(
-          s.key === 'measurement' ? t('spectro3d.sourceMeasurement') : t('spectro3d.sourceReference'),
-          () => mount(s.key)
-        )
-      );
-      for (const chip of sourceChips) {
-        chip.style.display = 'none';
-        row.appendChild(chip);
+    // 3D-Spektrogramm „Gebirge": Zeit × Frequenz × Intensität, per Finger
+    // drehbar/zoombar, umschaltbar zwischen Messung, Referenz und Differenz.
+    // Additiv und lazy — Matrix, WebGL und die spektrale Subtraktion entstehen
+    // erst beim Tap auf den jeweiligen Chip.
+    let spectro3d: Spectrogram3DPanel | null = null;
+    if (isViewLevelAtLeast('advanced') && (measurement || reference)) {
+      const panel = new Spectrogram3DPanel({ reference, measurement });
+      if (panel.hasContent) {
+        spectro3d = panel;
+        body.appendChild(panel.element);
       }
-
-      body.appendChild(row);
-      body.appendChild(host);
     }
 
     modal.appendChild(header);

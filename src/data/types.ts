@@ -5,6 +5,8 @@
  * Based on GMIA specifications.
  */
 
+import type { FeatureLayout } from '@core/dsp/filterBank.js';
+
 /**
  * Machine Identification
  */
@@ -139,7 +141,25 @@ export interface GMIAModel {
   trainingDate: number; // Timestamp
   trainingDuration: number; // Recording duration in seconds
   sampleRate: number; // Audio sample rate (Hz)
+  /**
+   * Merkmals-Layout, mit dem dieses Modell trainiert wurde (Bandaufteilung der
+   * Filterbank, siehe core/dsp/filterBank.ts). Zwei Layouts können dieselbe
+   * Vektorlänge haben und völlig verschiedene Frequenzen beschreiben — ein
+   * Cosinus darüber liefert dann einen plausiblen, bedeutungslosen Score.
+   * Fehlt das Feld, stammt das Modell aus der Zeit davor und ist 'linear-512'.
+   */
+  featureLayout?: FeatureLayout;
   baselineScore?: number; // Self-recognition score (model tested against its own training data)
+  /**
+   * Robust spread of the SAME self-test scores whose mean is `baselineScore`:
+   * median and MAD (σ-scaled). `baselineScore` alone throws the spread away,
+   * which is what forces thresholds to be round numbers instead of derived from
+   * this machine's own normal. See `core/ml/baselineSpread.ts`.
+   * Absent on models trained before this field existed — callers fall back to
+   * their fixed threshold.
+   */
+  baselineMedian?: number;
+  baselineMad?: number;
   metadata: {
     meanCosineSimilarity: number; // μ for C calculation
     targetScore: number; // Target score (e.g., 0.9)
@@ -178,8 +198,24 @@ export interface SpectralCosineModel {
   sampleRate: number; // bound to FFT bins, same constraint as GMIA
   trainingDate: number; // Timestamp
   trainingDuration: number; // Cumulative analysis time of training windows (s)
+  /**
+   * Merkmals-Layout, mit dem dieses Modell trainiert wurde (Bandaufteilung der
+   * Filterbank, siehe core/dsp/filterBank.ts). Zwei Layouts können dieselbe
+   * Vektorlänge haben und völlig verschiedene Frequenzen beschreiben — ein
+   * Cosinus darüber liefert dann einen plausiblen, bedeutungslosen Score.
+   * Fehlt das Feld, stammt das Modell aus der Zeit davor und ist 'linear-512'.
+   */
+  featureLayout?: FeatureLayout;
   /** Mean self-recognition score over training data (quality gate + ranking parity). */
   baselineScore?: number;
+  /**
+   * Robust spread of the same self-test scores (median + σ-scaled MAD), kept so
+   * a threshold can be expressed relative to this reference's own normal
+   * instead of as a fixed percentage. See `core/ml/baselineSpread.ts`.
+   * Absent on older models.
+   */
+  baselineMedian?: number;
+  baselineMad?: number;
   /**
    * RMS amplitude of the raw reference audio. Used as an energy gate at
    * diagnosis: cosine similarity is magnitude-invariant, so near-silence can
@@ -204,6 +240,12 @@ export interface SpectralCosineModel {
  * its bins are not tied to the capture rate. Stored as plain number[][] for
  * IndexedDB / JSON friendliness.
  */
+/**
+ * HINWEIS zum fehlenden `featureLayout`: YAMNet-Modelle entstehen aus ROHAUDIO
+ * (intern auf 16 kHz resampelt) und berühren die spektrale Filterbank nie. Die
+ * Ausnahme von der Layout-Prüfung steht deshalb hier im Typ und nicht als
+ * if-Abfrage im Vergleichspfad (siehe core/ml/modelCompatibility.ts).
+ */
 export interface EmbeddingModel {
   engineId: 'yamnet';
   machineId: string;
@@ -220,6 +262,12 @@ export interface EmbeddingModel {
   trainingDate: number;
   trainingDuration: number;
   baselineScore?: number;
+  /**
+   * Robust spread of the same self-test scores (median + σ-scaled MAD).
+   * See `core/ml/baselineSpread.ts`. Absent on older models.
+   */
+  baselineMedian?: number;
+  baselineMad?: number;
   metadata?: { meanCosine?: number; targetScore?: number };
 }
 
@@ -250,7 +298,24 @@ export interface TemporalModel {
   sampleRate: number; // an FFT-Bins gebunden, wie GMIA
   trainingDate: number;
   trainingDuration: number;
-  /** Selbst-Erkennungs-Score (LONO-kalibriert, Quality-Gate + Ranking-Parität). */
+  /**
+   * Merkmals-Layout, mit dem dieses Modell trainiert wurde (Bandaufteilung der
+   * Filterbank, siehe core/dsp/filterBank.ts). Zwei Layouts können dieselbe
+   * Vektorlänge haben und völlig verschiedene Frequenzen beschreiben — ein
+   * Cosinus darüber liefert dann einen plausiblen, bedeutungslosen Score.
+   * Fehlt das Feld, stammt das Modell aus der Zeit davor und ist 'linear-512'.
+   */
+  featureLayout?: FeatureLayout;
+  /**
+   * Selbst-Erkennungs-Score (LONO-kalibriert, Quality-Gate + Ranking-Parität).
+   *
+   * BEWUSST OHNE `baselineMedian`/`baselineMad` (anders als die drei mittelnden
+   * Engines): Dieser Wert ist kein Mittel über eine Verteilung, sondern ein
+   * EINZELNER Skalar auf der aggregierten Selbst-Ähnlichkeit (`aggSelfSim`) —
+   * pro Referenz gibt es genau einen. Eine Streuung existiert hier nicht ohne
+   * ein anderes Konstruktionsprinzip (z. B. LONO-Partitionen); sie zu erfinden
+   * wäre eine Zahl ohne Messung. Siehe `core/ml/baselineSpread.ts`.
+   */
   baselineScore?: number;
   /** RMS der Referenzaufnahme fürs Energy-Gate (wie SpectralCosineModel). */
   trainingRms?: number;

@@ -1,67 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
-  decideClip,
-  decideWithWinner,
   phoneVerdict,
   emptyConfusion,
   addDecision,
   mergeConfusion,
   metricsOf,
-  type FingerprintScore,
 } from './classifyEval.js';
-
-describe('decideClip', () => {
-  const fps: FingerprintScore[] = [
-    { score: 40, type: 'healthy' },
-    { score: 82, type: 'faulty' },
-    { score: 55, type: 'healthy' },
-  ];
-
-  it('best match wins and its type is the threshold-free verdict', () => {
-    const d = decideClip(fps, 75);
-    expect(d.score).toBe(82);
-    expect(d.predictedFree).toBe('faulty');
-    expect(d.predicted).toBe('faulty'); // 82 ≥ 75
-  });
-
-  it('below the confidence threshold → uncertain (but free verdict keeps type)', () => {
-    const d = decideClip([{ score: 60, type: 'healthy' }], 75);
-    expect(d.predicted).toBe('uncertain');
-    expect(d.predictedFree).toBe('healthy');
-  });
-
-  it('empty fingerprint set → uncertain', () => {
-    expect(decideClip([], 75).predicted).toBe('uncertain');
-  });
-});
-
-describe('decideWithWinner', () => {
-  it('reports the winning fingerprint by label', () => {
-    const d = decideWithWinner(
-      [
-        { label: 'Referenz', score: 91, type: 'healthy' },
-        { label: 'Schlecht #1', score: 84, type: 'faulty' },
-      ],
-      75
-    );
-    expect(d.winnerLabel).toBe('Referenz');
-    expect(d.predicted).toBe('healthy');
-    expect(d.score).toBe(91);
-  });
-
-  it('threshold pushes a weak winner to uncertain but keeps its label', () => {
-    const d = decideWithWinner([{ label: 'Gut #2', score: 60, type: 'healthy' }], 75);
-    expect(d.predicted).toBe('uncertain');
-    expect(d.predictedFree).toBe('healthy');
-    expect(d.winnerLabel).toBe('Gut #2');
-  });
-
-  it('empty set → uncertain with empty label', () => {
-    const d = decideWithWinner([], 75);
-    expect(d.predicted).toBe('uncertain');
-    expect(d.winnerLabel).toBe('');
-  });
-});
 
 describe('phoneVerdict (3-Diagnose live-loop logic)', () => {
   it('gauge shows the best HEALTHY score; healthy above the confidence threshold', () => {
@@ -114,19 +58,80 @@ describe('phoneVerdict (3-Diagnose live-loop logic)', () => {
     expect(v.faultDetected).toBe(false);
     expect(v.status).toBe('healthy');
   });
+
+  it('with NO fault fingerprints the healthy score alone decides (the field case)', () => {
+    // A machine that only carries its silently-created 'Baseline'. This is the
+    // common real setup and it must produce a verdict, not a skipped clip.
+    const ok = phoneVerdict([{ label: 'Baseline', type: 'healthy', score: 95 }], 90, 80);
+    expect(ok.status).toBe('healthy');
+    expect(ok.faultDetected).toBe(false);
+    const alarm = phoneVerdict([{ label: 'Baseline', type: 'healthy', score: 70 }], 90, 80);
+    expect(alarm.status).toBe('faulty');
+  });
+
+  it('a clip matching NOTHING reads faulty — the alarm the simplified rule hid', () => {
+    // The rule this replaced returned 'uncertain' here, which metricsOf counts as
+    // neither hit nor miss. Every alarm the phone raises on a poorly matching clip
+    // was therefore invisible in the false-alarm figure.
+    const v = phoneVerdict(
+      [
+        { label: 'Referenz', type: 'healthy', score: 30 },
+        { label: 'Schlecht #1', type: 'faulty', score: 20 },
+      ],
+      90,
+      80
+    );
+    expect(v.status).toBe('faulty');
+    expect(v.faultDetected).toBe(false); // not a fault MATCH — just far from normal
+  });
+
+  it('predictedFree ignores both thresholds: the better-matching pool wins', () => {
+    const faultCloser = phoneVerdict(
+      [
+        { label: 'Referenz', type: 'healthy', score: 40 },
+        { label: 'Schlecht #1', type: 'faulty', score: 55 },
+      ],
+      90,
+      80
+    );
+    expect(faultCloser.predictedFree).toBe('faulty');
+    expect(faultCloser.status).toBe('faulty'); // threshold agrees here
+
+    const healthyCloser = phoneVerdict(
+      [
+        { label: 'Referenz', type: 'healthy', score: 55 },
+        { label: 'Schlecht #1', type: 'faulty', score: 40 },
+      ],
+      90,
+      80
+    );
+    expect(healthyCloser.predictedFree).toBe('healthy');
+    expect(healthyCloser.status).toBe('faulty'); // ...and here it does not
+  });
+
+  it('predictedFree is healthy when there is no fault pool at all', () => {
+    const v = phoneVerdict([{ label: 'Baseline', type: 'healthy', score: 10 }], 90, 80);
+    expect(v.predictedFree).toBe('healthy');
+  });
+
+  it('empty fingerprint set → faulty (score 0), no crash', () => {
+    const v = phoneVerdict([], 90, 80);
+    expect(v.status).toBe('faulty'); // bestHealthy 0 < faultyThreshold
+    expect(v.detectedState).toBe('UNKNOWN');
+  });
 });
 
 describe('confusion + metrics', () => {
   it('accumulates and computes hit rates, accuracy and uncertain rate', () => {
     const c = emptyConfusion();
     // 3 normal clips: 2 healthy, 1 uncertain
-    addDecision(c, 'normal', { predicted: 'healthy', predictedFree: 'healthy', score: 90 });
-    addDecision(c, 'normal', { predicted: 'healthy', predictedFree: 'healthy', score: 88 });
-    addDecision(c, 'normal', { predicted: 'uncertain', predictedFree: 'faulty', score: 60 });
+    addDecision(c, 'normal', { predicted: 'healthy', predictedFree: 'healthy' });
+    addDecision(c, 'normal', { predicted: 'healthy', predictedFree: 'healthy' });
+    addDecision(c, 'normal', { predicted: 'uncertain', predictedFree: 'faulty' });
     // 3 abnormal clips: 2 faulty, 1 healthy (a miss)
-    addDecision(c, 'abnormal', { predicted: 'faulty', predictedFree: 'faulty', score: 85 });
-    addDecision(c, 'abnormal', { predicted: 'faulty', predictedFree: 'faulty', score: 80 });
-    addDecision(c, 'abnormal', { predicted: 'healthy', predictedFree: 'healthy', score: 92 });
+    addDecision(c, 'abnormal', { predicted: 'faulty', predictedFree: 'faulty' });
+    addDecision(c, 'abnormal', { predicted: 'faulty', predictedFree: 'faulty' });
+    addDecision(c, 'abnormal', { predicted: 'healthy', predictedFree: 'healthy' });
 
     const m = metricsOf(c);
     expect(m.nNormal).toBe(3);
@@ -144,9 +149,9 @@ describe('confusion + metrics', () => {
 
   it('mergeConfusion folds runs together additively', () => {
     const a = emptyConfusion();
-    addDecision(a, 'normal', { predicted: 'healthy', predictedFree: 'healthy', score: 90 });
+    addDecision(a, 'normal', { predicted: 'healthy', predictedFree: 'healthy' });
     const b = emptyConfusion();
-    addDecision(b, 'abnormal', { predicted: 'faulty', predictedFree: 'faulty', score: 85 });
+    addDecision(b, 'abnormal', { predicted: 'faulty', predictedFree: 'faulty' });
     const m = metricsOf(mergeConfusion(a, b));
     expect(m.nNormal).toBe(1);
     expect(m.nAbnormal).toBe(1);

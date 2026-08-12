@@ -1893,17 +1893,17 @@
               for="nfc-customer-id-input"
               class="nfc-customer-id-label"
               data-i18n="nfc.customerIdLabel"
-              >Kundenkennung (c)</label
+              >Referenz-Sammlung (c)</label
             >
             <p class="nfc-customer-id-description" data-i18n="nfc.customerIdDescription">
-              Diese Kennung bestimmt, welche Referenzdaten beim NFC-Scan geladen werden. Die App
-              lädt automatisch: https://gunterstruck.github.io/&lt;Kundenkennung&gt;/db-latest.json
+              Der Name der Sammlung, aus der beim NFC-Scan die Referenzen geladen werden. Die App
+              lädt automatisch: https://gunterstruck.github.io/&lt;Sammlung&gt;/db-latest.json
             </p>
             <input
               type="text"
               id="nfc-customer-id-input"
               class="nfc-customer-id-input"
-              placeholder="z.B. Kundenkennung_nr1"
+              placeholder="z.B. golf-7-tdi-leerlauf"
               data-i18n-placeholder="nfc.customerIdPlaceholder"
               autocomplete="off"
               spellcheck="false"
@@ -2063,16 +2063,17 @@
               for="qr-customer-id-input"
               class="nfc-customer-id-label"
               data-i18n="qrCode.customerIdLabel"
-              >Kundenkennung (c)</label
+              >Referenz-Sammlung (c)</label
             >
             <p class="nfc-customer-id-description" data-i18n="qrCode.customerIdDescription">
-              Diese Kennung bestimmt, welche Referenzdaten beim Scan geladen werden.
+              Der Name der Sammlung, aus der beim Scan die Referenzen geladen werden — eine eigene
+              oder eine geteilte.
             </p>
             <input
               type="text"
               id="qr-customer-id-input"
               class="nfc-customer-id-input"
-              placeholder="z.B. Kundenkennung_nr1"
+              placeholder="z.B. golf-7-tdi-leerlauf"
               data-i18n-placeholder="qrCode.customerIdPlaceholder"
               autocomplete="off"
               spellcheck="false"
@@ -2289,6 +2290,17 @@
                 <span class="result-ampel-trend-arrow" id="result-ampel-trend-arrow"></span>
                 <span class="result-ampel-trend-text" id="result-ampel-trend-text"></span>
               </div>
+              <!-- Auflösung dieser Referenz: was der Vergleich überhaupt trennen
+                   kann (k · MAD der Eigenstreuung, siehe core/ml/baselineSpread).
+                   Steht bewusst NEBEN der Ampel und nicht in ihr: die Ampel
+                   urteilt, diese Zeile sagt, wie fein sie urteilen kann. Bleibt
+                   verborgen, wenn die Referenz die Streuung nicht mitbringt —
+                   eine erfundene Zahl wäre schlimmer als keine. -->
+              <p
+                class="result-ampel-resolution"
+                id="result-ampel-resolution"
+                style="display: none"
+              ></p>
               <p class="result-ampel-recommendation" id="result-ampel-recommendation"></p>
             </div>
             <div class="result-barcode" data-view-level="advanced">
@@ -4136,17 +4148,12 @@
             </li>
           </ul>
 
-          <h4>Rechtliche Position und IP-Überprüfung</h4>
+          <h4>Technische Abgrenzung</h4>
           <p>
             Zanobo wurde unabhängig als privates, nicht-kommerzielles Open-Source-Projekt unter der
             <strong>MIT-Lizenz</strong> entwickelt. Die Funktionalität basiert auf offen
             beschriebenen mathematischen Verfahren (z.B. GMIA-ähnlicher Kosinus-Vergleich) und
             integriert keine patentierte Systemlogik oder Lernmechanismen.
-          </p>
-          <p>
-            Vor der Veröffentlichung wurde eine detaillierte rechtliche und technische Überprüfung
-            durchgeführt, um sicherzustellen, dass die Lösung nicht mit bestehenden Patenten oder
-            Siemens-internen Methoden kollidiert.
           </p>
 
           <h5>Relevante IP und technische Abgrenzung</h5>

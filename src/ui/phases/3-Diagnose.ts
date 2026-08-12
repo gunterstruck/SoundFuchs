@@ -58,6 +58,13 @@ import {
 import { getDiagnosisAudioMode } from '@utils/diagnosisAudioSettings.js';
 import { SlowListenPlayer } from '@core/audio/slowListen.js';
 import { isolateDifference } from '@core/audio/differenceIsolation.js';
+import { getDifferenceTake } from '@core/audio/differenceTake.js';
+import { partitionModels } from '@core/ml/modelCompatibility.js';
+import { resolutionLineState } from './resolutionLine.js';
+import { planTranspose } from '@core/audio/audibleTranspose.js';
+import { peakFrequencyFine } from '@core/dsp/fineSpectrogram.js';
+import { Spectrogram3DPanel } from '../components/Spectrogram3DPanel.js';
+import { formatHz } from '@utils/formatHz.js';
 import { averageSpectrum } from '@core/dsp/spectrumSummary.js';
 import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
 import { HealthGauge } from '@ui/components/HealthGauge.js';
@@ -75,7 +82,7 @@ import { logger } from '@utils/logger.js';
 import { BUTTON_TEXT, MODAL_TITLE } from '@ui/constants.js';
 import { stopMediaStream, closeAudioContext } from '@utils/streamHelper.js';
 import { t, getLocale } from '../../i18n/index.js';
-import { getViewLevel } from '@utils/viewLevelSettings.js';
+import { getViewLevel, isViewLevelAtLeast } from '@utils/viewLevelSettings.js';
 import { AudioVisualizer } from '@ui/components/AudioVisualizer.js';
 import { InfoBottomSheet } from '@ui/components/InfoBottomSheet.js';
 import { getRecordingSettings } from '@utils/recordingSettings.js';
@@ -131,6 +138,7 @@ export class DiagnosePhase {
   private visualizer: AudioVisualizer | null = null; // Used in advanced/expert view
   private revealVisualizer: AudioVisualizer | null = null; // basic view "look closer" spectrum
   private slowListenPlayer: SlowListenPlayer | null = null; // A/B listening on the result screen
+  private spectro3dPanel: Spectrogram3DPanel | null = null; // 3D-Gebirge on the result screen
   // "Hear the difference": capture the diagnosis audio (fully decoupled from the
   // scoring pipeline via MediaRecorder) for A/B playback against the reference.
   private diagnosisRecorder: MediaRecorder | null = null;
@@ -168,6 +176,11 @@ export class DiagnosePhase {
   private lastBestFaultLabel: string = '';
   private lastBestFaultScore: number = 0;
   private lastFaultModelsExist: boolean = false;
+  // Label der GESUNDEN Referenz, die die Anzeige gespeist hat. Nur dafür da, auf
+  // dem Ergebnis-Screen die Auflösung GENAU dieser Referenz nennen zu können —
+  // sie ist eine Eigenschaft der Referenz, nicht der App, und unterscheidet sich
+  // zwischen zwei Referenzen derselben Maschine.
+  private lastHealthyLabel: string = '';
   private labelHistory: LabelHistory; // CRITICAL FIX: Label history for majority voting
   private lastProcessedScore: number = 0;
   private lastProcessedStatus: 'healthy' | 'uncertain' | 'faulty' | 'UNKNOWN' = 'UNKNOWN';
@@ -527,15 +540,42 @@ export class DiagnosePhase {
         );
       }
 
-      // CRITICAL: Validate sample rate compatibility with trained models
-      // This check now happens AFTER we know the actual hardware rate
-      this.activeModels = this.machine.referenceModels.filter(
-        // YAMNet is sample-rate independent (it resamples to 16 kHz internally),
-        // so it is not subject to the FFT-bin sample-rate constraint.
-        (model) => model.engineId === 'yamnet' || model.sampleRate === this.actualSampleRate
-      );
+      // CRITICAL: Validate compatibility with the trained models — sample rate
+      // AND feature layout. Beides muss stimmen, sonst rechnet der Cosinus über
+      // zwei Vektoren gleicher Länge, die verschiedene Frequenzen beschreiben,
+      // und liefert einen plausiblen, bedeutungslosen Score.
+      // (YAMNet ist von beidem ausgenommen — Rohaudio, kein Bandraster.)
+      const partition = partitionModels(this.machine.referenceModels, this.actualSampleRate);
+      this.activeModels = partition.usable;
+
+      if (partition.outdatedLayout.length > 0) {
+        logger.warn(
+          `⚠️ ${partition.outdatedLayout.length} Referenzmodell(e) mit fremdem Merkmals-Layout ` +
+            `– ausgeschlossen, müssen neu angelernt werden: ` +
+            partition.outdatedLayout.map((m) => m.label || '(ohne Label)').join(', ')
+        );
+        if (partition.usable.length === 0) {
+          notify.error(
+            t('models.layoutOutdated', { count: String(partition.outdatedLayout.length) }),
+            new Error('Feature layout mismatch'),
+            { duration: 0, title: t('models.layoutOutdatedTitle') }
+          );
+          this.cleanup();
+          return;
+        }
+        notify.info(
+          t('models.layoutOutdatedPartial', {
+            count: String(partition.outdatedLayout.length),
+          })
+        );
+      }
+
+      // Ab hier kann nur noch die Sample-Rate der Grund sein: Layout-Fälle sind
+      // oben abgefangen, und die Rate-Liste zählt nur die Modelle, deren Layout
+      // überhaupt passt — sonst nennte die Meldung Raten von Modellen, die
+      // ohnehin nicht in Frage kommen.
       if (this.activeModels.length === 0) {
-        const rateList = [...new Set(this.machine.referenceModels.map((model) => model.sampleRate))]
+        const rateList = [...new Set(partition.wrongSampleRate.map((model) => model.sampleRate))]
           .sort((a, b) => a - b)
           .join(', ');
         logger.error(
@@ -557,7 +597,7 @@ export class DiagnosePhase {
         return;
       }
 
-      if (this.activeModels.length < this.machine.referenceModels.length) {
+      if (partition.wrongSampleRate.length > 0) {
         logger.warn(
           `⚠️ Sample Rate Filter: ${this.activeModels.length}/${this.machine.referenceModels.length} Modelle kompatibel (${this.actualSampleRate}Hz)`
         );
@@ -1027,6 +1067,9 @@ export class DiagnosePhase {
     this.lastBestFaultLabel = '';
     this.lastBestFaultScore = 0;
     this.lastFaultModelsExist = false;
+    // Mit zurücksetzen: sonst zeigt die Auflösungszeile beim nächsten Ergebnis
+    // die Zahl einer Referenz, die zur Maschine davor gehörte.
+    this.lastHealthyLabel = '';
     this.renderFaultLine(null);
     this.scoreHistory.clear();
     this.faultScoreHistory.clear();
@@ -1331,6 +1374,7 @@ export class DiagnosePhase {
       this.lastFaultModelsExist = hasFaultModels;
       this.lastBestFaultLabel = hasFaultModels ? bestFaultyLabel : '';
       this.lastBestFaultScore = hasFaultModels ? filteredFaultScore : 0;
+      this.lastHealthyLabel = bestHealthyLabel;
 
       // Detected state for display/save: the fault label when a fault is
       // detected, otherwise the best-matching healthy state.
@@ -1514,6 +1558,7 @@ export class DiagnosePhase {
       this.lastFaultModelsExist = hasFaultModels;
       this.lastBestFaultLabel = hasFaultModels ? bestFaultyLabel : '';
       this.lastBestFaultScore = hasFaultModels ? filteredFaultScore : 0;
+      this.lastHealthyLabel = bestHealthyLabel;
       const detectedState = faultDetected ? bestFaultyLabel : bestHealthyLabel || 'UNKNOWN';
       this.labelHistory.addLabel(detectedState);
 
@@ -3309,6 +3354,8 @@ export class DiagnosePhase {
           ampelTrendContainer.style.display = 'none';
         }
       }
+
+      this.renderResolutionLine();
     }
 
     // Welle 2 UX: Context-aware action buttons
@@ -3445,6 +3492,10 @@ export class DiagnosePhase {
         modal.style.display = 'none';
         // Stop slow-motion playback if still running
         this.slowListenPlayer?.stop();
+        // WebGL-Kontexte sind eine knappe Ressource (Browser begrenzen sie
+        // pro Seite) — das Gebirge muss beim Schließen wirklich weg sein.
+        this.spectro3dPanel?.destroy();
+        this.spectro3dPanel = null;
         // Cleanup ranking when modal closes
         if (this.workPointRanking) {
           this.workPointRanking.destroy();
@@ -3464,6 +3515,10 @@ export class DiagnosePhase {
         modal.style.display = 'none';
         // Stop slow-motion playback if still running
         this.slowListenPlayer?.stop();
+        // WebGL-Kontexte sind eine knappe Ressource (Browser begrenzen sie
+        // pro Seite) — das Gebirge muss beim Schließen wirklich weg sein.
+        this.spectro3dPanel?.destroy();
+        this.spectro3dPanel = null;
         if (this.workPointRanking) {
           this.workPointRanking.destroy();
           this.workPointRanking = null;
@@ -3491,6 +3546,60 @@ export class DiagnosePhase {
   }
 
   /**
+   * AUFLÖSUNG DIESER REFERENZ — die Zahl, die „Vergleich, keine Diagnose" von
+   * einer Ausrede trennt.
+   *
+   * Wer nicht diagnostiziert, muss sagen können, was er stattdessen leistet.
+   * Zanobo leistet: Unterschiede ab einer bestimmten Punktzahl auflösen. Diese
+   * Punktzahl ist keine Produkteigenschaft, sondern eine Eigenschaft DIESER
+   * Referenz — sie kommt aus deren eigener Wiederholstreuung (Median + k · MAD
+   * der Selbsttest-Scores, siehe `core/ml/baselineSpread.ts`). Eine leise
+   * Maschine mit ruhiger Aufnahme löst fein auf, eine mit schwankendem
+   * Betriebspunkt grob. Beide zeigen dieselbe Skala — deshalb muss dabeistehen,
+   * was sie wert ist.
+   *
+   * Diese Zeile ENTSCHEIDET nichts. Die Ampel urteilt unverändert an ihren zwei
+   * festen Schwellen; hier steht nur, wie fein sie urteilen kann. Erst wenn sich
+   * über genug echte Referenzen zeigt, wo die Zahl liegt, kann die Schwelle
+   * begründet darauf umgestellt werden.
+   *
+   * Fehlt die Streuung (Referenz vor diesem Feld angelernt, oder Temporal-Engine,
+   * die keine Verteilung hat), wird KEINE Zahl erfunden: ab „Advanced" steht der
+   * Grund da, darunter bleibt die Zeile weg — ein Hinweis, auf den man nur mit
+   * Neuanlernen reagieren kann, ist für die einfache Ansicht bloß Lärm.
+   */
+  private renderResolutionLine(): void {
+    const line = document.getElementById('result-ampel-resolution');
+    if (!line) return;
+
+    const state = resolutionLineState(
+      this.activeModels,
+      this.lastHealthyLabel,
+      isViewLevelAtLeast('advanced')
+    );
+
+    if (state.kind === 'hidden') {
+      line.style.display = 'none';
+      line.textContent = '';
+      line.removeAttribute('title');
+      return;
+    }
+
+    line.style.display = '';
+    if (state.kind === 'unknown') {
+      line.textContent = t('resultAmpel.resolutionUnknown');
+      line.removeAttribute('title');
+      return;
+    }
+
+    line.textContent = t('resultAmpel.resolution', { points: state.points });
+    line.title = t('resultAmpel.resolutionDetail', {
+      k: String(state.k),
+      label: state.label,
+    });
+  }
+
+  /**
    * Reserve fixed-order slots for the result extras and fill them from a single
    * shared audio load. Replaces the two independent async insertions that used
    * to race for the same anchor (causing the visible "jump"/reorder).
@@ -3504,14 +3613,28 @@ export class DiagnosePhase {
     // populated, then fade in.
     document.getElementById('iris-comparison')?.remove();
     document.getElementById('listen-controls')?.remove();
+    document.getElementById('spectro3d-slot')?.remove();
     const listenSlot = document.createElement('div');
     listenSlot.id = 'listen-controls';
     listenSlot.className = 'listen-controls result-extra-slot';
     const irisSlot = document.createElement('div');
     irisSlot.id = 'iris-comparison';
     irisSlot.className = 'iris-comparison result-extra-slot';
-    anchor.parentElement.insertBefore(listenSlot, anchor.nextSibling);
+    const spectroSlot = document.createElement('div');
+    spectroSlot.id = 'spectro3d-slot';
+    spectroSlot.className = 'result-extra-slot';
+    // insertBefore(anchor.nextSibling) stapelt in umgekehrter Reihenfolge: zuletzt
+    // eingefügt steht oben. Ergebnis: Hören · Iris · Gebirge.
+    //
+    // Das Hören steht ganz vorn, weil es das Einzige ist, was der Mensch
+    // ÜBERPRÜFEN kann. Die Iris ist ein Bild, das man glauben muss; „nur den
+    // Unterschied" hören heißt, dem Urteil der App zu widersprechen, wenn es
+    // nach Regen auf dem Blech klingt statt nach einem Lager. Wer die Ampel
+    // nicht nachprüfen kann, muss ihr vertrauen — und genau das soll Zanobo
+    // nicht verlangen.
+    anchor.parentElement.insertBefore(spectroSlot, anchor.nextSibling);
     anchor.parentElement.insertBefore(irisSlot, anchor.nextSibling);
+    anchor.parentElement.insertBefore(listenSlot, anchor.nextSibling);
 
     // Load the shared audio ONCE (both extras need the reference recording and
     // the captured measurement) instead of each function reading them again.
@@ -3534,6 +3657,35 @@ export class DiagnosePhase {
 
     this.populateIrisComparison(diagnosis, referenceBuffer, measurementBuffer);
     this.populateListenControls(referenceBuffer, measurementBuffer);
+    this.populateSpectro3d(spectroSlot, referenceBuffer, measurementBuffer);
+  }
+
+  /**
+   * 3D-Spektrogramm „Gebirge" direkt auf dem Ergebnis-Screen (ab Advanced):
+   * Zeit × Frequenz × Intensität, umschaltbar zwischen Messung, Referenz und
+   * Differenz. Alles lazy — Matrix, WebGL und die spektrale Subtraktion
+   * entstehen erst beim Tap auf den jeweiligen Chip, nicht beim Anzeigen des
+   * Ergebnisses.
+   */
+  private populateSpectro3d(
+    slot: HTMLElement,
+    referenceBuffer: AudioBuffer | null,
+    measurementBuffer: AudioBuffer | null
+  ): void {
+    if (!isViewLevelAtLeast('advanced')) return;
+    if (!referenceBuffer && !measurementBuffer) return;
+
+    this.spectro3dPanel?.destroy();
+    this.spectro3dPanel = null;
+
+    const panel = new Spectrogram3DPanel({
+      reference: referenceBuffer,
+      measurement: measurementBuffer,
+    });
+    if (!panel.hasContent) return;
+    this.spectro3dPanel = panel;
+    slot.appendChild(panel.element);
+    this.revealResultSlot(slot);
   }
 
   /**
@@ -3866,15 +4018,38 @@ export class DiagnosePhase {
       container.appendChild(btn);
     };
 
-    if (referenceBuffer) {
-      makeListenButton('reference', t('diagnose.display.listenReference'), referenceBuffer);
-    }
-    if (diagnosisBuffer) {
-      makeListenButton('measurement', t('diagnose.display.listenMeasurement'), diagnosisBuffer);
-    }
+    // Geschwindigkeit: HIER erzeugt, aber erst am Ende angehängt. Grund: der
+    // Transponier-Knopf ruft `applySpeed`, steht in der Reihe aber VOR den
+    // Umschaltern. Erzeugung und Platzierung müssen deshalb getrennt sein.
+    const slowToggle = document.createElement('button');
+    const normalToggle = document.createElement('button');
+    const fastToggle = document.createElement('button');
 
-    // "Hear only the difference": resynthesize what's new in the measurement vs
-    // the reference (spectral subtraction). Only when both takes are available.
+    // Speed selector: slower/lower (🐢), normal (▶), faster/higher (🐇).
+    // Exactly one is active; the speed applies to whichever clip is playing.
+    const updateSpeedActive = () => {
+      slowToggle.classList.toggle('active', speedFactor === 0.5);
+      normalToggle.classList.toggle('active', speedFactor === 1);
+      fastToggle.classList.toggle('active', speedFactor === 2);
+    };
+    const applySpeed = (factor: number) => {
+      speedFactor = factor;
+      updateSpeedActive();
+      // If something is playing, replay it immediately at the new speed
+      const playingKey = this.listenPlayingKey;
+      if (playingKey) startPlayback(playingKey);
+    };
+
+    // „Nur Unterschied" ZUERST, und als einzige gefüllte Fläche in der Reihe.
+    //
+    // Referenz und Messung nacheinander anzuhören kann jede Audio-App; das Ohr
+    // hört dabei vor allem, was in beiden gleich ist. Was nur Zanobo kann, ist
+    // das Gemeinsame WEGZURECHNEN und den Rest übrig zu lassen — und das ist
+    // gleichzeitig das Einzige, womit sich der Ampel widersprechen lässt. Wenn
+    // dieser Knopf hinter dem A/B-Vergleich steht, wird er zur Fußnote einer
+    // Zahl, die man sonst nur glauben kann. Deshalb steht er vorn.
+    //
+    // Technisch: spektrale Subtraktion, nur wenn beide Aufnahmen vorliegen.
     if (referenceBuffer && diagnosisBuffer) {
       const refBuf = referenceBuffer;
       const measBuf = diagnosisBuffer;
@@ -3926,29 +4101,63 @@ export class DiagnosePhase {
       container.appendChild(diffBtn);
     }
 
+    // Faktor AUS DER MESSUNG statt 0,5/1/2 nach Gefühl: die Frequenz mit dem
+    // größten Unterschied wird auf ~3 kHz gezogen, wo das Ohr am besten auflöst
+    // und der Handylautsprecher noch trägt. Resampling nimmt den Rhythmus mit —
+    // gewollt, denn genau dadurch wird ein Klopfen im Dauergeräusch hörbar.
+    if (referenceBuffer && diagnosisBuffer) {
+      const refBuf = referenceBuffer;
+      const measBuf = diagnosisBuffer;
+      const tuneBtn = document.createElement('button');
+      tuneBtn.type = 'button';
+      tuneBtn.className = 'listen-btn listen-btn-tune';
+      tuneBtn.textContent = t('diagnose.display.listenTune');
+      let tuning = false;
+      tuneBtn.onclick = () => {
+        if (tuning) return;
+        tuning = true;
+        tuneBtn.textContent = t('diagnose.display.listenComputing');
+        setTimeout(() => {
+          tuning = false;
+          const take = getDifferenceTake(refBuf, measBuf);
+          // Feine Auflösung: 2,93 Hz statt 46,875 Hz. Der Transponier-Faktor folgt
+          // direkt aus dieser Frequenz, ein 16-faches Raster war dort zu grob.
+          const peakHz = take ? peakFrequencyFine(take.buffer) : null;
+          if (!take || peakHz === null) {
+            tuneBtn.textContent = t('diagnose.display.listenTune');
+            notify.info(t('diagnose.display.listenDifferenceTooShort'));
+            return;
+          }
+          buffers['difference'] = take.buffer;
+          const plan = planTranspose(peakHz);
+          tuneBtn.textContent = t('diagnose.display.listenTuneResult', {
+            peak: formatHz(plan.peakHz),
+            target: formatHz(plan.resultHz),
+          });
+          tuneBtn.title = plan.clamped
+            ? t('diagnose.display.listenTuneClamped')
+            : t('diagnose.display.listenTuneExact');
+          applySpeed(plan.factor);
+          startPlayback('difference');
+        }, 50);
+      };
+      container.appendChild(tuneBtn);
+    }
+
+    // A/B danach: Referenz und Messung einzeln anhören. Bleibt erreichbar (es ist
+    // die Gegenprobe zur Differenz), ist aber nicht mehr das Erste, was man sieht.
+    if (referenceBuffer) {
+      makeListenButton('reference', t('diagnose.display.listenReference'), referenceBuffer);
+    }
+    if (diagnosisBuffer) {
+      makeListenButton('measurement', t('diagnose.display.listenMeasurement'), diagnosisBuffer);
+    }
+
     // Speed toggles: slower/lower (🐢, good for impacts/rattles) and
     // faster/higher (🐇, transposes low content up into the phone-speaker range
     // so deep hums become audible). Mutually exclusive; tapping the active one
-    // returns to normal speed.
-    const slowToggle = document.createElement('button');
-    const normalToggle = document.createElement('button');
-    const fastToggle = document.createElement('button');
-
-    // Speed selector: slower/lower (🐢), normal (▶), faster/higher (🐇).
-    // Exactly one is active; the speed applies to whichever clip is playing.
-    const updateSpeedActive = () => {
-      slowToggle.classList.toggle('active', speedFactor === 0.5);
-      normalToggle.classList.toggle('active', speedFactor === 1);
-      fastToggle.classList.toggle('active', speedFactor === 2);
-    };
-    const applySpeed = (factor: number) => {
-      speedFactor = factor;
-      updateSpeedActive();
-      // If something is playing, replay it immediately at the new speed
-      const playingKey = this.listenPlayingKey;
-      if (playingKey) startPlayback(playingKey);
-    };
-
+    // returns to normal speed. Ganz am Ende: sie verändern das Abspielen, sie
+    // starten nichts.
     slowToggle.type = 'button';
     slowToggle.className = 'listen-slow-toggle';
     slowToggle.textContent = t('diagnose.display.listenSlow');
@@ -4323,5 +4532,8 @@ export class DiagnosePhase {
     this.lastBestFaultLabel = '';
     this.lastBestFaultScore = 0;
     this.lastFaultModelsExist = false;
+    // Mit zurücksetzen: sonst zeigt die Auflösungszeile beim nächsten Ergebnis
+    // die Zahl einer Referenz, die zur Maschine davor gehörte.
+    this.lastHealthyLabel = '';
   }
 }

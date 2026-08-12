@@ -1,0 +1,29 @@
+name: CI
+
+# Bis hierher gab es nur den Deploy auf GitHub Pages – der läuft erst NACH dem
+# Merge und prüft nur, ob `tsc` im Build durchkommt. Ein Pull Request wurde
+# damit von nichts geprüft. Diese Datei schließt die Lücke: dieselben vier
+# Befehle, die auch lokal gelten, laufen bei jedem PR und bei jedem Push auf
+# main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run type-check
+      - run: npm run lint
+      - run: npm run test:run
+      - run: npm run build
+      # Fünf Sprachen, ein Schlüsselsatz: Wenn ein Key nur in einer Sprache
+      # ankommt, sieht das im Deutschen niemand.
+      - run: npm run check-i18n

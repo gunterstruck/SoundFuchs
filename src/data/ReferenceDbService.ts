@@ -25,6 +25,7 @@ import {
 } from './db.js';
 import type { Machine, ReferenceDatabase, GMIAModel, ReferenceDbFile, ReferenceDbMeta, FleetDbFile } from './types.js';
 import { isGMIAModel } from './types.js';
+import { buildReferenceCollection } from './referenceCollection.js';
 import { logger } from '@utils/logger.js';
 import { onboardingTrace } from '@utils/onboardingTrace.js';
 
@@ -918,11 +919,20 @@ export class ReferenceDbService {
   }
 
   /**
-   * Export the local reference database as a file
-   * Creates a file in the new db_meta format that can be uploaded to Google Drive
+   * Export this machine's references as a shareable collection file
+   * (`ReferenceDbFile`) — the file that goes to `<sammlung>/db-latest.json`.
+   *
+   * QUELLE: `machine.referenceModels` zuerst, ein vorhandener
+   * `ReferenceDatabase` dazu. Früher las diese Funktion NUR den
+   * `ReferenceDatabase`-Datensatz — den es aber nur nach einem Download von
+   * einer URL gibt. Für alle, die ihren Normalzustand selbst aufgenommen haben,
+   * gab sie deshalb `null` zurück: also für genau die Person, die etwas zu
+   * teilen hat. Aufbau und Versionierung liegen in `data/referenceCollection.ts`
+   * (dort auch die Begründung der Versionsregel).
    *
    * @param machineId - Machine ID
-   * @returns Blob containing the exported JSON, or null on error
+   * @returns Blob containing the exported JSON, or null when there is nothing
+   *          to share (unknown machine, or no reference trained yet)
    */
   public static async exportDatabase(machineId: string): Promise<{
     blob: Blob;
@@ -931,63 +941,26 @@ export class ReferenceDbService {
   } | null> {
     try {
       const machine = await getMachine(machineId);
-      const refDb = await getReferenceDatabase(machineId);
-
-      if (!machine || !refDb) {
-        logger.error('Cannot export: machine or reference DB not found');
+      if (!machine) {
+        logger.error('Cannot export: machine not found');
         return null;
       }
 
-      // Combine official models with local models
-      const allModels = [
-        ...(refDb.data.referenceModels || []),
-        ...(refDb.localModels || []),
-      ];
+      const refDb = await getReferenceDatabase(machineId);
+      const built = buildReferenceCollection(machine, refDb ?? null);
+      if (!built) {
+        logger.warn(`Cannot export: machine ${machineId} has no reference models`);
+        return null;
+      }
 
-      // Serialize models (convert Float64Array to regular arrays)
-      const serializedModels = allModels.map(model => ({
-        ...model,
-        weightVector: Array.from(model.weightVector),
-      }));
-
-      // Increment patch version for export
-      const currentVersion = refDb.version || '1.0.0';
-      const versionParts = currentVersion.split('.').map(n => parseInt(n, 10) || 0);
-      while (versionParts.length < 3) versionParts.push(0);
-      versionParts[2]++; // Increment patch version
-      const newVersion = versionParts.join('.');
-
-      // Create export data in new format
-      // Note: models array contains serialized weightVector (number[] instead of Float64Array)
-      // This is intentional for JSON serialization - it will be converted back when imported
-      const exportData = {
-        db_meta: {
-          db_version: newVersion,
-          created_by: 'user-export',
-          created_at: new Date().toISOString().split('T')[0],
-          description: refDb.dbMeta?.description
-            ? `${refDb.dbMeta.description} (+ local references)`
-            : `Export from ${machine.name || machine.id}`,
-        },
-        models: serializedModels,
-        // Include machine metadata
-        machineName: machine.name,
-        location: machine.location,
-        notes: machine.notes,
-      };
-
-      const jsonString = JSON.stringify(exportData, null, 2);
+      const jsonString = JSON.stringify(built.file, null, 2);
       const blob = new Blob([jsonString], { type: 'application/json' });
 
-      // Generate filename
-      const safeName = (machine.name || machine.id)
-        .replace(/[^a-zA-Z0-9-_]/g, '_')
-        .substring(0, 50);
-      const filename = `reference-db_${safeName}_v${newVersion}.json`;
+      logger.info(
+        `📤 Exported reference collection: ${built.filename} (${built.file.models.length} models)`
+      );
 
-      logger.info(`📤 Exported reference DB: ${filename} (${allModels.length} models)`);
-
-      return { blob, filename, version: newVersion };
+      return { blob, filename: built.filename, version: built.version };
     } catch (error) {
       logger.error('Export failed:', error);
       return null;

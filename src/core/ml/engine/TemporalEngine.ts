@@ -60,6 +60,7 @@ import {
 import { DEFAULT_DSP_CONFIG } from '../../dsp/features.js';
 import { getRecordingSettings } from '@utils/recordingSettings.js';
 import { logger } from '@utils/logger.js';
+import { CURRENT_FEATURE_LAYOUT } from '@core/dsp/filterBank.js';
 
 /** Ziel-Selbst-Score der Referenz (GMIA-Konvention, 0.9 = 90 %). */
 const TARGET_SELF_SCORE = 0.9;
@@ -272,6 +273,7 @@ export class TemporalEngine implements DiagnosisEngine {
       scalingConstant,
       featureDimension: dim,
       sampleRate: input.trainingData.config.sampleRate,
+      featureLayout: CURRENT_FEATURE_LAYOUT,
       trainingDate: Date.now(),
       trainingDuration: input.trainingData.config.windowSize * numSamples,
       baselineScore,

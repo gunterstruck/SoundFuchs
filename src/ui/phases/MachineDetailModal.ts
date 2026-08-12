@@ -18,6 +18,7 @@ import {
   deleteReferenceModel,
   promoteToBaseline,
 } from '@data/db.js';
+import { ReferenceDbService } from '@data/ReferenceDbService.js';
 import { notify } from '@utils/notifications.js';
 import { t, getLocale } from '../../i18n/index.js';
 import { logger } from '@utils/logger.js';
@@ -139,6 +140,8 @@ export class MachineDetailModal {
       actions.insertBefore(histBtn, actions.firstChild);
     }
 
+    this.renderShareCollectionButton(actions, machine);
+
     // Show modal
     modal.style.display = 'flex';
     logger.info(`Machine detail modal opened for: ${machine.name} (${machine.id})`);
@@ -219,6 +222,59 @@ export class MachineDetailModal {
 
     // Insert above the trained-states list
     parent.insertBefore(summary, signaturesContainer);
+  }
+
+  /**
+   * „Sammlung teilen" — die Referenzen dieser Maschine als Datei herausgeben,
+   * damit sie unter `<sammlung>/db-latest.json` veröffentlicht werden können
+   * (Format und Ablauf: `docs/geteilte-referenzen.md`).
+   *
+   * Hier und nicht in den Einstellungen, weil eine Sammlung zu EINER Maschine
+   * gehört: der Knopf steht neben den Referenzen, die er weitergibt. Der
+   * Einstellungs-Knopf „Datenbank exportieren" bleibt, was er ist — eine
+   * vollständige App-Sicherung, kein teilbarer Maßstab.
+   *
+   * Erscheint nur, wenn es etwas zu teilen gibt. Ein Knopf, der „keine Referenz
+   * vorhanden" antwortet, ist eine Falle, keine Auskunft.
+   */
+  private renderShareCollectionButton(actions: Element | null, machine: Machine): void {
+    actions?.querySelector('.machine-detail-share-btn')?.remove();
+    if (!actions) return;
+    if (!machine.referenceModels?.length) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'action-btn secondary-btn machine-detail-share-btn';
+    btn.textContent = t('shareCollection.button');
+    btn.title = t('shareCollection.hint');
+
+    let busy = false;
+    btn.addEventListener('click', () => {
+      if (busy) return;
+      busy = true;
+      const label = btn.textContent;
+      btn.textContent = t('shareCollection.working');
+      // `shareExport` versucht die Teilen-Funktion des Systems und fällt selbst
+      // auf einen Download zurück (auch wenn der Nutzer NICHT abbricht — dann
+      // gibt es weder Datei noch Fehler, deshalb wird hier nichts gemeldet,
+      // was nicht sicher stimmt).
+      void ReferenceDbService.shareExport(machine.id)
+        .then((ok) => {
+          if (ok) {
+            notify.success(t('shareCollection.done'), { title: t('shareCollection.doneTitle') });
+          }
+        })
+        .catch((error) => {
+          logger.warn('Sharing the reference collection failed:', error);
+          notify.error(t('shareCollection.failed'));
+        })
+        .finally(() => {
+          busy = false;
+          btn.textContent = label;
+        });
+    });
+
+    actions.insertBefore(btn, actions.firstChild);
   }
 
   /**

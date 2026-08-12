@@ -26,6 +26,7 @@ import type { WorkPointScore } from '../scoring.js';
 import { calculateConfidenceFromScore, generateMulticlassHint } from '../scoring.js';
 import { cosineSimilarity, vectorMagnitude } from '../mathUtils.js';
 import { scoreFromCosine } from './SpectralCosineEngine.js';
+import { computeBaselineSpread } from '../baselineSpread.js';
 import { resampleTo16k, YAMNET_SAMPLE_RATE } from '@core/dsp/resample.js';
 import { getRecordingSettings } from '@utils/recordingSettings.js';
 import { logger } from '@utils/logger.js';
@@ -121,7 +122,11 @@ export class YamnetEngine implements AsyncDiagnosisEngine {
       throw new Error('YAMNet-Referenz inkonsistent (mittlere Embedding-Ähnlichkeit ~0).');
     }
     const scalingConstant = Math.atanh(Math.sqrt(TARGET_SELF_SCORE)) / muSim;
-    const baselineScore = mean1(sims.map((s) => scoreFromCosine(s, scalingConstant)));
+    // Mean self-score PLUS the robust spread of the same self-scores — see
+    // baselineSpread.ts: the mean cannot say how wide this reference's own
+    // normal is, and that is what a threshold has to be measured against.
+    const spread = computeBaselineSpread(sims.map((s) => scoreFromCosine(s, scalingConstant)));
+    const baselineScore = spread.mean;
 
     logger.info(
       `✅ YAMNet model trained: windows=${embeddings.length}, bank=${bank.length}, ` +
@@ -142,6 +147,8 @@ export class YamnetEngine implements AsyncDiagnosisEngine {
       trainingDate: Date.now(),
       trainingDuration: input.trainingData.config.windowSize * input.trainingData.numSamples,
       baselineScore,
+      baselineMedian: spread.median,
+      baselineMad: spread.mad,
       metadata: { meanCosine: muSim, targetScore: TARGET_SELF_SCORE },
     };
     return model;

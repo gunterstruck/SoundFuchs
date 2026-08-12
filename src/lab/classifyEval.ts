@@ -2,12 +2,24 @@
  * ZANOBOT · Mess-Labor — classification evaluation (pure)
  *
  * Variant B measures Zanobot's ACTUAL field workflow instead of the one-class
- * AUC: several good AND several bad recordings are registered as separate
- * fingerprints, a live clip is matched against ALL of them (best match wins),
- * and the user's confidence threshold decides healthy / uncertain / faulty.
+ * AUC: good (and optionally bad) recordings are registered as separate
+ * fingerprints and a test clip is matched against all of them.
+ *
+ * `phoneVerdict` is the ONLY decision rule here, and it mirrors the shipped
+ * live loop (`3-Diagnose.ts`) exactly: healthy and faulty fingerprints are
+ * evaluated in SEPARATE pools, the gauge is the best healthy score, a
+ * confidently matched fault forces 'faulty', and otherwise BOTH user thresholds
+ * map the healthy score to a status.
+ *
+ * A simpler rule used to live here (one pool, winner's type wins, one
+ * threshold) and was what the benchmark actually graded. It is gone: it ignored
+ * `faultyThreshold` entirely and could never return 'faulty' for a clip that
+ * matched nothing — so it understated both false alarms and detections, i.e. it
+ * made every engine look quieter than it is. A rule the app does not ship must
+ * not be reachable from the measuring instrument.
  *
  * These helpers are pure and unit-tested in isolation from the engines:
- *  - decideClip: best-match + threshold decision (mirrors classify()).
+ *  - phoneVerdict: the live loop's two-pool verdict.
  *  - confusion matrix accumulation over clips/runs.
  *  - metrics: hit rates, accuracy, uncertain rate (threshold-based + free).
  */
@@ -24,64 +36,10 @@ export interface FingerprintScore {
   type: 'healthy' | 'faulty';
 }
 
-export interface ClipDecision {
-  /** Decision with the confidence threshold applied (may be 'uncertain'). */
-  predicted: PredClass;
-  /** Pure best-match class, threshold ignored (never 'uncertain'). */
-  predictedFree: 'healthy' | 'faulty';
-  /** Winning fingerprint's score. */
-  score: number;
-}
-
-/**
- * Best-match decision for one clip, mirroring Zanobot's classify(): the highest-
- * scoring fingerprint wins; below the confidence threshold the verdict is
- * 'uncertain'. The threshold-free verdict keeps the winner's type regardless.
- */
-export function decideClip(scores: FingerprintScore[], confidenceThreshold: number): ClipDecision {
-  if (scores.length === 0) {
-    return { predicted: 'uncertain', predictedFree: 'healthy', score: 0 };
-  }
-  let best = scores[0];
-  for (const s of scores) if (s.score > best.score) best = s;
-  return {
-    predicted: best.score < confidenceThreshold ? 'uncertain' : best.type,
-    predictedFree: best.type,
-    score: best.score,
-  };
-}
-
 /** A fingerprint's aggregated clip score together with its identity. */
 export interface LabeledFingerprintScore extends FingerprintScore {
   /** Display label of the fingerprint (e.g. "Referenz", "Gut #2", file name). */
   label: string;
-}
-
-export interface WinnerDecision extends ClipDecision {
-  /** Label of the winning fingerprint ('' when none scored). */
-  winnerLabel: string;
-}
-
-/**
- * Best-match decision that also reports WHICH fingerprint won — used by the
- * interactive (phone-simulation) mode, where the user wants to see the matched
- * state by name, exactly like the detected-state label on the phone.
- */
-export function decideWithWinner(
-  scores: LabeledFingerprintScore[],
-  confidenceThreshold: number
-): WinnerDecision {
-  if (scores.length === 0) {
-    return { predicted: 'uncertain', predictedFree: 'healthy', score: 0, winnerLabel: '' };
-  }
-  let best = scores[0];
-  for (const s of scores) if (s.score > best.score) best = s;
-  return {
-    predicted: best.score < confidenceThreshold ? 'uncertain' : best.type,
-    predictedFree: best.type,
-    score: best.score,
-    winnerLabel: best.label,
-  };
 }
 
 /**
@@ -97,6 +55,13 @@ export interface PhoneVerdict {
   /** The phone gauge: best score against a HEALTHY fingerprint. */
   healthScore: number;
   status: PredClass;
+  /**
+   * Threshold-free reading of the same two-pool logic: whichever pool matched
+   * better wins, never 'uncertain'. Lets the benchmark report an accuracy that
+   * does not depend on where the user put the thresholds — same role as
+   * `ClipDecision.predictedFree`.
+   */
+  predictedFree: 'healthy' | 'faulty';
   /** Label shown on the phone: the fault when detected, else best healthy. */
   detectedState: string;
   faultDetected: boolean;
@@ -141,6 +106,7 @@ export function phoneVerdict(
   return {
     healthScore: bestHealthy,
     status,
+    predictedFree: hasFault && bestFaulty > bestHealthy ? 'faulty' : 'healthy',
     detectedState: faultDetected ? bestFaultyLabel : bestHealthyLabel || 'UNKNOWN',
     faultDetected,
     bestFaultyScore: bestFaulty,
@@ -167,8 +133,15 @@ export function emptyConfusion(): Confusion {
   };
 }
 
-/** Tally one clip's decision into the confusion matrix. */
-export function addDecision(c: Confusion, trueClass: TrueClass, d: ClipDecision): void {
+/**
+ * Tally one clip's verdict into the confusion matrix. Takes only the two fields
+ * it needs, so a `PhoneVerdict` can be tallied directly without an adapter.
+ */
+export function addDecision(
+  c: Confusion,
+  trueClass: TrueClass,
+  d: { predicted: PredClass; predictedFree: 'healthy' | 'faulty' }
+): void {
   c[trueClass][d.predicted]++;
   c.free[trueClass][d.predictedFree]++;
 }

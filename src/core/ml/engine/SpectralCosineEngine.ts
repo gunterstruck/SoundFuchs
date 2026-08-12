@@ -29,6 +29,8 @@ import type { ReferenceModel, SpectralCosineModel, DiagnosisResult } from '@data
 import type { WorkPointScore } from '../scoring.js';
 import { calculateConfidenceFromScore, generateMulticlassHint } from '../scoring.js';
 import { cosineSimilarity, vectorMagnitude, mean as meanOf } from '../mathUtils.js';
+import { computeBaselineSpread } from '../baselineSpread.js';
+import { CURRENT_FEATURE_LAYOUT } from '@core/dsp/filterBank.js';
 import { getRecordingSettings } from '@utils/recordingSettings.js';
 import { logger } from '@utils/logger.js';
 
@@ -94,8 +96,13 @@ export class SpectralCosineEngine implements DiagnosisEngine {
     }
     const scalingConstant = Math.atanh(Math.sqrt(TARGET_SELF_SCORE)) / muSim;
 
-    // Baseline self-score (quality gate + ranking parity).
-    const baselineScore = meanOf(sims.map((s) => scoreFromCosine(s, scalingConstant)));
+    // Baseline self-score (quality gate + ranking parity) PLUS the robust spread
+    // of the same self-scores: the mean alone cannot say how wide this
+    // reference's own normal is, which is what a threshold has to be measured
+    // against (baselineSpread.ts).
+    const selfScores = sims.map((s) => scoreFromCosine(s, scalingConstant));
+    const spread = computeBaselineSpread(selfScores);
+    const baselineScore = spread.mean;
 
     // Energy reference: RMS of the raw training audio. Lets diagnosis gate the
     // (magnitude-invariant) cosine score down for near-silence (stopped machine).
@@ -116,9 +123,12 @@ export class SpectralCosineEngine implements DiagnosisEngine {
       scalingConstant,
       featureDimension: dim,
       sampleRate: input.trainingData.config.sampleRate,
+      featureLayout: CURRENT_FEATURE_LAYOUT,
       trainingDate: Date.now(),
       trainingDuration: input.trainingData.config.windowSize * numSamples,
       baselineScore,
+      baselineMedian: spread.median,
+      baselineMad: spread.mad,
       trainingRms,
       metadata: { meanCosine: muSim, targetScore: TARGET_SELF_SCORE },
     };

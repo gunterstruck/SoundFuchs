@@ -264,9 +264,19 @@ export class SpectrumComparison {
     ctx.stroke();
 
     // --- Peak labels: dominant frequencies of THIS measurement ---
+    //
+    // Die Zahl bekommt eine eigene dunkle Unterlage und mehr Abstand zum Punkt.
+    // Vorher stand sie 4 px über dem Peak und lag damit im Linienzug selbst — auf
+    // einem echten Telefon war ausgerechnet die dominante Frequenz unlesbar,
+    // also der Wert, den man an dieser Stelle ablesen will.
     const peaks = findPeaks(measS, freqPerBin, 3);
     ctx.font = '10px sans-serif';
     ctx.textBaseline = 'bottom';
+    const LABEL_GAP = 11; // über dem Punkt, außerhalb der 1,5 px breiten Linie
+    // Bereits belegte Kästchen: zwei nahe Peaks ergaben sonst übereinander
+    // liegende Zahlen („1(21 kHz" statt „16 kHz" und „21 kHz"). Der Punkt bleibt
+    // in jedem Fall gezeichnet — nur die Zahl entfällt, wo kein Platz ist.
+    const taken: Array<{ x0: number; x1: number; y0: number; y1: number }> = [];
     for (const p of peaks) {
       const x = xAt(p.freq);
       const y = yAt(p.value);
@@ -274,9 +284,25 @@ export class SpectrumComparison {
       ctx.beginPath();
       ctx.arc(x, y, 2.5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.textAlign = x > padL + plotW - 32 ? 'right' : x < padL + 32 ? 'left' : 'center';
-      ctx.fillText(formatHz(p.freq), x, Math.max(padTop + 9, y - 4));
+
+      const text = formatHz(p.freq);
+      const align: CanvasTextAlign =
+        x > padL + plotW - 32 ? 'right' : x < padL + 32 ? 'left' : 'center';
+      const tw = ctx.measureText(text).width;
+      const baseline = Math.max(padTop + 10, y - LABEL_GAP);
+      const left = align === 'right' ? x - tw : align === 'left' ? x : x - tw / 2;
+      const box = { x0: left - 3, x1: left + tw + 3, y0: baseline - 10, y1: baseline + 1 };
+      if (taken.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0)) {
+        continue;
+      }
+      taken.push(box);
+
+      ctx.fillStyle = 'rgba(13,20,32,0.78)';
+      ctx.fillRect(left - 2, baseline - 9, tw + 4, 11);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.textAlign = align;
+      ctx.fillText(text, x, baseline);
     }
   }
 

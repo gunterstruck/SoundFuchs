@@ -93,7 +93,6 @@ export class AboutModalController {
 
       <h4>${t('about.legalTitle')}</h4>
       <p>${t('about.legalIntro')}</p>
-      <p>${t('about.legalReview')}</p>
 
       <h5>${t('about.ipTableTitle')}</h5>
       ${this.renderIPTable()}

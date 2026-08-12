@@ -4046,9 +4046,46 @@ body {
   background: var(--bg-hover, rgba(255, 255, 255, 0.12));
 }
 
-.listen-slow-toggle.active {
+.listen-slow-toggle.active,
+.listen-btn.listen-btn-active {
   border-color: var(--primary-color, #00d4ff);
   color: var(--primary-color, #00d4ff);
+}
+
+/* „Nur Unterschied" — die eine Sache, die keine andere Audio-App kann, und die
+   einzige Möglichkeit, der Ampel zu widersprechen. Deshalb eigene Zeile
+   (flex-basis 100 %) und gefüllte Fläche: in einer Reihe gleich aussehender
+   Umrandungen war sie eine Option unter fünf.
+   Der :hover-Fall braucht eine eigene Regel, weil `.listen-btn:hover` sonst die
+   Füllung mit dem grauen Hover-Ton überschreibt (Klasse + Pseudoklasse
+   gewinnt gegen Klasse). */
+.listen-btn-difference {
+  flex-basis: 100%;
+  background: var(--primary-color, #00d4ff);
+  border-color: var(--primary-color, #00d4ff);
+  color: #fff;
+  font-weight: 600;
+}
+
+.listen-btn-difference:hover {
+  background: var(--primary-color, #00d4ff);
+  filter: brightness(1.08);
+}
+
+/* Neon-Cyan (#00f3ff) trägt kein Weiß — dieselbe Ausnahme, die
+   `.result-action-primary` schon braucht. */
+[data-theme='neon'] .listen-btn-difference {
+  color: var(--bg-primary);
+}
+
+/* „Auf hörbaren Bereich": der einzige Faktor, der aus der Messung kommt statt
+   aus einer Voreinstellung — darf sich von 🐢/▶/🐇 unterscheiden. Das Etikett
+   wechselt nach dem Rechnen auf „16,2 kHz → 4 kHz", wird also breiter; deshalb
+   darf es umbrechen statt die Zeile zu sprengen. */
+.listen-btn-tune {
+  border-color: var(--primary-color, #00d4ff);
+  white-space: normal;
+  max-width: 100%;
 }
 
 /* "Listen" button on a past check in the history list */
@@ -11137,6 +11174,24 @@ html[data-view-level='expert'] .diagnosis-recommendation {
   margin-top: var(--spacing-sm);
   padding-top: var(--spacing-xs);
   border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Auflösung dieser Referenz — was der Vergleich trennen kann.
+   Bewusst leise gesetzt (klein, gedämpft, keine Farbe): sie ist kein Urteil und
+   soll der Ampel keine Aufmerksamkeit wegnehmen. Aber sie steht INNERHALB des
+   Ampel-Banners, weil sie zu genau dieser Zahl gehört und nicht irgendwo unten
+   als Kleingedrucktes verschwinden darf. */
+.result-ampel-resolution {
+  font-size: var(--font-xs);
+  /* --text-secondary, NICHT --text-muted: im hellen Thema ist muted #94a3b8 und
+     kommt auf weißem Grund auf ~2,6:1 — unter jeder Lesbarkeitsschwelle. Für die
+     Trendzeile daneben ist das verzeihlich (Dekoration mit Pfeil), für diese
+     Zeile nicht: sie ist die Aussage darüber, was der angezeigte Wert taugt.
+     Eine Genauigkeitsangabe, die man nicht lesen kann, ist keine. */
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.35;
+  margin: var(--spacing-xs) 0 0;
 }
 
 /* Welle 2: Result Action Buttons */

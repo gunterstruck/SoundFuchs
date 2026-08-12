@@ -25,6 +25,7 @@ import { inferGMIA } from './gmia.js';
 import { classifyWithEngines } from './engine/registry.js';
 import { vectorMagnitude } from './mathUtils.js';
 import { logger } from '@utils/logger.js';
+import { isLayoutCompatible } from './modelCompatibility.js';
 import { t } from '../../i18n/index.js';
 import { getRecordingSettings } from '@utils/recordingSettings.js';
 
@@ -912,10 +913,18 @@ export function classifyAcrossAllMachines(
 ): AutoDetectionResult {
   const timestamp = Date.now();
 
-  // Filter machines that have reference models
-  const machinesWithModels = machines.filter(
-    (m) => m.referenceModels && m.referenceModels.length >= AUTO_DETECTION_THRESHOLDS.MIN_MODELS
-  );
+  // Maschinen mit genug BRAUCHBAREN Referenzmodellen. Layout-fremde Modelle
+  // werden vorher entfernt, nicht nur gezählt: sonst würde die Erkennung sie
+  // mitvergleichen und könnte eine Maschine „erkennen", deren Referenz aus einer
+  // anderen Bandaufteilung stammt und damit nichts mehr bedeutet
+  // (core/ml/modelCompatibility.ts). Der Vektor hätte dieselbe Länge — der
+  // Cosinus liefe fehlerfrei durch.
+  const machinesWithModels = machines
+    .map((m) => ({
+      ...m,
+      referenceModels: (m.referenceModels ?? []).filter(isLayoutCompatible),
+    }))
+    .filter((m) => m.referenceModels.length >= AUTO_DETECTION_THRESHOLDS.MIN_MODELS);
 
   if (machinesWithModels.length === 0) {
     logger.info('🔍 Auto-detection: No machines with reference models found');

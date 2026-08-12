@@ -11,6 +11,7 @@
  */
 
 import { fft, getMagnitude, applyHanningWindow, padToPowerOfTwo } from './fft.js';
+import { buildFilterBank, CURRENT_FEATURE_LAYOUT } from './filterBank.js';
 import type { FeatureVector, AudioChunk, DSPConfig } from '@data/types.js';
 import { logger } from '@utils/logger.js';
 
@@ -231,7 +232,13 @@ function extractChunkFeatures(chunk: AudioChunk, config: DSPConfig): FeatureVect
   const positiveFreqs = magnitude.slice(0, magnitude.length / 2);
 
   // Step 7: Bin into frequency groups
-  const binnedEnergy = binFrequencies(positiveFreqs, config.frequencyBins);
+  // Nyquist der Aufnahme: die Bandaufteilung hängt daran (unten ein Rohbin je
+  // Band, oben logarithmisch), deshalb wird sie durchgereicht statt geraten.
+  const binnedEnergy = binFrequencies(
+    positiveFreqs,
+    config.frequencyBins,
+    config.frequencyRange?.[1] ?? config.sampleRate / 2
+  );
 
   // CRITICAL VALIDATION: Check if features are degenerate (all zeros or near-zeros)
   let totalEnergy = 0;
@@ -354,15 +361,30 @@ function standardizeSignal(signal: Float32Array): Float32Array {
  * @param numBins - Number of bins (default: 512)
  * @returns Binned energy values
  */
-function binFrequencies(magnitudes: Float64Array, numBins: number): Float64Array {
-  // Guard: if magnitudes has fewer elements than bins, clamp numBins
-  const effectiveBins = Math.min(numBins, magnitudes.length);
+function binFrequencies(
+  magnitudes: Float64Array,
+  numBins: number,
+  nyquistHz: number
+): Float64Array {
+  // Die Bandaufteilung liegt jetzt in core/dsp/filterBank.ts statt hier inline.
+  // Grund: sie war die Stelle, an der die vorhandene Rohauflösung von 2,93 Hz
+  // auf 46,875 Hz weggeworfen wurde, und mehrere andere Module rechnen
+  // „Band × 46,875 Hz" nach. Ein Layout-Wechsel muss zentral geschehen.
+  //
+  // Mit CURRENT_FEATURE_LAYOUT = 'linear-512' ist das Ergebnis BIT-GLEICH zur
+  // früheren Implementierung — belegt in filterBank.test.ts, inklusive der
+  // Rest-Regel des letzten Bandes bei ungeraden Verhältnissen.
+  const bank = buildFilterBank(
+    CURRENT_FEATURE_LAYOUT,
+    numBins,
+    magnitudes.length,
+    nyquistHz > 0 ? nyquistHz : magnitudes.length
+  );
   const binnedEnergy = new Float64Array(numBins);
-  const binSize = Math.max(1, Math.floor(magnitudes.length / effectiveBins));
 
-  for (let bin = 0; bin < effectiveBins; bin++) {
-    const startIdx = bin * binSize;
-    const endIdx = bin === effectiveBins - 1 ? magnitudes.length : (bin + 1) * binSize;
+  for (let bin = 0; bin < numBins; bin++) {
+    const startIdx = bank.edges[bin];
+    const endIdx = bank.edges[bin + 1];
 
     // Calculate Square Root Mean Value
     let sum = 0;

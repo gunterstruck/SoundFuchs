@@ -119,7 +119,8 @@ export function toCsvClassify(result: ClassifyResult): string {
   const engines = result.engines;
   const head = ['Maschinentyp', 'Section', ...engines.map((e) => `${ENGINE_LABEL[e]} Genauigkeit`)];
   const lines = [
-    `# Zanobot Mess-Labor · Gut/Schlecht-Klassifikation · Schwelle=${result.confidenceThreshold}% · ` +
+    `# Zanobot Mess-Labor · Gut/Schlecht-Klassifikation · Regel=phoneVerdict (Live-Loop) · ` +
+      `Schwellen=${result.confidenceThreshold}/${result.faultyThreshold}% · ` +
       `${result.nGood} gut + ${result.nBad} schlecht · ${result.runs} Durchläufe`,
     head.join(','),
   ];
@@ -153,8 +154,15 @@ export function toJsonClassify(result: ClassifyResult): string {
     {
       tool: 'zanobot-mess-labor',
       mode: 'classification',
-      note: 'Zanobot-Workflow: N gute + M schlechte Fingerprints, Best-Match + Konfidenzschwelle. Strikt lesend.',
+      note:
+        'Zanobot-Workflow: N gute + M schlechte Fingerprints, bewertet mit der Regel des ' +
+        'Live-Loops (phoneVerdict): getrennte Töpfe, Anzeige = bester gut-Score, sicherer ' +
+        'Fehlertreffer erzwingt fehlerhaft, sonst beide Schwellen. nBad=0 ist der Feldfall. ' +
+        'Strikt lesend.',
+      decisionRule: 'phoneVerdict',
       confidenceThreshold: result.confidenceThreshold,
+      faultyThreshold: result.faultyThreshold,
+      baselinePerEngine: result.baselinePerEngine,
       nGood: result.nGood,
       nBad: result.nBad,
       runs: result.runs,

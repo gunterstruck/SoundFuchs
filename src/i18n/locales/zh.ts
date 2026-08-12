@@ -319,6 +319,10 @@ export const zh: TranslationDict = {
       listenDifference: '🔍 仅差异',
       listenComputing: '… 计算中 …',
       listenDifferenceTooShort: '录音太短，无法进行差异分析。',
+      listenTune: '🎧 移入可听范围',
+      listenTuneResult: '🎧 {{peak}} → {{target}}',
+      listenTuneClamped: '为保持节奏可辨，倍率已受限，因此未完全达到目标频率。',
+      listenTuneExact: '已将最大差异移入人耳分辨最佳的范围。',
       spectrumTitle: '频率对比（参考 ↔ 测量）',
       spectrumReference: '参考',
       spectrumMeasurement: '本次测量',
@@ -1119,11 +1123,9 @@ export const zh: TranslationDict = {
       noDataLeaks:
         '<strong>本地数据存储：</strong>所有音频录音和评分都专门存储在设备的本地 IndexedDB 中。',
     },
-    legalTitle: '法律地位和知识产权审查',
+    legalTitle: '技术界定',
     legalIntro:
       'Zanobo 作为<strong>私人非商业开源项目</strong>独立开发，采用 <strong>MIT 许可证</strong>。其功能基于<strong>公开描述的数学程序</strong>（例如频率分析和类 GMIA 余弦比较），不包含<strong>任何专利系统逻辑</strong>、<strong>任何分类机制</strong>和<strong>任何学习模型</strong>。',
-    legalReview:
-      '在发布之前进行了<strong>技术和内容审查</strong>，以确保 Zanobo 不与现有专利或已知的工业检查方法冲突。',
     ipTableTitle: '相关知识产权和技术差异',
     ipTable: {
       headers: {
@@ -1245,13 +1247,32 @@ export const zh: TranslationDict = {
   // ============================================================================
   // 3D 频谱图“山景”（历史记录弹窗，专家模式）
   // ============================================================================
+  // Deutscher Text bewusst auch hier: Übersetzung ausgesetzt (abgestimmt). t()
+  // liefert bei fehlendem Schlüssel den rohen Schlüsselnamen zurück – deutscher
+  // Klartext ist besser als "models.layoutOutdated" auf dem Bildschirm, und die
+  // Paritätsprüfung (check-i18n) bleibt grün.
+
+  // ============================================================================
+  // MERKMALS-LAYOUT: Referenz passt nicht zur aktuellen Bandaufteilung
+  // ============================================================================
+  models: {
+    layoutOutdatedTitle: 'Referenz nicht mehr vergleichbar',
+    layoutOutdated:
+      'Die Bandaufteilung der Analyse hat sich geändert. {{count}} gespeicherte Referenz(en) dieser Maschine stammen aus der alten Aufteilung und lassen sich nicht mehr vergleichen. Bitte Normalzustand neu aufnehmen.',
+    layoutOutdatedPartial:
+      '{{count}} Referenz(en) aus der alten Bandaufteilung werden übersprungen. Für ein vollständiges Bild neu anlernen.',
+  },
+
   spectro3d: {
     show: '3D 视图（山景）',
     hide: '关闭 3D 视图',
     hint: '单指旋转 · 双指缩放',
-    axis: '频率 0–{{maxKhz}} kHz · 时长 {{seconds}} 秒 · 高度 = 强度',
+    axis: '坐标轴：频率（对数）· 时间 · 高度 = 强度 (dB)',
     sourceMeasurement: '测量',
     sourceReference: '参考',
+    sourceDifference: '差异',
+    computing: '… 计算中 …',
+    unavailable: '无法根据这些录音生成视图。',
   },
 
   // ============================================================================
@@ -1592,6 +1613,15 @@ export const zh: TranslationDict = {
     trendStable: '在 {{count}} 次检查中保持稳定',
     trendImproving: '{{delta}}% 在 {{count}} 次检查中',
     trendDeclining: '{{delta}}% 在 {{count}} 次检查中',
+    // Deutscher Text bewusst auch hier: Übersetzung ausgesetzt (abgestimmt). t()
+    // liefert bei fehlendem Schlüssel den rohen Schlüsselnamen zurück – deutscher
+    // Klartext ist besser als „resultAmpel.resolution" auf dem Bildschirm.
+    resolution:
+      'Auflösung dieser Referenz: {{points}} Punkte. Kleinere Abstände sind Streuung der Messung, nicht der Maschine.',
+    resolutionUnknown:
+      'Auflösung dieser Referenz unbekannt — sie wurde angelernt, bevor die Eigenstreuung gemessen wurde. Neu anlernen sagt, welche Unterschiede der Vergleich trennt.',
+    resolutionDetail:
+      'Aus der Wiederholstreuung der Referenz „{{label}}" selbst: {{k}} · MAD ihrer Selbsttest-Scores, auf die angezeigte Skala gestreckt. Keine Schwelle — die Ampel entscheidet unverändert.',
   },
   resultActions: {
     details: '详情',
@@ -1605,6 +1635,21 @@ export const zh: TranslationDict = {
     date: '日期',
     recommendation: '建议',
   },
+
+  // ============================================================================
+  // REFERENZ-SAMMLUNG TEILEN (Maschinen-Detail)
+  // ============================================================================
+  // Deutscher Text bewusst auch hier: Übersetzung ausgesetzt (abgestimmt). t()
+  // liefert bei fehlendem Schlüssel den rohen Schlüsselnamen zurück.
+  shareCollection: {
+    button: '📤 Sammlung teilen',
+    hint: 'Gibt die Referenzen dieser Maschine als Datei heraus. Unter <name>/db-latest.json veröffentlicht, kann sie jeder laden, der den Sammlungsnamen kennt.',
+    working: '… bereite vor …',
+    doneTitle: 'Sammlung bereit',
+    done: 'Datei erstellt. Als db-latest.json in den Ordner der Sammlung legen — dann laden andere sie über den Sammlungsnamen.',
+    failed: 'Die Sammlung konnte nicht herausgegeben werden.',
+  },
+
   history: {
     openHistory: 'View history for {{name}}',
     viewHistory: 'History',

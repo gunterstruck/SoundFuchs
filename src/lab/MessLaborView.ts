@@ -480,15 +480,16 @@ export class MessLaborView {
               </tbody>
             </table>
             <p class="ml-note">gut→gesund ${pct(m.recallGood)} · schlecht→fehlerhaft ${pct(m.recallBad)} · unsicher ${pct(m.uncertainRate)} · Genauigkeit ${pct(m.accuracy)} <span class="ml-agg-note">(schwellenfrei ${pct(m.accuracyFree)})</span></p>
+            ${baselineNote(result, e)}
           </div>`;
       })
       .join('');
 
     host.innerHTML = `
-      <h3>Zeugnis · Gut/Schlecht-Klassifikation <span class="ml-agg-note">(${result.nGood} gut + ${result.nBad} schlecht Fingerprints · ${result.runs} Durchläufe · Schwelle ${result.confidenceThreshold} %)</span></h3>
+      <h3>Zeugnis · Gut/Schlecht-Klassifikation <span class="ml-agg-note">(${result.nGood} gut + ${result.nBad} schlecht Fingerprints · ${result.runs} Durchläufe · Schwellen ${result.confidenceThreshold}/${result.faultyThreshold} %)</span></h3>
       <table class="ml-table ml-result-table"><thead>${header}</thead><tbody>${body}${meanRow}</tbody></table>
       ${detail}
-      <p class="ml-note">Bewertung an deiner Konfidenzschwelle (${result.confidenceThreshold} %) — wie im echten Zanobot: mehrere gute UND schlechte Fingerprints, Best-Match gewinnt. Nichts wurde gespeichert.</p>`;
+      <p class="ml-note">Bewertet mit der Regel des echten Live-Loops (<code>phoneVerdict</code>): gute und schlechte Fingerprints in GETRENNTEN Töpfen, Anzeige = bester gut-Score, ein sicher getroffener Fehler erzwingt „fehlerhaft", sonst entscheiden BEIDE Schwellen (${result.confidenceThreshold}/${result.faultyThreshold} %). Ohne schlecht-Fingerprints (${result.nBad === 0 ? 'wie hier' : '<code>nBad = 0</code>'}) entscheidet der gut-Score allein — das ist der Feldfall. Nichts wurde gespeichert.</p>`;
     (this.$('#ml-exports') as HTMLElement | null)?.style.removeProperty('display');
   }
 
@@ -1174,6 +1175,29 @@ function driftDe(interpretation: string): string {
     default:
       return 'unklar';
   }
+}
+
+/**
+ * The measurement that has to come BEFORE any threshold decision: where does
+ * `baselineScore` actually land across the trained references, and what would a
+ * k·MAD threshold come out at?
+ *
+ * The tanh² curve anchors the MEAN training similarity at 90 % by construction
+ * (`TARGET_SELF_SCORE`), so the theory says baselineScore sits just under 90 for
+ * every reference. Whether that holds on real recordings is unmeasured — and if
+ * it does not hold, a fixed percentage threshold has no fixed meaning. This line
+ * prints the range so the question stops being a guess.
+ */
+function baselineNote(result: ClassifyResult, engine: EngineId): string {
+  const summary = result.baselinePerEngine[engine];
+  if (!summary) {
+    return `<p class="ml-note ml-agg-note">Eigenstreuung: nicht verfügbar (Modelle dieser Engine tragen keinen Median/MAD).</p>`;
+  }
+  const n1 = (v: number) => v.toFixed(1).replace('.', ',');
+  return `<p class="ml-note ml-agg-note">Eigenstreuung über ${summary.n} Fingerprints ·
+    baselineScore ${n1(summary.baselineMedian)} % (${n1(summary.baselineMin)}–${n1(summary.baselineMax)}) ·
+    Schwelle bei k=${summary.k}: <strong>${n1(summary.floorMedian)} %</strong>
+    (${n1(summary.floorMin)}–${n1(summary.floorMax)})</p>`;
 }
 
 function esc(s: string): string {

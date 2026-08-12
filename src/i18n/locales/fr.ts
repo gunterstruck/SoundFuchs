@@ -332,6 +332,10 @@ export const fr: TranslationDict = {
       listenDifference: '🔍 Différence',
       listenComputing: '… calcul …',
       listenDifferenceTooShort: 'Enregistrements trop courts pour analyser la différence.',
+      listenTune: '🎧 Vers la plage audible',
+      listenTuneResult: '🎧 {{peak}} → {{target}}',
+      listenTuneClamped: 'Facteur limité pour garder un rythme perceptible — la fréquence cible n’est donc pas tout à fait atteinte.',
+      listenTuneExact: 'Le plus grand écart est amené dans la plage où l’oreille discrimine le mieux.',
       spectrumTitle: 'Comparaison de fréquences (référence ↔ mesure)',
       spectrumReference: 'Référence',
       spectrumMeasurement: 'Cette mesure',
@@ -1199,11 +1203,9 @@ export const fr: TranslationDict = {
       noDataLeaks:
         "<strong>Stockage local des données :</strong> Tous les enregistrements audio et scores sont stockés exclusivement dans l'IndexedDB locale de l'appareil.",
     },
-    legalTitle: 'Position juridique et examen de la propriété intellectuelle',
+    legalTitle: 'Délimitation technique',
     legalIntro:
       "Zanobo a été développé de manière indépendante en tant que <strong>projet privé open-source non commercial</strong> sous <strong>licence MIT</strong>. Sa fonctionnalité est basée sur des <strong>procédures mathématiques décrites ouvertement</strong> (par ex., analyse de fréquence et comparaisons cosinus de type GMIA) et n'intègre <strong>aucune logique système brevetée</strong>, <strong>aucun mécanisme de classification</strong> ni <strong>aucun modèle d'apprentissage</strong>.",
-    legalReview:
-      "Avant la publication, une <strong>revue technique et de contenu</strong> a été effectuée pour s'assurer que Zanobo n'entre pas en conflit avec des brevets existants ou des approches de vérification industrielle connues.",
     ipTableTitle: 'Propriété intellectuelle pertinente et différenciation technique',
     ipTable: {
       headers: {
@@ -1345,13 +1347,32 @@ export const fr: TranslationDict = {
   // ============================================================================
   // SPECTROGRAMME 3D « MONTAGNE » (modal historique, expert)
   // ============================================================================
+  // Deutscher Text bewusst auch hier: Übersetzung ausgesetzt (abgestimmt). t()
+  // liefert bei fehlendem Schlüssel den rohen Schlüsselnamen zurück – deutscher
+  // Klartext ist besser als "models.layoutOutdated" auf dem Bildschirm, und die
+  // Paritätsprüfung (check-i18n) bleibt grün.
+
+  // ============================================================================
+  // MERKMALS-LAYOUT: Referenz passt nicht zur aktuellen Bandaufteilung
+  // ============================================================================
+  models: {
+    layoutOutdatedTitle: 'Referenz nicht mehr vergleichbar',
+    layoutOutdated:
+      'Die Bandaufteilung der Analyse hat sich geändert. {{count}} gespeicherte Referenz(en) dieser Maschine stammen aus der alten Aufteilung und lassen sich nicht mehr vergleichen. Bitte Normalzustand neu aufnehmen.',
+    layoutOutdatedPartial:
+      '{{count}} Referenz(en) aus der alten Bandaufteilung werden übersprungen. Für ein vollständiges Bild neu anlernen.',
+  },
+
   spectro3d: {
     show: 'Vue 3D (montagne)',
     hide: 'Fermer la vue 3D',
     hint: '1 doigt : pivoter · 2 doigts : zoomer',
-    axis: 'Fréquence 0–{{maxKhz}} kHz · durée {{seconds}} s · hauteur = intensité',
+    axis: 'Axes : fréquence (logarithmique) · temps · hauteur = intensité (dB)',
     sourceMeasurement: 'Mesure',
     sourceReference: 'Référence',
+    sourceDifference: 'Différence',
+    computing: '… calcul …',
+    unavailable: 'Aucune vue ne peut être construite à partir de ces enregistrements.',
   },
 
   // ============================================================================
@@ -1709,6 +1730,15 @@ export const fr: TranslationDict = {
     trendStable: 'Stable sur {{count}} vérifications',
     trendImproving: '{{delta}}% sur {{count}} vérifications',
     trendDeclining: '{{delta}}% sur {{count}} vérifications',
+    // Deutscher Text bewusst auch hier: Übersetzung ausgesetzt (abgestimmt). t()
+    // liefert bei fehlendem Schlüssel den rohen Schlüsselnamen zurück – deutscher
+    // Klartext ist besser als „resultAmpel.resolution" auf dem Bildschirm.
+    resolution:
+      'Auflösung dieser Referenz: {{points}} Punkte. Kleinere Abstände sind Streuung der Messung, nicht der Maschine.',
+    resolutionUnknown:
+      'Auflösung dieser Referenz unbekannt — sie wurde angelernt, bevor die Eigenstreuung gemessen wurde. Neu anlernen sagt, welche Unterschiede der Vergleich trennt.',
+    resolutionDetail:
+      'Aus der Wiederholstreuung der Referenz „{{label}}" selbst: {{k}} · MAD ihrer Selbsttest-Scores, auf die angezeigte Skala gestreckt. Keine Schwelle — die Ampel entscheidet unverändert.',
   },
   resultActions: {
     details: 'Détails',
@@ -1722,6 +1752,21 @@ export const fr: TranslationDict = {
     date: 'Date',
     recommendation: 'Recommandation',
   },
+
+  // ============================================================================
+  // REFERENZ-SAMMLUNG TEILEN (Maschinen-Detail)
+  // ============================================================================
+  // Deutscher Text bewusst auch hier: Übersetzung ausgesetzt (abgestimmt). t()
+  // liefert bei fehlendem Schlüssel den rohen Schlüsselnamen zurück.
+  shareCollection: {
+    button: '📤 Sammlung teilen',
+    hint: 'Gibt die Referenzen dieser Maschine als Datei heraus. Unter <name>/db-latest.json veröffentlicht, kann sie jeder laden, der den Sammlungsnamen kennt.',
+    working: '… bereite vor …',
+    doneTitle: 'Sammlung bereit',
+    done: 'Datei erstellt. Als db-latest.json in den Ordner der Sammlung legen — dann laden andere sie über den Sammlungsnamen.',
+    failed: 'Die Sammlung konnte nicht herausgegeben werden.',
+  },
+
   history: {
     openHistory: 'View history for {{name}}',
     viewHistory: 'History',
