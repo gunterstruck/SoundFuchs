@@ -18,6 +18,20 @@
   --spacing-lg: 2rem;
   --spacing-xl: 3rem;
 
+  /* Seitenränder: auf dem Handy hat Inhalt genau einen Rand.
+       Zanobo staffelte bisher .container (24 px) über .main-container (2 px
+       Rahmen) über .container-content (32 px) – 58 px je Seite, also 30 % der
+       Gerätebreite, bevor der erste Buchstabe steht. Gemessen kamen bei 390 px
+       Gerätebreite 274 px beim Text an und 63 px bei einer Kachelbeschriftung.
+       Die Schwester-App TourFuchs erreicht am selben Gerät 362 px, weil ihr
+       Blatt genau eine Polsterung hat (.tab-panel { padding: 14px }).
+       Diese beiden Werte sind zusammen der eine Rand: Die Karte trägt die
+       sichtbare Kante, die Hülle hält sie nur von der Bildschirmkante fort.
+       Ab 768 px kehrt die großzügige Polsterung zurück – dort ist Platz kein
+       knappes Gut. Geprüft von `npm run attention-check`. */
+  --space-shell-x: 0.75rem; /* 12px – Hülle zur Bildschirmkante */
+  --space-card-x: 1rem; /* 16px – Karte zu ihrem Inhalt */
+
   /* Layout Spacing System (Deliberate Visual Rhythm)
        These control the vertical flow on the start screen:
        - Cards are grouped tightly together (primary zone)
@@ -837,7 +851,10 @@ body {
 .container {
   max-width: 900px;
   margin: 0 auto;
-  padding: var(--spacing-md);
+  /* Senkrecht großzügig, seitlich knapp: Höhe ist auf dem Handy im Überfluss
+     vorhanden (man scrollt), Breite ist es nicht (man kann nicht breiter
+     scrollen, ohne den Satz zu zerbrechen). */
+  padding: var(--spacing-md) var(--space-shell-x);
   padding-bottom: var(--space-footer-bottom);
   display: flex;
   flex-direction: column;
@@ -1306,7 +1323,13 @@ body {
 }
 
 .container-content {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--space-card-x) var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+  .container-content {
+    padding: var(--spacing-lg);
+  }
 }
 
 /* Main Container Header (for collapsible main containers) */
