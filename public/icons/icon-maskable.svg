@@ -1,0 +1,43 @@
+<!--
+  SoundFuchs – Fassung für zugeschnittene Startbildschirm-Symbole ("maskable").
+
+  Android schneidet App-Symbole nach Herstellervorgabe zu: Kreis, Tropfen,
+  Quadrat mit runden Ecken. Verlässlich sichtbar bleibt nur der mittlere Kreis
+  mit 80 % Durchmesser. Alles ausserhalb kann verschwinden.
+
+  favicon.svg nutzt die volle Fläche aus – dort sitzt die Schallwelle bei y=9,
+  also im Bereich, den ein Kreiszuschnitt abschneidet. Diese Fassung ist
+  deshalb dieselbe Zeichnung, um 20 % verkleinert und mittig gesetzt, auf
+  vollflächigem Teal ohne eigene Rundung: Die Rundung macht das Betriebssystem.
+
+  Beide Dateien zeigen dasselbe Bild. Wer eine ändert, ändert die andere mit.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#0d9488"/>
+  <g transform="translate(10 10) scale(0.8)">
+    <!-- Ohren -->
+    <path d="M26 22 L40 40 L24 46 Z" fill="#f97316"/>
+    <path d="M74 22 L60 40 L76 46 Z" fill="#f97316"/>
+    <path d="M29 26 L38 38 L28 42 Z" fill="#7c2d12"/>
+    <path d="M71 26 L62 38 L72 42 Z" fill="#7c2d12"/>
+    <!-- Kopf -->
+    <path d="M50 32 C64 32 76 42 76 54 C76 66 64 80 50 80 C36 80 24 66 24 54 C24 42 36 32 50 32 Z" fill="#f97316"/>
+    <!-- Wangen -->
+    <path d="M30 52 C30 62 38 74 50 78 C42 78 28 68 27 56 Z" fill="#ffedd5"/>
+    <path d="M70 52 C70 62 62 74 50 78 C58 78 72 68 73 56 Z" fill="#ffedd5"/>
+    <!-- Schnauze -->
+    <path d="M50 58 C55 58 59 62 59 66 C59 72 54 77 50 77 C46 77 41 72 41 66 C41 62 45 58 50 58 Z" fill="#ffedd5"/>
+    <circle cx="50" cy="66" r="4.2" fill="#431407"/>
+    <!-- Augen -->
+    <circle cx="39" cy="52" r="3.4" fill="#431407"/>
+    <circle cx="61" cy="52" r="3.4" fill="#431407"/>
+    <!-- Schallwelle -->
+    <g fill="#ffffff" opacity="0.95">
+      <rect x="34" y="17" width="3.2" height="7" rx="1.6"/>
+      <rect x="40" y="13" width="3.2" height="15" rx="1.6"/>
+      <rect x="46.4" y="9" width="3.2" height="23" rx="1.6"/>
+      <rect x="52.8" y="13" width="3.2" height="15" rx="1.6"/>
+      <rect x="59.2" y="17" width="3.2" height="7" rx="1.6"/>
+    </g>
+  </g>
+</svg>

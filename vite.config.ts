@@ -29,22 +29,50 @@ export default defineConfig({
       manifest: {
         name: 'SoundFuchs – Maschinen anhören',
         short_name: 'SoundFuchs',
+        // Ohne diese Angabe schrieb das Manifest 'en', obwohl die Oberfläche
+        // deutsch ist. Betriebssysteme nutzen den Wert unter anderem für die
+        // Sortierung im App-Verzeichnis und die Sprachausgabe des Namens.
+        lang: 'de',
         description: 'Maschinengeräusche lokal am Gerät vergleichen – Vergleich statt Diagnose.',
         theme_color: '#0d9488',
         background_color: '#f8fafc',
         display: 'standalone',
         scope: base,
         start_url: base,
+        // Zwei Fassungen desselben Bildes, weil Android Startbildschirm-Symbole
+        // zuschneidet – Kreis, Tropfen oder Quadrat, je nach Hersteller.
+        //
+        //   purpose 'any'      volle Fläche, wird unverändert angezeigt
+        //   purpose 'maskable' um 20 % verkleinert, verträgt jeden Zuschnitt
+        //
+        // Ohne die zweite Fassung schneidet ein Kreiszuschnitt dem Fuchs die
+        // Ohrspitzen ab. Beide Angaben sind nötig: Ein Symbol nur als
+        // 'maskable' zu liefern, lässt es dort zu klein wirken, wo gar nicht
+        // zugeschnitten wird.
         icons: [
           {
             src: 'icons/icon-192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any',
           },
           {
             src: 'icons/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'icons/icon-maskable-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+          {
+            src: 'icons/icon-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
           },
         ],
       },
