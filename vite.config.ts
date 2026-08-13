@@ -2,11 +2,16 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
-// Dynamic base path: GitHub Pages uses /SoundFuchs/, Vercel uses /
-const base = process.env.DEPLOY_TARGET === 'github-pages' ? '/SoundFuchs/' : '/';
+// Die App wird unter dem Wurzelpfad ausgeliefert (soundfuchs.vercel.app).
+//
+// Hier stand bis zum 13.08.2026 eine Weiche: GitHub Pages brauchte den
+// Unterpfad /SoundFuchs/, Vercel die Wurzel. Der Pages-Weg ist entfallen –
+// er scheiterte, seit das Repository privat ist, und zwei Ziele fuer
+// dieselbe App bedeuten zwei Staende, die auseinanderlaufen.
+const base = '/';
 
 export default defineConfig({
-  base, // Dynamic: /SoundFuchs/ for GitHub Pages, / for Vercel
+  base,
   resolve: {
     alias: {
       '@core': path.resolve(__dirname, './src/core'),
