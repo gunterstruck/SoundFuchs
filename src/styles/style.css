@@ -5073,76 +5073,11 @@ select:focus-visible {
 }
 
 /* Banner Preview in Settings */
-.banner-preview-container {
-  position: relative;
-  width: 100%;
-  max-width: 100%;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: var(--bg-tertiary);
-  border: 2px solid var(--border-color);
-  aspect-ratio: 1024 / 400;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 /* Text block inside the preview — mirrors the hero text. Position comes from
    --banner-text-x / -y (set via the sliders). It is purely visual:
    pointer-events:none so touches pass through to page scrolling and it can't be
    moved by accident. */
-.banner-preview-textblock {
-  position: absolute;
-  left: var(--banner-text-x, 36%);
-  top: var(--banner-text-y, 50%);
-  right: 8px;
-  transform: translateY(-50%);
-  text-align: left;
-  pointer-events: none;
-  user-select: none;
-}
-
-.banner-preview-headline {
-  display: block;
-  font-weight: 600;
-  font-size: 0.78rem;
-  line-height: 1.2;
-  color: #1e293b;
-  text-shadow:
-    0 0 3px rgba(255, 255, 255, 0.95),
-    0 0 6px rgba(255, 255, 255, 0.9),
-    0 0 10px rgba(255, 255, 255, 0.75);
-}
-
-.banner-preview-subline {
-  display: block;
-  font-size: 0.62rem;
-  line-height: 1.25;
-  color: #475569;
-  text-shadow:
-    0 0 3px rgba(255, 255, 255, 0.95),
-    0 0 6px rgba(255, 255, 255, 0.9),
-    0 0 10px rgba(255, 255, 255, 0.75);
-}
-
-.banner-preview-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  display: block;
-}
-
-.banner-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
-}
-
-.banner-actions .action-btn {
-  flex: 1;
-  min-width: 140px;
-}
 
 .setting-category-description {
   font-size: 0.875rem;
@@ -11239,195 +11174,20 @@ html[data-view-level='expert'] .diagnosis-recommendation {
 /* ===================================
    BANNER CROP MODAL
    =================================== */
-.banner-crop-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-md, 16px);
-  background: rgba(0, 0, 0, 0.6);
-}
-
-.banner-crop-modal {
-  width: min(560px, 96vw);
-  max-height: 92vh;
-  overflow-y: auto;
-  background: var(--bg-modal, #fff);
-  color: var(--text-primary, #1a2330);
-  border-radius: var(--radius-lg, 12px);
-  padding: var(--spacing-md, 16px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-}
-
-.banner-crop-title {
-  margin: 0 0 4px;
-  font-size: 1.1rem;
-}
-
-.banner-crop-hint {
-  margin: 0 0 12px;
-  font-size: 0.85rem;
-  color: var(--text-secondary, #5b6470);
-}
-
-.banner-crop-viewport {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  border-radius: 8px;
-  background: #11212f;
-  touch-action: none; /* let pointer drag pan instead of scrolling */
-  cursor: grab;
-  user-select: none;
-}
-
-.banner-crop-viewport:active {
-  cursor: grabbing;
-}
-
-.banner-crop-image {
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform-origin: 0 0;
-  will-change: transform;
-  pointer-events: none;
-  max-width: none;
-}
 
 /* Text-zone guide: the overlay text sits in the right two-thirds, so the left
    third is kept for the image/subject. Shade the right region as "text here". */
-.banner-crop-textzone {
-  position: absolute;
-  top: 0;
-  left: 33.33%;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  background: rgba(0, 0, 0, 0.18);
-  border-left: 1px dashed rgba(255, 255, 255, 0.6);
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-}
-
-.banner-crop-textzone span {
-  margin: 6px;
-  padding: 1px 6px;
-  font-size: 0.7rem;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.45);
-  border-radius: 4px;
-}
-
-.banner-crop-zoom-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 12px 0;
-  font-size: 0.85rem;
-  color: var(--text-secondary, #5b6470);
-}
-
-.banner-crop-zoom {
-  flex: 1;
-}
-
-.banner-crop-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
 
 /* ===================================
    EDITABLE BANNER TEXT FIELDS
    =================================== */
-.banner-text-fields {
-  margin-top: var(--spacing-md, 16px);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.banner-text-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary, #5b6470);
-}
-
-.banner-text-input {
-  width: 100%;
-  padding: 8px 10px;
-  margin-bottom: 4px;
-  font-size: 0.95rem;
-  color: var(--text-primary, #1a2330);
-  background: var(--bg-card, rgba(255, 255, 255, 0.9));
-  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.15));
-  border-radius: var(--radius-md, 8px);
-}
-
-.banner-text-input:focus {
-  outline: none;
-  border-color: var(--primary-color, #00b8d9);
-}
 
 /* "Hide text" toggle row. */
-.banner-hidetext-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-secondary, #5b6470);
-  cursor: pointer;
-}
-
-.banner-hidetext-row input {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
-  cursor: pointer;
-}
 
 /* Disabled text/position controls read as inactive while text is hidden. */
-.banner-text-input:disabled {
-  opacity: 0.5;
-}
-
-.banner-pos-slider:disabled {
-  opacity: 0.5;
-}
 
 /* Position sliders sit directly under the preview so the effect is visible
    immediately while adjusting (no need to scroll). */
-.banner-pos-controls {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.banner-pos-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.banner-pos-label {
-  flex: 0 0 7.5rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary, #5b6470);
-}
-
-.banner-pos-slider {
-  flex: 1 1 auto;
-  width: auto;
-  margin: 2px 0;
-}
 
 /* ===================================
    UX GEFÜHRTER ERST-LAUF (body.zb-first-run — keine Maschinen vorhanden)
