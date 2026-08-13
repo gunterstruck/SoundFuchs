@@ -17,7 +17,8 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "check-i18n": "node tools/i18n-check.mjs",
     "attention-check": "node tools/attention-check.mjs",
-    "token-check": "node tools/token-check.mjs"
+    "token-check": "node tools/token-check.mjs",
+    "css-check": "node tools/css-check.mjs"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",

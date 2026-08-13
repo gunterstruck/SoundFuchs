@@ -38,3 +38,7 @@ jobs:
       # heißt — weiße Schrift steht dann auf durchsichtigem Grund.
       - run: npm run check-i18n
       - run: npm run token-check
+      # css-check: Eine Regel fuer ein Element, das es nicht mehr gibt, faellt
+      # niemandem auf. Beim Entfernen des Hero-Bereichs blieben 13 solche
+      # Regeln stehen, insgesamt lagen 126 im Bestand.
+      - run: npm run css-check

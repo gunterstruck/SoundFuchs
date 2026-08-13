@@ -57,8 +57,8 @@ const FREI = process.argv.includes('--frei');
  * Schreibtisch (der Ort, an dem es eingerichtet wird).
  */
 const FORMATE = [
-    { name: 'smartphone', viewport: { width: 390, height: 844 }, touch: true },
-    { name: 'desktop', viewport: { width: 1440, height: 900 }, touch: false }
+  { name: 'smartphone', viewport: { width: 390, height: 844 }, touch: true },
+  { name: 'desktop', viewport: { width: 1440, height: 900 }, touch: false },
 ];
 
 /**
@@ -69,10 +69,10 @@ const FORMATE = [
  * eben auch nicht beliebig viel mehr.
  */
 const BUDGET = {
-    erstbild: 12,
-    schritteOffen: 16,
-    einstellungenBasis: 28,
-    einstellungenExperte: 52
+  erstbild: 12,
+  schritteOffen: 16,
+  einstellungenBasis: 28,
+  einstellungenExperte: 52,
 };
 
 /**
@@ -232,43 +232,43 @@ const BREITEN_PROBE = `(() => {
 })()`;
 
 async function freierPort() {
-    return new Promise((res, rej) => {
-        const s = createServer();
-        s.on('error', rej);
-        s.listen(0, () => {
-            const { port } = s.address();
-            s.close(() => res(port));
-        });
+  return new Promise((res, rej) => {
+    const s = createServer();
+    s.on('error', rej);
+    s.listen(0, () => {
+      const { port } = s.address();
+      s.close(() => res(port));
     });
+  });
 }
 
 async function starteVorschau(port) {
-    const kind = spawn('npx', ['vite', 'preview', '--port', String(port), '--strictPort'], {
-        stdio: 'ignore',
-        detached: false
-    });
-    for (let versuch = 0; versuch < 60; versuch += 1) {
-        await new Promise((r) => setTimeout(r, 500));
-        try {
-            const antwort = await fetch(`http://localhost:${port}/`);
-            if (antwort.ok) return kind;
-        } catch {
-            /* noch nicht oben */
-        }
+  const kind = spawn('npx', ['vite', 'preview', '--port', String(port), '--strictPort'], {
+    stdio: 'ignore',
+    detached: false,
+  });
+  for (let versuch = 0; versuch < 60; versuch += 1) {
+    await new Promise((r) => setTimeout(r, 500));
+    try {
+      const antwort = await fetch(`http://localhost:${port}/`);
+      if (antwort.ok) return kind;
+    } catch {
+      /* noch nicht oben */
     }
-    kind.kill();
-    throw new Error('Vorschau-Server kam nicht hoch — wurde `npm run build` ausgeführt?');
+  }
+  kind.kill();
+  throw new Error('Vorschau-Server kam nicht hoch — wurde `npm run build` ausgeführt?');
 }
 
 function chromiumPfad() {
-    const gesetzt = process.env.PLAYWRIGHT_CHROMIUM_PATH;
-    return gesetzt ? { executablePath: gesetzt } : {};
+  const gesetzt = process.env.PLAYWRIGHT_CHROMIUM_PATH;
+  return gesetzt ? { executablePath: gesetzt } : {};
 }
 
 const befunde = [];
 function pruefe(bedingung, text) {
-    if (FREI || bedingung) return;
-    befunde.push(text);
+  if (FREI || bedingung) return;
+  befunde.push(text);
 }
 
 const port = await freierPort();
@@ -276,118 +276,122 @@ const vorschau = await starteVorschau(port);
 
 let chromium;
 try {
-    ({ chromium } = require('playwright'));
+  ({ chromium } = require('playwright'));
 } catch {
-    vorschau.kill();
-    console.error('Playwright fehlt. Einmalig:  npm i -D playwright && npx playwright install chromium');
-    process.exit(1);
+  vorschau.kill();
+  console.error(
+    'Playwright fehlt. Einmalig:  npm i -D playwright && npx playwright install chromium'
+  );
+  process.exit(1);
 }
 
 const browser = await chromium.launch(chromiumPfad());
 
 try {
-    for (const format of FORMATE) {
-        const ctx = await browser.newContext({
-            viewport: format.viewport,
-            hasTouch: format.touch,
-            isMobile: format.touch,
-            locale: 'de-DE'
-        });
-        const page = await ctx.newPage();
-        await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
-        await page.waitForTimeout(2000);
+  for (const format of FORMATE) {
+    const ctx = await browser.newContext({
+      viewport: format.viewport,
+      hasTouch: format.touch,
+      isMobile: format.touch,
+      locale: 'de-DE',
+    });
+    const page = await ctx.newPage();
+    await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2000);
 
-        console.log(`\n=== ${format.name} (${format.viewport.width}×${format.viewport.height}) ===`);
+    console.log(`\n=== ${format.name} (${format.viewport.width}×${format.viewport.height}) ===`);
 
-        const erstbild = await page.evaluate(ERSTBILD_PROBE);
-        const herkunft = Object.entries(erstbild.herkunft)
-            .map(([k, v]) => `${k} ${v}`)
-            .join(' · ');
-        console.log(`Erstbild            ${String(erstbild.bedienelemente).padStart(3)}   ${herkunft}`);
-        pruefe(
-            erstbild.bedienelemente <= BUDGET.erstbild,
-            `${format.name}: Erstbild ${erstbild.bedienelemente} > Budget ${BUDGET.erstbild}`
-        );
+    const erstbild = await page.evaluate(ERSTBILD_PROBE);
+    const herkunft = Object.entries(erstbild.herkunft)
+      .map(([k, v]) => `${k} ${v}`)
+      .join(' · ');
+    console.log(`Erstbild            ${String(erstbild.bedienelemente).padStart(3)}   ${herkunft}`);
+    pruefe(
+      erstbild.bedienelemente <= BUDGET.erstbild,
+      `${format.name}: Erstbild ${erstbild.bedienelemente} > Budget ${BUDGET.erstbild}`
+    );
 
-        // Im eingeklappten Zustand gibt es noch keinen Inhaltscontainer; die
-        // engste Stelle entsteht erst, wenn ein Schritt offen ist. Gemessen
-        // wird deshalb in beiden Zuständen, gemeldet wird die engere.
-        const breitenZu = await page.evaluate(BREITEN_PROBE);
+    // Im eingeklappten Zustand gibt es noch keinen Inhaltscontainer; die
+    // engste Stelle entsteht erst, wenn ein Schritt offen ist. Gemessen
+    // wird deshalb in beiden Zuständen, gemeldet wird die engere.
+    const breitenZu = await page.evaluate(BREITEN_PROBE);
 
-        // Alle Schritte aufklappen: was verlangt die Seite, wenn nichts mehr eingeklappt ist?
-        await page.evaluate(() => {
-            document.querySelectorAll('.section-header[data-target]').forEach((h) => {
-                const ziel = document.getElementById(h.dataset.target);
-                if (ziel && getComputedStyle(ziel).display === 'none') h.click();
-            });
-        });
-        await page.waitForTimeout(1200);
-        const breitenAuf = await page.evaluate(BREITEN_PROBE);
-        const breiten = breitenZu.inhalt.px <= breitenAuf.inhalt.px ? breitenZu : breitenAuf;
-        const anteil = ((breiten.inhalt.px / breiten.viewport) * 100).toFixed(0);
-        console.log(
-            `Textbreite          ${String(breiten.inhalt.px).padStart(3)} px` +
-                ` von ${breiten.viewport} (${anteil} %)   engste Stelle: ${breiten.inhalt.wo}`
-        );
-        if (breitenAuf.beschriftung.px !== null) {
-            console.log(
-                `Kachelbeschriftung  ${String(breitenAuf.beschriftung.px).padStart(3)} px` +
-                    `                    engste Stelle: ${breitenAuf.beschriftung.wo}`
-            );
-        }
-        pruefe(
-            breiten.inhalt.px >= BUDGET_TEXTBREITE[format.name],
-            `${format.name}: Textbreite ${breiten.inhalt.px} px < Budget ${BUDGET_TEXTBREITE[format.name]} px` +
-                ` (engste Stelle: ${breiten.inhalt.wo})`
-        );
-
-        const offen = await page.evaluate(SICHTBAR_PROBE);
-        console.log(`Alle Schritte offen ${String(offen.bedienelemente).padStart(3)}`);
-        pruefe(
-            offen.bedienelemente <= BUDGET.schritteOffen,
-            `${format.name}: Schritte offen ${offen.bedienelemente} > Budget ${BUDGET.schritteOffen}`
-        );
-
-        // Einstellungen: der globale Komplexitätsschalter liegt hier drin.
-        await page.click('#settings-btn');
-        await page.waitForTimeout(1000);
-        const basis = await page.evaluate(SICHTBAR_PROBE);
-        console.log(`Einstellungen Basis ${String(basis.bedienelemente).padStart(3)}   davon im Dialog ${basis.imModal}`);
-        pruefe(
-            basis.bedienelemente <= BUDGET.einstellungenBasis,
-            `${format.name}: Einstellungen/Basis ${basis.bedienelemente} > Budget ${BUDGET.einstellungenBasis}`
-        );
-
-        await page.evaluate(() => {
-            document.querySelector('#view-level-selector [data-level="expert"]')?.click();
-        });
-        await page.waitForTimeout(800);
-        const experte = await page.evaluate(SICHTBAR_PROBE);
-        const faktor = (experte.imModal / Math.max(basis.imModal, 1)).toFixed(1);
-        console.log(
-            `Einstellungen Exp.  ${String(experte.bedienelemente).padStart(3)}   davon im Dialog ${experte.imModal} (×${faktor})`
-        );
-        pruefe(
-            experte.bedienelemente <= BUDGET.einstellungenExperte,
-            `${format.name}: Einstellungen/Experte ${experte.bedienelemente} > Budget ${BUDGET.einstellungenExperte}`
-        );
-
-        await ctx.close();
+    // Alle Schritte aufklappen: was verlangt die Seite, wenn nichts mehr eingeklappt ist?
+    await page.evaluate(() => {
+      document.querySelectorAll('.section-header[data-target]').forEach((h) => {
+        const ziel = document.getElementById(h.dataset.target);
+        if (ziel && getComputedStyle(ziel).display === 'none') h.click();
+      });
+    });
+    await page.waitForTimeout(1200);
+    const breitenAuf = await page.evaluate(BREITEN_PROBE);
+    const breiten = breitenZu.inhalt.px <= breitenAuf.inhalt.px ? breitenZu : breitenAuf;
+    const anteil = ((breiten.inhalt.px / breiten.viewport) * 100).toFixed(0);
+    console.log(
+      `Textbreite          ${String(breiten.inhalt.px).padStart(3)} px` +
+        ` von ${breiten.viewport} (${anteil} %)   engste Stelle: ${breiten.inhalt.wo}`
+    );
+    if (breitenAuf.beschriftung.px !== null) {
+      console.log(
+        `Kachelbeschriftung  ${String(breitenAuf.beschriftung.px).padStart(3)} px` +
+          `                    engste Stelle: ${breitenAuf.beschriftung.wo}`
+      );
     }
+    pruefe(
+      breiten.inhalt.px >= BUDGET_TEXTBREITE[format.name],
+      `${format.name}: Textbreite ${breiten.inhalt.px} px < Budget ${BUDGET_TEXTBREITE[format.name]} px` +
+        ` (engste Stelle: ${breiten.inhalt.wo})`
+    );
+
+    const offen = await page.evaluate(SICHTBAR_PROBE);
+    console.log(`Alle Schritte offen ${String(offen.bedienelemente).padStart(3)}`);
+    pruefe(
+      offen.bedienelemente <= BUDGET.schritteOffen,
+      `${format.name}: Schritte offen ${offen.bedienelemente} > Budget ${BUDGET.schritteOffen}`
+    );
+
+    // Einstellungen: der globale Komplexitätsschalter liegt hier drin.
+    await page.click('#settings-btn');
+    await page.waitForTimeout(1000);
+    const basis = await page.evaluate(SICHTBAR_PROBE);
+    console.log(
+      `Einstellungen Basis ${String(basis.bedienelemente).padStart(3)}   davon im Dialog ${basis.imModal}`
+    );
+    pruefe(
+      basis.bedienelemente <= BUDGET.einstellungenBasis,
+      `${format.name}: Einstellungen/Basis ${basis.bedienelemente} > Budget ${BUDGET.einstellungenBasis}`
+    );
+
+    await page.evaluate(() => {
+      document.querySelector('#view-level-selector [data-level="expert"]')?.click();
+    });
+    await page.waitForTimeout(800);
+    const experte = await page.evaluate(SICHTBAR_PROBE);
+    const faktor = (experte.imModal / Math.max(basis.imModal, 1)).toFixed(1);
+    console.log(
+      `Einstellungen Exp.  ${String(experte.bedienelemente).padStart(3)}   davon im Dialog ${experte.imModal} (×${faktor})`
+    );
+    pruefe(
+      experte.bedienelemente <= BUDGET.einstellungenExperte,
+      `${format.name}: Einstellungen/Experte ${experte.bedienelemente} > Budget ${BUDGET.einstellungenExperte}`
+    );
+
+    await ctx.close();
+  }
 } finally {
-    await browser.close();
-    vorschau.kill();
+  await browser.close();
+  vorschau.kill();
 }
 
 if (FREI) {
-    console.log('\n(--frei: nur gemessen, keine Budgets geprüft)');
-    process.exit(0);
+  console.log('\n(--frei: nur gemessen, keine Budgets geprüft)');
+  process.exit(0);
 }
 
 if (befunde.length) {
-    console.log('\nBefunde:');
-    for (const b of befunde) console.log(`  ✗ ${b}`);
-    process.exit(1);
+  console.log('\nBefunde:');
+  for (const b of befunde) console.log(`  ✗ ${b}`);
+  process.exit(1);
 }
 
 console.log('\n✓ Alle Budgets eingehalten.');

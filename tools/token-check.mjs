@@ -21,12 +21,7 @@ import { join } from 'node:path';
 
 const VERZEICHNIS = 'src/styles';
 // Diese setzt der Quelltext zur Laufzeit am Element selbst (style="--x: ...").
-const ZUR_LAUFZEIT = new Set([
-  '--bar-width',
-  '--animation-delay',
-  '--banner-text-x',
-  '--banner-text-y',
-]);
+const ZUR_LAUFZEIT = new Set(['--bar-width', '--animation-delay']);
 
 const dateien = readdirSync(VERZEICHNIS).filter((f) => f.endsWith('.css'));
 const quelle = dateien.map((f) => readFileSync(join(VERZEICHNIS, f), 'utf8')).join('\n');
