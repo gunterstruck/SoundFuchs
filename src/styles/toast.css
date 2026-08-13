@@ -52,12 +52,12 @@
   gap: 12px;
   padding: 16px 20px;
   margin-bottom: 12px;
-  background: var(--surface-color, #1e293b);
+  background: var(--bg-card);
   border-radius: 8px;
   box-shadow:
     0 8px 24px rgba(0, 0, 0, 0.4),
     0 2px 8px rgba(0, 0, 0, 0.2);
-  color: var(--text-color, #f1f5f9);
+  color: var(--text-primary);
   font-size: 14px;
   line-height: 1.5;
   pointer-events: auto;
