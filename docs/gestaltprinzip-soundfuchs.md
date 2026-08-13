@@ -1,14 +1,14 @@
 # Gestaltprinzip: Aufmerksamkeit und semantische Tiefe
 
-**Stand:** 12.08.2026 · **Rolle:** Product Owner · **Status:** Prüfregel, kein Umbauauftrag
+**Stand:** 13.08.2026 · **Rolle:** Product Owner · **Status:** Prüfregel, kein Umbauauftrag
 
 **Herkunft:** Die Regel in Abschnitt 1 und die vier Prüffragen sind aus der
 Schwester-App TourFuchs übernommen (`docs/gestaltprinzip-aufmerksamkeit.md`
 dort). Sie sind nicht hier erfunden worden, und das ist Absicht: Zwei Apps
 desselben Hauses sollten dieselbe Frage an ihre Oberflächen stellen. Neu sind
-in diesem Papier die **Messung an Zanobo** (Abschnitt 2), die Auswertung der
+in diesem Papier die **Messung an SoundFuchs** (Abschnitt 2), die Auswertung der
 Fachliteratur zum **semantischen Zoom** (Abschnitt 3) und die **drei Regeln**,
-die sich daraus für Zanobo ergeben (Abschnitt 4).
+die sich daraus für SoundFuchs ergeben (Abschnitt 4).
 
 ---
 
@@ -31,9 +31,9 @@ Und die vier Prüffragen, die jede neue Ansicht beantworten muss:
 
 `npm run attention-check` (`tools/attention-check.mjs`) befragt die **gebaute
 App im echten Browser** an Handy- und Schreibtischmaßen. Die erste Messung
-(12.08.2026) hat eine verbreitete Annahme über Zanobo widerlegt.
+(12.08.2026) hat eine verbreitete Annahme über SoundFuchs widerlegt.
 
-| Maß (390 × 844)            | Zanobo                | TourFuchs |
+| Maß (390 × 844)            | SoundFuchs                | TourFuchs |
 | -------------------------- | --------------------- | --------- |
 | Bedienelemente im Erstbild | **7**                 | 16        |
 | Alle Schritte offen        | 10                    | –         |
@@ -41,7 +41,7 @@ App im echten Browser** an Handy- und Schreibtischmaßen. Die erste Messung
 | Einstellungen, Experte     | **45 (35 im Dialog)** | –         |
 | Nutzbare Textbreite        | **274 px** → 330 px   | 362 px    |
 
-**Zanobos Startbildschirm ist nicht überladen.** Er verlangt weniger als die
+**SoundFuchs’ Startbildschirm ist nicht überladen.** Er verlangt weniger als die
 halbe Aufmerksamkeit von TourFuchs. Wer `index.html` liest, zählt 117 Knöpfe
 und kommt zum gegenteiligen Schluss – aber gezählt wäre damit Markup, nicht
 Oberfläche. Das ist die Lehre aus dem Vorbild, noch einmal: **Quelltext lesen
@@ -135,21 +135,21 @@ gegen „Übersicht + Detail" an 32 Probanden auf Karten gemessen:
 - **80 % der Probanden bevorzugten trotzdem die Übersicht + Detail**, mit der
   Begründung, man wisse dort besser, wo man ist.
 
-Für Zanobo ist die Abwägung eindeutig. Die Nutzer sind keine Vielnutzer, die
+Für SoundFuchs ist die Abwägung eindeutig. Die Nutzer sind keine Vielnutzer, die
 sich Geschwindigkeit erarbeiten: Ein Servicetechniker öffnet die App vor einer
 Maschine, vielleicht wöchentlich. Für ihn ist Orientierung mehr wert als 22 %.
 
-### 3.4 „Desert Fog" – und Zanobo ist besonders anfällig
+### 3.4 „Desert Fog" – und SoundFuchs ist besonders anfällig
 
 Jul und Furnas (UIST '98) haben den Zustand benannt, in dem eine zoombare
 Oberfläche in einen Bereich ohne Objekte führt: Alle Orientierungsmerkmale
 verschwinden, und der Nutzer kann weder ableiten, wo er ist, noch wohin er
 müsste. In der Studie oben trat der Effekt bei sechs von 32 Probanden auf.
 
-**Zanobos Ausgangszustand ist Desert Fog.** Eine neue Installation hat null
+**SoundFuchs’ Ausgangszustand ist Desert Fog.** Eine neue Installation hat null
 Maschinen. Eine neue Maschine hat keine Referenz. Eine Maschine mit Referenz
 hat noch keine Historie. Wo TourFuchs' Karte immer Deutschland zeigt, kann bei
-Zanobo jede einzelne Ebene leer sein.
+SoundFuchs jede einzelne Ebene leer sein.
 
 ---
 
@@ -183,18 +183,25 @@ gilt für jede neue Ansicht.
 
 ### 4.3 Die Oberfläche baut sich nicht selbst um
 
-Gemessen: Ohne Maschinen stehen die drei Karten als `1 · 2 · 3` untereinander,
-alle 342 px breit. Mit Maschinen springt „Zustand prüfen" auf Platz eins, die
-anderen beiden schrumpfen auf 291 px und **verlieren ihre Ziffern**
-(`[data-theme='focus']` mit `order: -1`, `style.css`).
+Gemessen: Ohne Maschinen standen die drei Karten als `1 · 2 · 3` untereinander,
+alle 342 px breit. Mit Maschinen sprang „Zustand prüfen" auf Platz eins, die
+anderen beiden schrumpften auf 291 px und **verloren ihre Ziffern**.
 
-Die Umsortierung ist deterministisch und passiert nur einmal – aber die
-Prozessleiter verschwindet ausgerechnet in dem Moment, in dem der Nutzer noch
-Anfänger ist. Muskelgedächtnis schlägt Anpassungsfähigkeit.
+Die Ursache war doppelt, und das ist die eigentliche Lehre: Zum einen zog eine
+themenunabhängige Regel („Universal Card Ordering") die dritte Karte per
+`order: -1` immer nach vorn. Zum anderen setzte das Fokus-Theme zusätzlich
+`width: 65%` und blendete die Ziffern aus – und dieses Theme wurde beim ersten
+Start als Werkseinstellung gesetzt. Zwei für sich begründete Entscheidungen,
+die niemand nebeneinandergelegt hatte.
 
-Das Theme ist hier die eigentliche Ursache: Es macht drei Dinge gleichzeitig –
-Farbe, Layout und Hierarchie. **Kein `[data-theme]` darf `order`, `width` oder
-`transform` setzen.**
+**Behoben am 13.08.2026:** Beide Regeln sind entfallen. Die sichtbare
+Reihenfolge folgt wieder den Ziffern und damit auch der DOM-Reihenfolge – was
+zugleich den Tabulator repariert, der vorher in einer anderen Folge lief als
+das Auge. Der Vorrang von „Zustand prüfen" bleibt, aber über den farbigen
+Rahmen statt über die Position.
+
+**Regel:** Ein Helligkeitswechsel darf `order`, `width` oder `transform` nicht
+anfassen. Und wo Ziffern stehen, folgt die sichtbare Reihenfolge den Ziffern.
 
 ---
 
@@ -206,7 +213,7 @@ Farbe, Layout und Hierarchie. **Kein `[data-theme]` darf `order`, `width` oder
   Ränder außerdem eine Information: „das sind alle acht".
 
 - **Pinch-to-enter.** Zwei Gründe. Erstens ist die Geste in der klassischen
-  Oberfläche bereits belegt. Zweitens, und schwerer: Zanobo wird **an der
+  Oberfläche bereits belegt. Zweitens, und schwerer: SoundFuchs wird **an der
   Maschine** benutzt – einhändig, oft mit Handschuhen, im Lärm. Eine
   Zwei-Finger-Geste ist in diesem Moment das falsche Primitiv. Große Ziele und
   eine Hand schlagen Gesten-Grammatik.

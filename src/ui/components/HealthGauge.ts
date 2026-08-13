@@ -15,7 +15,8 @@ export class HealthGauge {
   private score: number = 0;
   private customStatus: string | undefined = undefined;
   private animationFrame: number | null = null;
-  private themeObserver: MutationObserver | null = null;
+  private darkQuery: MediaQueryList | null = null;
+  private onSchemeChange: (() => void) | null = null;
 
   // Theme-aware colors (read from CSS variables)
   private colors = {
@@ -24,7 +25,7 @@ export class HealthGauge {
     error: '#FF5252',
     text: '#FFFFFF',
     textMuted: '#888888',
-    background: '#2a2a2a'
+    background: '#2a2a2a',
   };
 
   constructor(canvasId: string) {
@@ -59,27 +60,26 @@ export class HealthGauge {
       error: styles.getPropertyValue('--status-error').trim() || '#FF5252',
       text: styles.getPropertyValue('--text-primary').trim() || '#FFFFFF',
       textMuted: styles.getPropertyValue('--text-muted').trim() || '#888888',
-      background: styles.getPropertyValue('--bg-tertiary').trim() || '#2a2a2a'
+      background: styles.getPropertyValue('--bg-tertiary').trim() || '#2a2a2a',
     };
   }
 
   /**
-   * Observe theme changes and update colors accordingly
+   * Auf den Helligkeitswechsel des Geräts hören und die Farben nachziehen.
+   *
+   * Vorher wurde hier das Attribut `data-theme` beobachtet. Seit es nur noch
+   * einen Look gibt, wechselt die Helligkeit nicht mehr über ein Attribut,
+   * sondern über `prefers-color-scheme` – also hört diese Klasse direkt auf
+   * die Medienabfrage. Das Canvas liest seine Farben aus den CSS-Tokens, die
+   * beim Wechsel bereits neu gesetzt sind.
    */
   private observeThemeChanges(): void {
-    this.themeObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'data-theme') {
-          this.updateThemeColors();
-          this.render();
-        }
-      });
-    });
-
-    this.themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
-    });
+    this.darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    this.onSchemeChange = () => {
+      this.updateThemeColors();
+      this.render();
+    };
+    this.darkQuery.addEventListener('change', this.onSchemeChange);
   }
 
   /**
@@ -294,10 +294,11 @@ export class HealthGauge {
       this.animationFrame = null;
     }
 
-    // Stop observing theme changes (otherwise the observer pins this instance forever)
-    if (this.themeObserver) {
-      this.themeObserver.disconnect();
-      this.themeObserver = null;
+    // Zuhören beenden – sonst hält die Medienabfrage diese Instanz für immer fest
+    if (this.darkQuery && this.onSchemeChange) {
+      this.darkQuery.removeEventListener('change', this.onSchemeChange);
     }
+    this.darkQuery = null;
+    this.onSchemeChange = null;
   }
 }

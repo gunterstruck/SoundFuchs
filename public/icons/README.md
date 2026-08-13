@@ -18,7 +18,7 @@ Die folgenden Icon-Größen werden vom `manifest.json` referenziert:
 ## Icon-Design
 
 Das Icon sollte:
-- Das Zanobot-Logo (Kopf mit Gehirn + Schallwellen) zeigen
+- Das SoundFuchs-Logo (Kopf mit Gehirn + Schallwellen) zeigen
 - Auf dunklem UND hellem Hintergrund funktionieren
 - Die Primärfarbe #00D4FF verwenden
 - Im Maskable-Format einen Safe-Area-Padding haben (20% Abstand)

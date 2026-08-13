@@ -1150,10 +1150,6 @@ export class IdentifyPhase {
       }
       logger.info(`🎨 NFC-Onboarding: View Level von '${previousViewLevel}' auf 'basic' gesetzt`);
 
-      // SCHRITT 1b: Theme temporär auf "focus" setzen (DOM only, kein localStorage)
-      document.documentElement.setAttribute('data-theme', 'focus');
-      logger.info('🎨 NFC-Onboarding: Theme temporär auf "focus" gesetzt');
-
       // SCHRITT 2: Trace-Session starten (für Debugging/Protokoll)
       onboardingTrace.start('nfc');
 

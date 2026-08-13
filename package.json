@@ -1,7 +1,7 @@
 {
-  "name": "zanobo",
+  "name": "soundfuchs",
   "version": "2.0.0",
-  "description": "Zanobo - Industrial Machine Diagnostics PWA using GMIA Algorithm",
+  "description": "SoundFuchs - Industrial Machine Diagnostics PWA using GMIA Algorithm",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -52,6 +52,6 @@
     "gmia",
     "typescript"
   ],
-  "author": "Zanobo Team",
+  "author": "SoundFuchs Team",
   "license": "MIT"
 }

@@ -6,54 +6,43 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <!-- Default matches the default ('focus') theme; the inline bootstrap below
-         overrides this per active theme before first paint. -->
-    <meta name="theme-color" content="#fafbfc" />
-    <meta name="description" content="Zanobo - AI Assistant für akustische Maschinenüberwachung" />
+    <!-- Grundfarbe der Browserleiste; das Skript unten zieht sie vor dem
+         ersten Bild auf hell oder dunkel nach. -->
+    <meta name="theme-color" content="#f8fafc" />
+    <meta
+      name="description"
+      content="SoundFuchs – Maschinengeräusche lokal am Gerät vergleichen. Vergleich statt Diagnose."
+    />
 
     <!-- Cache Control: Force browser to always fetch fresh content -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
 
-    <title>Zanobo - AI Assistant</title>
+    <title>SoundFuchs – Maschinen anhören</title>
 
     <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="./icons/favicon.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/icon-512.png" />
 
-    <!-- Theme Bootstrap (loads before render - inline for guaranteed sync execution) -->
+    <!-- Ansichtstiefe vor dem ersten Bild setzen (inline, damit es garantiert
+         synchron läuft und nichts aufblitzt).
+
+         Hier stand bis zum 12.08.2026 zusätzlich die Theme-Verwaltung: vier
+         Farbwelten, ein Wähler, eine Merkung im localStorage. Sie ist entfallen –
+         es gibt nur noch einen Look, und ob er hell oder dunkel erscheint,
+         entscheidet das Gerät über prefers-color-scheme. Der Schlüssel
+         'zanobot-theme' wird bewusst nicht gelöscht: Er stört nicht, und
+         Aufräumen fremder Speicher ist ein Risiko ohne Gewinn. -->
     <script>
-      /**
-       * ZANOBOT THEME BOOTSTRAP - Inline version for guaranteed sync execution
-       * Prevents FOUC (Flash of Unstyled Content)
-       */
       (function () {
         'use strict';
         const CONFIG_PATH = './config.json';
-        const THEME_STORAGE_KEY = 'zanobot-theme';
-        const DEFAULT_THEME = 'focus';
-        const AVAILABLE_THEMES = ['neon', 'light', 'brand', 'focus'];
-        // Browser-chrome (status bar) colour per theme — mirrors each theme's
-        // --bg-primary so the status bar blends with the app instead of staying
-        // dark on the light themes. Set before first paint to avoid a flash.
-        const THEME_COLORS = {
-          neon: '#0f172a',
-          light: '#ffffff',
-          brand: '#f7fafc',
-          focus: '#fafbfc',
-        };
         const VIEW_LEVEL_STORAGE_KEY = 'zanobot.view-level';
         const DEFAULT_VIEW_LEVEL = 'basic';
         const AVAILABLE_VIEW_LEVELS = ['basic', 'advanced', 'expert'];
 
-        function getStoredTheme() {
-          try {
-            return localStorage.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME;
-          } catch (e) {
-            return DEFAULT_THEME;
-          }
-        }
         function getStoredViewLevel() {
           try {
             const level = localStorage.getItem(VIEW_LEVEL_STORAGE_KEY);
@@ -62,102 +51,37 @@
             return DEFAULT_VIEW_LEVEL;
           }
         }
-        function applyTheme(theme) {
-          document.documentElement.setAttribute('data-theme', theme);
+
+        // Die Browserleiste soll dieselbe Farbe tragen wie der Seitengrund,
+        // damit sie nicht als Fremdkörper über der App steht.
+        function syncBrowserChrome() {
           const meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute('content', THEME_COLORS[theme] || THEME_COLORS.focus);
-        }
-        function applyViewLevel(level) {
-          document.documentElement.setAttribute('data-view-level', level);
+          if (!meta) return;
+          const dunkel =
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          meta.setAttribute('content', dunkel ? '#0f172a' : '#f8fafc');
         }
 
         async function loadConfig() {
           try {
             const response = await fetch(CONFIG_PATH);
             if (!response.ok) throw new Error('Failed to load config');
-            const config = await response.json();
-            if (getStoredTheme() === 'brand' && config.branding?.colors)
-              applyBrandColors(config.branding.colors);
-            window.ZANOBOT_CONFIG = config;
+            window.SOUNDFUCHS_CONFIG = await response.json();
           } catch (error) {
             console.warn('Could not load config.json:', error);
           }
         }
 
-        function applyBrandColors(colors) {
-          const root = document.documentElement;
-          if (colors.primary) root.style.setProperty('--primary-color', colors.primary);
-          if (colors.primaryHover) root.style.setProperty('--primary-hover', colors.primaryHover);
-          if (colors.secondary) root.style.setProperty('--secondary-color', colors.secondary);
-          if (colors.accent) root.style.setProperty('--accent-color', colors.accent);
-          if (colors.background) root.style.setProperty('--bg-primary', colors.background);
-          if (colors.backgroundSecondary)
-            root.style.setProperty('--bg-secondary', colors.backgroundSecondary);
+        document.documentElement.setAttribute('data-view-level', getStoredViewLevel());
+        syncBrowserChrome();
+        if (window.matchMedia) {
+          window
+            .matchMedia('(prefers-color-scheme: dark)')
+            .addEventListener('change', syncBrowserChrome);
         }
-
-        function initTheme() {
-          applyTheme(getStoredTheme());
-          applyViewLevel(getStoredViewLevel());
-          if (document.readyState === 'loading')
-            document.addEventListener('DOMContentLoaded', loadConfig);
-          else loadConfig();
-          if (window.matchMedia) {
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-              if (!localStorage.getItem(THEME_STORAGE_KEY))
-                applyTheme(e.matches ? 'neon' : 'light');
-            });
-          }
-        }
-
-        window.ZanobotTheme = {
-          setTheme: function (theme) {
-            if (!AVAILABLE_THEMES.includes(theme)) return;
-            try {
-              localStorage.setItem(THEME_STORAGE_KEY, theme);
-            } catch (e) {}
-            applyTheme(theme);
-            if (theme === 'brand' && window.ZANOBOT_CONFIG?.branding?.colors)
-              applyBrandColors(window.ZANOBOT_CONFIG.branding.colors);
-            window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
-          },
-          getTheme: function () {
-            return getStoredTheme();
-          },
-          toggleTheme: function () {
-            const idx = AVAILABLE_THEMES.indexOf(getStoredTheme());
-            const next = AVAILABLE_THEMES[(idx + 1) % AVAILABLE_THEMES.length];
-            this.setTheme(next);
-            return next;
-          },
-          getAvailableThemes: function () {
-            return [...AVAILABLE_THEMES];
-          },
-          getThemeDisplayName: function (theme) {
-            return (
-              { neon: 'Neon Industrial', light: 'Daylight', brand: 'Zanobo', focus: 'Focus' }[
-                theme
-              ] || theme
-            );
-          },
-          getThemeDescription: function (theme) {
-            return (
-              {
-                neon: 'Cyberpunk-Style mit Neon Cyan & Orange. Perfekt für dunkle Umgebungen.',
-                light: 'Heller High-Contrast-Modus. Optimal für Sonnenlicht & Outdoor.',
-                brand: 'Original Zanobo Design. Ausgewogen & professionell.',
-                focus: 'Prüfungs-Design. Klar, ruhig, zielgerichtet.',
-              }[theme] || ''
-            );
-          },
-          applyCustomColors: applyBrandColors,
-          reset: function () {
-            try {
-              localStorage.removeItem(THEME_STORAGE_KEY);
-            } catch (e) {}
-            applyTheme(DEFAULT_THEME);
-          },
-        };
-        initTheme();
+        if (document.readyState === 'loading')
+          document.addEventListener('DOMContentLoaded', loadConfig);
+        else loadConfig();
       })();
     </script>
   </head>
@@ -183,25 +107,23 @@
     <!-- Main Container -->
     <div class="container">
       <!-- Hero Header Image -->
-      <section class="hero-header">
-        <!-- No initial src: BannerManager sets the correct themed banner (and any
-             custom upload) and fades it in, so no placeholder image flashes first.
-             A calm gradient (CSS on .hero-header) backs the brief load. -->
-        <img
-          alt="ZANOBO AI Assistant - AI-powered machine health monitoring through sound analysis"
-          class="hero-image"
-        />
+      <!-- Kopfzeile.
 
-        <!-- Banner Text Overlay (position is user-adjustable per theme) -->
-        <div class="hero-text-overlay">
-          <div class="hero-text-block">
-            <h1 class="hero-headline" data-i18n="banner.headline">Hört sich die Anlage normal an?</h1>
-            <p class="hero-subline" data-i18n="banner.subline">
-              Zustand in Sekunden prüfen – direkt am Gerät, offline
-            </p>
-          </div>
+           Hier stand bis zum 12.08.2026 ein bildschirmfüllender Hero mit
+           Bannergrafik, Textüberlagerung und wählbarem Bild je Theme. Er ist
+           entfallen: Er kostete am Handy rund ein Fünftel der Höhe, bevor die
+           erste Entscheidung sichtbar wurde, und beantwortete keinen nächsten
+           Gedanken. Die Schwester-App TourFuchs hat aus demselben Grund keinen.
+
+           Geblieben ist, was die Zeile leisten muss: sagen, wo man ist, und
+           die Frage stellen, um die es geht. -->
+      <header class="app-header">
+        <img class="app-mark" src="./icons/favicon.svg" alt="" width="36" height="36" />
+        <div class="app-header-text">
+          <h1 class="app-title">SoundFuchs</h1>
+          <p class="app-claim" data-i18n="banner.headline">Hört sich die Anlage normal an?</p>
         </div>
-      </section>
+      </header>
 
       <!-- Welle 2: Status Dashboard -->
       <section class="status-dashboard" id="status-dashboard" style="display: none">
@@ -752,7 +674,7 @@
                       style="display: none"
                     >
                       <p class="empty-state-title" data-i18n="identify.emptyGuide.title">
-                        So funktioniert Zanobot
+                        So funktioniert SoundFuchs
                       </p>
                       <div class="guide-steps">
                         <div class="guide-step">
@@ -1318,7 +1240,9 @@
           <button class="footer-link" id="settings-btn" data-i18n="footer.settings">
             Einstellungen
           </button>
-          <button class="footer-link" id="about-btn" data-i18n="footer.about">Über Zanobo</button>
+          <button class="footer-link" id="about-btn" data-i18n="footer.about">
+            Über SoundFuchs
+          </button>
           <button class="footer-link" id="datenschutz-btn" data-i18n="footer.privacy">
             Datenschutz
           </button>
@@ -2564,7 +2488,7 @@
           </p>
 
           <p><strong>Kontakt</strong></p>
-          <p>E-Mail: <a href="mailto:zanobo@online.de">zanobo@online.de</a><br /></p>
+          <p>E-Mail: <a href="mailto:soundfuchs@online.de">soundfuchs@online.de</a><br /></p>
 
           <p><strong>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</strong></p>
           <p>
@@ -2642,7 +2566,7 @@
           <h4>1. Das Wichtigste in Kürze</h4>
           <p>
             <strong>Dein Gerät ist der Server.</strong><br />
-            Zanobo ist eine "Offline-First" Progressive Web App. Das bedeutet: Alle Analysen,
+            SoundFuchs ist eine "Offline-First" Progressive Web App. Das bedeutet: Alle Analysen,
             Audio-Daten und Datenbank-Einträge werden <strong>ausschließlich lokal</strong> in
             deinem Browser gespeichert. Es findet keinerlei Übertragung deiner sensiblen Messdaten
             an uns oder Dritte statt.
@@ -2654,7 +2578,7 @@
             <strong>Günter Struck</strong><br />
             Lönsberg 8<br />
             45136 Essen<br />
-            E-Mail: <a href="mailto:zanobo@online.de">zanobo@online.de</a>
+            E-Mail: <a href="mailto:soundfuchs@online.de">soundfuchs@online.de</a>
           </p>
 
           <h4>3. Hosting &amp; Technische Logfiles</h4>
@@ -2968,143 +2892,6 @@
             <div class="settings-divider"></div>
 
             <!-- Theme Selection Section -->
-            <div class="setting-category">
-              <h4 class="setting-category-title" data-i18n="settingsUI.appearance">
-                Erscheinungsbild
-              </h4>
-              <div class="theme-cards" id="theme-cards">
-                <!-- Theme Card: Neon Industrial -->
-                <div class="theme-card" data-theme="neon">
-                  <div class="theme-card-icon">
-                    <svg
-                      width="32"
-                      height="32"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                      <circle cx="12" cy="12" r="1" fill="currentColor" />
-                    </svg>
-                  </div>
-                  <div class="theme-card-content">
-                    <h5 class="theme-card-title" data-i18n="themes.neonTitle">Neon Industrial</h5>
-                    <p class="theme-card-description" data-i18n="themes.neonDescription">
-                      Cyberpunk-Style mit Neon Cyan & Orange. Perfekt für dunkle Umgebungen.
-                    </p>
-                  </div>
-                  <div class="theme-card-colors">
-                    <span class="theme-color-dot" style="background: #00f3ff"></span>
-                    <span class="theme-color-dot" style="background: #ff8800"></span>
-                    <span class="theme-color-dot" style="background: #0f172a"></span>
-                  </div>
-                </div>
-
-                <!-- Theme Card: Daylight -->
-                <div class="theme-card" data-theme="light">
-                  <div class="theme-card-icon">
-                    <svg
-                      width="32"
-                      height="32"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <circle cx="12" cy="12" r="5" />
-                      <line x1="12" y1="1" x2="12" y2="3" />
-                      <line x1="12" y1="21" x2="12" y2="23" />
-                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                      <line x1="1" y1="12" x2="3" y2="12" />
-                      <line x1="21" y1="12" x2="23" y2="12" />
-                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                    </svg>
-                  </div>
-                  <div class="theme-card-content">
-                    <h5 class="theme-card-title" data-i18n="themes.daylightTitle">Daylight</h5>
-                    <p class="theme-card-description" data-i18n="themes.daylightDescription">
-                      Heller High-Contrast-Modus. Optimal für Sonnenlicht & Outdoor.
-                    </p>
-                  </div>
-                  <div class="theme-card-colors">
-                    <span class="theme-color-dot" style="background: #0f172a"></span>
-                    <span class="theme-color-dot" style="background: #ea580c"></span>
-                    <span
-                      class="theme-color-dot"
-                      style="background: #ffffff; border: 1px solid #e5e7eb"
-                    ></span>
-                  </div>
-                </div>
-
-                <!-- Theme Card: Brand -->
-                <div class="theme-card" data-theme="brand">
-                  <div class="theme-card-icon">
-                    <svg
-                      width="32"
-                      height="32"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <circle cx="12" cy="12" r="9" />
-                      <circle cx="12" cy="12" r="3" />
-                      <path d="M12 1v6m0 6v10M1 12h6m6 0h10" />
-                    </svg>
-                  </div>
-                  <div class="theme-card-content">
-                    <h5 class="theme-card-title" data-i18n="themes.brandTitle">Zanobo</h5>
-                    <p class="theme-card-description" data-i18n="themes.brandDescription">
-                      Hell, freundlich, vertrauenswürdig. KI, der man vertraut.
-                    </p>
-                  </div>
-                  <div class="theme-card-colors">
-                    <span class="theme-color-dot" style="background: #00b8d9"></span>
-                    <span class="theme-color-dot" style="background: #5ecfb8"></span>
-                    <span
-                      class="theme-color-dot"
-                      style="background: #f7fafc; border: 1px solid #e3edf5"
-                    ></span>
-                  </div>
-                </div>
-
-                <!-- Theme Card: Focus (Prüfung-first) -->
-                <div class="theme-card" data-theme="focus">
-                  <div class="theme-card-icon">
-                    <svg
-                      width="32"
-                      height="32"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <!-- Target/Focus Icon - represents clear intention -->
-                      <circle cx="12" cy="12" r="10" />
-                      <circle cx="12" cy="12" r="6" />
-                      <circle cx="12" cy="12" r="2" />
-                    </svg>
-                  </div>
-                  <div class="theme-card-content">
-                    <h5 class="theme-card-title" data-i18n="themes.focusTitle">Focus</h5>
-                    <p class="theme-card-description" data-i18n="themes.focusDescription">
-                      Prüfungs-Design. Klar, ruhig, zielgerichtet.
-                    </p>
-                  </div>
-                  <div class="theme-card-colors">
-                    <span class="theme-color-dot" style="background: #0891b2"></span>
-                    <span class="theme-color-dot" style="background: #f59e0b"></span>
-                    <span
-                      class="theme-color-dot"
-                      style="background: #fafbfc; border: 1px solid #e5e7eb"
-                    ></span>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             <!-- Divider (Advanced+) -->
             <div class="settings-divider" data-view-level="advanced"></div>
@@ -3131,7 +2918,10 @@
                    so the effect is visible immediately while adjusting -->
               <div class="banner-pos-controls">
                 <div class="banner-pos-row">
-                  <label class="banner-pos-label" for="banner-textx-input" data-i18n="settingsUI.bannerTextPosX"
+                  <label
+                    class="banner-pos-label"
+                    for="banner-textx-input"
+                    data-i18n="settingsUI.bannerTextPosX"
                     >Text horizontal</label
                   >
                   <input
@@ -3145,7 +2935,10 @@
                   />
                 </div>
                 <div class="banner-pos-row">
-                  <label class="banner-pos-label" for="banner-texty-input" data-i18n="settingsUI.bannerTextPosY"
+                  <label
+                    class="banner-pos-label"
+                    for="banner-texty-input"
+                    data-i18n="settingsUI.bannerTextPosY"
                     >Text vertikal</label
                   >
                   <input
@@ -3209,8 +3002,8 @@
               </div>
 
               <p class="setting-description" data-i18n="settingsUI.bannerHint">
-                Beliebiges Bild hochladen – im nächsten Schritt schneiden Sie den Ausschnitt zu.
-                Der Text erscheint rechts; platzieren Sie Ihr Motiv eher links.
+                Beliebiges Bild hochladen – im nächsten Schritt schneiden Sie den Ausschnitt zu. Der
+                Text erscheint rechts; platzieren Sie Ihr Motiv eher links.
               </p>
 
               <!-- Editable banner overlay text -->
@@ -3219,7 +3012,10 @@
                   <input type="checkbox" id="banner-hidetext-input" />
                   <span data-i18n="settingsUI.bannerHideText">Text ausblenden (nur Bild)</span>
                 </label>
-                <label class="banner-text-label" for="banner-headline-input" data-i18n="settingsUI.bannerHeadlineLabel"
+                <label
+                  class="banner-text-label"
+                  for="banner-headline-input"
+                  data-i18n="settingsUI.bannerHeadlineLabel"
                   >Banner-Überschrift</label
                 >
                 <input
@@ -3230,7 +3026,10 @@
                   data-i18n-placeholder="banner.headline"
                   placeholder="Hört sich die Anlage normal an?"
                 />
-                <label class="banner-text-label" for="banner-subline-input" data-i18n="settingsUI.bannerSublineLabel"
+                <label
+                  class="banner-text-label"
+                  for="banner-subline-input"
+                  data-i18n="settingsUI.bannerSublineLabel"
                   >Banner-Unterzeile</label
                 >
                 <input
@@ -4066,7 +3865,7 @@
       </div>
     </div>
 
-    <!-- Modal for Über Zanobo -->
+    <!-- Modal for Über SoundFuchs -->
     <div
       id="about-modal"
       class="modal"
@@ -4077,11 +3876,11 @@
     >
       <div class="modal-content legal-modal-content">
         <div class="modal-header">
-          <h3 id="about-title">Über Zanobo</h3>
+          <h3 id="about-title">Über SoundFuchs</h3>
           <button
             class="close-modal-btn"
             id="close-about-modal"
-            aria-label="Über Zanobo schließen"
+            aria-label="Über SoundFuchs schließen"
             data-i18n-aria="footer.closeAbout"
           >
             <svg
@@ -4112,13 +3911,13 @@
               <circle cx="12" cy="12" r="3" />
               <path d="M12 1v6m0 6v10M1 12h6m6 0h10" />
             </svg>
-            <h4>ZANOBO 2.0</h4>
+            <h4>SOUNDFUCHS 2.0</h4>
             <p class="about-subtitle">Assistent für akustischen Vergleich von Maschinenzuständen</p>
           </div>
 
           <p>
-            <strong>Zanobo 2.0</strong> ist eine datenschutzfreundliche Progressive Web App (PWA)
-            für die vergleichende Analyse von Maschinenakustik. Sie ermöglicht es Nutzern,
+            <strong>SoundFuchs 2.0</strong> ist eine datenschutzfreundliche Progressive Web App
+            (PWA) für die vergleichende Analyse von Maschinenakustik. Sie ermöglicht es Nutzern,
             Maschinengeräusche vollständig <strong>offline</strong> aufzuzeichnen und zu
             vergleichen, ohne auf Cloud-Dienste, externe Sensoren oder KI-Modelle angewiesen zu
             sein.
@@ -4131,7 +3930,7 @@
               Browser.
             </li>
             <li>
-              <strong>Ähnlichkeits-Score (0–100%):</strong> Zanobo berechnet eine
+              <strong>Ähnlichkeits-Score (0–100%):</strong> SoundFuchs berechnet eine
               Kosinus-Ähnlichkeit zwischen Referenz- und neuer Aufnahme.
             </li>
             <li>
@@ -4150,7 +3949,8 @@
 
           <h4>Technische Abgrenzung</h4>
           <p>
-            Zanobo wurde unabhängig als privates, nicht-kommerzielles Open-Source-Projekt unter der
+            SoundFuchs wurde unabhängig als privates, nicht-kommerzielles Open-Source-Projekt unter
+            der
             <strong>MIT-Lizenz</strong> entwickelt. Die Funktionalität basiert auf offen
             beschriebenen mathematischen Verfahren (z.B. GMIA-ähnlicher Kosinus-Vergleich) und
             integriert keine patentierte Systemlogik oder Lernmechanismen.
@@ -4200,7 +4000,7 @@
                       border: 1px solid var(--border-color);
                     "
                   >
-                    Zanobo-Unterschied
+                    SoundFuchs-Unterschied
                   </th>
                 </tr>
               </thead>
@@ -4218,7 +4018,7 @@
                     Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren
                   </td>
                   <td style="padding: 0.75rem; border: 1px solid var(--border-color)">
-                    Zanobo ist <strong>vollständig lokal</strong>, keine Cloud, keine Remote-DB,
+                    SoundFuchs ist <strong>vollständig lokal</strong>, keine Cloud, keine Remote-DB,
                     keine Befundung
                   </td>
                 </tr>
@@ -4233,7 +4033,8 @@
                     ML-basierte Remote-Befundung mit trainierten Modellen und Sensoren
                   </td>
                   <td style="padding: 0.75rem; border: 1px solid var(--border-color)">
-                    Zanobo verwendet <strong>kein ML</strong>, keine Cloud, keine eingebettete Logik
+                    SoundFuchs verwendet <strong>kein ML</strong>, keine Cloud, keine eingebettete
+                    Logik
                   </td>
                 </tr>
                 <tr style="border-bottom: 1px solid var(--border-color)">
@@ -4247,8 +4048,8 @@
                     Wendet GMIA auf Spracherkennung und Hörsysteme an
                   </td>
                   <td style="padding: 0.75rem; border: 1px solid var(--border-color)">
-                    Zanobo nutzt GMIA-ähnliche Mathematik für <strong>Nicht-Sprache</strong>, nur
-                    lokaler Vergleich
+                    SoundFuchs nutzt GMIA-ähnliche Mathematik für <strong>Nicht-Sprache</strong>,
+                    nur lokaler Vergleich
                   </td>
                 </tr>
                 <tr style="border-bottom: 1px solid var(--border-color)">
@@ -4262,7 +4063,7 @@
                     Klassifikation und Modelltraining von Signalprofilen
                   </td>
                   <td style="padding: 0.75rem; border: 1px solid var(--border-color)">
-                    Zanobo macht <strong>keine Klassifikation</strong>, kein Modelltraining
+                    SoundFuchs macht <strong>keine Klassifikation</strong>, kein Modelltraining
                   </td>
                 </tr>
                 <tr>
@@ -4276,7 +4077,7 @@
                     Wendet GMIA-ähnliche Trennung auf seismische Daten an
                   </td>
                   <td style="padding: 0.75rem; border: 1px solid var(--border-color)">
-                    Zanobo ist im Bereich und Signaltyp nicht verwandt
+                    SoundFuchs ist im Bereich und Signaltyp nicht verwandt
                   </td>
                 </tr>
               </tbody>
@@ -4285,7 +4086,7 @@
 
           <h4>Transparenz und Intention</h4>
           <p>
-            Zanobo ist <strong>kein Befundungswerkzeug</strong> und nimmt keine automatisierten
+            SoundFuchs ist <strong>kein Befundungswerkzeug</strong> und nimmt keine automatisierten
             technischen Bewertungen vor. Es bietet lediglich eine visuelle und mathematische
             Vergleichshilfe unter vollständiger Kontrolle des Nutzers. Alle Verarbeitungen erfolgen
             offline. Es werden keine Nutzerdaten übertragen, extern gespeichert oder ausgewertet.
@@ -4298,11 +4099,11 @@
           <p style="margin-top: 1.5rem">
             <strong>Öffentliche Instanz:</strong>
             <a
-              href="https://zanobo.vercel.app"
+              href="https://soundfuchs.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
               style="color: var(--primary-color)"
-              >zanobo.vercel.app</a
+              >soundfuchs.vercel.app</a
             >
           </p>
 

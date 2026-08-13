@@ -2,11 +2,11 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
-// Dynamic base path: GitHub Pages uses /Zanobot/, Vercel uses /
-const base = process.env.DEPLOY_TARGET === 'github-pages' ? '/Zanobot/' : '/';
+// Dynamic base path: GitHub Pages uses /SoundFuchs/, Vercel uses /
+const base = process.env.DEPLOY_TARGET === 'github-pages' ? '/SoundFuchs/' : '/';
 
 export default defineConfig({
-  base, // Dynamic: /Zanobot/ for GitHub Pages, / for Vercel
+  base, // Dynamic: /SoundFuchs/ for GitHub Pages, / for Vercel
   resolve: {
     alias: {
       '@core': path.resolve(__dirname, './src/core'),
@@ -27,11 +27,11 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['icons/*.png', 'assets/**/*'],
       manifest: {
-        name: 'Zanobo - AI Assistant',
-        short_name: 'Zanobo',
-        description: 'Industrial Machine Diagnostics using Acoustic Analysis',
-        theme_color: '#0A1929',
-        background_color: '#0A1929',
+        name: 'SoundFuchs – Maschinen anhören',
+        short_name: 'SoundFuchs',
+        description: 'Maschinengeräusche lokal am Gerät vergleichen – Vergleich statt Diagnose.',
+        theme_color: '#0d9488',
+        background_color: '#f8fafc',
         display: 'standalone',
         scope: base,
         start_url: base,

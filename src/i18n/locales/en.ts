@@ -1,5 +1,5 @@
 /**
- * ZANOBOT - English Translations
+ * SOUNDFUCHS - English Translations
  */
 
 import type { TranslationDict } from '../index.js';
@@ -127,7 +127,7 @@ export const en: TranslationDict = {
 
     // Sprint 2 UX: Empty state mini guide
     emptyGuide: {
-      title: 'How Zanobot works',
+      title: 'How SoundFuchs works',
       step1Title: 'Create machine',
       step1Desc: 'Give your machine a unique name.',
       step2Title: 'Record normal state',
@@ -390,7 +390,8 @@ export const en: TranslationDict = {
       listenDifferenceTooShort: 'Recordings too short for difference analysis.',
       listenTune: '🎧 Into audible range',
       listenTuneResult: '🎧 {{peak}} → {{target}}',
-      listenTuneClamped: 'Factor limited so a rhythm stays perceivable — the target frequency is therefore not fully reached.',
+      listenTuneClamped:
+        'Factor limited so a rhythm stays perceivable — the target frequency is therefore not fully reached.',
       listenTuneExact: 'Largest difference pulled into the range where the ear resolves best.',
       spectrumTitle: 'Frequency comparison (reference ↔ measurement)',
       spectrumReference: 'Reference',
@@ -583,7 +584,7 @@ export const en: TranslationDict = {
     },
 
     share: {
-      title: 'Zanobot database backup',
+      title: 'SoundFuchs database backup',
       text: 'Database backup: {{filename}}',
       success: 'Backup shared: {{filename}}',
       fallback: 'Sharing not available. Downloaded {{filename}} instead.',
@@ -605,7 +606,7 @@ export const en: TranslationDict = {
 
   app: {
     browserNotSupported:
-      'Your browser is not compatible with Zanobo.\n\nMissing features:\n{{features}}\n\nPlease use a modern browser such as Chrome, Edge, Firefox, or Safari.',
+      'Your browser is not compatible with SoundFuchs.\n\nMissing features:\n{{features}}\n\nPlease use a modern browser such as Chrome, Edge, Firefox, or Safari.',
     uiLoadFailed: 'User interface could not be loaded',
     fatalError: 'Fatal Error',
     browserNotSupportedTitle: 'Browser Not Supported',
@@ -966,7 +967,8 @@ export const en: TranslationDict = {
     deleteConfirm: 'Really delete the selected noise profile?',
     betaLabel: 'Subtraction strength (β)',
     profileMeta: '{{date}} · {{duration}}s · {{frames}} frames',
-    limitReached: 'Maximum number of profiles reached ({{max}}). Please delete an old profile first.',
+    limitReached:
+      'Maximum number of profiles reached ({{max}}). Please delete an old profile first.',
     errorGeneric: 'Recording failed. Please try again.',
     errorMicPermission: 'No microphone access. Please allow access in browser settings.',
     errorNoMic: 'No microphone found.',
@@ -1216,7 +1218,7 @@ export const en: TranslationDict = {
       'Bright, glare-friendly theme for outdoor use. Clear contrast improves readability in sunlight.',
     daylightDesc:
       'Bright, glare-friendly theme for outdoor use. Clear contrast improves readability in sunlight.',
-    brandTitle: 'Zanobo',
+    brandTitle: 'SoundFuchs',
     brandDescription: 'Light, friendly, trustworthy. AI you can trust.',
     brandDesc: 'Light, friendly, trustworthy. AI you can trust.',
     neonTitle: 'Neon Industrial',
@@ -1271,11 +1273,11 @@ export const en: TranslationDict = {
   footer: {
     impressum: 'Legal Notice',
     privacy: 'Privacy Policy',
-    about: 'About Zanobo',
+    about: 'About SoundFuchs',
     settings: 'Settings',
     closeImpressum: 'Close legal notice',
     closePrivacy: 'Close privacy policy',
-    closeAbout: 'Close about Zanobo',
+    closeAbout: 'Close about SoundFuchs',
   },
 
   // ============================================================================
@@ -1421,12 +1423,12 @@ export const en: TranslationDict = {
   // ABOUT MODAL
   // ============================================================================
   about: {
-    title: 'About Zanobo',
+    title: 'About SoundFuchs',
     subtitle: 'Assistant for acoustic comparison of machine states',
 
     // Introduction
     intro:
-      '<strong>Zanobo 2.0</strong> is a privacy-friendly Progressive Web App (PWA) designed for the comparative analysis of machine acoustics. The application allows users to record and compare machine sounds entirely <strong>offline</strong> – without cloud services, without external sensors, and without trained AI models.<br><br>Zanobo deliberately understands itself <strong>not as a diagnostic tool</strong>, but as a <strong>comparison and guidance instrument</strong> that supports human assessment.',
+      '<strong>SoundFuchs 2.0</strong> is a privacy-friendly Progressive Web App (PWA) designed for the comparative analysis of machine acoustics. The application allows users to record and compare machine sounds entirely <strong>offline</strong> – without cloud services, without external sensors, and without trained AI models.<br><br>SoundFuchs deliberately understands itself <strong>not as a diagnostic tool</strong>, but as a <strong>comparison and guidance instrument</strong> that supports human assessment.',
 
     // Core Features
     coreFeaturesTitle: 'Core Features',
@@ -1434,7 +1436,7 @@ export const en: TranslationDict = {
       offlineFirst:
         '<strong>Offline-First:</strong> All recordings and calculations are performed locally in the browser.',
       similarityScore:
-        '<strong>Similarity Score (0–100%):</strong> Zanobo computes a mathematical similarity (cosine similarity) between reference and comparison recording.',
+        '<strong>Similarity Score (0–100%):</strong> SoundFuchs computes a mathematical similarity (cosine similarity) between reference and comparison recording.',
       userThreshold:
         '<strong>User-defined Threshold:</strong> Users define themselves at which score a state counts as "normal" or "deviating".',
       visualFeedback:
@@ -1446,7 +1448,7 @@ export const en: TranslationDict = {
     // Technische Abgrenzung
     legalTitle: 'Technical Delimitation',
     legalIntro:
-      'Zanobo was independently developed as a <strong>private, non-commercial open-source project</strong> under the <strong>MIT license</strong>. Its functionality is based on <strong>openly described mathematical procedures</strong> (e.g., frequency analysis and GMIA-like cosine comparisons) and incorporates <strong>no patented system logic</strong>, <strong>no classification mechanisms</strong>, and <strong>no learning models</strong>.',
+      'SoundFuchs was independently developed as a <strong>private, non-commercial open-source project</strong> under the <strong>MIT license</strong>. Its functionality is based on <strong>openly described mathematical procedures</strong> (e.g., frequency analysis and GMIA-like cosine comparisons) and incorporates <strong>no patented system logic</strong>, <strong>no classification mechanisms</strong>, and <strong>no learning models</strong>.',
 
     // IP Table
     ipTableTitle: 'Relevant IP and Technical Differentiation',
@@ -1455,7 +1457,7 @@ export const en: TranslationDict = {
         reference: 'Reference / Title',
         source: 'Source & Status',
         protectedScope: 'Protected Scope',
-        zanoboDiff: 'Differentiation from Zanobo',
+        soundfuchsDiff: 'Differentiation from SoundFuchs',
       },
       rows: {
         '0': {
@@ -1464,42 +1466,43 @@ export const en: TranslationDict = {
           source: 'Defensive publication, Siemens AG, 2016',
           protectedScope:
             'Cloud-based diagnostic system using central databases and mobile sensors',
-          zanoboDiff:
-            'Zanobo operates fully locally, without cloud, without central database, without diagnostics',
+          soundfuchsDiff:
+            'SoundFuchs operates fully locally, without cloud, without central database, without diagnostics',
         },
         '1': {
           reference: '<strong>EP3701708B1</strong><br><em>Remote machine condition analysis</em>',
           source: 'European Patent, Siemens AG, 2022',
           protectedScope: 'ML-based remote diagnostics with trained models and sensors',
-          zanoboDiff: 'Zanobo uses no machine learning, no cloud, no embedded diagnostic logic',
+          soundfuchsDiff:
+            'SoundFuchs uses no machine learning, no cloud, no embedded diagnostic logic',
         },
         '2': {
           reference:
             '<strong>US9263041B2</strong><br><em>Channel detection in noise using GMIA</em>',
           source: 'Siemens Corp., 2016',
           protectedScope: 'Application of GMIA for speech and hearing systems',
-          zanoboDiff:
-            'Zanobo uses GMIA-like mathematics exclusively for non-speech and local comparisons',
+          soundfuchsDiff:
+            'SoundFuchs uses GMIA-like mathematics exclusively for non-speech and local comparisons',
         },
         '3': {
           reference: '<strong>US9443201B2</strong><br><em>Learning of sensor signatures</em>',
           source: 'Siemens, 2016',
           protectedScope: 'Classification and model training of sensor signatures',
-          zanoboDiff: 'Zanobo performs no classification and no model training',
+          soundfuchsDiff: 'SoundFuchs performs no classification and no model training',
         },
         '4': {
           reference: '<strong>US9602781B2</strong><br><em>Seismic signal deblending (GMIA)</em>',
           source: 'Schlumberger, 2017',
           protectedScope: 'Separation of seismic signals using GMIA',
-          zanoboDiff: 'Different domain and signal type, unrelated',
+          soundfuchsDiff: 'Different domain and signal type, unrelated',
         },
         '5': {
           reference: '<strong>ABB – Integration of Mobile Measurement</strong>',
           source: 'Public industry presentation, ABB, 2015',
           protectedScope:
             'Mobile sensors for ad-hoc diagnostics with cloud and service integration',
-          zanoboDiff:
-            'Zanobo avoids diagnostics, service workflows, and cloud connectivity, focusing on local comparison',
+          soundfuchsDiff:
+            'SoundFuchs avoids diagnostics, service workflows, and cloud connectivity, focusing on local comparison',
         },
       },
     },
@@ -1507,7 +1510,7 @@ export const en: TranslationDict = {
     // Use Cases
     useCasesTitle: 'Use Cases',
     useCasesIntro:
-      'Zanobo enables two fundamental comparison scenarios that differ in their temporal and spatial structure:',
+      'SoundFuchs enables two fundamental comparison scenarios that differ in their temporal and spatial structure:',
 
     // Serial Comparison
     serialComparisonTitle: 'a) Serial Comparison (Temporal Comparison / Trend)',
@@ -1518,7 +1521,7 @@ export const en: TranslationDict = {
     serialComparisonApplication:
       '<strong>Application:</strong><ul><li>A reference recording is created at a time when the machine is assessed as "normal"</li><li>Later recordings are compared with this reference</li><li>Deviations from the original pattern are quantified (similarity score)</li></ul>',
     serialComparisonHint:
-      '<strong>Note:</strong> Zanobo only shows <strong>whether and how strongly</strong> the current sound differs from the reference. The interpretation of whether a deviation is relevant is made by the user. The system makes no assessment and provides no prognosis.',
+      '<strong>Note:</strong> SoundFuchs only shows <strong>whether and how strongly</strong> the current sound differs from the reference. The interpretation of whether a deviation is relevant is made by the user. The system makes no assessment and provides no prognosis.',
 
     // Parallel Comparison
     parallelComparisonTitle:
@@ -1528,22 +1531,22 @@ export const en: TranslationDict = {
     parallelComparisonGoal:
       '<strong>Goal:</strong> Identification of acoustic outliers within a group of identical machines.',
     parallelComparisonApplication:
-      '<strong>Application:</strong><ul><li>Recordings of multiple identical machines (e.g., in a production hall) are created</li><li>Zanobo calculates the acoustic similarity between the machines</li><li>Machines whose sound signature significantly deviates from the group become visible</li></ul>',
+      '<strong>Application:</strong><ul><li>Recordings of multiple identical machines (e.g., in a production hall) are created</li><li>SoundFuchs calculates the acoustic similarity between the machines</li><li>Machines whose sound signature significantly deviates from the group become visible</li></ul>',
     parallelComparisonSpecial:
       '<strong>Special feature:</strong> Works <strong>even without historical reference</strong>. The group itself forms the comparison basis.',
     parallelComparisonHint:
-      '<strong>Note:</strong> Zanobo does not decide which machine is defective or which represents the "target state". It only shows <strong>relative deviations</strong> within the group. The assessment of whether a deviating machine should be further investigated is up to the user.',
+      '<strong>Note:</strong> SoundFuchs does not decide which machine is defective or which represents the "target state". It only shows <strong>relative deviations</strong> within the group. The assessment of whether a deviating machine should be further investigated is up to the user.',
 
     // NFC Section
     nfcTitle: 'NFC-based Instant Access and Context-based Comparison',
     nfcIntro:
-      'Zanobo supports the <strong>use of NFC tags</strong> on machines to simplify app access and optionally provide a machine-specific context.',
+      'SoundFuchs supports the <strong>use of NFC tags</strong> on machines to simplify app access and optionally provide a machine-specific context.',
 
     nfcFunctionalityTitle: 'How it works',
     nfcTagDescription:
-      '<strong>NFC tag on the machine:</strong> An NFC tag placed on the housing or access point can contain the following information:<ul><li>URL to the Zanobo PWA (direct app launch in browser)</li><li>Machine ID for automatic identification</li><li>Optional: Reference to customer-specific reference data (URL to a JSON file)</li></ul>',
+      '<strong>NFC tag on the machine:</strong> An NFC tag placed on the housing or access point can contain the following information:<ul><li>URL to the SoundFuchs PWA (direct app launch in browser)</li><li>Machine ID for automatic identification</li><li>Optional: Reference to customer-specific reference data (URL to a JSON file)</li></ul>',
     nfcInstantAccess:
-      '<strong>Instant access without installation:</strong><ul><li>The user holds the smartphone to the NFC tag</li><li>The Zanobo PWA opens directly in the browser (no app store, no registration required)</li><li>Optional: The stored machine ID is automatically loaded</li></ul>',
+      '<strong>Instant access without installation:</strong><ul><li>The user holds the smartphone to the NFC tag</li><li>The SoundFuchs PWA opens directly in the browser (no app store, no registration required)</li><li>Optional: The stored machine ID is automatically loaded</li></ul>',
 
     nfcReferenceDataTitle: 'Optional context-based reference data',
     nfcReferenceDataDescription:
@@ -1555,7 +1558,7 @@ export const en: TranslationDict = {
 
     nfcDataPrivacyTitle: 'Data storage and privacy',
     nfcDataPrivacyImportant:
-      "<strong>Important:</strong> The reference data is <strong>not stored in a Zanobo cloud</strong>. It is provided:<ul><li>In the operator's <strong>local network</strong> (e.g., intranet server)</li><li>In a <strong>customer-owned environment</strong> (e.g., GitHub Pages, own web server)</li><li>As a <strong>static JSON file</strong> accessible via an HTTPS URL</li></ul>",
+      "<strong>Important:</strong> The reference data is <strong>not stored in a SoundFuchs cloud</strong>. It is provided:<ul><li>In the operator's <strong>local network</strong> (e.g., intranet server)</li><li>In a <strong>customer-owned environment</strong> (e.g., GitHub Pages, own web server)</li><li>As a <strong>static JSON file</strong> accessible via an HTTPS URL</li></ul>",
     nfcDataPrivacyStorage:
       'The reference database is downloaded on the first NFC scan and then stored <strong>locally on the device</strong> (IndexedDB). All further comparisons are performed offline.',
 
@@ -1563,13 +1566,13 @@ export const en: TranslationDict = {
     nfcFocusDescription:
       'The NFC-based access serves exclusively for <strong>accessibility and comparability</strong>. It enables:<ul><li>Quick start without manual configuration</li><li>Use of existing reference data without own recording</li><li>Consistent comparison basis for multiple users or locations</li></ul>',
     nfcNoFeatures:
-      '<strong>Even when using NFC-based reference data, Zanobo:</strong><ul><li>Performs <strong>no assessment</strong> (no statement about damage cause or condition)</li><li>Performs <strong>no automation</strong> of decisions (no "good/bad" judgment)</li><li>Performs <strong>no cloud-based evaluation</strong> (all calculations are local)</li></ul>',
+      '<strong>Even when using NFC-based reference data, SoundFuchs:</strong><ul><li>Performs <strong>no assessment</strong> (no statement about damage cause or condition)</li><li>Performs <strong>no automation</strong> of decisions (no "good/bad" judgment)</li><li>Performs <strong>no cloud-based evaluation</strong> (all calculations are local)</li></ul>',
     nfcInterpretation: 'The interpretation of comparison results always remains with the user.',
 
     // Transparency
     transparencyTitle: 'Transparency and Intent',
     transparencyText1:
-      'Zanobo is <strong>not a diagnostic tool</strong> and makes <strong>no automated technical assessments</strong>. It provides exclusively a <strong>visual and mathematical comparison aid</strong>.',
+      'SoundFuchs is <strong>not a diagnostic tool</strong> and makes <strong>no automated technical assessments</strong>. It provides exclusively a <strong>visual and mathematical comparison aid</strong>.',
     transparencyText2:
       'All processing happens <strong>offline</strong>. <strong>No user data is transmitted, stored, or evaluated</strong>.',
     transparencyText3:
@@ -1582,7 +1585,7 @@ export const en: TranslationDict = {
 
     // Public Instance
     publicInstance: 'Public instance:',
-    publicInstanceUrl: 'https://zanobo.vercel.app',
+    publicInstanceUrl: 'https://soundfuchs.vercel.app',
 
     // Version Info
     version: 'Version:',
@@ -1640,7 +1643,7 @@ export const en: TranslationDict = {
   // ============================================================================
   share: {
     resultButton: 'Share as image',
-    resultFooter: 'Zanobot sound check',
+    resultFooter: 'SoundFuchs sound check',
     resultFailed: 'The image could not be created.',
   },
 
@@ -1651,10 +1654,8 @@ export const en: TranslationDict = {
     legendAnomalous: 'anomalous',
     noEvents: 'No events detected yet',
     rateLine: 'Events/min: {{observed}} · reference: {{expected}}',
-    densityMissing:
-      'Expected rhythm is missing: far fewer events than in the reference.',
-    densityExcess:
-      'Far more events than in the reference (external noise?).',
+    densityMissing: 'Expected rhythm is missing: far fewer events than in the reference.',
+    densityExcess: 'Far more events than in the reference (external noise?).',
     cycleLine: 'Cycle: {{period}} s · shape deviation: {{status}}',
     cycleOk: 'ok',
     cycleDeviant: 'high',
@@ -1663,8 +1664,7 @@ export const en: TranslationDict = {
     recommendBody:
       'This machine sounds non-stationary (moving level, beat or cycle). The temporal-pattern engine (Tier 2) is built for this.',
     recommendAction: 'Enable temporal engine',
-    recommendSwitched:
-      'Temporal engine enabled — it applies to newly trained references.',
+    recommendSwitched: 'Temporal engine enabled — it applies to newly trained references.',
   },
 
   // ============================================================================
@@ -2112,7 +2112,7 @@ export const en: TranslationDict = {
     formatPDF: 'PDF (Printable)',
     formatCSV: 'CSV (Excel)',
     formatJSON: 'JSON (Ticket system)',
-    title: 'Zanobo Inspection Report',
+    title: 'SoundFuchs Inspection Report',
     fleetTitle: 'Fleet Check Report',
     allMachinesTitle: 'Machine Overview',
     totalLabel: 'Total',
@@ -2126,7 +2126,7 @@ export const en: TranslationDict = {
     colTrend: 'Trend',
     colRecommendation: 'Notice',
     colDate: 'Date',
-    footer: 'Generated by Zanobo · Acoustic Machine Comparison',
+    footer: 'Generated by SoundFuchs · Acoustic Machine Comparison',
     exported: 'Report exported',
   },
 
