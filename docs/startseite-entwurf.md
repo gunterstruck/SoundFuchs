@@ -388,3 +388,82 @@ als ein einzelner Wert. Für die Bedienung spricht viel für „gegen einen" —
 Wert ist eine Antwort, eine Rangliste ist eine Aufgabe. Mein Vorschlag: gegen
 **alle** rechnen, den besten Treffer als Antwort zeigen, die Rangliste auf
 Profi-Stufe darunter. Dann stimmt beides.
+
+---
+
+# Nachtrag 2: der Stil, nachgemessen (14.08.2026)
+
+Der zweite Entwurf war „im Geiste von TourFuchs" gebaut — aus der Erinnerung.
+Ein Blick in `src/styles/` der Schwester-App zeigte, dass er an mehreren
+Stellen danebenlag. Dieser Durchgang übernimmt die Werte, statt sie
+nachzuempfinden.
+
+![Kopfleiste, Suche, Sheet, Tour](bilder/startseite-entwurf-3.png)
+
+## 13. Was ich falsch hatte
+
+| | mein Entwurf 2 | TourFuchs tatsächlich |
+|---|---|---|
+| Knöpfe | 12 px Radius | **Pille (999 px)** — auf dem Element `button` selbst |
+| Symbolknöpfe | eckig | **Kreis, 38 × 38 px** |
+| Suchfeld | 10 px | **18 px** (`--radius-m`) |
+| Stufenschalter | weißes Segment auf Grau | **Pille, aktives Segment teal gefüllt, weiße Schrift** |
+| Streifen | fest, undurchsichtig | **schwebend, `rgba(255,255,255,.72)` + `blur(9px)`** |
+| Listenzeilen | Kärtchen mit Schatten | **flach, 1 px Trenner in `--color-surface-2`** |
+| Sheet-Ecken | 18 px | **26 px** (`--radius-l`) |
+| Sheet-Griff | grauer Strich | **teal, 56 × 6 px** — „lädt zum Aufziehen ein" |
+| Kopfleiste | frei gewählt | **52 px** (`--topbar-height`) |
+
+Die Radienleiter dort ist deutlich weiter, als ich sie gebaut hatte:
+`12 · 18 · 26 · 34 · 999`. Ich hatte fast alles auf 12 gesetzt — daher wirkte
+der Entwurf kantiger und nüchterner als das Vorbild.
+
+**Zwei Schatten, mehr nicht** — das hatte ich richtig, es ist dort dieselbe
+Sparsamkeit: `--shadow-1` für Ruhendes, `--shadow-2` für Schwebendes.
+
+## 14. Die eingequetschte Suche — und wie TourFuchs sie löst
+
+Mit Fuchs, Schriftzug, Suchfeld und zwei Symbolknöpfen wird die Leiste bei
+390 px zu eng; das Suchfeld schrumpfte auf „Maschine, Ort o…". TourFuchs löst
+das in einer Zeile:
+
+```css
+@media (max-width: 768px) { .brand-name { display: none; } }
+```
+
+**Am Handy verschwindet der Schriftzug, der Fuchs bleibt.** Das Zeichen trägt
+die Marke allein — dafür ist ein Maskottchen da. Die Suche bekommt die volle
+Breite. Übernommen.
+
+Die Trefferliste folgt demselben Muster wie dort: `--radius-l`, `--shadow-2`,
+Treffer mit hervorgehobener Fundstelle.
+
+## 15. Der Tresor hat schon einen Platz
+
+TourFuchs zeigt den Zustand der Verschlüsselung dauerhaft am Schloss in der
+Kopfleiste, und der Kommentar dort erklärt die Haltung:
+
+> *Der Tresor wird nach dem Import nicht mehr per Dialog erzwungen. Damit die
+> Information trotzdem nicht verloren geht, trägt das Kopfzeilen-Schloss den
+> Zustand dauerhaft — ein ruhiger Ring statt einer Unterbrechung.*
+
+Das ist die Antwort auf die Frage, wo der Tresor später hinkommt: **als Ring
+am Schloss in der Kopfleiste**, nicht als Dialog, der sich aufdrängt. Der
+Entwurf zeigt den Knopf bereits mit Ring — heute ohne Funktion, aber am
+richtigen Platz.
+
+## 16. Was das für die Umsetzung bedeutet
+
+Die Farbtokens sind seit PR #5 identisch mit TourFuchs. Was fehlt, ist die
+**Formensprache**: Radienleiter, Pillenknöpfe, runde Symbolknöpfe, flache
+Zeilen. Das ist ein überschaubarer Satz Tokens plus wenige Regeln:
+
+```css
+--radius-s: 12px;  --radius-m: 18px;  --radius-l: 26px;
+--radius-xl: 34px; --radius-pill: 999px;
+--topbar-height: 52px;
+button { border-radius: var(--radius-pill); }
+```
+
+Damit ist der Familienbezug nicht mehr nur farblich, sondern auch in der Form
+— und zwar ohne dass eine einzige Funktion angefasst wird.
