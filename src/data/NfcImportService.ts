@@ -158,7 +158,7 @@ export class NfcImportService {
           return {
             success: false,
             error: 'fetch_failed',
-            errorMessage: t('nfcImport.errorFileTooLarge') ||
+            errorMessage: t('urlImport.errorFileTooLarge') ||
               `Datei zu groß (${sizeMB} MB). Maximale Größe: ${maxMB} MB.`,
           };
         }
@@ -325,18 +325,18 @@ export class NfcImportService {
               <div class="import-column">
                 <h4>${t('nfcImport.currentData') || 'Aktuelle Daten'}</h4>
                 <ul>
-                  <li><strong>${currentStats.machines}</strong> ${t('common.machines') || 'Maschinen'}</li>
-                  <li><strong>${currentStats.recordings}</strong> ${t('common.recordings') || 'Aufnahmen'}</li>
-                  <li><strong>${currentStats.diagnoses}</strong> ${t('common.diagnoses') || 'Prüfungen'}</li>
+                  <li><strong>${currentStats.machines}</strong> ${t('settingsUI.machines') || 'Maschinen'}</li>
+                  <li><strong>${currentStats.recordings}</strong> ${t('settingsUI.recordings') || 'Aufnahmen'}</li>
+                  <li><strong>${currentStats.diagnoses}</strong> ${t('settingsUI.diagnoses') || 'Prüfungen'}</li>
                 </ul>
               </div>
               <div class="import-arrow">→</div>
               <div class="import-column import-new">
                 <h4>${t('nfcImport.newData') || 'Neue Daten'}</h4>
                 <ul>
-                  <li><strong>${metadata.machineCount}</strong> ${t('common.machines') || 'Maschinen'}</li>
-                  <li><strong>${metadata.recordingCount}</strong> ${t('common.recordings') || 'Aufnahmen'}</li>
-                  <li><strong>${metadata.diagnosisCount}</strong> ${t('common.diagnoses') || 'Prüfungen'}</li>
+                  <li><strong>${metadata.machineCount}</strong> ${t('settingsUI.machines') || 'Maschinen'}</li>
+                  <li><strong>${metadata.recordingCount}</strong> ${t('settingsUI.recordings') || 'Aufnahmen'}</li>
+                  <li><strong>${metadata.diagnosisCount}</strong> ${t('settingsUI.diagnoses') || 'Prüfungen'}</li>
                 </ul>
                 <p class="export-date">${t('nfcImport.exportedAt') || 'Exportiert am'}: ${exportDateStr}</p>
               </div>
@@ -484,7 +484,7 @@ export class NfcImportService {
         </div>
         <div class="modal-footer">
           <button class="btn btn-primary" id="nfc-error-ok">
-            ${t('buttons.ok') || 'OK'}
+            ${t('common.ok') || 'OK'}
           </button>
         </div>
       </div>

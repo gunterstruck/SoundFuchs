@@ -2687,8 +2687,8 @@ export class DiagnosePhase {
     if (scoreDisplay && !scoreDisplay.dataset.scoreTapBound) {
       scoreDisplay.dataset.scoreTapBound = 'true';
       scoreDisplay.addEventListener('click', () => {
-        notify.info(t('healthScore.explain'), {
-          title: t('healthScore.explainTitle'),
+        notify.info(t('healthGauge.explain'), {
+          title: t('healthGauge.explainTitle'),
           duration: 8000,
         });
       });

@@ -94,7 +94,7 @@ export function showMaintenanceExportChoice(machine: Machine, diagnosis: Diagnos
         entries: [entry],
         summary: { total: 1, healthy: 0, warning: 0, critical: 1, unchecked: 0 },
       };
-      exportAsCSV(data, `zanobo-maintenance-${machine.name.replace(/[^a-z0-9]/gi, '_')}.csv`);
+      exportAsCSV(data, `soundfuchs-maintenance-${machine.name.replace(/[^a-z0-9]/gi, '_')}.csv`);
       InfoBottomSheet.close();
       notify.success(t('report.exported'));
     });

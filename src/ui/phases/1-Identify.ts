@@ -457,7 +457,7 @@ export class IdentifyPhase {
 
         const meta = result.metadata;
         const details = meta
-          ? `${meta.machineCount} ${t('settings.machines')}, ${meta.recordingCount} ${t('settings.recordings')}, ${meta.diagnosisCount} ${t('settings.diagnoses')}`
+          ? `${meta.machineCount} ${t('settingsUI.machines')}, ${meta.recordingCount} ${t('settingsUI.recordings')}, ${meta.diagnosisCount} ${t('settingsUI.diagnoses')}`
           : '';
 
         notify.success(

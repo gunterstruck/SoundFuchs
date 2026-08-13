@@ -42,6 +42,7 @@ export const zh: TranslationDict = {
     strongDeviation: 'Strong deviation – check recommended',
   },
   modals: {
+    unsuitableSignal: '信号不适用',
     referenceRecording: '录制正常状态',
     liveDiagnosis: '实时检查 - 寻找最佳点',
     qrScanner: '二维码/条形码扫描器',
@@ -112,6 +113,8 @@ export const zh: TranslationDict = {
       cta: '创建第一台机器',
     },
     errors: {
+      createFailed: '无法创建设备。',
+      invalidReferenceUrl: '参考数据库地址无效。',
       scannerStart: '启动扫描器时出错',
       cameraAccessDenied: '摄像头访问被拒绝',
       cameraAccessHint: '请在浏览器设置中允许访问摄像头',
@@ -228,6 +231,12 @@ export const zh: TranslationDict = {
       hintTooWeak: '信号太弱 – 靠近声源',
     },
     errors: {
+      recordingTooShort:
+        '录音过短：{duration} 秒。预热 {warmup} 秒后剩余过少，请至少录制 {minDuration} 秒。',
+      trainingDataTooShort:
+        '可用片段过短：{duration} 秒，需要 {minDuration} 秒。请总共至少录制 {totalMinDuration} 秒。',
+      baselineScoreTooLow:
+        '参考与自身仅匹配 {baselineScore} %，需要 {minScore} %。请在更安静的环境中重新录制。',
       tooShort:
         '录制太短：{{duration}}秒总时长短于{{warmup}}秒预热阶段。最短时长：{{minDuration}}秒',
       trainingTooShort:
@@ -246,6 +255,7 @@ export const zh: TranslationDict = {
       machineDataMissing: '缺少机器数据',
     },
     success: {
+      downloadPrompt: '正在下载文件。',
       modelTrained:
         '✅ 参考模型训练成功！\n\n机器：{{name}}\n\n您想下载参考音频文件吗？\n（建议备份）',
       canStartNew: '您可以开始新的参考录制。',
@@ -505,6 +515,11 @@ export const zh: TranslationDict = {
     },
   },
   hardware: {
+    sampleRateLow: '采样率过低（{sampleRate} Hz）',
+    currentSampleRate: '当前：{sampleRate} Hz',
+    recommendedSampleRate: '建议：至少 {minRate} Hz',
+    microphoneId: '麦克风 {id}',
+    optimizedForDiagnosis: '{label} — 适合检测',
     suitable: '硬件适合机器检查',
     voiceOptimized: '语音优化的硬件会过滤机器声音。',
     useStudioMic: '使用录音室麦克风或设备内置麦克风',

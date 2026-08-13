@@ -169,7 +169,7 @@ export class MachineHistoryModal {
           unchecked: 0,
         },
       };
-      exportAsCSV(histData, `zanobo-history-${machine.name.replace(/[^a-z0-9]/gi, '_')}.csv`);
+      exportAsCSV(histData, `soundfuchs-history-${machine.name.replace(/[^a-z0-9]/gi, '_')}.csv`);
       notify.success(t('report.exported'));
     });
     exportSection.appendChild(exportBtn);
