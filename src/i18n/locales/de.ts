@@ -726,13 +726,13 @@ export const de: TranslationDict = {
   viewLevels: {
     basic: 'Einfache Ampel-Anzeige für Bediener',
     advanced: 'Details für Vorarbeiter & Instandhalter',
-    expert: 'Volle technische Ansicht für Ingenieure',
+    expert: 'Alle technischen Werte und Werkzeuge',
     basicLabel: 'Basis',
     basicDesc: 'Einfach',
     advancedLabel: 'Fortgeschritten',
     advancedDesc: 'Details',
-    expertLabel: 'Experte',
-    expertDesc: 'Technisch',
+    expertLabel: 'Profi',
+    expertDesc: 'Alles',
     viewModeTitle: 'Ansichtsmodus',
     viewModeDescription:
       'Passen Sie die Komplexität der Benutzeroberfläche an Ihre Bedürfnisse an.',
