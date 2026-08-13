@@ -37,18 +37,6 @@ import {
   getT60ClassificationLabel,
 } from '@core/dsp/roomCompensation.js';
 import { getRawAudioStream } from '@core/audio/audioHelper.js';
-import { getBannerManager } from '../BannerManager.js';
-import { openBannerCropModal } from '@ui/components/BannerCropModal.js';
-import {
-  getBannerText,
-  setBannerText,
-  hasCustomBannerText,
-  getBannerTextPosition,
-  setBannerTextPosition,
-  hasCustomBannerTextPosition,
-  isBannerTextHidden,
-  setBannerTextHidden,
-} from '@utils/bannerTextSettings.js';
 import { getCherryPickSettings, setCherryPickSettings } from '@core/dsp/cherryPicking.js';
 import {
   getNoiseSubtractionSettings,
@@ -99,7 +87,6 @@ export class SettingsPhase {
     this.initMessLaborEntry();
 
     // Initialize banner settings (advanced/expert only)
-    this.initBannerSettings();
 
     // Initialize standalone room measurement (all view levels)
     this.initRoomMeasurement();
@@ -303,9 +290,7 @@ export class SettingsPhase {
    * engine trains NEW references; existing models keep their own engine.
    */
   private initEvaluationEngineSettings(): void {
-    const select = document.getElementById(
-      'evaluation-engine-select'
-    ) as HTMLSelectElement | null;
+    const select = document.getElementById('evaluation-engine-select') as HTMLSelectElement | null;
     if (!select) {
       return;
     }
@@ -340,11 +325,10 @@ export class SettingsPhase {
         logger.info(`🔀 Evaluation engine set to "${engine}"`);
       } catch (error) {
         logger.error('Failed to save evaluation engine setting:', error);
-        notify.error(
-          t('settingsUI.evaluationEngineSaveError'),
-          error as Error,
-          { title: t('settingsUI.evaluationEngineSaveErrorTitle'), duration: 5000 }
-        );
+        notify.error(t('settingsUI.evaluationEngineSaveError'), error as Error, {
+          title: t('settingsUI.evaluationEngineSaveErrorTitle'),
+          duration: 5000,
+        });
       }
     });
   }
@@ -373,218 +357,6 @@ export class SettingsPhase {
         logger.warn('Mess-Labor entry unavailable:', error);
       });
   }
-
-  private async initBannerSettings(): Promise<void> {
-    const previewImage = document.getElementById('banner-preview-image') as HTMLImageElement | null;
-    const uploadBtn = document.getElementById('banner-upload-btn');
-    const resetBtn = document.getElementById('banner-reset-btn') as HTMLButtonElement | null;
-    const uploadInput = document.getElementById('banner-upload-input') as HTMLInputElement | null;
-
-    if (!previewImage || !uploadBtn || !resetBtn || !uploadInput) {
-      return;
-    }
-
-    // BannerManager is already loaded eagerly via main.ts, so use it directly
-    // (a dynamic import here cannot split it into its own chunk and only adds overhead).
-    const bannerManager = getBannerManager();
-
-    if (!bannerManager) {
-      logger.warn('⚠️ BannerManager not available for settings');
-      return;
-    }
-
-    const themeOf = () => document.documentElement.getAttribute('data-theme') || 'brand';
-
-    // Enable "reset" whenever there is anything to reset for this theme — a
-    // custom image, custom text, a moved text position, or the hide-text flag —
-    // not just an image. (Otherwise changing only the text or only the position
-    // left the button disabled, so it could never be reverted.)
-    const refreshResetEnabled = async () => {
-      const theme = themeOf();
-      const hasImage = await bannerManager.hasCustomBannerForCurrentTheme();
-      resetBtn.disabled = !(
-        hasImage ||
-        hasCustomBannerText(theme) ||
-        hasCustomBannerTextPosition(theme) ||
-        isBannerTextHidden(theme)
-      );
-    };
-
-    // Update preview and reset button state. Reads the actually stored banner
-    // (robust to crossfade timing) so the preview shows the new crop right away.
-    const updateBannerPreview = async () => {
-      const url = await bannerManager.getCurrentBannerPreviewUrl();
-      const previous = previewImage.dataset.bloburl;
-      previewImage.src = url;
-      if (url.startsWith('blob:')) previewImage.dataset.bloburl = url;
-      else delete previewImage.dataset.bloburl;
-      if (previous && previous !== url) URL.revokeObjectURL(previous);
-
-      await refreshResetEnabled();
-    };
-
-    // Initial update
-    void updateBannerPreview();
-
-    // Text/hide changes elsewhere (initBannerTextSettings) re-evaluate the reset
-    // button without rebuilding the preview image.
-    window.addEventListener('bannercustomizationchange', () => {
-      void refreshResetEnabled();
-    });
-
-    // Upload button click
-    uploadBtn.addEventListener('click', () => {
-      uploadInput.click();
-    });
-
-    // Handle file selection → open the crop modal so any image can be framed to
-    // the banner size, then save the cropped result.
-    uploadInput.addEventListener('change', async (event) => {
-      const input = event.currentTarget as HTMLInputElement | null;
-      const file = input?.files?.[0];
-      if (file) {
-        const cropped = await openBannerCropModal(file);
-        if (cropped) {
-          const success = await bannerManager.saveBannerBlob(cropped);
-          if (success) {
-            await updateBannerPreview();
-          }
-        }
-      }
-      // Clear input so the same file can be selected again
-      if (input) input.value = '';
-    });
-
-    // Reset button click — reverts image AND custom text/position (resetBanner
-    // clears both). Refresh the preview image, then tell the text UI to reload
-    // its inputs/sliders/preview-text from the now-cleared store.
-    resetBtn.addEventListener('click', async () => {
-      await bannerManager.resetBanner();
-      await updateBannerPreview();
-      window.dispatchEvent(new Event('bannertextreset'));
-    });
-
-    // Update preview when theme changes
-    window.addEventListener('themechange', () => {
-      void updateBannerPreview();
-    });
-
-    this.initBannerTextSettings(bannerManager);
-  }
-
-  /**
-   * Wire the editable banner overlay text (headline + subline). Empty field =
-   * fall back to the translated default.
-   */
-  private initBannerTextSettings(bannerManager: ReturnType<typeof getBannerManager>): void {
-    const headlineInput = document.getElementById(
-      'banner-headline-input'
-    ) as HTMLInputElement | null;
-    const sublineInput = document.getElementById('banner-subline-input') as HTMLInputElement | null;
-    const posXInput = document.getElementById('banner-textx-input') as HTMLInputElement | null;
-    const posYInput = document.getElementById('banner-texty-input') as HTMLInputElement | null;
-    const hideInput = document.getElementById('banner-hidetext-input') as HTMLInputElement | null;
-    if (!headlineInput || !sublineInput) {
-      return;
-    }
-
-    // Preview elements (optional).
-    const previewContainer = document.getElementById('banner-preview-container');
-    const previewBlock = document.getElementById('banner-preview-textblock');
-    const previewHeadline = document.getElementById('banner-preview-headline');
-    const previewSubline = document.getElementById('banner-preview-subline');
-
-    const POS_X = { min: 0, max: 65 };
-    const POS_Y = { min: 12, max: 88 };
-    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-
-    const currentTheme = () => document.documentElement.getAttribute('data-theme') || 'brand';
-
-    const renderPreviewText = () => {
-      const txt = getBannerText(currentTheme());
-      if (previewHeadline) previewHeadline.textContent = txt.headline || t('banner.headline');
-      if (previewSubline) previewSubline.textContent = txt.subline || t('banner.subline');
-    };
-    const applyPreviewPosition = (x: number, y: number) => {
-      previewContainer?.style.setProperty('--banner-text-x', `${x}%`);
-      previewContainer?.style.setProperty('--banner-text-y', `${y}%`);
-    };
-    // Reflect the "hide text" toggle in the preview and disable the text/position
-    // controls (they have no effect while the text is hidden).
-    const applyHiddenState = (hidden: boolean) => {
-      if (previewBlock) previewBlock.style.display = hidden ? 'none' : '';
-      headlineInput.disabled = hidden;
-      sublineInput.disabled = hidden;
-      if (posXInput) posXInput.disabled = hidden;
-      if (posYInput) posYInput.disabled = hidden;
-    };
-
-    const loadForTheme = () => {
-      const current = getBannerText(currentTheme());
-      headlineInput.value = current.headline;
-      sublineInput.value = current.subline;
-      const pos = getBannerTextPosition(currentTheme());
-      if (posXInput) posXInput.value = String(pos.x);
-      if (posYInput) posYInput.value = String(pos.y);
-      const hidden = isBannerTextHidden(currentTheme());
-      if (hideInput) hideInput.checked = hidden;
-      renderPreviewText();
-      applyPreviewPosition(pos.x, pos.y);
-      applyHiddenState(hidden);
-    };
-    loadForTheme();
-
-    const commitText = () => {
-      setBannerText(currentTheme(), {
-        headline: headlineInput.value,
-        subline: sublineInput.value,
-      });
-      renderPreviewText();
-      bannerManager?.applyBannerText();
-      window.dispatchEvent(new Event('bannercustomizationchange'));
-    };
-    // Single source of truth for a position update (from sliders OR drag):
-    // persist, sync sliders, update the preview, and apply to the live hero.
-    const setPosition = (x: number, y: number) => {
-      setBannerTextPosition(currentTheme(), { x, y });
-      if (posXInput) posXInput.value = String(Math.round(x));
-      if (posYInput) posYInput.value = String(Math.round(y));
-      applyPreviewPosition(x, y);
-      bannerManager?.applyBannerText();
-      // Let the reset button re-evaluate: a moved position is now resettable.
-      window.dispatchEvent(new Event('bannercustomizationchange'));
-    };
-
-    headlineInput.addEventListener('input', commitText);
-    sublineInput.addEventListener('input', commitText);
-    posXInput?.addEventListener('input', () =>
-      setPosition(clamp(parseFloat(posXInput.value), POS_X.min, POS_X.max),
-        posYInput ? parseFloat(posYInput.value) : getBannerTextPosition(currentTheme()).y)
-    );
-    posYInput?.addEventListener('input', () =>
-      setPosition(posXInput ? parseFloat(posXInput.value) : getBannerTextPosition(currentTheme()).x,
-        clamp(parseFloat(posYInput.value), POS_Y.min, POS_Y.max))
-    );
-
-    // "Hide text" checkbox — show an image-only banner for this theme.
-    hideInput?.addEventListener('change', () => {
-      const hidden = hideInput.checked;
-      setBannerTextHidden(currentTheme(), hidden);
-      applyHiddenState(hidden);
-      bannerManager?.applyBannerText();
-      window.dispatchEvent(new Event('bannercustomizationchange'));
-    });
-
-    // Banner text + position are per-theme: reload on theme change.
-    window.addEventListener('themechange', loadForTheme);
-    // After a banner reset the store is cleared — reload so the fields/sliders
-    // and preview text snap back to the defaults.
-    window.addEventListener('bannertextreset', loadForTheme);
-  }
-
-  // ════════════════════════════════════════════════════════════
-  // STANDALONE ROOM MEASUREMENT (T60 via 3× Chirp)
-  // ════════════════════════════════════════════════════════════
 
   /**
    * Initialize standalone room measurement button and UI.
@@ -1031,9 +803,7 @@ export class SettingsPhase {
     }
 
     // Beta slider
-    const betaSlider = document.getElementById(
-      'noise-sub-beta-slider'
-    ) as HTMLInputElement | null;
+    const betaSlider = document.getElementById('noise-sub-beta-slider') as HTMLInputElement | null;
     const betaValue = document.getElementById('noise-sub-beta-value');
     if (betaSlider) {
       betaSlider.value = String(settings.beta);

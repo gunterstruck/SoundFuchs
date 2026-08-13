@@ -23,7 +23,6 @@ import { nfcImportService } from '@data/NfcImportService.js';
 import { Router } from '@ui/router.js';
 import { HashRouter } from '@ui/HashRouter.js';
 import { ReferenceLoadingOverlay } from '@ui/components/ReferenceLoadingOverlay.js';
-import { BannerManager } from '@ui/BannerManager.js';
 import { notify } from '@utils/notifications.js';
 import { logger } from '@utils/logger.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
@@ -52,7 +51,6 @@ declare global {
 
 class ZanobotApp {
   private router: Router | null = null;
-  private bannerManager: BannerManager | null = null;
 
   constructor() {
     this.init();
@@ -259,15 +257,6 @@ class ZanobotApp {
     // CRITICAL FIX: Always initialize UI components (even without database)
     // This ensures buttons have event listeners and the app is interactive
     try {
-      // Create the BannerManager BEFORE the router. The router constructs and
-      // init()s SettingsPhase, whose initBannerSettings() looks up the
-      // BannerManager via getBannerManager(); if it were created afterwards that
-      // lookup returned null and the banner upload / text controls were never
-      // wired (and the preview stayed blank). i18n is already initialized here.
-      if (dbAvailable) {
-        this.bannerManager = new BannerManager();
-      }
-
       // Initialize router (3-phase flow)
       logger.info('🔀 Initializing router...');
       this.router = new Router();
