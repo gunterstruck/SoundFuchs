@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+:root{
+  --primary:#0d9488; --primary-rgb:13,148,136; --accent:#f97316;
+  --bg:#f8fafc; --bg2:#f1f5f9; --card:#fff;
+  --tx:#0f172a; --tx2:#475569; --tx3:#64748b;
+  --bd:#e2e8f0; --ok:#16a34a; --warn:#f59e0b; --err:#dc2626;
+  --sh:0 1px 3px rgba(15,23,42,.1);
+  --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:15px/1.45 system-ui,-apple-system,sans-serif;color:var(--tx);background:#94a3b8;
+     display:flex;gap:26px;padding:26px;align-items:flex-start}
+.phone{width:390px;background:var(--bg);border-radius:22px;overflow:hidden;
+       box-shadow:0 12px 40px rgba(15,23,42,.3);display:flex;flex-direction:column}
+.cap{color:#fff;font-weight:700;font-size:13px;margin-bottom:9px;letter-spacing:.02em}
+.wrap{padding:0 16px 18px}
+
+/* Kopfzeile */
+.top{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+.mark{width:32px;height:32px;border-radius:9px;background:var(--primary);flex:0 0 auto;
+      display:flex;align-items:center;justify-content:center;font-size:17px}
+.tname{font-weight:700;font-size:17px;letter-spacing:-.01em}
+.gear{margin-left:auto;width:36px;height:36px;border-radius:9px;border:1px solid var(--bd);
+      background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--tx2)}
+
+/* Suche */
+.search{display:flex;align-items:center;gap:9px;margin:0 16px 12px;padding:11px 13px;
+        background:var(--card);border:1px solid var(--bd);border-radius:var(--r);color:var(--tx3);font-size:14px}
+
+/* Aktionszeile */
+.acts{display:flex;gap:8px;margin:0 16px 14px}
+.act{flex:1;padding:11px 6px;border-radius:var(--r);border:1px solid var(--bd);background:var(--card);
+     text-align:center;font-size:12px;font-weight:600;color:var(--tx2)}
+.act.pri{background:var(--primary);border-color:var(--primary);color:#fff}
+.act i{display:block;font-style:normal;font-size:17px;margin-bottom:3px}
+
+.lbl{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+     color:var(--tx3);margin:2px 0 8px}
+
+/* Maschinenkachel */
+.m{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);
+   border-radius:var(--r);padding:12px 13px;margin-bottom:8px;box-shadow:var(--sh)}
+.dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+.dot.ok{background:var(--ok)} .dot.w{background:var(--warn)} .dot.e{background:var(--err)}
+.dot.n{background:transparent;border:2px dashed #94a3b8}
+.mi{flex:1;min-width:0}
+.mn{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms{font-size:12.5px;color:var(--tx3);margin-top:1px}
+.mv{text-align:right;flex:0 0 auto}
+.sc{font-weight:700;font-size:16px}
+.sc.ok{color:var(--ok)} .sc.w{color:var(--warn)}
+.go{font-size:12px;color:var(--tx3)}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px;
+       background:#fef3c7;color:#92400e}
+
+/* Leerzustand: die Leiter */
+.step{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--bd);
+      border-radius:var(--r);padding:13px;margin-bottom:8px}
+.step.pri{border:2px solid var(--primary)}
+.num{width:25px;height:25px;border-radius:50%;background:var(--primary);color:#fff;flex:0 0 auto;
+     display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700}
+.num.off{background:var(--bg2);color:var(--tx3)}
+.st{font-weight:600;font-size:14.5px}
+.sd{font-size:12.5px;color:var(--tx3);margin-top:2px}
+.hint{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:var(--r);padding:12px 13px;
+      font-size:13px;color:#065f46;margin-bottom:12px}
+
+/* Maschinenansicht */
+.mh{padding:13px 16px 12px;background:var(--card);border-bottom:1px solid var(--bd)}
+.back{font-size:13px;color:var(--primary);font-weight:600;margin-bottom:7px}
+.mt{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.mloc{font-size:13px;color:var(--tx3);margin-top:2px}
+.mact{display:flex;gap:8px;padding:12px 16px}
+.big{flex:1;padding:12px;border-radius:var(--r);background:var(--primary);color:#fff;
+     text-align:center;font-weight:700;font-size:14px}
+.small{padding:12px 14px;border-radius:var(--r);border:1px solid var(--bd);background:var(--card);
+       color:var(--tx2);font-size:13px;font-weight:600}
+
+/* Zeitstrahl */
+.tl{position:relative;padding-left:8px}
+.ev{position:relative;display:flex;gap:12px;padding:11px 0 11px 0}
+.ev::before{content:"";position:absolute;left:11px;top:0;bottom:0;width:2px;background:var(--bd)}
+.ev:first-child::before{top:50%} .ev:last-child::before{bottom:50%}
+.pt{width:24px;height:24px;border-radius:50%;flex:0 0 auto;position:relative;z-index:1;
+    display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;
+    box-shadow:0 0 0 3px var(--bg)}
+.pt.ok{background:var(--ok)} .pt.w{background:var(--warn)} .pt.e{background:var(--err)}
+.pt.ref{background:var(--primary)}
+.ec{flex:1;min-width:0}
+.et{font-weight:600;font-size:14px}
+.ed{font-size:12.5px;color:var(--tx3);margin-top:1px}
+.ez{margin-left:auto;font-size:12.5px;color:var(--tx3);white-space:nowrap;align-self:center}
+</style>
+</head>
+<body>
+
+<!-- 1 — Startseite mit Bestand -->
+<div>
+<div class="cap">1 · Startseite, wenn Maschinen da sind</div>
+<div class="phone">
+  <div class="top">
+    <div class="mark">🦊</div>
+    <div><div class="tname">SoundFuchs</div></div>
+    <div class="gear">⚙</div>
+  </div>
+  <div class="search">🔍 <span>Maschine, Ort oder ID suchen…</span></div>
+  <div class="acts">
+    <div class="act pri"><i>📷</i>Scannen</div>
+    <div class="act"><i>＋</i>Neue Maschine</div>
+    <div class="act"><i>⚖</i>Vergleich</div>
+  </div>
+  <div class="wrap">
+    <div class="lbl">Zuletzt geprüft</div>
+
+    <div class="m">
+      <div class="dot ok"></div>
+      <div class="mi"><div class="mn">Pumpe 17</div><div class="ms">Halle 2 · vor 2 Stunden</div></div>
+      <div class="mv"><div class="sc ok">94 %</div><div class="go">›</div></div>
+    </div>
+
+    <div class="m">
+      <div class="dot w"></div>
+      <div class="mi"><div class="mn">Lüfter West</div><div class="ms">Halle 2 · vor 3 Tagen</div></div>
+      <div class="mv"><div class="sc w">71 %</div><div class="go">›</div></div>
+    </div>
+
+    <div class="m">
+      <div class="dot n"></div>
+      <div class="mi"><div class="mn">Kompressor 3</div>
+        <div class="ms" style="margin-top:4px"><span class="badge">Referenz fehlt</span></div></div>
+      <div class="mv"><div class="go">›</div></div>
+    </div>
+
+    <div class="m">
+      <div class="dot ok"></div>
+      <div class="mi"><div class="mn">Förderband A</div><div class="ms">Halle 1 · vor 2 Wochen</div></div>
+      <div class="mv"><div class="sc ok">88 %</div><div class="go">›</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 2 — Leerzustand -->
+<div>
+<div class="cap">2 · Erster Start, noch nichts da</div>
+<div class="phone">
+  <div class="top">
+    <div class="mark">🦊</div>
+    <div><div class="tname">SoundFuchs</div></div>
+    <div class="gear">⚙</div>
+  </div>
+  <div class="wrap" style="padding-top:6px">
+    <div class="hint"><b>Hört sich die Anlage normal an?</b><br>
+      SoundFuchs vergleicht das Geräusch mit einer Aufnahme vom Normalzustand — offline, direkt am Gerät.</div>
+    <div class="lbl">In drei Schritten</div>
+
+    <div class="step pri">
+      <div class="num">1</div>
+      <div><div class="st">Maschine anlegen</div>
+        <div class="sd">Scannen oder von Hand — der Name genügt.</div></div>
+    </div>
+    <div class="step">
+      <div class="num off">2</div>
+      <div><div class="st">Normalzustand aufnehmen</div>
+        <div class="sd">Einmal, solange die Maschine gesund läuft.</div></div>
+    </div>
+    <div class="step">
+      <div class="num off">3</div>
+      <div><div class="st">Zustand prüfen</div>
+        <div class="sd">Ab jetzt jederzeit, in Sekunden.</div></div>
+    </div>
+
+    <div class="acts" style="margin:16px 0 0">
+      <div class="act pri"><i>📷</i>Scannen</div>
+      <div class="act"><i>＋</i>Von Hand anlegen</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 3 — Maschine mit Zeitstrahl -->
+<div>
+<div class="cap">3 · Eine Maschine, ihr Verlauf</div>
+<div class="phone">
+  <div class="mh">
+    <div class="back">‹ Alle Maschinen</div>
+    <div class="mt">Pumpe 17</div>
+    <div class="mloc">Halle 2 · Linie 3 · ID 4711</div>
+  </div>
+  <div class="mact">
+    <div class="big">Jetzt prüfen</div>
+    <div class="small">⋯</div>
+  </div>
+  <div class="wrap">
+    <div class="lbl">Verlauf</div>
+    <div class="tl">
+      <div class="ev">
+        <div class="pt ok">✓</div>
+        <div class="ec"><div class="et">94 % · unauffällig</div>
+          <div class="ed">Abweichung gering</div></div>
+        <div class="ez">heute<br>09:12</div>
+      </div>
+      <div class="ev">
+        <div class="pt w">!</div>
+        <div class="ec"><div class="et">71 % · auffällig</div>
+          <div class="ed">Mehr Energie bei 2,1 kHz</div></div>
+        <div class="ez">Di<br>14:05</div>
+      </div>
+      <div class="ev">
+        <div class="pt ok">✓</div>
+        <div class="ec"><div class="et">91 % · unauffällig</div></div>
+        <div class="ez">Mo<br>08:40</div>
+      </div>
+      <div class="ev">
+        <div class="pt ref">◆</div>
+        <div class="ec"><div class="et">Normalzustand aufgenommen</div>
+          <div class="ed">30 s · Referenz seither unverändert</div></div>
+        <div class="ez">12.08.<br>07:55</div>
+      </div>
+      <div class="ev">
+        <div class="pt ref">+</div>
+        <div class="ec"><div class="et">Maschine angelegt</div></div>
+        <div class="ez">12.08.<br>07:50</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+</body>
+</html>
