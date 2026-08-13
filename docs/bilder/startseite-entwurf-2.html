@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><style>
+:root{--p:#0d9488;--pr:13,148,136;--acc:#f97316;--bg:#f8fafc;--bg2:#f1f5f9;--c:#fff;
+--tx:#0f172a;--t2:#475569;--t3:#64748b;--bd:#e2e8f0;--ok:#16a34a;--wn:#f59e0b;--er:#dc2626;
+--sh:0 1px 3px rgba(15,23,42,.1);--r:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:15px/1.45 system-ui,-apple-system,sans-serif;color:var(--tx);background:#8fa0b6;
+display:flex;gap:24px;padding:24px;align-items:flex-start}
+.ph{width:390px;height:790px;background:var(--bg);border-radius:22px;overflow:hidden;position:relative;
+box-shadow:0 12px 40px rgba(15,23,42,.3);display:flex;flex-direction:column}
+.cap{color:#fff;font-weight:700;font-size:13px;margin-bottom:8px}
+.body{flex:1;overflow:hidden;padding:0 14px}
+
+/* Kopf-Streifen */
+.strip{padding:11px 14px 0}
+.row1{display:flex;align-items:center;gap:9px}
+.mk{width:30px;height:30px;border-radius:8px;background:var(--p);flex:0 0 auto;
+display:flex;align-items:center;justify-content:center;font-size:16px}
+.srch{flex:1;display:flex;align-items:center;gap:7px;padding:8px 11px;background:var(--c);
+border:1px solid var(--bd);border-radius:10px;color:var(--t3);font-size:13.5px}
+.ico{width:34px;height:34px;border-radius:9px;border:1px solid var(--bd);background:var(--c);
+display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:15px}
+.seg{display:flex;background:var(--bg2);border-radius:9px;padding:3px;margin:10px 0 4px;gap:3px}
+.sg{flex:1;text-align:center;padding:6px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--t3)}
+.sg.on{background:var(--c);color:var(--tx);box-shadow:var(--sh)}
+
+.lbl{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin:12px 0 7px}
+
+/* Maschinenzeile */
+.m{display:flex;align-items:center;gap:11px;background:var(--c);border:1px solid var(--bd);
+border-radius:var(--r);padding:9px 11px;margin-bottom:7px;box-shadow:var(--sh)}
+.th{width:42px;height:42px;border-radius:9px;flex:0 0 auto;background:var(--bg2);
+display:flex;align-items:center;justify-content:center;font-size:19px;position:relative}
+.dt{position:absolute;right:-2px;bottom:-2px;width:13px;height:13px;border-radius:50%;border:2.5px solid var(--c)}
+.dt.ok{background:var(--ok)}.dt.w{background:var(--wn)}.dt.e{background:var(--er)}.dt.n{background:#94a3b8}
+.mi{flex:1;min-width:0}
+.mn{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms{font-size:12px;color:var(--t3);margin-top:1px}
+.mv{text-align:right;flex:0 0 auto}
+.sc{font-weight:700;font-size:15px}.sc.ok{color:var(--ok)}.sc.w{color:var(--wn)}
+.gy{font-size:11.5px;color:var(--t3)}
+.bd{display:inline-block;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:99px;background:#fef3c7;color:#92400e}
+
+/* Sheet */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--c);border-radius:18px 18px 0 0;
+box-shadow:0 -6px 22px rgba(15,23,42,.14);border-top:1px solid var(--bd)}
+.grip{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 0 9px}
+.gl{width:36px;height:4px;border-radius:99px;background:#cbd5e1}
+.gt{font-size:12px;font-weight:600;color:var(--t2)}
+.sl{display:flex;align-items:center;gap:11px;padding:11px 16px;border-top:1px solid var(--bd);font-size:14px}
+.sl i{font-style:normal;width:19px;text-align:center}
+.sl b{font-weight:600}
+.sl .ar{margin-left:auto;color:var(--t3);font-size:12px}
+.soon{margin-left:auto;font-size:10.5px;background:var(--bg2);color:var(--t3);padding:2px 7px;border-radius:99px}
+
+/* Tour */
+.th2{padding:12px 14px 10px;background:var(--c);border-bottom:1px solid var(--bd)}
+.bk{font-size:12.5px;color:var(--p);font-weight:600}
+.tt{font-size:18px;font-weight:700;margin-top:5px}
+.tour{padding:6px 0}
+.st{position:relative;display:flex;gap:11px;padding:9px 0}
+.st::before{content:"";position:absolute;left:12px;top:0;bottom:0;width:2px;background:var(--bd)}
+.st:first-child::before{top:50%}.st:last-child::before{bottom:50%}
+.sn{width:26px;height:26px;border-radius:50%;flex:0 0 auto;position:relative;z-index:1;font-size:12px;font-weight:700;
+display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px var(--bg)}
+.sn.done{background:var(--p);color:#fff}.sn.now{background:var(--c);color:var(--p);border:2px solid var(--p)}
+.sn.next{background:var(--bg2);color:var(--t3)}
+.sc2{flex:1;min-width:0;padding-top:2px}
+.sh2{font-weight:600;font-size:14px}.sp{font-size:12.5px;color:var(--t3);margin-top:1px}
+.chg{font-size:12px;color:var(--p);font-weight:600}
+
+/* Arbeitspunkte */
+.wp{display:flex;align-items:center;gap:10px;background:var(--c);border:1px solid var(--bd);
+border-radius:10px;padding:9px 11px;margin-top:7px}
+.wp.sel{border:2px solid var(--p);background:#f0fdfa}
+.wr{width:16px;height:16px;border-radius:50%;border:2px solid #cbd5e1;flex:0 0 auto}
+.wp.sel .wr{border:5px solid var(--p)}
+.wn2{flex:1;font-size:13.5px;font-weight:600}
+.tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:99px}
+.tag.g{background:#dcfce7;color:#166534}.tag.b{background:#fee2e2;color:#991b1b}
+.big{margin-top:12px;padding:13px;border-radius:var(--r);background:var(--p);color:#fff;text-align:center;font-weight:700;font-size:15px}
+</style></head><body>
+
+<!-- A -->
+<div><div class="cap">A · Startseite: Kopf-Streifen, Bestand, Sheet-Griff</div>
+<div class="ph">
+  <div class="strip">
+    <div class="row1">
+      <div class="mk">🦊</div>
+      <div class="srch">🔍 Maschine, Ort oder ID…</div>
+      <div class="ico">ℹ</div>
+    </div>
+    <div class="seg"><div class="sg on">🌱 Basis</div><div class="sg">🛠️ Profi</div></div>
+  </div>
+  <div class="body">
+    <div class="lbl">Zuletzt geprüft</div>
+    <div class="m"><div class="th">⚙<div class="dt ok"></div></div>
+      <div class="mi"><div class="mn">Pumpe 17</div><div class="ms">Halle 2 · vor 2 Std</div></div>
+      <div class="mv"><div class="sc ok">94 %</div><div class="gy">›</div></div></div>
+    <div class="m"><div class="th">🌀<div class="dt w"></div></div>
+      <div class="mi"><div class="mn">Lüfter West</div><div class="ms">Halle 2 · vor 3 Tagen</div></div>
+      <div class="mv"><div class="sc w">71 %</div><div class="gy">›</div></div></div>
+    <div class="m"><div class="th">🗜<div class="dt n"></div></div>
+      <div class="mi"><div class="mn">Kompressor 3</div><div class="ms" style="margin-top:3px"><span class="bd">Referenz fehlt</span></div></div>
+      <div class="mv"><div class="gy">›</div></div></div>
+    <div class="m"><div class="th">➿<div class="dt ok"></div></div>
+      <div class="mi"><div class="mn">Förderband A</div><div class="ms">Halle 1 · vor 2 Wochen</div></div>
+      <div class="mv"><div class="sc ok">88 %</div><div class="gy">›</div></div></div>
+    <div class="m"><div class="th">⚙<div class="dt ok"></div></div>
+      <div class="mi"><div class="mn">Pumpe 18</div><div class="ms">Halle 2 · vor 3 Wochen</div></div>
+      <div class="mv"><div class="sc ok">96 %</div><div class="gy">›</div></div></div>
+  </div>
+  <div class="sheet"><div class="grip"><div class="gl"></div><div class="gt">Einstellungen &amp; mehr</div></div></div>
+</div></div>
+
+<!-- B -->
+<div><div class="cap">B · Sheet hochgezogen</div>
+<div class="ph">
+  <div class="strip">
+    <div class="row1"><div class="mk">🦊</div><div class="srch">🔍 Maschine, Ort oder ID…</div><div class="ico">ℹ</div></div>
+    <div class="seg"><div class="sg on">🌱 Basis</div><div class="sg">🛠️ Profi</div></div>
+  </div>
+  <div class="body"><div class="lbl">Zuletzt geprüft</div>
+    <div class="m"><div class="th">⚙<div class="dt ok"></div></div>
+      <div class="mi"><div class="mn">Pumpe 17</div><div class="ms">Halle 2 · vor 2 Std</div></div>
+      <div class="mv"><div class="sc ok">94 %</div><div class="gy">›</div></div></div>
+  </div>
+  <div class="sheet" style="top:170px">
+    <div class="grip"><div class="gl"></div><div class="gt">Einstellungen &amp; mehr</div></div>
+    <div class="sl"><i>🎚</i><b>Aufnahme &amp; Mikrofon</b><span class="ar">›</span></div>
+    <div class="sl"><i>📊</i><b>Schwellenwerte</b><span class="ar">›</span></div>
+    <div class="sl"><i>🏷</i><b>NFC &amp; QR schreiben</b><span class="ar">›</span></div>
+    <div class="sl"><i>💾</i><b>Daten sichern &amp; laden</b><span class="ar">›</span></div>
+    <div class="sl"><i>🔐</i><b>Tresor</b><span class="soon">später</span></div>
+    <div class="sl"><i>🦊</i><b>Über SoundFuchs</b><span class="ar">›</span></div>
+    <div class="sl"><i>🛡</i><b>Datenschutz</b><span class="ar">›</span></div>
+    <div class="sl"><i>§</i><b>Impressum</b><span class="ar">›</span></div>
+  </div>
+</div></div>
+
+<!-- C -->
+<div><div class="cap">C · Prüfen als Tour: Arbeitspunkt wählen</div>
+<div class="ph">
+  <div class="th2"><div class="bk">‹ Alle Maschinen</div><div class="tt">Pumpe 17</div></div>
+  <div class="body">
+    <div class="tour">
+      <div class="st"><div class="sn done">✓</div>
+        <div class="sc2"><div class="sh2">Pumpe 17</div><div class="sp">Halle 2 · Linie 3</div></div>
+        <div class="chg" style="align-self:center">ändern</div></div>
+
+      <div class="st"><div class="sn now">2</div>
+        <div class="sc2"><div class="sh2">Welcher Arbeitspunkt?</div>
+          <div class="sp">Vier hinterlegte Zustände — zwei gesund, zwei bekannte Fehler.</div>
+
+          <div class="wp sel"><div class="wr"></div><div class="wn2">Volllast</div><span class="tag g">gesund</span></div>
+          <div class="wp"><div class="wr"></div><div class="wn2">Teillast 50 %</div><span class="tag g">gesund</span></div>
+          <div class="wp"><div class="wr"></div><div class="wn2">Lagerschaden</div><span class="tag b">Fehler</span></div>
+          <div class="wp"><div class="wr"></div><div class="wn2">Kavitation</div><span class="tag b">Fehler</span></div>
+        </div></div>
+
+      <div class="st"><div class="sn next">3</div>
+        <div class="sc2"><div class="sh2" style="color:var(--t3)">Prüfen</div>
+          <div class="sp">30 Sekunden mithören, dann das Ergebnis.</div></div></div>
+    </div>
+    <div class="big">Prüfung starten</div>
+  </div>
+</div></div>
+
+</body></html>

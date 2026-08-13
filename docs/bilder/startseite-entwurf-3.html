@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><style>
+/* Tokens 1:1 aus TourFuchs src/styles/variables.css */
+:root{
+--p:#0d9488; --pd:#0f766e; --pl:#ccfbf1;
+--bg:#f8fafc; --sf:#ffffff; --sf2:#f1f5f9; --bd:#e2e8f0;
+--tx:#0f172a; --mu:#64748b;
+--dg:#dc2626; --ok:#16a34a; --wn:#f59e0b;
+--rs:12px; --rm:18px; --rl:26px; --rxl:34px; --rp:999px;
+--s1:0 1px 3px rgba(15,23,42,.1); --s2:0 6px 24px rgba(15,23,42,.16);
+--tb:52px;
+--fo:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fo);font-size:15px;line-height:1.45;color:var(--tx);
+background:#8fa0b6;display:flex;gap:24px;padding:24px;align-items:flex-start}
+.ph{width:390px;height:800px;background:var(--bg);border-radius:22px;overflow:hidden;
+position:relative;box-shadow:0 12px 40px rgba(15,23,42,.3);display:flex;flex-direction:column}
+.cap{color:#fff;font-weight:700;font-size:13px;margin-bottom:8px}
+
+/* Kopfleiste — 52 px, weiss, untere Kante, shadow-1 */
+.tb{height:var(--tb);flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 12px;
+background:var(--sf);border-bottom:1px solid var(--bd);box-shadow:var(--s1);z-index:5}
+.br{display:flex;align-items:center;flex:0 0 auto}
+.br em{font-style:normal;color:var(--p);font-weight:600}
+.bi{font-size:1.25rem}
+.sr{flex:1;min-width:0;font-size:.9rem;padding:.5em .7em;border:1px solid var(--bd);
+border-radius:var(--rm);background:var(--sf);color:var(--mu)}
+.ib{border:none;background:transparent;font-size:1.2rem;line-height:1;border-radius:50%;
+width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+.ib.ring{background:#fff7ed;box-shadow:inset 0 0 0 2px var(--wn)}
+
+/* Schwebender Streifen — durchscheinend, Pille, wie TourFuchs mobil */
+.nav{padding:8px 0 2px}
+.dsw{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;margin:0 10px 5px;padding:2px;
+background:rgba(255,255,255,.72);backdrop-filter:blur(9px);border:1px solid rgba(226,232,240,.9);
+border-radius:var(--rp);box-shadow:var(--s1)}
+.sg{border:none;border-radius:var(--rp);background:transparent;padding:7px 5px;min-height:34px;
+font-size:.76rem;font-weight:700;color:var(--mu);display:flex;align-items:center;justify-content:center}
+.sg.on{background:var(--p);color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.14)}
+
+.bd2{flex:1;overflow:hidden;padding:2px 12px 0}
+.lb{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+color:var(--mu);margin:10px 2px 4px}
+
+/* Zeile — flach, duenner Trenner, radius-m; kein Kaertchen mit Schatten */
+.rw{display:flex;align-items:center;gap:8px;padding:9px 6px;
+border-bottom:1px solid var(--sf2);border-radius:var(--rm)}
+.rw.sel{background:var(--pl)}
+.av{width:40px;height:40px;border-radius:var(--rm);flex:0 0 auto;background:var(--sf2);
+display:flex;align-items:center;justify-content:center;font-size:18px;position:relative}
+.dt{position:absolute;right:-2px;bottom:-2px;width:13px;height:13px;border-radius:50%;border:2.5px solid var(--bg)}
+.dt.g{background:var(--ok)}.dt.w{background:var(--wn)}.dt.r{background:var(--dg)}.dt.n{background:#94a3b8}
+.nm{flex:1;min-width:0}
+.n1{font-weight:600;font-size:.94rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.n2{font-size:.78rem;color:var(--mu);margin-top:1px}
+.vl{text-align:right;flex:0 0 auto;display:flex;align-items:center;gap:5px}
+.sc{font-weight:700;font-size:.96rem}.sc.g{color:var(--ok)}.sc.w{color:var(--wn)}
+.ch{color:var(--mu);font-size:.8rem}
+.pil{display:inline-block;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:var(--rp);
+background:#fef3c7;color:#92400e}
+
+/* Knopf — Pille, immer */
+.btn{font-size:.9rem;border:1px solid var(--bd);background:var(--sf);color:var(--tx);
+border-radius:var(--rp);padding:.55em .9em;display:inline-flex;align-items:center;
+justify-content:center;gap:6px;font-weight:500}
+.btn.pri{background:var(--p);border-color:var(--p);color:#fff;font-weight:600}
+.btn.blk{display:flex;width:100%;padding:.8em;font-size:.98rem}
+
+/* Sheet */
+.sh{position:absolute;left:0;right:0;bottom:0;background:var(--sf);
+border-radius:var(--rl) var(--rl) 0 0;box-shadow:var(--s2);border-top:1px solid var(--bd)}
+.gr{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0 6px;min-height:32px}
+.gb{width:56px;height:6px;border-radius:var(--rp);background:var(--p)}
+.gt{font-size:.8rem;font-weight:600;color:var(--mu)}
+.sl{display:flex;align-items:center;gap:11px;padding:11px 16px;border-top:1px solid var(--sf2);font-size:.92rem}
+.sl i{font-style:normal;width:20px;text-align:center}
+.sl b{font-weight:600}
+.sl .ar{margin-left:auto;color:var(--mu);font-size:.8rem}
+.soon{margin-left:auto;font-size:.68rem;font-weight:700;background:var(--sf2);color:var(--mu);
+padding:2px 8px;border-radius:var(--rp)}
+
+/* Tour */
+.mh{padding:10px 12px 9px;background:var(--sf);border-bottom:1px solid var(--bd)}
+.bk{font-size:.8rem;color:var(--p);font-weight:600}
+.mt{font-size:1.15rem;font-weight:700;margin-top:3px}
+.mS{font-size:.78rem;color:var(--mu)}
+.tr{padding:4px 0}
+.st{position:relative;display:flex;gap:10px;padding:8px 0}
+.st::before{content:"";position:absolute;left:12px;top:0;bottom:0;width:2px;background:var(--bd)}
+.st:first-child::before{top:50%}.st:last-child::before{bottom:50%}
+.sn{width:26px;height:26px;border-radius:50%;flex:0 0 auto;position:relative;z-index:1;
+font-size:.74rem;font-weight:700;display:flex;align-items:center;justify-content:center;
+box-shadow:0 0 0 3px var(--bg)}
+.sn.d{background:var(--p);color:#fff}
+.sn.n{background:var(--sf);color:var(--p);border:2px solid var(--p)}
+.sn.o{background:var(--sf2);color:var(--mu)}
+.sc2{flex:1;min-width:0;padding-top:2px}
+.h2{font-weight:600;font-size:.92rem}
+.p2{font-size:.78rem;color:var(--mu);margin-top:1px}
+.lk{font-size:.8rem;color:var(--p);font-weight:600;align-self:center}
+.wp{display:flex;align-items:center;gap:9px;padding:8px 10px;margin-top:6px;
+border:1px solid var(--bd);border-radius:var(--rm);background:var(--sf)}
+.wp.on{border:2px solid var(--p);background:var(--pl)}
+.ra{width:16px;height:16px;border-radius:50%;border:2px solid #cbd5e1;flex:0 0 auto}
+.wp.on .ra{border:5px solid var(--p)}
+.wn3{flex:1;font-size:.86rem;font-weight:600}
+.tg{font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:var(--rp)}
+.tg.g{background:#dcfce7;color:#166534}.tg.b{background:#fee2e2;color:#991b1b}
+
+.res{position:absolute;left:56px;right:12px;top:48px;background:var(--sf);border:1px solid var(--bd);
+border-radius:var(--rl);box-shadow:var(--s2);overflow:hidden;z-index:9}
+.rr{display:flex;align-items:center;gap:9px;padding:10px 13px;border-bottom:1px solid var(--sf2);font-size:.88rem}
+.rr:last-child{border-bottom:none}
+.rr b{font-weight:600}.rr span{color:var(--mu);font-size:.78rem;margin-left:auto}
+.hl{background:var(--pl);border-radius:4px;padding:0 2px}
+</style></head><body>
+
+<!-- A -->
+<div><div class="cap">A · Startseite — Kopfleiste 52 px, schwebende Pille, flache Zeilen</div>
+<div class="ph">
+  <div class="tb">
+    <div class="br"><span class="bi">🦊</span></div>
+    <input class="sr" value="Maschine, Ort oder ID…" readonly>
+    <div class="ib ring">🔐</div>
+    <div class="ib">ℹ️</div>
+  </div>
+  <div class="nav"><div class="dsw"><div class="sg on">🌱 Basis</div><div class="sg">🛠️ Profi</div></div></div>
+  <div class="bd2">
+    <div class="lb">Zuletzt geprüft</div>
+    <div class="rw"><div class="av">⚙<div class="dt g"></div></div>
+      <div class="nm"><div class="n1">Pumpe 17</div><div class="n2">Halle 2 · vor 2 Std</div></div>
+      <div class="vl"><span class="sc g">94 %</span><span class="ch">›</span></div></div>
+    <div class="rw"><div class="av">🌀<div class="dt w"></div></div>
+      <div class="nm"><div class="n1">Lüfter West</div><div class="n2">Halle 2 · vor 3 Tagen</div></div>
+      <div class="vl"><span class="sc w">71 %</span><span class="ch">›</span></div></div>
+    <div class="rw"><div class="av">🗜<div class="dt n"></div></div>
+      <div class="nm"><div class="n1">Kompressor 3</div><div class="n2" style="margin-top:3px"><span class="pil">Referenz fehlt</span></div></div>
+      <div class="vl"><span class="ch">›</span></div></div>
+    <div class="rw"><div class="av">➿<div class="dt g"></div></div>
+      <div class="nm"><div class="n1">Förderband A</div><div class="n2">Halle 1 · vor 2 Wochen</div></div>
+      <div class="vl"><span class="sc g">88 %</span><span class="ch">›</span></div></div>
+    <div class="rw"><div class="av">⚙<div class="dt g"></div></div>
+      <div class="nm"><div class="n1">Pumpe 18</div><div class="n2">Halle 2 · vor 3 Wochen</div></div>
+      <div class="vl"><span class="sc g">96 %</span><span class="ch">›</span></div></div>
+    <div style="display:flex;gap:7px;margin-top:12px">
+      <div class="btn pri" style="flex:1">📷 Scannen</div>
+      <div class="btn" style="flex:1">＋ Neue Maschine</div>
+    </div>
+  </div>
+  <div class="sh"><div class="gr"><div class="gb"></div><div class="gt">Einstellungen &amp; mehr</div></div></div>
+</div></div>
+
+
+<!-- B -->
+<div><div class="cap">B · Suche — Treffer als Liste, radius-l</div>
+<div class="ph">
+  <div class="tb" style="position:relative">
+    <div class="br"><span class="bi">🦊</span></div>
+    <input class="sr" value="halle 2" readonly style="border-color:var(--p);outline:2px solid var(--pl)">
+    <div class="ib">ℹ️</div>
+    <div class="res">
+      <div class="rr">⚙ <b>Pumpe 17</b> <span><span class="hl">Halle 2</span> · Linie 3</span></div>
+      <div class="rr">🌀 <b>Lüfter West</b> <span><span class="hl">Halle 2</span></span></div>
+      <div class="rr">⚙ <b>Pumpe 18</b> <span><span class="hl">Halle 2</span> · Linie 1</span></div>
+      <div class="rr">🗜 <b>Kompressor 3</b> <span><span class="hl">Halle 2</span> · Linie 1</span></div>
+    </div>
+  </div>
+  <div class="nav"><div class="dsw"><div class="sg on">🌱 Basis</div><div class="sg">🛠️ Profi</div></div></div>
+  <div class="bd2"></div>
+</div></div>
+
+<!-- C -->
+<div><div class="cap">C · Sheet hochgezogen — Griff teal, 56 × 6</div>
+<div class="ph">
+  <div class="tb">
+    <div class="br"><span class="bi">🦊</span></div>
+    <input class="sr" value="Maschine, Ort oder ID…" readonly>
+    <div class="ib ring">🔐</div>
+    <div class="ib">ℹ️</div>
+  </div>
+  <div class="nav"><div class="dsw"><div class="sg on">🌱 Basis</div><div class="sg">🛠️ Profi</div></div></div>
+  <div class="bd2">
+    <div class="lb">Zuletzt geprüft</div>
+    <div class="rw"><div class="av">⚙<div class="dt g"></div></div>
+      <div class="nm"><div class="n1">Pumpe 17</div><div class="n2">Halle 2 · vor 2 Std</div></div>
+      <div class="vl"><span class="sc g">94 %</span><span class="ch">›</span></div></div>
+  </div>
+  <div class="sh" style="top:196px">
+    <div class="gr"><div class="gb"></div><div class="gt">Einstellungen &amp; mehr</div></div>
+    <div class="sl"><i>🎚</i><b>Aufnahme &amp; Mikrofon</b><span class="ar">›</span></div>
+    <div class="sl"><i>📊</i><b>Schwellenwerte</b><span class="ar">›</span></div>
+    <div class="sl"><i>🏷</i><b>NFC &amp; QR schreiben</b><span class="ar">›</span></div>
+    <div class="sl"><i>💾</i><b>Daten sichern &amp; laden</b><span class="ar">›</span></div>
+    <div class="sl"><i>🔐</i><b>Tresor</b><span class="soon">später</span></div>
+    <div class="sl"><i>🦊</i><b>Über SoundFuchs</b><span class="ar">›</span></div>
+    <div class="sl"><i>🛡</i><b>Datenschutz</b><span class="ar">›</span></div>
+    <div class="sl"><i>§</i><b>Impressum</b><span class="ar">›</span></div>
+  </div>
+</div></div>
+
+<!-- C -->
+<div><div class="cap">D · Prüfen als Tour — Arbeitspunkt wählen</div>
+<div class="ph">
+  <div class="tb">
+    <div class="br"><span class="bi">🦊</span></div>
+    <input class="sr" value="Maschine, Ort oder ID…" readonly>
+    <div class="ib">ℹ️</div>
+  </div>
+  <div class="mh"><div class="bk">‹ Alle Maschinen</div>
+    <div class="mt">Pumpe 17</div><div class="mS">Halle 2 · Linie 3 · ID 4711</div></div>
+  <div class="bd2">
+    <div class="tr">
+      <div class="st"><div class="sn d">✓</div>
+        <div class="sc2"><div class="h2">Pumpe 17</div><div class="p2">gewählt</div></div>
+        <div class="lk">ändern</div></div>
+      <div class="st"><div class="sn n">2</div>
+        <div class="sc2"><div class="h2">Welcher Arbeitspunkt?</div>
+          <div class="p2">Vier hinterlegte Zustände — zwei gesund, zwei bekannte Fehler.</div>
+          <div class="wp on"><div class="ra"></div><div class="wn3">Volllast</div><span class="tg g">gesund</span></div>
+          <div class="wp"><div class="ra"></div><div class="wn3">Teillast 50 %</div><span class="tg g">gesund</span></div>
+          <div class="wp"><div class="ra"></div><div class="wn3">Lagerschaden</div><span class="tg b">Fehler</span></div>
+          <div class="wp"><div class="ra"></div><div class="wn3">Kavitation</div><span class="tg b">Fehler</span></div>
+        </div></div>
+      <div class="st"><div class="sn o">3</div>
+        <div class="sc2"><div class="h2" style="color:var(--mu)">Prüfen</div>
+          <div class="p2">30 Sekunden mithören, dann das Ergebnis.</div></div></div>
+    </div>
+    <div class="btn pri blk" style="margin-top:10px">Prüfung starten</div>
+  </div>
+</div></div>
+
+</body></html>
