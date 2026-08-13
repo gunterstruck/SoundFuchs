@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:gh-pages": "DEPLOY_TARGET=github-pages tsc && DEPLOY_TARGET=github-pages vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "test": "vitest",
