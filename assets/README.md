@@ -1,6 +1,6 @@
 # Assets
 
-Dieser Ordner enthält Bilder und Assets für die Zanobot PWA.
+Dieser Ordner enthält Bilder und Assets für die SoundFuchs PWA.
 
 ## Benötigte Assets
 
@@ -9,7 +9,7 @@ Dieser Ordner enthält Bilder und Assets für die Zanobot PWA.
 - `screenshot-desktop.png` - 1920x1080px
 
 ### Logo
-- `logo.svg` - Vektorgrafik des Zanobot-Logos
+- `logo.svg` - Vektorgrafik des SoundFuchs-Logos
 
 ### Weitere
 - Platzhalter-Bilder für leere Zustände

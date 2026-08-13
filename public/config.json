@@ -1,12 +1,12 @@
 {
   "app": {
-    "name": "Zanobo",
+    "name": "SoundFuchs",
     "version": "1.0.0",
     "description": "AI Assistant for Acoustic Machine Monitoring",
     "defaultLanguage": "de"
   },
   "branding": {
-    "title": "ZANOBO",
+    "title": "SOUNDFUCHS",
     "subtitle": "AI ASSISTANT",
     "colors": {
       "primary": "#00D4FF",

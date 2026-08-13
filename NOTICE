@@ -1,4 +1,4 @@
-Zanobo
+SoundFuchs
 Copyright (c) 2026 Günter Struck
 
 Der Quellcode steht unter der MIT-Lizenz (siehe LICENSE). Diese Datei haelt
@@ -9,13 +9,13 @@ fortgelten.
 
 1. WAS DAS HIER IST
 
-Zanobo ist ein privates Projekt. Es entsteht unentgeltlich in der Freizeit,
+SoundFuchs ist ein privates Projekt. Es entsteht unentgeltlich in der Freizeit,
 wird nicht verkauft, und es steht kein Unternehmen dahinter.
 
 Daraus folgt:
 - Es gibt keinen Support, keine zugesagte Reaktionszeit und keine Zusage,
   dass eine Funktion erhalten bleibt oder ein Fehler behoben wird.
-- Es gibt keinen Vertrag und keine Abnahme. Wer Zanobo betrieblich einsetzt,
+- Es gibt keinen Vertrag und keine Abnahme. Wer SoundFuchs betrieblich einsetzt,
   tut das in eigener Verantwortung und klaert das intern selbst.
 - Namensnennung ist von der MIT-Lizenz verlangt: Der Copyright-Hinweis gehoert
   in jede Kopie und in jede abgeleitete Fassung.
@@ -25,15 +25,15 @@ gewollt: Die Anwendung soll weitergegeben werden koennen, ohne dass jemand
 erst eine Rechtsabteilung fragen muss.
 
 
-2. WAS ZANOBO NICHT IST
+2. WAS SOUNDFUCHS NICHT IST
 
 Das ist keine Formalie, sondern die wichtigste Aussage dieser Datei.
 
-Zanobo ist KEIN medizinisches Geraet und KEIN technisches Diagnosesystem. Es
+SoundFuchs ist KEIN medizinisches Geraet und KEIN technisches Diagnosesystem. Es
 ist ein Werkzeug, das zwei Audioaufnahmen miteinander vergleicht und die
 Aehnlichkeit sichtbar macht.
 
-Zanobo leistet ausdruecklich nicht:
+SoundFuchs leistet ausdruecklich nicht:
 - keine Diagnose von Schaeden oder deren Ursachen
 - keine Zustandsklassifikation und keine Fehlerursachenanalyse
 - keine Wartungs-, Handlungs- oder Reparaturempfehlungen
@@ -58,7 +58,7 @@ insbesondere nicht fuer
 - Schaeden, Datenverluste oder Ausfaelle, die aus der Nutzung oder
   Nichtverfuegbarkeit der Anwendung entstehen.
 
-Zanobo verarbeitet Audioaufnahmen ausschliesslich im Browser des Geraets und
+SoundFuchs verarbeitet Audioaufnahmen ausschliesslich im Browser des Geraets und
 speichert sie in der lokalen IndexedDB. Es findet keine Uebertragung an einen
 Server statt.
 

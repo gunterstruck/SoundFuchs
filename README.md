@@ -1,4 +1,4 @@
-# Zanobo - Edge AI Machine Monitoring
+# SoundFuchs - Edge AI Machine Monitoring
 
 ![Local First](https://img.shields.io/badge/Local--First-100%25%20Browser-2ea44f)
 ![Privacy by Design](https://img.shields.io/badge/Privacy%20by%20Design-Edge--Only-blue)
@@ -12,9 +12,9 @@
 
 ## Überblick
 
-**Zanobo 2.0** ist eine datenschutzfreundliche **Progressive Web App (PWA)** für die **vergleichende Analyse von Maschinenakustik** mit **Edge AI**. Die gesamte Signalverarbeitung läuft **100 % lokal im Browser** via **WebAssembly (WASM)** – **ohne Cloud, ohne Backend, ohne Serverkommunikation**. Als Sensor dient **ausschließlich das integrierte Mikrofon** des Endgeräts.
+**SoundFuchs 2.0** ist eine datenschutzfreundliche **Progressive Web App (PWA)** für die **vergleichende Analyse von Maschinenakustik** mit **Edge AI**. Die gesamte Signalverarbeitung läuft **100 % lokal im Browser** via **WebAssembly (WASM)** – **ohne Cloud, ohne Backend, ohne Serverkommunikation**. Als Sensor dient **ausschließlich das integrierte Mikrofon** des Endgeräts.
 
-Zanobo versteht sich bewusst **nicht als Diagnosewerkzeug**, sondern als **Vergleichs- und Orientierungsinstrument**, das menschliche Einschätzung unterstützt.
+SoundFuchs versteht sich bewusst **nicht als Diagnosewerkzeug**, sondern als **Vergleichs- und Orientierungsinstrument**, das menschliche Einschätzung unterstützt.
 
 ---
 
@@ -41,13 +41,13 @@ Vergleich einer aktuellen Aufnahme mit einer zuvor erstellten Referenz **derselb
 
 Vergleich mehrerer **baugleicher Maschinen** unter ähnlichen Betriebsbedingungen. Akustische Ausreißer innerhalb einer Gruppe werden identifiziert – auch **ohne historische Referenz**, da die Gruppe selbst als Vergleichsbasis dient.
 
-> **Hinweis:** Zanobo zeigt ausschließlich **ob und wie stark** sich Geräusche unterscheiden. Die Interpretation, ob eine Abweichung relevant ist, liegt beim Nutzer.
+> **Hinweis:** SoundFuchs zeigt ausschließlich **ob und wie stark** sich Geräusche unterscheiden. Die Interpretation, ob eine Abweichung relevant ist, liegt beim Nutzer.
 
 ---
 
 ## Architektur (Edge-Only)
 
-Zanobo setzt auf eine **Edge-Only Architektur** als Sicherheits- und Datenschutzmerkmal. Alle Verarbeitungsschritte finden im Endgerät statt:
+SoundFuchs setzt auf eine **Edge-Only Architektur** als Sicherheits- und Datenschutzmerkmal. Alle Verarbeitungsschritte finden im Endgerät statt:
 
 1. **Audioaufnahme** über integriertes Mikrofon
 2. **FFT & Spektrogramm** zur Feature-Extraktion (WebAudio API)
@@ -61,7 +61,7 @@ Es gibt **keine Cloud-Services**, **keinen Backend-Server** und **keine Datenban
 
 ## NFC-basierter Sofortzugang
 
-Zanobo unterstützt **NFC-Tags** an Maschinen:
+SoundFuchs unterstützt **NFC-Tags** an Maschinen:
 
 - **Sofortzugang**: Smartphone an den NFC-Tag halten – die PWA öffnet sich direkt im Browser
 - **Maschinen-ID**: Automatische Identifikation der Maschine
@@ -72,7 +72,7 @@ Zanobo unterstützt **NFC-Tags** an Maschinen:
 
 ## Robustheit über Geräte hinweg (Praxis-Test)
 
-Zanobo wurde darauf ausgelegt, auch auf unterschiedlichen Smartphones zuverlässig zu funktionieren – ohne spezielle Gerätekalibrierung oder Machine-Learning-Training.
+SoundFuchs wurde darauf ausgelegt, auch auf unterschiedlichen Smartphones zuverlässig zu funktionieren – ohne spezielle Gerätekalibrierung oder Machine-Learning-Training.
 
 ### Getestetes Szenario
 
@@ -103,7 +103,7 @@ Dadurch unterdrückt GMIA einen Großteil gerätebedingter Effekte **ohne expliz
 
 ### Designentscheidung
 
-Zanobo ist bewusst als **relatives Vergleichsinstrument** konzipiert, nicht als kalibriertes Messgerät. Entscheidend sind **Veränderungen und Abweichungen**, nicht absolute Prozentwerte. Kleine gerätebedingte Unterschiede sind normal und werden in der Praxis durch geeignete Schwellen berücksichtigt.
+SoundFuchs ist bewusst als **relatives Vergleichsinstrument** konzipiert, nicht als kalibriertes Messgerät. Entscheidend sind **Veränderungen und Abweichungen**, nicht absolute Prozentwerte. Kleine gerätebedingte Unterschiede sind normal und werden in der Praxis durch geeignete Schwellen berücksichtigt.
 
 ---
 
@@ -114,15 +114,15 @@ npm install
 npm run dev
 ```
 
-**Öffentliche Instanz:** [zanobo.vercel.app](https://zanobo.vercel.app)
+**Öffentliche Instanz:** [soundfuchs.vercel.app](https://soundfuchs.vercel.app)
 
 ---
 
 ## Architektur und technische Abgrenzung
 
-Zanobo wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Projekt** unter der **MIT-Lizenz** entwickelt. Die Funktionalität basiert auf **offen beschriebenen mathematischen Verfahren** (Frequenzanalyse, GMIA-ähnliche Kosinus-Vergleiche) und integriert **keine patentierte Systemlogik**, **keine Klassifikationsmechanismen** und **keine Lernmodelle**.
+SoundFuchs wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Projekt** unter der **MIT-Lizenz** entwickelt. Die Funktionalität basiert auf **offen beschriebenen mathematischen Verfahren** (Frequenzanalyse, GMIA-ähnliche Kosinus-Vergleiche) und integriert **keine patentierte Systemlogik**, **keine Klassifikationsmechanismen** und **keine Lernmodelle**.
 
-**Was Zanobo baulich nicht enthält:**
+**Was SoundFuchs baulich nicht enthält:**
 
 - **Kein Cloud-Upload** – die Auswertung findet vollständig auf dem Gerät statt
 - **Keine IoT-Hardware** – ausschließlich das eingebaute Mikrofon, keine Spezialsensorik
@@ -137,28 +137,28 @@ Zanobo wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Projekt
 
 ### Relevante IP und technische Abgrenzung
 
-| Referenz / Technik | Quelle | Geschützter Bereich | Abgrenzung zu Zanobo |
+| Referenz / Technik | Quelle | Geschützter Bereich | Abgrenzung zu SoundFuchs |
 |---|---|---|---|
-| **Siemens AG** (PAPDEOTT005125) | Defensive Veröffentlichung, 2016 | Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren | Zanobo arbeitet vollständig lokal, ohne Cloud, ohne zentrale Datenbank, ohne Diagnose |
-| **Siemens AG** (EP3701708B1) | Europäisches Patent, 2022 | ML-basierte Remote-Diagnose mit trainierten Modellen und Sensorik | Zanobo verwendet kein Machine Learning, keine Cloud, keine eingebettete Diagnose-Logik |
-| **Siemens Corp.** (US9263041B2) | US-Patent, 2016 | Anwendung von GMIA für Sprach- und Hörsysteme | Zanobo nutzt GMIA-ähnliche Mathematik ausschließlich für Nicht-Sprache und lokale Vergleiche |
-| **Siemens** (US9443201B2) | US-Patent, 2016 | Klassifikation und Modelltraining von Sensorsignaturen | Zanobo führt keine Klassifikation und kein Modelltraining durch |
+| **Siemens AG** (PAPDEOTT005125) | Defensive Veröffentlichung, 2016 | Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren | SoundFuchs arbeitet vollständig lokal, ohne Cloud, ohne zentrale Datenbank, ohne Diagnose |
+| **Siemens AG** (EP3701708B1) | Europäisches Patent, 2022 | ML-basierte Remote-Diagnose mit trainierten Modellen und Sensorik | SoundFuchs verwendet kein Machine Learning, keine Cloud, keine eingebettete Diagnose-Logik |
+| **Siemens Corp.** (US9263041B2) | US-Patent, 2016 | Anwendung von GMIA für Sprach- und Hörsysteme | SoundFuchs nutzt GMIA-ähnliche Mathematik ausschließlich für Nicht-Sprache und lokale Vergleiche |
+| **Siemens** (US9443201B2) | US-Patent, 2016 | Klassifikation und Modelltraining von Sensorsignaturen | SoundFuchs führt keine Klassifikation und kein Modelltraining durch |
 | **Schlumberger** (US9602781B2) | US-Patent, 2017 | Trennung seismischer Signale mittels GMIA | Unterschiedliche Domäne und Signalart, nicht verwandt |
-| **ABB** | Öffentliche Industrie-Präsentation, 2015 | Mobile Sensorik zur ad-hoc Diagnose mit Cloud- und Service-Integration | Zanobo vermeidet Diagnose, Service-Workflows und Cloud-Anbindung |
-| **Prophecy Sensors** | Industrie | Audio-Upload zur Diagnose | Zanobo speichert keine Daten extern |
-| **Fisher-Rosemount** | Industrie | Externe Prozessdaten | Zanobo nutzt ausschließlich das Mikrofon |
-| **FPT Software / SoundAI** | Industrie | Trainierte Encoder-Decoder-Modelle mit Server-Training | Zanobo nutzt ausschließlich mathematisch-statistische Verfahren (Level 1) ohne Modelltraining |
-| **GMIA Verfahren** | Mathematisch | Patentierte Cloud-Workflows und Sensor-Fusion-Setups | Zanobo nutzt den GMIA-Algorithmus als reine, lokale mathematische Implementierung in TypeScript (Open Source) |
+| **ABB** | Öffentliche Industrie-Präsentation, 2015 | Mobile Sensorik zur ad-hoc Diagnose mit Cloud- und Service-Integration | SoundFuchs vermeidet Diagnose, Service-Workflows und Cloud-Anbindung |
+| **Prophecy Sensors** | Industrie | Audio-Upload zur Diagnose | SoundFuchs speichert keine Daten extern |
+| **Fisher-Rosemount** | Industrie | Externe Prozessdaten | SoundFuchs nutzt ausschließlich das Mikrofon |
+| **FPT Software / SoundAI** | Industrie | Trainierte Encoder-Decoder-Modelle mit Server-Training | SoundFuchs nutzt ausschließlich mathematisch-statistische Verfahren (Level 1) ohne Modelltraining |
+| **GMIA Verfahren** | Mathematisch | Patentierte Cloud-Workflows und Sensor-Fusion-Setups | SoundFuchs nutzt den GMIA-Algorithmus als reine, lokale mathematische Implementierung in TypeScript (Open Source) |
 
-Die Tabelle beschreibt, wie sich Zanobo technisch von den genannten Verfahren unterscheidet. Sie ist eine Darstellung der eigenen Bauweise und **keine schutzrechtliche Bewertung** – eine solche kann und will dieses Projekt nicht abgeben.
+Die Tabelle beschreibt, wie sich SoundFuchs technisch von den genannten Verfahren unterscheidet. Sie ist eine Darstellung der eigenen Bauweise und **keine schutzrechtliche Bewertung** – eine solche kann und will dieses Projekt nicht abgeben.
 
 ---
 
 ## Haftungsausschluss & Nutzungsgrenzen
 
-Zanobo ist **kein medizinisches Gerät** und **kein technisches Diagnosesystem**. Die Anwendung ist ein **visuelles Vergleichswerkzeug** für Audiosignale.
+SoundFuchs ist **kein medizinisches Gerät** und **kein technisches Diagnosesystem**. Die Anwendung ist ein **visuelles Vergleichswerkzeug** für Audiosignale.
 
-**Zanobo führt explizit nicht durch:**
+**SoundFuchs führt explizit nicht durch:**
 
 - **Keine Diagnose** von Schäden oder Ursachen
 - **Keine Zustandsklassifikation** oder Fehlerursachenanalyse
@@ -176,9 +176,9 @@ Alle Verarbeitungen erfolgen **offline**. Es werden **keine Nutzerdaten übertra
 
 - **Version:** 2.0.0 (2026)
 - **Entwickelt von:** Günter Struck
-- **Lizenz:** [MIT](./LICENSE) – Weitergabe und Anpassung erlaubt, Namensnennung vorausgesetzt. Was die Lizenz nicht regelt (privat, unentgeltlich, kein Support, und wofuer Zanobo ausdruecklich nicht gedacht ist), steht in [NOTICE](./NOTICE).
+- **Lizenz:** [MIT](./LICENSE) – Weitergabe und Anpassung erlaubt, Namensnennung vorausgesetzt. Was die Lizenz nicht regelt (privat, unentgeltlich, kein Support, und wofuer SoundFuchs ausdruecklich nicht gedacht ist), steht in [NOTICE](./NOTICE).
 - **Technologie-Stack:** TypeScript, Vite, Web Audio API, WebAssembly
-- **Öffentliche Instanz:** [zanobo.vercel.app](https://zanobo.vercel.app)
+- **Öffentliche Instanz:** [soundfuchs.vercel.app](https://soundfuchs.vercel.app)
 
 ---
 

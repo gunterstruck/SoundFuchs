@@ -132,9 +132,7 @@ export const setViewLevel = (level: ViewLevel): ViewLevel => {
   document.documentElement.setAttribute('data-view-level', level);
 
   // Dispatch custom event for reactive updates
-  window.dispatchEvent(
-    new CustomEvent<ViewLevel>(VIEW_LEVEL_EVENT, { detail: level })
-  );
+  window.dispatchEvent(new CustomEvent<ViewLevel>(VIEW_LEVEL_EVENT, { detail: level }));
 
   return level;
 };
@@ -183,9 +181,7 @@ export const setViewLevelTemporary = (level: ViewLevel, reason?: string): ViewLe
   document.documentElement.setAttribute('data-view-level', level);
 
   // Dispatch custom event for reactive updates
-  window.dispatchEvent(
-    new CustomEvent<ViewLevel>(VIEW_LEVEL_EVENT, { detail: level })
-  );
+  window.dispatchEvent(new CustomEvent<ViewLevel>(VIEW_LEVEL_EVENT, { detail: level }));
 
   // Log for debugging
   if (reason) {
@@ -208,9 +204,7 @@ export const restoreViewLevel = (): ViewLevel => {
   document.documentElement.setAttribute('data-view-level', savedLevel);
 
   // Dispatch custom event for reactive updates
-  window.dispatchEvent(
-    new CustomEvent<ViewLevel>(VIEW_LEVEL_EVENT, { detail: savedLevel })
-  );
+  window.dispatchEvent(new CustomEvent<ViewLevel>(VIEW_LEVEL_EVENT, { detail: savedLevel }));
 
   logger.debug(`[ViewLevel] Restored to saved preference: "${savedLevel}"`);
 
@@ -239,7 +233,6 @@ const UI_SETTINGS_KEYS = [
  * Apply factory defaults: reset all UI settings to their initial state.
  *
  * - Sets view level to 'basic' (persisted)
- * - Sets theme to 'focus' (persisted)
  * - Removes localStorage keys for visualizer, recording, drift, room-comp,
  *   and cherry-pick settings so each module falls back to its built-in defaults.
  * - Does NOT touch IndexedDB (machines, recordings, diagnoses, references).
@@ -249,17 +242,16 @@ export const applyDefaults = (): void => {
   // 1. View level → basic (persists + DOM + event)
   setViewLevel('basic');
 
-  // 2. Theme → focus (persists + DOM + event)
-  if (window.ZanobotTheme?.setTheme) {
-    window.ZanobotTheme.setTheme('focus');
-  } else {
-    try { localStorage.setItem('zanobot-theme', 'focus'); } catch { /* ignore */ }
-    document.documentElement.setAttribute('data-theme', 'focus');
-  }
+  // Ein Theme gibt es nicht mehr zurückzusetzen: Es gibt nur einen Look, und
+  // hell oder dunkel entscheidet das Gerät.
 
-  // 3. Remove all other UI-setting keys → modules fall back to built-in defaults
+  // 2. Remove all other UI-setting keys → modules fall back to built-in defaults
   for (const key of UI_SETTINGS_KEYS) {
-    try { localStorage.removeItem(key); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
   }
 
   logger.info('[Defaults] All UI settings reset to factory defaults');
@@ -270,28 +262,11 @@ export const applyDefaults = (): void => {
  * Used during NFC/QR onboarding to present a clean UI without
  * overwriting the user's saved preferences.
  *
- * Call `restoreViewLevel()` + `restoreTheme()` to undo.
+ * Call `restoreViewLevel()` to undo.
  */
 export const applyDefaultsTemporary = (): void => {
   // View level → basic (DOM only, already handled by setViewLevelTemporary)
   setViewLevelTemporary('basic', 'temporary_defaults');
-
-  // Theme → focus (DOM only)
-  document.documentElement.setAttribute('data-theme', 'focus');
-};
-
-/**
- * Restore theme from localStorage after a temporary override.
- */
-export const restoreTheme = (): void => {
-  try {
-    const savedTheme = localStorage.getItem('zanobot-theme');
-    if (savedTheme) {
-      document.documentElement.setAttribute('data-theme', savedTheme);
-      window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: savedTheme } }));
-    }
-  } catch { /* ignore */ }
-  logger.debug('[Theme] Restored to saved preference');
 };
 
 /**

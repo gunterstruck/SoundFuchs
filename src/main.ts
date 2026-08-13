@@ -42,20 +42,10 @@ import {
 } from '@utils/diagnosisAudioSettings.js';
 
 /**
- * Global type declarations for theme-bootstrap.js API
+ * Globale Typdeklarationen für das Inline-Bootstrap in index.html
  */
 declare global {
   interface Window {
-    ZanobotTheme?: {
-      setTheme: (theme: string) => void;
-      getTheme: () => string;
-      toggleTheme: () => string;
-      getAvailableThemes: () => string[];
-      getThemeDisplayName: (theme: string) => string;
-      getThemeDescription: (theme: string) => string;
-      applyCustomColors: (colors: Record<string, string>) => void;
-      reset: () => void;
-    };
     ZANOBOT_CONFIG?: Record<string, unknown>;
   }
 }
@@ -284,8 +274,6 @@ class ZanobotApp {
 
       // Setup UI interactions
       this.setupCollapsibleSections();
-      this.setupThemeSwitcher();
-      this.setupQuickThemeToggle();
       this.setupViewLevelSelector();
       this.setupDiagnosisAudioSelector();
       this.setupFooterLinks();
@@ -656,88 +644,15 @@ class ZanobotApp {
   }
 
   /**
-   * Sync the browser-chrome (status bar) colour with the active theme, so it
-   * blends with the app on the light themes instead of staying dark. Reads the
-   * theme's actual --bg-primary (also picks up brand config overrides).
+   * Farbe der Browserleiste an den Seitengrund angleichen, damit sie nicht als
+   * Fremdkörper über der App steht. Liest --bg-primary, das je nach
+   * prefers-color-scheme hell oder dunkel ist.
    */
   private updateThemeColorMeta(): void {
     const meta = document.querySelector('meta[name="theme-color"]');
     if (!meta) return;
     const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim();
     if (bg) meta.setAttribute('content', bg);
-  }
-
-  /**
-   * Setup theme switcher
-   */
-  private setupThemeSwitcher(): void {
-    const themeBtns = document.querySelectorAll('.theme-card');
-
-    themeBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const theme = btn.getAttribute('data-theme');
-        if (!theme) return;
-
-        // Apply theme
-        document.documentElement.setAttribute('data-theme', theme);
-        this.updateThemeColorMeta();
-
-        // Save to localStorage
-        localStorage.setItem('zanobot-theme', theme);
-
-        // Update active state
-        themeBtns.forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        // Apply theme-appropriate banner (if no custom banner)
-        this.bannerManager?.applyThemeBanner();
-
-        // Notify listeners (e.g. the Settings banner preview) so they refresh
-        // for the now-current theme.
-        window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
-      });
-    });
-
-    // Load saved theme
-    const savedTheme = localStorage.getItem('zanobot-theme') || 'brand';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    this.updateThemeColorMeta();
-
-    themeBtns.forEach((btn) => {
-      if (btn.getAttribute('data-theme') === savedTheme) {
-        btn.classList.add('active');
-      }
-    });
-  }
-
-  /**
-   * Setup quick theme toggle button (header)
-   */
-  private setupQuickThemeToggle(): void {
-    const quickToggleBtns = Array.from(
-      document.querySelectorAll<HTMLElement>('.quick-theme-toggle')
-    );
-    const legacyToggleBtn = document.getElementById('quick-theme-toggle');
-    if (legacyToggleBtn && !quickToggleBtns.includes(legacyToggleBtn)) {
-      quickToggleBtns.push(legacyToggleBtn);
-    }
-
-    quickToggleBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        // Use the global ZanobotTheme API from theme-bootstrap.js
-        if (window.ZanobotTheme?.toggleTheme) {
-          window.ZanobotTheme.toggleTheme();
-          logger.debug('🎨 Theme toggled via quick toggle button');
-
-          // Apply theme-appropriate banner (if no custom banner)
-          this.bannerManager?.applyThemeBanner();
-
-          // Notify listeners (Settings banner preview, etc.) of the new theme.
-          const theme = document.documentElement.getAttribute('data-theme');
-          window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
-        }
-      });
-    });
   }
 
   /**

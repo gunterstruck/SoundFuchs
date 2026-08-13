@@ -18,6 +18,20 @@
   --spacing-lg: 2rem;
   --spacing-xl: 3rem;
 
+  /* Seitenränder: auf dem Handy hat Inhalt genau einen Rand.
+       Zanobo staffelte bisher .container (24 px) über .main-container (2 px
+       Rahmen) über .container-content (32 px) – 58 px je Seite, also 30 % der
+       Gerätebreite, bevor der erste Buchstabe steht. Gemessen kamen bei 390 px
+       Gerätebreite 274 px beim Text an und 63 px bei einer Kachelbeschriftung.
+       Die Schwester-App TourFuchs erreicht am selben Gerät 362 px, weil ihr
+       Blatt genau eine Polsterung hat (.tab-panel { padding: 14px }).
+       Diese beiden Werte sind zusammen der eine Rand: Die Karte trägt die
+       sichtbare Kante, die Hülle hält sie nur von der Bildschirmkante fort.
+       Ab 768 px kehrt die großzügige Polsterung zurück – dort ist Platz kein
+       knappes Gut. Geprüft von `npm run attention-check`. */
+  --space-shell-x: 0.75rem; /* 12px – Hülle zur Bildschirmkante */
+  --space-card-x: 1rem; /* 16px – Karte zu ihrem Inhalt */
+
   /* Layout Spacing System (Deliberate Visual Rhythm)
        These control the vertical flow on the start screen:
        - Cards are grouped tightly together (primary zone)
@@ -77,58 +91,144 @@
   --z-popover: 1200;
   --z-toast: 2000;
 
-  /* Default Theme: Brand (Zanobot Original) */
-  --primary-color: #00d4ff;
-  --primary-hover: #00b8e6;
-  --secondary-color: #40e0d0;
-  --accent-color: #00ffc6;
+  /* ═══════════════════════════════════════════════════════════════════════
+     FARBEN – ein Satz, hell. Die dunkle Fassung steht direkt darunter und
+     wird automatisch über prefers-color-scheme gewählt.
 
-  --bg-primary: #0a1929;
-  --bg-secondary: #0d1f31;
-  --bg-tertiary: #112840;
-  --bg-card: rgba(17, 40, 64, 0.6);
-  --bg-modal: rgba(10, 25, 41, 0.95);
+     Herkunft: die Palette der Schwester-App TourFuchs (dort
+     src/styles/variables.css, 32 Zeilen). Teal als Leitfarbe, Slate als
+     Grundton, das Fuchs-Orange als einziger Akzent.
 
-  --text-primary: #ffffff;
-  --text-secondary: #b0bec5;
-  --text-muted: #78909c;
+     Vorher standen hier vier vollständige Themes – brand, neon, light und
+     focus – mit zusammen 103 Regeln und rund 730 Zeilen. Sie sind ersatzlos
+     entfallen, aus zwei Gründen:
 
-  --status-healthy: #00e676;
-  --status-warning: #ffb74d;
-  --status-error: #ff5252;
-  --status-uncertain: #ffa726;
+       1. Ein Theme-Wähler beantwortet keinen nächsten Gedanken. Wer vor
+          einer Pumpe steht, sucht keine Farbwelt.
+       2. Die Themes machten drei Dinge gleichzeitig: Farbe, Layout und
+          Hierarchie. Das Fokus-Theme setzte order und width und baute die
+          Startseite dadurch um, sobald Maschinen in der Datenbank lagen.
+          Siehe Regel 4.3 in docs/gestaltprinzip-soundfuchs.md.
 
-  --border-color: rgba(0, 212, 255, 0.2);
-  --divider-color: rgba(255, 255, 255, 0.1);
+     Regel ab hier: Farbtokens beschreiben Farbe. Ein Helligkeitswechsel
+     darf order, width oder transform nicht anfassen.
+     ═══════════════════════════════════════════════════════════════════════ */
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --glow-primary: 0 0 20px rgba(0, 212, 255, 0.3);
-  --glow-strong: 0 0 30px rgba(0, 212, 255, 0.5);
+  --primary-color: #0d9488; /* Teal 600 – Leitfarbe */
+  --primary-hover: #0f766e; /* Teal 700 */
+  --secondary-color: #14b8a6; /* Teal 500 */
+  --accent-color: #f97316; /* Fuchs-Orange – der einzige Akzent */
 
-  /* Footer Surface - deeper shade for visual "floor" */
-  --footer-bg: rgba(7, 18, 33, 0.95);
-  --footer-text: #ffffff;
-  --footer-border: rgba(0, 212, 255, 0.15);
+  --bg-primary: #f8fafc; /* Slate 50 */
+  --bg-secondary: #f1f5f9; /* Slate 100 */
+  --bg-tertiary: #e2e8f0; /* Slate 200 */
+  --bg-card: #ffffff;
+  --bg-modal: #ffffff;
 
-  /* Visualizer Colors (Theme-Aware) */
-  --viz-bg: #0a0a0a;
-  --viz-grid: rgba(255, 255, 255, 0.05);
-  --viz-primary: rgba(59, 130, 246, 0.8);
-  --viz-fill-top: rgba(59, 130, 246, 0.3);
-  --viz-fill-bottom: rgba(59, 130, 246, 0.05);
-  --viz-text: rgba(255, 255, 255, 0.4);
+  --text-primary: #0f172a; /* Slate 900 */
+  --text-secondary: #475569; /* Slate 600 */
+  --text-muted: #64748b; /* Slate 500 */
 
-  /* Primary Card Tokens (for "Diagnose starten" CTA emphasis) */
+  --status-healthy: #16a34a;
+  --status-warning: #f59e0b;
+  --status-error: #dc2626;
+  --status-uncertain: #f59e0b;
+
+  --border-color: #e2e8f0;
+  --divider-color: #e2e8f0;
+
+  /* Zwei Schatten genügen. Ein Schatten trennt Ebenen; mehr Abstufungen
+     sieht niemand, sie kosten nur Pflege. */
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.1);
+  --shadow-md: 0 6px 24px rgba(15, 23, 42, 0.16);
+  --shadow-lg: 0 6px 24px rgba(15, 23, 42, 0.16);
+
+  /* Leuchteffekte sind Dekoration und damit gestrichen. Die Tokens bleiben
+     stehen, weil sie an vielen Stellen referenziert werden – sie liefern
+     jetzt schlicht nichts. */
+  --glow-primary: none;
+  --glow-strong: none;
+
+  --footer-bg: #f1f5f9;
+  --footer-text: #0f172a;
+  --footer-border: #e2e8f0;
+
+  /* Visualizer (Wellenform, Spektrum) */
+  --viz-bg: #f1f5f9;
+  --viz-grid: rgba(15, 23, 42, 0.06);
+  --viz-primary: rgba(13, 148, 136, 0.9);
+  --viz-fill-top: rgba(13, 148, 136, 0.28);
+  --viz-fill-bottom: rgba(13, 148, 136, 0.04);
+  --viz-text: rgba(15, 23, 42, 0.45);
+
+  /* Hervorhebung der Hauptaktion: ein Rahmen, kein Leuchten, keine
+     Skalierung. Vorrang entsteht durch Farbe und Position, nicht durch
+     Effekte. */
   --primary-card-accent: var(--primary-color);
   --primary-card-border: 2px solid var(--primary-color);
-  --primary-card-glow: 0 0 16px rgba(0, 212, 255, 0.15);
-  --primary-card-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
-  --primary-card-hover-glow: 0 0 24px rgba(0, 212, 255, 0.25);
-  --primary-card-icon-filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.4));
-  --primary-card-badge-bg: rgba(0, 212, 255, 0.12);
-  --primary-card-badge-border: rgba(0, 212, 255, 0.25);
+  --primary-card-glow: none;
+  --primary-card-shadow: var(--shadow-sm);
+  --primary-card-hover-glow: none;
+  --primary-card-icon-filter: none;
+  --primary-card-badge-bg: #ccfbf1; /* Teal 100 */
+  --primary-card-badge-border: #99f6e4; /* Teal 200 */
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DUNKEL – automatisch, ohne Wähler.
+
+   Das Gerät weiß bereits, ob es hell oder dunkel sein soll; danach zu fragen
+   wäre eine Entscheidung, die dem Nutzer nichts einbringt. In einer Halle bei
+   Nacht ist die dunkle Fassung eine echte Erleichterung, aber sie ist kein
+   Geschmacksangebot, sondern eine Anpassung.
+
+   Neu definiert werden ausschließlich Farben. Abstände, Radien und
+   Schriftgrößen bleiben identisch, damit sich beim Wechsel nichts bewegt
+   außer der Helligkeit.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-color: #2dd4bf; /* Teal 400 – auf dunklem Grund lesbarer */
+    --primary-hover: #5eead4; /* Teal 300 */
+    --secondary-color: #14b8a6;
+    --accent-color: #fb923c; /* Orange 400 */
+
+    --bg-primary: #0f172a; /* Slate 900 */
+    --bg-secondary: #1e293b; /* Slate 800 */
+    --bg-tertiary: #334155; /* Slate 700 */
+    --bg-card: #1e293b;
+    --bg-modal: #1e293b;
+
+    --text-primary: #f1f5f9; /* Slate 100 */
+    --text-secondary: #cbd5e1; /* Slate 300 */
+    --text-muted: #94a3b8; /* Slate 400 */
+
+    --status-healthy: #4ade80;
+    --status-warning: #fbbf24;
+    --status-error: #f87171;
+    --status-uncertain: #fbbf24;
+
+    --border-color: #334155;
+    --divider-color: #334155;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 6px 24px rgba(0, 0, 0, 0.5);
+
+    --footer-bg: #1e293b;
+    --footer-text: #f1f5f9;
+    --footer-border: #334155;
+
+    --viz-bg: #0f172a;
+    --viz-grid: rgba(241, 245, 249, 0.07);
+    --viz-primary: rgba(45, 212, 191, 0.9);
+    --viz-fill-top: rgba(45, 212, 191, 0.28);
+    --viz-fill-bottom: rgba(45, 212, 191, 0.04);
+    --viz-text: rgba(241, 245, 249, 0.45);
+
+    --primary-card-badge-bg: rgba(45, 212, 191, 0.15);
+    --primary-card-badge-border: rgba(45, 212, 191, 0.3);
+  }
 }
 
 /* ─── Globales Downscaling für kleine Bildschirme ────────────────────────────
@@ -179,367 +279,33 @@
    THEME: NEON INDUSTRIAL (Cyberpunk)
    Vibe: Dark machinery, OLED display, futuristic high-tech
    =================================== */
-[data-theme='neon'] {
-  /* Core Colors */
-  --primary-color: #00f3ff; /* Neon Cyan/Electric Blue */
-  --primary-hover: #00d4e6;
-  --secondary-color: #00b8ff;
-  --accent-color: #ff8800; /* Neon Orange - für Warnings & Record */
-
-  /* Backgrounds - Ultra Dark */
-  --bg-primary: #0f172a; /* Very dark slate */
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  --bg-card: rgba(30, 41, 59, 0.6);
-  --bg-modal: rgba(15, 23, 42, 0.98);
-
-  /* Text */
-  --text-primary: #f8fafc; /* Almost white */
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-
-  /* Status Colors */
-  --status-healthy: #00ff88; /* Neon green */
-  --status-warning: #ffa500; /* Neon orange */
-  --status-error: #ff3366; /* Neon red/pink */
-  --status-uncertain: #ffaa00;
-
-  /* Borders & Effects */
-  --border-color: rgba(0, 243, 255, 0.3);
-  --divider-color: rgba(248, 250, 252, 0.1);
-
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
-  --glow-primary: 0 0 25px rgba(0, 243, 255, 0.4);
-  --glow-strong: 0 0 40px rgba(0, 243, 255, 0.6);
-
-  /* Footer Surface - darker than content cards for visual "floor" */
-  --footer-bg: rgba(5, 11, 20, 0.95);
-  --footer-text: #f8fafc;
-  --footer-border: rgba(0, 243, 255, 0.2);
-
-  /* Visualizer Colors */
-  --viz-bg: #000000;
-  --viz-grid: rgba(0, 243, 255, 0.08);
-  --viz-primary: rgba(0, 243, 255, 0.9);
-  --viz-fill-top: rgba(0, 243, 255, 0.4);
-  --viz-fill-bottom: rgba(0, 243, 255, 0.08);
-  --viz-text: rgba(0, 243, 255, 0.5);
-
-  /* Primary Card Tokens - Neon Cyberpunk */
-  --primary-card-accent: #00f3ff;
-  --primary-card-border: 2px solid rgba(0, 243, 255, 0.6);
-  --primary-card-glow: 0 0 20px rgba(0, 243, 255, 0.2);
-  --primary-card-shadow: 0 6px 28px rgba(0, 0, 0, 0.55);
-  --primary-card-hover-glow: 0 0 32px rgba(0, 243, 255, 0.35);
-  --primary-card-icon-filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.5));
-  --primary-card-badge-bg: rgba(0, 243, 255, 0.1);
-  --primary-card-badge-border: rgba(0, 243, 255, 0.3);
-}
 
 /* ===================================
    THEME: DAYLIGHT (High Contrast)
    Vibe: Construction site in sunlight, technical datasheet
    =================================== */
-[data-theme='light'] {
-  /* Core Colors */
-  --primary-color: #0f172a; /* Dark engineer blue (high contrast) */
-  --primary-hover: #1e293b;
-  --secondary-color: #334155;
-  --accent-color: #ea580c; /* Signal orange */
-
-  /* Backgrounds - Light */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-tertiary: #f1f5f9;
-  --bg-card: rgba(255, 255, 255, 0.95);
-  --bg-modal: rgba(255, 255, 255, 0.98);
-
-  /* Text - Dark for contrast */
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-
-  /* Status Colors */
-  --status-healthy: #16a34a; /* Darker green for readability */
-  --status-warning: #f59e0b;
-  --status-error: #dc2626;
-  --status-uncertain: #f97316;
-
-  /* Borders & Effects */
-  --border-color: rgba(15, 23, 42, 0.15);
-  --divider-color: rgba(0, 0, 0, 0.08);
-
-  /* Enhanced shadows for better depth perception in light mode */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.1);
-  --glow-primary: 0 0 20px rgba(15, 23, 42, 0.12), 0 0 8px rgba(15, 23, 42, 0.08);
-  --glow-strong: 0 0 30px rgba(15, 23, 42, 0.18), 0 0 12px rgba(15, 23, 42, 0.12);
-
-  /* Footer Surface - light grey to distinguish from white content cards */
-  --footer-bg: #e2e8f0;
-  --footer-text: #0f172a;
-  --footer-border: rgba(15, 23, 42, 0.15);
-
-  /* Visualizer Colors */
-  --viz-bg: #f8fafc;
-  --viz-grid: rgba(15, 23, 42, 0.1);
-  --viz-primary: rgba(15, 23, 42, 0.9);
-  --viz-fill-top: rgba(15, 23, 42, 0.3);
-  --viz-fill-bottom: rgba(15, 23, 42, 0.05);
-  --viz-text: rgba(15, 23, 42, 0.5);
-
-  /* Primary Card Tokens - Daylight High Contrast */
-  --primary-card-accent: #0f172a;
-  --primary-card-border: 2px solid rgba(15, 23, 42, 0.35);
-  --primary-card-glow: 0 0 0 1px rgba(15, 23, 42, 0.08);
-  --primary-card-shadow: 0 6px 24px rgba(0, 0, 0, 0.14), 0 3px 10px rgba(0, 0, 0, 0.08);
-  --primary-card-hover-glow: 0 0 0 2px rgba(15, 23, 42, 0.12);
-  --primary-card-icon-filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.2));
-  --primary-card-badge-bg: rgba(15, 23, 42, 0.06);
-  --primary-card-badge-border: rgba(15, 23, 42, 0.15);
-}
 
 /* Light theme surface tuning for better readability */
-[data-theme='light'] .sub-container {
-  background: var(--bg-primary);
-  border-color: rgba(15, 23, 42, 0.12);
-  box-shadow: var(--shadow-sm);
-}
-
-[data-theme='light'] .machine-selection-option {
-  background: var(--bg-primary);
-  border-color: rgba(15, 23, 42, 0.12);
-  box-shadow: var(--shadow-sm);
-}
-
-[data-theme='light'] .machine-input {
-  background: #ffffff;
-  border-color: rgba(15, 23, 42, 0.2);
-  color: var(--text-primary);
-}
-
-[data-theme='light'] .machine-input:focus {
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
-}
-
-[data-theme='light'] .option-divider span {
-  background: var(--bg-primary);
-  color: var(--text-secondary);
-}
 
 /* Light theme primary card adjustments */
-[data-theme='light'] .main-container[data-variant='primary'] .main-header:hover {
-  background: rgba(15, 23, 42, 0.04);
-}
-
-[data-theme='light'] .primary-card-badge {
-  color: var(--text-primary);
-}
 
 /* ===================================
    THEME: BRAND (Zanobot Original)
    Vibe: Light, friendly, trustworthy - matching the colorful banner
    "KI, der man vertraut – freundlich, klar, leicht."
    =================================== */
-[data-theme='brand'] {
-  /* Core Colors - Friendly Cyan/Mint from Banner */
-  --primary-color: #00b8d9; /* Friendly cyan */
-  --primary-hover: #00a0c0;
-  --secondary-color: #4dd0c0; /* Soft mint-cyan */
-  --accent-color: #5ecfb8; /* Gentle mint */
-
-  /* Backgrounds - Light, airy, almost white */
-  --bg-primary: #f7fafc; /* Very light, almost white */
-  --bg-secondary: #eef5fa; /* Very light blue-grey */
-  --bg-tertiary: #e3edf5; /* Subtle blue tint */
-  --bg-card: rgba(255, 255, 255, 0.98); /* White cards */
-  --bg-modal: rgba(255, 255, 255, 0.98);
-
-  /* Text - Dark anthracite, not pure black */
-  --text-primary: #2d3e50; /* Dark anthracite */
-  --text-secondary: #5a6b7a; /* Medium grey-blue */
-  --text-muted: #8a9aaa; /* Light grey */
-
-  /* Status Colors - Friendly, clear tones */
-  --status-healthy: #10b981; /* Friendly green */
-  --status-warning: #f59e0b; /* Warm amber */
-  --status-error: #ef4444; /* Clear red */
-  --status-uncertain: #f97316; /* Warm orange */
-
-  /* Borders & Effects - Soft, subtle */
-  --border-color: rgba(0, 184, 217, 0.18);
-  --divider-color: rgba(0, 0, 0, 0.06);
-
-  /* Soft shadows - gentle depth */
-  --shadow-sm: 0 1px 3px rgba(0, 60, 80, 0.04), 0 1px 2px rgba(0, 60, 80, 0.02);
-  --shadow-md: 0 4px 12px rgba(0, 60, 80, 0.06), 0 2px 4px rgba(0, 60, 80, 0.03);
-  --shadow-lg: 0 8px 24px rgba(0, 60, 80, 0.08), 0 4px 8px rgba(0, 60, 80, 0.04);
-  --glow-primary: 0 0 16px rgba(0, 184, 217, 0.12);
-  --glow-strong: 0 0 24px rgba(0, 184, 217, 0.18);
-
-  /* Footer Surface - subtle light distinction */
-  --footer-bg: #eef5fa;
-  --footer-text: #2d3e50;
-  --footer-border: rgba(0, 184, 217, 0.12);
-
-  /* Visualizer Colors - Light mode friendly */
-  --viz-bg: #f7fafc;
-  --viz-grid: rgba(0, 184, 217, 0.1);
-  --viz-primary: rgba(0, 184, 217, 0.85);
-  --viz-fill-top: rgba(0, 184, 217, 0.25);
-  --viz-fill-bottom: rgba(0, 184, 217, 0.05);
-  --viz-text: rgba(0, 140, 170, 0.6);
-
-  /* Primary Card Tokens - Light, highlighted but not dark */
-  --primary-card-accent: #00b8d9;
-  --primary-card-border: 2px solid rgba(0, 184, 217, 0.35);
-  --primary-card-glow: 0 0 0 1px rgba(0, 184, 217, 0.12), 0 0 16px rgba(0, 184, 217, 0.1);
-  --primary-card-shadow: 0 6px 20px rgba(0, 60, 80, 0.1), 0 3px 8px rgba(0, 60, 80, 0.05);
-  --primary-card-hover-glow: 0 0 24px rgba(0, 184, 217, 0.18);
-  --primary-card-icon-filter: drop-shadow(0 0 6px rgba(0, 184, 217, 0.35));
-  --primary-card-badge-bg: rgba(0, 184, 217, 0.08);
-  --primary-card-badge-border: rgba(0, 184, 217, 0.2);
-}
 
 /* Brand Theme: Light surface tuning for better readability */
-[data-theme='brand'] .sub-container {
-  background: var(--bg-primary);
-  border-color: rgba(0, 184, 217, 0.12);
-  box-shadow: var(--shadow-sm);
-}
-
-[data-theme='brand'] .machine-selection-option {
-  background: var(--bg-primary);
-  border-color: rgba(0, 184, 217, 0.12);
-  box-shadow: var(--shadow-sm);
-}
-
-[data-theme='brand'] .machine-input {
-  background: #ffffff;
-  border-color: rgba(0, 184, 217, 0.2);
-  color: var(--text-primary);
-}
-
-[data-theme='brand'] .machine-input:focus {
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(0, 184, 217, 0.1);
-}
-
-[data-theme='brand'] .option-divider span {
-  background: var(--bg-primary);
-  color: var(--text-secondary);
-}
 
 /* Brand theme primary card adjustments */
-[data-theme='brand'] .main-container[data-variant='primary'] .main-header:hover {
-  background: rgba(0, 184, 217, 0.04);
-}
-
-[data-theme='brand'] .primary-card-badge {
-  color: var(--text-primary);
-}
 
 /* ===================================
    THEME: FOCUS (Diagnose-first)
    Vibe: Bright, friendly, optimistic, calm - Steve Jobs principle
    "One primary action. Everything else supports it."
    =================================== */
-[data-theme='focus'] {
-  /* Core Colors - Warm, inviting, professional */
-  --primary-color: #0891b2; /* Warm teal - friendly yet professional */
-  --primary-hover: #0e7490;
-  --secondary-color: #06b6d4;
-  --accent-color: #f59e0b; /* Warm amber - positive, optimistic */
-
-  /* Backgrounds - Light, airy, off-white */
-  --bg-primary: #fafbfc; /* Warm off-white */
-  --bg-secondary: #f0f4f8; /* Very light blue-grey */
-  --bg-tertiary: #e2e8f0;
-  --bg-card: rgba(255, 255, 255, 0.95);
-  --bg-modal: rgba(255, 255, 255, 0.98);
-
-  /* Text - Soft dark for readability without harshness */
-  --text-primary: #1e293b; /* Soft dark blue-grey */
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-
-  /* Status Colors - Friendly, optimistic tones */
-  --status-healthy: #10b981; /* Friendly green */
-  --status-warning: #f59e0b; /* Warm amber */
-  --status-error: #ef4444; /* Soft red */
-  --status-uncertain: #f97316; /* Warm orange */
-
-  /* Borders & Effects - Soft, subtle */
-  --border-color: rgba(8, 145, 178, 0.15);
-  --divider-color: rgba(0, 0, 0, 0.06);
-
-  /* Soft shadows - gentle depth without harshness */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
-  --glow-primary: 0 0 16px rgba(8, 145, 178, 0.12);
-  --glow-strong: 0 0 24px rgba(8, 145, 178, 0.18);
-
-  /* Footer Surface - subtle distinction */
-  --footer-bg: #f0f4f8;
-  --footer-text: #1e293b;
-  --footer-border: rgba(8, 145, 178, 0.1);
-
-  /* Visualizer Colors - Light mode friendly */
-  --viz-bg: #fafbfc;
-  --viz-grid: rgba(8, 145, 178, 0.08);
-  --viz-primary: rgba(8, 145, 178, 0.85);
-  --viz-fill-top: rgba(8, 145, 178, 0.25);
-  --viz-fill-bottom: rgba(8, 145, 178, 0.05);
-  --viz-text: rgba(8, 145, 178, 0.5);
-
-  /* Focus Theme Specific: Hierarchy Variables */
-  --focus-primary-scale: 1; /* Diagnose card: full prominence */
-  --focus-secondary-scale: 0.92; /* Supporting cards: slightly smaller */
-  --focus-secondary-width: 65%; /* Supporting cards: narrower width (65-70%) */
-
-  /* Focus Theme: Enhanced Primary Card Styling */
-  --focus-primary-border: 2px solid rgba(8, 145, 178, 0.6);
-  --focus-primary-shadow: 0 6px 20px rgba(8, 145, 178, 0.12), 0 3px 8px rgba(0, 0, 0, 0.06);
-  --focus-primary-glow: 0 0 0 1px rgba(8, 145, 178, 0.15), 0 0 20px rgba(8, 145, 178, 0.08);
-
-  /* Focus Theme: Subtle Secondary Card Styling */
-  --focus-secondary-border: 1px solid rgba(148, 163, 184, 0.25);
-  --focus-secondary-left-accent: 2px solid rgba(148, 163, 184, 0.4);
-}
 
 /* Focus Theme: Light surface tuning for better readability */
-[data-theme='focus'] .sub-container {
-  background: var(--bg-primary);
-  border-color: rgba(8, 145, 178, 0.1);
-  box-shadow: var(--shadow-sm);
-}
-
-[data-theme='focus'] .machine-selection-option {
-  background: var(--bg-primary);
-  border-color: rgba(8, 145, 178, 0.1);
-  box-shadow: var(--shadow-sm);
-}
-
-[data-theme='focus'] .machine-input {
-  background: #ffffff;
-  border-color: rgba(8, 145, 178, 0.2);
-  color: var(--text-primary);
-}
-
-[data-theme='focus'] .machine-input:focus {
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
-}
-
-[data-theme='focus'] .option-divider span {
-  background: var(--bg-primary);
-  color: var(--text-secondary);
-}
 
 /* ===================================
    FOCUS THEME: LAYOUT HIERARCHY
@@ -549,138 +315,17 @@
    =================================== */
 
 /* Focus Theme: Reorder containers - Diagnose FIRST */
-[data-theme='focus'] .main-actions {
-  /* Flex container for reordering */
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end; /* Right-align children by default */
-}
 
 /* Focus Theme: Primary Action - Zustand prüfen (full width, dominant) */
-[data-theme='focus'] .main-actions > .main-container:nth-child(3) {
-  /* Diagnose is the 3rd child in HTML, but visually FIRST */
-  order: -1;
-  width: 100%;
-  /* Enhanced visual prominence - unmistakably the primary action */
-  border: var(--focus-primary-border);
-  box-shadow: var(--focus-primary-shadow), var(--focus-primary-glow);
-  background: rgba(255, 255, 255, 0.99);
-  /* Subtle scale increase for dominance */
-  transform: scale(1.01);
-  transform-origin: center top;
-  /* Clear focus indicator */
-  outline: none;
-  position: relative;
-  z-index: 2;
-}
-
-[data-theme='focus'] .main-actions > .main-container:nth-child(3) .main-header {
-  /* Larger, more prominent header for primary action */
-  min-height: clamp(90px, 12vh, 120px);
-  padding: clamp(1rem, 3vh, 2.5rem) clamp(1rem, 3vw, var(--spacing-lg));
-}
-
-[data-theme='focus'] .main-actions > .main-container:nth-child(3) .container-title {
-  font-size: clamp(1.1rem, 2.5vw, 1.35rem);
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
-[data-theme='focus'] .main-actions > .main-container:nth-child(3) .header-with-icon svg {
-  width: 28px;
-  height: 28px;
-}
 
 /* Focus Theme: Secondary Actions - Machine Select & Reference */
-[data-theme='focus'] .main-actions > .main-container:nth-child(1),
-[data-theme='focus'] .main-actions > .main-container:nth-child(2) {
-  /* Narrower width (65-70%), explicitly right-aligned */
-  width: var(--focus-secondary-width, 65%);
-  align-self: flex-end;
-  margin-left: auto;
-  margin-right: 0;
-  /* Subtler appearance - visually receded */
-  border: var(--focus-secondary-border);
-  background: rgba(250, 251, 252, 0.9);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-  /* Subtle left border accent - less prominent */
-  border-left: var(--focus-secondary-left-accent);
-  /* Slightly reduced opacity for visual hierarchy */
-  opacity: 0.92;
-  position: relative;
-  z-index: 1;
-  /* Smooth transition for width/height expansion */
-  transition:
-    width 0.3s ease,
-    align-self 0.3s ease,
-    margin-left 0.3s ease,
-    margin-right 0.3s ease,
-    opacity 0.3s ease,
-    background 0.3s ease,
-    box-shadow 0.3s ease,
-    border-color 0.3s ease;
-}
-
-[data-theme='focus'] .main-actions > .main-container:nth-child(1) .main-header,
-[data-theme='focus'] .main-actions > .main-container:nth-child(2) .main-header {
-  /* Smaller header for secondary actions */
-  min-height: clamp(60px, 8vh, 80px);
-  padding: clamp(0.6rem, 2vh, 1.5rem) clamp(0.75rem, 2.5vw, var(--spacing-md));
-  /* Smooth transition for header size changes */
-  transition:
-    min-height 0.3s ease,
-    padding 0.3s ease;
-}
-
-[data-theme='focus'] .main-actions > .main-container:nth-child(1) .container-title,
-[data-theme='focus'] .main-actions > .main-container:nth-child(2) .container-title {
-  font-size: clamp(0.8rem, 1.8vw, 0.95rem);
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.01em;
-  /* Smooth transition for text changes */
-  transition:
-    font-size 0.3s ease,
-    font-weight 0.3s ease,
-    color 0.3s ease;
-}
-
-[data-theme='focus'] .main-actions > .main-container:nth-child(1) .header-with-icon svg,
-[data-theme='focus'] .main-actions > .main-container:nth-child(2) .header-with-icon svg {
-  width: 20px;
-  height: 20px;
-  stroke: var(--text-muted);
-  /* Smooth transition for icon changes */
-  transition:
-    width 0.3s ease,
-    height 0.3s ease,
-    stroke 0.3s ease;
-}
 
 /* Focus Theme: Secondary cards hover - subtle feedback */
-[data-theme='focus'] .main-actions > .main-container:nth-child(1):hover,
-[data-theme='focus'] .main-actions > .main-container:nth-child(2):hover {
-  border-left-color: rgba(8, 145, 178, 0.5);
-  background: rgba(255, 255, 255, 0.95);
-  opacity: 1;
-}
 
 /* Focus Theme: Primary card hover - confident, dominant feedback */
-[data-theme='focus'] .main-actions > .main-container:nth-child(3):hover {
-  box-shadow:
-    0 8px 28px rgba(8, 145, 178, 0.15),
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    0 0 0 2px rgba(8, 145, 178, 0.2);
-  transform: scale(1.01) translateY(-2px);
-}
 
 /* Focus Theme: Mobile adjustments - maintain hierarchy on small screens */
 @media (max-width: 480px) {
-  [data-theme='focus'] .main-actions > .main-container:nth-child(1),
-  [data-theme='focus'] .main-actions > .main-container:nth-child(2) {
-    /* Slightly wider on mobile for touch targets, but still secondary */
-    width: 85%;
-  }
 }
 
 /* ===================================
@@ -707,55 +352,15 @@
 }
 
 /* Focus Theme: Override secondary narrow width when expanded */
-[data-theme='focus'] .main-actions > .main-container:nth-child(1).expanded,
-[data-theme='focus'] .main-actions > .main-container:nth-child(2).expanded {
-  /* Expand to full content width */
-  width: 100%;
-  max-width: var(--content-max-width);
-  /* Center the expanded card */
-  align-self: center;
-  margin-left: auto;
-  margin-right: auto;
-  /* Full presence when expanded */
-  opacity: 1;
-  /* Elevated visual state */
-  background: var(--bg-card);
-  box-shadow: var(--shadow-lg, 0 4px 12px rgba(0, 0, 0, 0.1));
-  border-color: var(--primary-color);
-  /* Remove secondary left accent when expanded */
-  border-left: 1px solid var(--primary-color);
-}
 
 /* Focus Theme: Restore secondary header when expanded */
-[data-theme='focus'] .main-actions > .main-container:nth-child(1).expanded .main-header,
-[data-theme='focus'] .main-actions > .main-container:nth-child(2).expanded .main-header {
-  /* Full-size header when expanded */
-  min-height: clamp(78px, 10.5vh, 108px);
-  padding: clamp(0.75rem, 2.7vh, 2.25rem) clamp(0.75rem, 3vw, var(--spacing-lg));
-}
 
 /* Focus Theme: Restore secondary title when expanded */
-[data-theme='focus'] .main-actions > .main-container:nth-child(1).expanded .container-title,
-[data-theme='focus'] .main-actions > .main-container:nth-child(2).expanded .container-title {
-  font-size: clamp(0.9rem, 2vw, 1.1rem);
-  font-weight: 600;
-  color: var(--text-primary);
-}
 
 /* Focus Theme: Restore secondary icon when expanded */
-[data-theme='focus'] .main-actions > .main-container:nth-child(1).expanded .header-with-icon svg,
-[data-theme='focus'] .main-actions > .main-container:nth-child(2).expanded .header-with-icon svg {
-  width: 24px;
-  height: 24px;
-  stroke: var(--primary-color);
-}
 
 /* Mobile: Expanded cards always full width */
 @media (max-width: 480px) {
-  [data-theme='focus'] .main-actions > .main-container:nth-child(1).expanded,
-  [data-theme='focus'] .main-actions > .main-container:nth-child(2).expanded {
-    width: 100%;
-  }
 }
 
 /* Respect reduced motion preference */
@@ -766,38 +371,10 @@
 }
 
 /* Focus Theme: Footer & Spacing - clear separation, visually secondary */
-[data-theme='focus'] .footer {
-  /* Clear visual separation from action area */
-  margin-top: 2rem;
-  background: var(--footer-bg);
-  border: 1px solid var(--footer-border);
-  /* Visually secondary - no competition with primary action */
-  opacity: 0.85;
-}
-
-[data-theme='focus'] .footer:hover {
-  opacity: 1;
-}
-
-[data-theme='focus'] .footer-link {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-}
-
-[data-theme='focus'] .footer-link:hover {
-  color: var(--primary-color);
-}
 
 /* Focus Theme: Main actions spacing */
-[data-theme='focus'] .main-actions {
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
 
 /* Focus Theme: Clear spacing between primary and secondary cards */
-[data-theme='focus'] .main-actions > .main-container:nth-child(3) {
-  margin-bottom: 0.75rem;
-}
 
 /* ===================================
    RESET & BASE STYLES
@@ -837,7 +414,10 @@ body {
 .container {
   max-width: 900px;
   margin: 0 auto;
-  padding: var(--spacing-md);
+  /* Senkrecht großzügig, seitlich knapp: Höhe ist auf dem Handy im Überfluss
+     vorhanden (man scrollt), Breite ist es nicht (man kann nicht breiter
+     scrollen, ohne den Satz zu zerbrechen). */
+  padding: var(--spacing-md) var(--space-shell-x);
   padding-bottom: var(--space-footer-bottom);
   display: flex;
   flex-direction: column;
@@ -1014,52 +594,15 @@ body {
     0 1px 2px rgba(255, 255, 255, 0.7);
 }
 
-[data-theme='neon'] .hero-headline,
-[data-theme='neon'] .hero-subline {
-  text-shadow:
-    0 0 3px rgba(0, 0, 0, 0.9),
-    0 0 6px rgba(0, 0, 0, 0.8),
-    0 0 10px rgba(0, 0, 0, 0.6),
-    0 1px 2px rgba(0, 0, 0, 0.6);
-}
-
 /* Theme-specific text colors */
 
 /* Dark Theme (Neon): Light text with high contrast */
-[data-theme='neon'] .hero-headline {
-  color: #00f3ff; /* Neon cyan */
-}
-
-[data-theme='neon'] .hero-subline {
-  color: rgba(248, 250, 252, 0.8); /* Almost white with opacity */
-}
 
 /* Light Theme: Dark text for readability */
-[data-theme='light'] .hero-headline {
-  color: #1e293b; /* Dark anthracite */
-}
-
-[data-theme='light'] .hero-subline {
-  color: #475569; /* Neutral gray */
-}
 
 /* Brand Theme (Zanobo): Light theme with brand identity */
-[data-theme='brand'] .hero-headline {
-  color: #2d3e50; /* Dark anthracite for light background */
-}
-
-[data-theme='brand'] .hero-subline {
-  color: #5a6b7a; /* Medium grey-blue for readability */
-}
 
 /* Focus Theme (Steve Jobs): Very restrained, minimalist */
-[data-theme='focus'] .hero-headline {
-  color: #1e293b; /* Very dark grey */
-}
-
-[data-theme='focus'] .hero-subline {
-  color: #94a3b8; /* Light grey */
-}
 
 /* Responsive: Mobile adjustments */
 @media (max-width: 768px) {
@@ -1306,7 +849,13 @@ body {
 }
 
 .container-content {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--space-card-x) var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+  .container-content {
+    padding: var(--spacing-lg);
+  }
 }
 
 /* Main Container Header (for collapsible main containers) */
@@ -1608,17 +1157,6 @@ body {
 }
 
 /* Theme-specific highlight colors */
-[data-theme='light'] .machine-input.input-highlight {
-  box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.15);
-}
-
-[data-theme='brand'] .machine-input.input-highlight {
-  box-shadow: 0 0 0 4px rgba(0, 184, 217, 0.25);
-}
-
-[data-theme='focus'] .machine-input.input-highlight {
-  box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.25);
-}
 
 /* Action button with icon */
 .action-btn svg {
@@ -3008,45 +2546,10 @@ body {
 }
 
 /* Theme: Neon specific enhancements */
-[data-theme='neon'] .ranking-item[data-rank='1'] {
-  box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
-}
-
-[data-theme='neon'] .ranking-bar.bar-healthy-high {
-  box-shadow: 0 0 8px var(--status-healthy);
-}
-
-[data-theme='neon'] .ranking-bar.bar-error-high {
-  box-shadow: 0 0 8px var(--status-error);
-}
 
 /* Theme: Light mode adjustments */
-[data-theme='light'] .ranking-item {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-}
-
-[data-theme='light'] .ranking-bar-container {
-  background: var(--bg-tertiary);
-}
-
-[data-theme='light'] .ranking-bar-glow {
-  opacity: 0.2;
-}
 
 /* Theme: Brand mode adjustments (light theme) */
-[data-theme='brand'] .ranking-item {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-}
-
-[data-theme='brand'] .ranking-bar-container {
-  background: var(--bg-tertiary);
-}
-
-[data-theme='brand'] .ranking-bar-glow {
-  opacity: 0.2;
-}
 
 /* Animation keyframes */
 @keyframes ranking-slide-in {
@@ -3070,24 +2573,6 @@ body {
   --status-healthy-rgb: 0, 230, 118;
   --status-error-rgb: 255, 82, 82;
   --status-warning-rgb: 255, 183, 77;
-}
-
-[data-theme='neon'] {
-  --status-healthy-rgb: 0, 255, 136;
-  --status-error-rgb: 255, 51, 102;
-  --status-warning-rgb: 255, 165, 0;
-}
-
-[data-theme='light'] {
-  --status-healthy-rgb: 22, 163, 74;
-  --status-error-rgb: 220, 38, 38;
-  --status-warning-rgb: 245, 158, 11;
-}
-
-[data-theme='brand'] {
-  --status-healthy-rgb: 16, 185, 129;
-  --status-error-rgb: 239, 68, 68;
-  --status-warning-rgb: 245, 158, 11;
 }
 
 .result-quality {
@@ -4074,9 +3559,6 @@ body {
 
 /* Neon-Cyan (#00f3ff) trägt kein Weiß — dieselbe Ausnahme, die
    `.result-action-primary` schon braucht. */
-[data-theme='neon'] .listen-btn-difference {
-  color: var(--bg-primary);
-}
 
 /* „Auf hörbaren Bereich": der einzige Faktor, der aus der Messung kommt statt
    aus einer Voreinstellung — darf sich von 🐢/▶/🐇 unterscheiden. Das Etikett
@@ -6766,26 +6248,8 @@ select:focus-visible {
 }
 
 /* Light theme adjustments for view level selector */
-[data-theme='light'] .view-level-selector {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-}
-
-[data-theme='light'] .view-level-btn.active {
-  background: var(--primary-color);
-  color: #ffffff;
-}
 
 /* Brand theme adjustments for view level selector (light theme) */
-[data-theme='brand'] .view-level-selector {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-}
-
-[data-theme='brand'] .view-level-btn.active {
-  background: var(--primary-color);
-  color: #ffffff;
-}
 
 /* ===================================
    VIEW LEVEL VISIBILITY RULES
@@ -10811,10 +10275,6 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 }
 
 /* Light/Brand theme adjustments */
-[data-theme='light'] .recording-countdown-bar-track,
-[data-theme='brand'] .recording-countdown-bar-track {
-  background: rgba(0, 0, 0, 0.08);
-}
 
 /* ===================================
    Live Signal Quality Bar (Reference Recording)
@@ -11068,14 +10528,6 @@ html[data-view-level='expert'] .diagnosis-recommendation {
 }
 
 /* Theme adjustments */
-[data-theme='neon'] .dashboard-attention {
-  background: rgba(17, 40, 64, 0.6);
-  border-color: rgba(0, 212, 255, 0.15);
-}
-
-[data-theme='neon'] .dashboard-attention-btn {
-  color: var(--bg-primary);
-}
 
 /* Responsive: Stack attention card buttons on very small screens */
 @media (max-width: 360px) {
@@ -11250,21 +10702,6 @@ html[data-view-level='expert'] .diagnosis-recommendation {
 }
 
 /* Neon theme adjustments */
-[data-theme='neon'] .result-ampel.ampel-healthy {
-  background: rgba(76, 175, 80, 0.12);
-}
-[data-theme='neon'] .result-ampel.ampel-warning {
-  background: rgba(255, 152, 0, 0.12);
-}
-[data-theme='neon'] .result-ampel.ampel-critical {
-  background: rgba(239, 68, 68, 0.12);
-}
-[data-theme='neon'] .result-ampel-recommendation {
-  border-top-color: rgba(255, 255, 255, 0.08);
-}
-[data-theme='neon'] .result-action-primary {
-  color: var(--bg-primary);
-}
 
 /* ============================================================================
    WELLE 3: HISTORY MODAL
@@ -11465,12 +10902,6 @@ html[data-view-level='expert'] .diagnosis-recommendation {
 }
 
 /* Neon theme */
-[data-theme='neon'] .history-chart-point {
-  stroke: var(--bg-primary);
-}
-[data-theme='neon'] .history-list-item.expanded {
-  background: rgba(0, 212, 255, 0.06);
-}
 
 /* ============================================================================
    WELLE 3: UNIFIED FLOW MODAL
@@ -11618,13 +11049,6 @@ html[data-view-level='expert'] .diagnosis-recommendation {
 }
 
 /* Neon theme overrides */
-[data-theme='neon'] .dashboard-trend-warning.trend-declining {
-  background: rgba(255, 152, 0, 0.12);
-}
-
-[data-theme='neon'] .dashboard-trend-warning.trend-critical {
-  background: rgba(239, 68, 68, 0.12);
-}
 
 /* ============================================================================
    WELLE 4: MAINTENANCE EXPORT OPTIONS (SV3)
@@ -11734,77 +11158,27 @@ html[data-view-level='expert'] .diagnosis-recommendation {
 }
 
 /* ===================================
-   WELLE 5: UNIVERSAL CARD ORDERING
-   "Zustand prüfen" visually first in ALL themes
+   REIHENFOLGE DER HAUPTKARTEN
+
+   Hier stand eine Regel, die „Zustand prüfen" per order: -1 optisch nach vorn
+   zog, obwohl die Karte im HTML an dritter Stelle steht. Zusammen mit den
+   Schrittziffern las sich die Startseite dadurch als 3 · 1 · 2.
+
+   Entfernt, aus zwei Gründen:
+
+     1. Solange die Karten Ziffern tragen, muss die sichtbare Reihenfolge
+        diesen Ziffern folgen. Alles andere ist ein Widerspruch im Bild.
+     2. Optische und DOM-Reihenfolge auseinanderzuziehen trifft jeden, der
+        mit Tastatur oder Screenreader bedient: Der Tabulator läuft dann in
+        einer anderen Folge als das Auge.
+
+   Der Vorrang von „Zustand prüfen" bleibt erhalten, aber über den farbigen
+   Rahmen aus data-variant="primary" – also über Gewicht statt Position.
+
+   Ob die Schrittleiter 1 · 2 · 3 überhaupt die richtige Form für die
+   Startseite ist, ist eine eigene Frage; siehe Abschnitt 2 in
+   docs/gestaltprinzip-soundfuchs.md.
    =================================== */
-
-/* "Zustand prüfen" (3rd child in HTML) → visually first */
-.main-actions > .main-container:nth-child(3) {
-  order: -1;
-}
-
-/* Secondary cards: Subtle visual recession in non-focus themes */
-/* Neon Theme */
-[data-theme='neon'] .main-actions > .main-container:nth-child(1),
-[data-theme='neon'] .main-actions > .main-container:nth-child(2) {
-  opacity: 0.88;
-  transition: opacity 0.2s ease;
-}
-
-[data-theme='neon'] .main-actions > .main-container:nth-child(1):hover,
-[data-theme='neon'] .main-actions > .main-container:nth-child(2):hover {
-  opacity: 1;
-}
-
-[data-theme='neon'] .main-actions > .main-container:nth-child(1) .container-title,
-[data-theme='neon'] .main-actions > .main-container:nth-child(2) .container-title {
-  font-size: clamp(0.85rem, 2vw, 1rem);
-  font-weight: 500;
-}
-
-/* Light Theme */
-[data-theme='light'] .main-actions > .main-container:nth-child(1),
-[data-theme='light'] .main-actions > .main-container:nth-child(2) {
-  opacity: 0.9;
-  box-shadow: var(--shadow-sm);
-  transition:
-    opacity 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-[data-theme='light'] .main-actions > .main-container:nth-child(1):hover,
-[data-theme='light'] .main-actions > .main-container:nth-child(2):hover {
-  opacity: 1;
-  box-shadow: var(--shadow-md);
-}
-
-[data-theme='light'] .main-actions > .main-container:nth-child(1) .container-title,
-[data-theme='light'] .main-actions > .main-container:nth-child(2) .container-title {
-  font-size: clamp(0.85rem, 2vw, 1rem);
-  font-weight: 500;
-}
-
-/* Brand Theme */
-[data-theme='brand'] .main-actions > .main-container:nth-child(1),
-[data-theme='brand'] .main-actions > .main-container:nth-child(2) {
-  opacity: 0.9;
-  box-shadow: var(--shadow-sm);
-  transition:
-    opacity 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-[data-theme='brand'] .main-actions > .main-container:nth-child(1):hover,
-[data-theme='brand'] .main-actions > .main-container:nth-child(2):hover {
-  opacity: 1;
-  box-shadow: var(--shadow-md);
-}
-
-[data-theme='brand'] .main-actions > .main-container:nth-child(1) .container-title,
-[data-theme='brand'] .main-actions > .main-container:nth-child(2) .container-title {
-  font-size: clamp(0.85rem, 2vw, 1rem);
-  font-weight: 500;
-}
 
 /* ===================================
    WELLE 5: DASHBOARD COMPACT (Mobile)
@@ -11955,16 +11329,6 @@ html[data-view-level='expert'] .diagnosis-recommendation {
 }
 
 /* Theme-specific tile backgrounds */
-[data-theme='neon'] .identify-tile {
-  background: rgba(17, 40, 64, 0.4);
-  border-color: rgba(0, 212, 255, 0.15);
-}
-
-[data-theme='neon'] .identify-tile:hover,
-[data-theme='neon'] .identify-tile.active {
-  background: rgba(17, 40, 64, 0.6);
-  border-color: var(--primary-color);
-}
 
 /* ===================================
    BANNER CROP MODAL
@@ -12168,31 +11532,10 @@ html[data-view-level='expert'] .diagnosis-recommendation {
    =================================== */
 
 /* Erst-Lauf: Diagnose-Karte zurück an Position 3, ohne Primär-Prominenz */
-[data-theme='focus'] body.zb-first-run .main-actions > .main-container:nth-child(3) {
-  order: 0;
-  width: 100%;
-  transform: none;
-  border: var(--focus-secondary-border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-  background: rgba(250, 251, 252, 0.9);
-  opacity: 0.92;
-}
 
 /* Erst-Lauf: Schritt-Karten in voller Breite untereinander */
-[data-theme='focus'] body.zb-first-run .main-actions > .main-container:nth-child(1),
-[data-theme='focus'] body.zb-first-run .main-actions > .main-container:nth-child(2) {
-  width: 100%;
-  align-self: stretch;
-  margin-left: 0;
-  opacity: 1;
-}
 
 /* Erst-Lauf: Schritt 1 (Maschine wählen) trägt jetzt die Prominenz */
-[data-theme='focus'] body.zb-first-run .main-actions > .main-container:nth-child(1) {
-  border: var(--focus-primary-border);
-  box-shadow: var(--focus-primary-shadow), var(--focus-primary-glow);
-  background: rgba(255, 255, 255, 0.99);
-}
 
 /* Schritt-Badges (①②③) — nur im Erst-Lauf sichtbar */
 .step-badge {
@@ -12258,13 +11601,44 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
 /* UX: Eingeklappte Sekundär-Karten wirken nicht mehr „deaktiviert" —
    Titel in Volltonfarbe und volle Deckkraft; die Hierarchie bleibt über
    Größe/Rahmen erhalten. (Grau wurde von Neulingen als „gesperrt" gelesen.) */
-[data-theme='focus'] .main-actions > .main-container:nth-child(1),
-[data-theme='focus'] .main-actions > .main-container:nth-child(2) {
-  opacity: 1;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KOPFZEILE
+
+   Ersetzt den früheren Hero-Bereich mit Bannergrafik. Eine Zeile, drei Dinge:
+   das Familienzeichen, der Name, die Frage. Mehr braucht der Einstieg nicht –
+   und was hier an Höhe frei wird, bekommt die erste Entscheidung.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem 0 1rem;
 }
 
-[data-theme='focus'] .main-actions > .main-container:nth-child(1) .container-title,
-[data-theme='focus'] .main-actions > .main-container:nth-child(2) .container-title {
+.app-mark {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.app-header-text {
+  min-width: 0;
+}
+
+.app-title {
+  margin: 0;
+  font-size: var(--font-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
-  font-weight: 600;
+  line-height: 1.15;
+}
+
+.app-claim {
+  margin: 0.1rem 0 0;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  line-height: 1.3;
 }

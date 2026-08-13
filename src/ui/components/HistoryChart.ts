@@ -26,7 +26,8 @@ export class HistoryChart {
   private hoveredPoint: ChartDataPoint | null = null;
   private animationProgress: number = 0;
   private animationFrame: number | null = null;
-  private themeObserver: MutationObserver | null = null;
+  private darkQuery: MediaQueryList | null = null;
+  private onSchemeChange: (() => void) | null = null;
 
   // Bound listener references so destroy() can actually remove them
   private readonly onMouseMove = (e: MouseEvent): void => this.handleMouseMove(e);
@@ -39,7 +40,7 @@ export class HistoryChart {
     top: 40,
     right: 30,
     bottom: 60,
-    left: 60
+    left: 60,
   };
 
   // Theme-aware colors (read from CSS variables)
@@ -51,13 +52,13 @@ export class HistoryChart {
     textMuted: '#888888',
     background: '#2a2a2a',
     gridLine: '#444444',
-    chartLine: '#00E676'
+    chartLine: '#00E676',
   };
 
   // Thresholds for health status
   private readonly thresholds = {
     healthy: 75,
-    uncertain: 50
+    uncertain: 50,
   };
 
   // A "bad feature" (frequency anomaly) is flagged on the timeline once its
@@ -101,27 +102,23 @@ export class HistoryChart {
       textMuted: styles.getPropertyValue('--text-muted').trim() || '#888888',
       background: styles.getPropertyValue('--bg-tertiary').trim() || '#2a2a2a',
       gridLine: styles.getPropertyValue('--border-color').trim() || '#444444',
-      chartLine: styles.getPropertyValue('--status-healthy').trim() || '#00E676'
+      chartLine: styles.getPropertyValue('--status-healthy').trim() || '#00E676',
     };
   }
 
   /**
-   * Observe theme changes and update colors accordingly
+   * Auf den Helligkeitswechsel des Geräts hören und die Farben nachziehen.
+   *
+   * Vorher wurde das Attribut `data-theme` beobachtet. Seit es nur noch einen
+   * Look gibt, wechselt die Helligkeit über `prefers-color-scheme`.
    */
   private observeThemeChanges(): void {
-    this.themeObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'data-theme') {
-          this.updateThemeColors();
-          this.render();
-        }
-      });
-    });
-
-    this.themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
-    });
+    this.darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    this.onSchemeChange = () => {
+      this.updateThemeColors();
+      this.render();
+    };
+    this.darkQuery.addEventListener('change', this.onSchemeChange);
   }
 
   /**
@@ -143,8 +140,11 @@ export class HistoryChart {
    */
   private handleMouseMove(e: MouseEvent): void {
     const rect = this.canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (this.canvas.width / rect.width) / (window.devicePixelRatio || 1);
-    const y = (e.clientY - rect.top) * (this.canvas.height / rect.height) / (window.devicePixelRatio || 1);
+    const x =
+      ((e.clientX - rect.left) * (this.canvas.width / rect.width)) / (window.devicePixelRatio || 1);
+    const y =
+      ((e.clientY - rect.top) * (this.canvas.height / rect.height)) /
+      (window.devicePixelRatio || 1);
 
     this.checkHoveredPoint(x, y);
   }
@@ -156,8 +156,12 @@ export class HistoryChart {
     if (e.touches.length > 0) {
       const touch = e.touches[0];
       const rect = this.canvas.getBoundingClientRect();
-      const x = (touch.clientX - rect.left) * (this.canvas.width / rect.width) / (window.devicePixelRatio || 1);
-      const y = (touch.clientY - rect.top) * (this.canvas.height / rect.height) / (window.devicePixelRatio || 1);
+      const x =
+        ((touch.clientX - rect.left) * (this.canvas.width / rect.width)) /
+        (window.devicePixelRatio || 1);
+      const y =
+        ((touch.clientY - rect.top) * (this.canvas.height / rect.height)) /
+        (window.devicePixelRatio || 1);
 
       this.checkHoveredPoint(x, y);
     }
@@ -170,8 +174,12 @@ export class HistoryChart {
     if (e.touches.length > 0) {
       const touch = e.touches[0];
       const rect = this.canvas.getBoundingClientRect();
-      const x = (touch.clientX - rect.left) * (this.canvas.width / rect.width) / (window.devicePixelRatio || 1);
-      const y = (touch.clientY - rect.top) * (this.canvas.height / rect.height) / (window.devicePixelRatio || 1);
+      const x =
+        ((touch.clientX - rect.left) * (this.canvas.width / rect.width)) /
+        (window.devicePixelRatio || 1);
+      const y =
+        ((touch.clientY - rect.top) * (this.canvas.height / rect.height)) /
+        (window.devicePixelRatio || 1);
 
       this.checkHoveredPoint(x, y);
     }
@@ -230,11 +238,11 @@ export class HistoryChart {
 
     // Convert to data points and sort chronologically
     this.dataPoints = diagnoses
-      .map(diagnosis => ({
+      .map((diagnosis) => ({
         timestamp: diagnosis.timestamp,
         healthScore: diagnosis.healthScore,
         status: diagnosis.status,
-        diagnosis
+        diagnosis,
       }))
       .sort((a, b) => a.timestamp - b.timestamp);
 
@@ -326,9 +334,7 @@ export class HistoryChart {
     const chartHeight = height - this.padding.top - this.padding.bottom;
 
     const animatedPoints = Math.ceil(this.dataPoints.length * this.animationProgress);
-    const strong = this.dataPoints
-      .slice(0, animatedPoints)
-      .filter((p) => this.hasStrongAnomaly(p));
+    const strong = this.dataPoints.slice(0, animatedPoints).filter((p) => this.hasStrongAnomaly(p));
     if (strong.length < 2) return;
 
     this.ctx.strokeStyle = this.colors.error;
@@ -454,7 +460,7 @@ export class HistoryChart {
     this.ctx.textBaseline = 'middle';
 
     for (let i = 0; i <= 4; i++) {
-      const value = 100 - (i * 25);
+      const value = 100 - i * 25;
       const y = this.padding.top + (chartHeight / 4) * i;
       this.ctx.fillText(`${value}%`, this.padding.left - 10, y);
     }
@@ -599,7 +605,9 @@ export class HistoryChart {
       // it reads as anomalous even when the overall health score is still high.
       this.ctx.beginPath();
       this.ctx.arc(x, y, isHovered ? 7 : 5, 0, 2 * Math.PI);
-      this.ctx.fillStyle = strongAnomaly ? this.colors.error : this.getHealthColor(point.healthScore);
+      this.ctx.fillStyle = strongAnomaly
+        ? this.colors.error
+        : this.getHealthColor(point.healthScore);
       this.ctx.fill();
 
       // Draw border
@@ -801,14 +809,14 @@ export class HistoryChart {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       });
     }
 
     // For axis labels, show date only
     return date.toLocaleDateString(undefined, {
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   }
 
@@ -822,10 +830,11 @@ export class HistoryChart {
     }
 
     // Stop observing theme changes (otherwise the observer pins this instance forever)
-    if (this.themeObserver) {
-      this.themeObserver.disconnect();
-      this.themeObserver = null;
+    if (this.darkQuery && this.onSchemeChange) {
+      this.darkQuery.removeEventListener('change', this.onSchemeChange);
     }
+    this.darkQuery = null;
+    this.onSchemeChange = null;
 
     // Remove event listeners (same references as registered in setupEventListeners)
     this.canvas.removeEventListener('mousemove', this.onMouseMove);

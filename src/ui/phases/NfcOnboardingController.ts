@@ -11,7 +11,7 @@
  * prompt once a machine has been provisioned.
  */
 
-import { restoreViewLevel, restoreTheme } from '@utils/viewLevelSettings.js';
+import { restoreViewLevel } from '@utils/viewLevelSettings.js';
 import { logger } from '@utils/logger.js';
 
 export class NfcOnboardingController {
@@ -84,7 +84,6 @@ export class NfcOnboardingController {
     if (this.isNfcOnboardingActive && !startingTest) {
       this.isNfcOnboardingActive = false;
       restoreViewLevel();
-      restoreTheme();
       logger.debug(
         '[NFC Onboarding] View level and theme restored to user preference (dialog closed)'
       );

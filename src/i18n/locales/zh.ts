@@ -1,5 +1,5 @@
 /**
- * ZANOBOT - Chinese (中文) Translations
+ * SOUNDFUCHS - Chinese (中文) Translations
  */
 
 import type { TranslationDict } from '../index.js';
@@ -102,7 +102,7 @@ export const zh: TranslationDict = {
       select: '加载机器',
     },
     emptyGuide: {
-      title: 'Zanobot 的工作原理',
+      title: 'SoundFuchs 的工作原理',
       step1Title: '创建机器',
       step1Desc: '为机器设置一个唯一的名称。',
       step2Title: '录制正常状态',
@@ -463,7 +463,7 @@ export const zh: TranslationDict = {
         '文件：{{filename}}\n\n机器：{{machines}}\n录制：{{recordings}}\n检查：{{diagnoses}}',
     },
     share: {
-      title: 'Zanobot 数据库备份',
+      title: 'SoundFuchs 数据库备份',
       text: '数据库备份：{{filename}}',
       success: '备份已分享：{{filename}}',
       fallback: '无法分享，已改为下载 {{filename}}。',
@@ -480,7 +480,7 @@ export const zh: TranslationDict = {
   },
   app: {
     browserNotSupported:
-      '您的浏览器与Zanobo不兼容。\n\n缺少的功能：\n{{features}}\n\n请使用现代浏览器，如Chrome、Edge、Firefox或Safari。',
+      '您的浏览器与SoundFuchs不兼容。\n\n缺少的功能：\n{{features}}\n\n请使用现代浏览器，如Chrome、Edge、Firefox或Safari。',
     uiLoadFailed: '无法加载用户界面',
     fatalError: '致命错误',
     browserNotSupportedTitle: '浏览器不支持',
@@ -764,7 +764,8 @@ export const zh: TranslationDict = {
   },
   noiseSub: {
     title: '噪声轮廓消减',
-    description: '从测量中减去预先录制的环境噪声轮廓（机器关闭时录制）。当背景噪声与机器声音强度相近时特别有用。',
+    description:
+      '从测量中减去预先录制的环境噪声轮廓（机器关闭时录制）。当背景噪声与机器声音强度相近时特别有用。',
     enabled: '启用噪声轮廓消减',
     profileLabel: '当前噪声轮廓',
     noProfile: '未选择轮廓',
@@ -978,7 +979,7 @@ export const zh: TranslationDict = {
     daylightTitle: 'Daylight',
     daylightDescription: '明亮防眩主题，适合户外。清晰对比保证阳光下可读。',
     daylightDesc: '明亮防眩主题，适合户外。清晰对比保证阳光下可读。',
-    brandTitle: 'Zanobo',
+    brandTitle: 'SoundFuchs',
     brandDescription: '明亮、友好、值得信赖。您信任的AI。',
     brandDesc: '明亮、友好、值得信赖。您信任的AI。',
     neonTitle: 'Neon Industrial',
@@ -1014,11 +1015,11 @@ export const zh: TranslationDict = {
   footer: {
     impressum: '法律声明',
     privacy: '隐私政策',
-    about: '关于Zanobo',
+    about: '关于SoundFuchs',
     settings: '设置',
     closeImpressum: '关闭法律声明',
     closePrivacy: '关闭隐私政策',
-    closeAbout: '关闭关于Zanobo',
+    closeAbout: '关闭关于SoundFuchs',
   },
   nfcImport: {
     modalTitle: '检测到NFC备份',
@@ -1108,15 +1109,15 @@ export const zh: TranslationDict = {
     dataCleared: '由于更新，数据库已被重置。所有机器、录音和检查都已删除。',
   },
   about: {
-    title: '关于 Zanobo',
+    title: '关于 SoundFuchs',
     subtitle: '机器状态声学比较助手',
     intro:
-      '<strong>Zanobo 2.0</strong> 是一个注重隐私的渐进式 Web 应用（PWA），专为机器声学的比较分析而设计。该应用程序允许完全<strong>离线</strong>记录和比较机器声音 – 无需云服务、无需外部传感器、无需训练的 AI 模型。<br><br>Zanobo 刻意将自己理解为<strong>非诊断工具</strong>，而是作为支持人工评估的<strong>比较和指导工具</strong>。',
+      '<strong>SoundFuchs 2.0</strong> 是一个注重隐私的渐进式 Web 应用（PWA），专为机器声学的比较分析而设计。该应用程序允许完全<strong>离线</strong>记录和比较机器声音 – 无需云服务、无需外部传感器、无需训练的 AI 模型。<br><br>SoundFuchs 刻意将自己理解为<strong>非诊断工具</strong>，而是作为支持人工评估的<strong>比较和指导工具</strong>。',
     coreFeaturesTitle: '核心功能',
     coreFeatures: {
       offlineFirst: '<strong>离线优先：</strong>所有录音和计算都在浏览器本地进行。',
       similarityScore:
-        '<strong>相似度评分（0-100%）：</strong>Zanobo 计算参考录音和比较录音之间的数学相似度（余弦相似度）。',
+        '<strong>相似度评分（0-100%）：</strong>SoundFuchs 计算参考录音和比较录音之间的数学相似度（余弦相似度）。',
       userThreshold:
         '<strong>用户定义阈值：</strong>用户自行定义在什么评分下状态算作"正常"或"偏离"。',
       visualFeedback: '<strong>可视化频谱反馈：</strong>实时显示频谱和比较结果。',
@@ -1125,56 +1126,56 @@ export const zh: TranslationDict = {
     },
     legalTitle: '技术界定',
     legalIntro:
-      'Zanobo 作为<strong>私人非商业开源项目</strong>独立开发，采用 <strong>MIT 许可证</strong>。其功能基于<strong>公开描述的数学程序</strong>（例如频率分析和类 GMIA 余弦比较），不包含<strong>任何专利系统逻辑</strong>、<strong>任何分类机制</strong>和<strong>任何学习模型</strong>。',
+      'SoundFuchs 作为<strong>私人非商业开源项目</strong>独立开发，采用 <strong>MIT 许可证</strong>。其功能基于<strong>公开描述的数学程序</strong>（例如频率分析和类 GMIA 余弦比较），不包含<strong>任何专利系统逻辑</strong>、<strong>任何分类机制</strong>和<strong>任何学习模型</strong>。',
     ipTableTitle: '相关知识产权和技术差异',
     ipTable: {
       headers: {
         reference: '参考 / 标题',
         source: '来源和状态',
         protectedScope: '保护范围',
-        zanoboDiff: '与 Zanobo 的差异',
+        soundfuchsDiff: '与 SoundFuchs 的差异',
       },
       rows: {
         '0': {
           reference: '<strong>PAPDEOTT005125</strong><br><em>机器诊断程序</em>',
           source: '防御性出版物，西门子公司，2016',
           protectedScope: '使用中央数据库和移动传感器的基于云的诊断系统',
-          zanoboDiff: 'Zanobo 完全在本地运行，无云、无中央数据库、无检查',
+          soundfuchsDiff: 'SoundFuchs 完全在本地运行，无云、无中央数据库、无检查',
         },
         '1': {
           reference: '<strong>EP3701708B1</strong><br><em>远程机器状态分析</em>',
           source: '欧洲专利，西门子公司，2022',
           protectedScope: '基于机器学习的远程诊断，带有训练模型和传感器',
-          zanoboDiff: 'Zanobo 不使用机器学习，无云、无嵌入式检查逻辑',
+          soundfuchsDiff: 'SoundFuchs 不使用机器学习，无云、无嵌入式检查逻辑',
         },
         '2': {
           reference: '<strong>US9263041B2</strong><br><em>使用 GMIA 进行噪声中的信道检测</em>',
           source: '西门子公司，2016',
           protectedScope: 'GMIA 在语音和听觉系统中的应用',
-          zanoboDiff: 'Zanobo 仅将类 GMIA 数学用于<strong>非语音</strong>和本地比较',
+          soundfuchsDiff: 'SoundFuchs 仅将类 GMIA 数学用于<strong>非语音</strong>和本地比较',
         },
         '3': {
           reference: '<strong>US9443201B2</strong><br><em>传感器特征学习</em>',
           source: '西门子，2016',
           protectedScope: '传感器特征的分类和模型训练',
-          zanoboDiff: 'Zanobo 不进行分类和模型训练',
+          soundfuchsDiff: 'SoundFuchs 不进行分类和模型训练',
         },
         '4': {
           reference: '<strong>US9602781B2</strong><br><em>地震信号去混合（GMIA）</em>',
           source: '斯伦贝谢，2017',
           protectedScope: '使用 GMIA 分离地震信号',
-          zanoboDiff: '不同的领域和信号类型，不相关',
+          soundfuchsDiff: '不同的领域和信号类型，不相关',
         },
         '5': {
           reference: '<strong>ABB – Integration of Mobile Measurement</strong>',
           source: '公开工业演示，ABB，2015',
           protectedScope: '用于临时诊断的移动传感器，带有云和服务集成',
-          zanoboDiff: 'Zanobo 避免检查、服务工作流程和云连接，专注于本地比较',
+          soundfuchsDiff: 'SoundFuchs 避免检查、服务工作流程和云连接，专注于本地比较',
         },
       },
     },
     useCasesTitle: '应用场景',
-    useCasesIntro: 'Zanobo 支持两种基本的比较场景，它们在时间和空间结构上有所不同：',
+    useCasesIntro: 'SoundFuchs 支持两种基本的比较场景，它们在时间和空间结构上有所不同：',
     serialComparisonTitle: 'a) 序列比较（时间比较 / 趋势）',
     serialComparisonPrinciple:
       '<strong>原理：</strong>将当前录音与之前为<strong>同一台机器</strong>创建的参考进行比较。',
@@ -1182,24 +1183,24 @@ export const zh: TranslationDict = {
     serialComparisonApplication:
       '<strong>应用：</strong><ul><li>在机器被判定为"正常"时创建参考录音</li><li>之后的录音与该参考进行比较</li><li>量化与原始模式的偏差（相似度评分）</li></ul>',
     serialComparisonHint:
-      '<strong>注意：</strong>Zanobo 仅显示当前声音<strong>是否以及在多大程度上</strong>偏离参考。偏差是否相关由用户判断。系统不作任何评估，也不提供预测。',
+      '<strong>注意：</strong>SoundFuchs 仅显示当前声音<strong>是否以及在多大程度上</strong>偏离参考。偏差是否相关由用户判断。系统不作任何评估，也不提供预测。',
     parallelComparisonTitle: 'b) 并行比较（同型号机器比较 / 机群检查）',
     parallelComparisonPrinciple: '<strong>原理：</strong>在相似工况下比较多台同型号机器。',
     parallelComparisonGoal: '<strong>目标：</strong>在同型号机器组中识别声学异常者。',
     parallelComparisonApplication:
-      '<strong>应用：</strong><ul><li>录制多台同型号机器（例如在生产车间）</li><li>Zanobo 计算机器之间的声学相似度</li><li>声音特征明显偏离群组的机器会被凸显出来</li></ul>',
+      '<strong>应用：</strong><ul><li>录制多台同型号机器（例如在生产车间）</li><li>SoundFuchs 计算机器之间的声学相似度</li><li>声音特征明显偏离群组的机器会被凸显出来</li></ul>',
     parallelComparisonSpecial:
       '<strong>特点：</strong><strong>即使没有历史参考</strong>也能工作。机器组本身即为比较基准。',
     parallelComparisonHint:
-      '<strong>注意：</strong>Zanobo 不判定哪台机器有缺陷，也不判定哪台代表"目标状态"。它仅显示组内的<strong>相对偏差</strong>。是否进一步检查偏离的机器由用户评估。',
+      '<strong>注意：</strong>SoundFuchs 不判定哪台机器有缺陷，也不判定哪台代表"目标状态"。它仅显示组内的<strong>相对偏差</strong>。是否进一步检查偏离的机器由用户评估。',
     nfcTitle: '基于 NFC 的即时访问与情境化比较',
     nfcIntro:
-      'Zanobo 支持在机器上<strong>使用 NFC 标签</strong>，以简化应用访问并可选地提供与机器相关的情境。',
+      'SoundFuchs 支持在机器上<strong>使用 NFC 标签</strong>，以简化应用访问并可选地提供与机器相关的情境。',
     nfcFunctionalityTitle: '工作方式',
     nfcTagDescription:
-      '<strong>机器上的 NFC 标签：</strong>贴在外壳或检修点的 NFC 标签可包含以下信息：<ul><li>Zanobo PWA 的 URL（在浏览器中直接启动应用）</li><li>用于自动识别的机器 ID</li><li>可选：指向客户特定参考数据的引用（指向 JSON 文件的 URL）</li></ul>',
+      '<strong>机器上的 NFC 标签：</strong>贴在外壳或检修点的 NFC 标签可包含以下信息：<ul><li>SoundFuchs PWA 的 URL（在浏览器中直接启动应用）</li><li>用于自动识别的机器 ID</li><li>可选：指向客户特定参考数据的引用（指向 JSON 文件的 URL）</li></ul>',
     nfcInstantAccess:
-      '<strong>无需安装的即时访问：</strong><ul><li>用户将手机靠近 NFC 标签</li><li>Zanobo PWA 直接在浏览器中打开（无需应用商店、无需注册）</li><li>可选：自动加载存储的机器 ID</li></ul>',
+      '<strong>无需安装的即时访问：</strong><ul><li>用户将手机靠近 NFC 标签</li><li>SoundFuchs PWA 直接在浏览器中打开（无需应用商店、无需注册）</li><li>可选：自动加载存储的机器 ID</li></ul>',
     nfcReferenceDataTitle: '可选的情境化参考数据',
     nfcReferenceDataDescription:
       'NFC 标签还可以包含<strong>指向参考数据库的 URL</strong>。该数据库由机器运营方或服务伙伴提供，可包含：<ul><li>机器各种工作状态的<strong>参考录音</strong></li><li><strong>机器特定的元数据</strong>（如类型、制造年份、位置）</li><li>用于同型号机器机群检查的<strong>比较参数</strong></li></ul>',
@@ -1208,18 +1209,18 @@ export const zh: TranslationDict = {
       '首次检查机器的服务技术人员或操作员可以：<ul><li>无需自行录制参考即可<strong>立即进行声学检查</strong></li><li><strong>直接与运营方提供的现有参考数据进行比较</strong></li><li><strong>无需先验知识</strong>即可初步判断当前声音是否偏离已存储的参考</li></ul>',
     nfcDataPrivacyTitle: '数据存储与隐私',
     nfcDataPrivacyImportant:
-      '<strong>重要：</strong>参考数据<strong>不存储在 Zanobo 云中</strong>。它们提供于：<ul><li>运营方的<strong>本地网络</strong>（如内网服务器）</li><li><strong>客户自有环境</strong>（如 GitHub Pages、自有 Web 服务器）</li><li>可通过 HTTPS URL 访问的<strong>静态 JSON 文件</strong></li></ul>',
+      '<strong>重要：</strong>参考数据<strong>不存储在 SoundFuchs 云中</strong>。它们提供于：<ul><li>运营方的<strong>本地网络</strong>（如内网服务器）</li><li><strong>客户自有环境</strong>（如 GitHub Pages、自有 Web 服务器）</li><li>可通过 HTTPS URL 访问的<strong>静态 JSON 文件</strong></li></ul>',
     nfcDataPrivacyStorage:
       '参考数据库在首次 NFC 扫描时下载，随后<strong>存储在设备本地</strong>（IndexedDB）。之后的所有比较均离线进行。',
     nfcFocusTitle: '定位与界定',
     nfcFocusDescription:
       '基于 NFC 的访问仅用于<strong>可访问性与可比性</strong>。它支持：<ul><li>无需手动配置即可快速启动</li><li>无需自行录制即可使用现有参考数据</li><li>为多个用户或地点提供一致的比较基准</li></ul>',
     nfcNoFeatures:
-      '<strong>即使使用基于 NFC 的参考数据，Zanobo 也：</strong><ul><li>不作<strong>任何评估</strong>（不对损坏原因或状态作出判断）</li><li>不进行<strong>任何决策自动化</strong>（不作"好/坏"判定）</li><li>不进行<strong>任何云端评估</strong>（所有计算均在本地）</li></ul>',
+      '<strong>即使使用基于 NFC 的参考数据，SoundFuchs 也：</strong><ul><li>不作<strong>任何评估</strong>（不对损坏原因或状态作出判断）</li><li>不进行<strong>任何决策自动化</strong>（不作"好/坏"判定）</li><li>不进行<strong>任何云端评估</strong>（所有计算均在本地）</li></ul>',
     nfcInterpretation: '比较结果的解读始终由用户负责。',
     transparencyTitle: '透明度和意图',
     transparencyText1:
-      'Zanobo <strong>不是诊断工具</strong>，<strong>不进行自动技术评估</strong>。它仅提供<strong>视觉和数学比较辅助</strong>。',
+      'SoundFuchs <strong>不是诊断工具</strong>，<strong>不进行自动技术评估</strong>。它仅提供<strong>视觉和数学比较辅助</strong>。',
     transparencyText2:
       '所有处理都<strong>离线</strong>进行。<strong>不传输、存储或评估用户数据</strong>。',
     transparencyText3: '这种透明度表达了对责任、数据保护和第三方权利的自觉态度。',
@@ -1229,7 +1230,7 @@ export const zh: TranslationDict = {
       noRepairRecommendations: '无维修建议',
     },
     publicInstance: '公共实例：',
-    publicInstanceUrl: 'https://zanobo.vercel.app',
+    publicInstanceUrl: 'https://soundfuchs.vercel.app',
     version: '版本：',
     versionNumber: '2.0.0 (2026)',
     developedBy: '开发者：',
@@ -1280,7 +1281,7 @@ export const zh: TranslationDict = {
   // ============================================================================
   share: {
     resultButton: '分享为图片',
-    resultFooter: 'Zanobot 声音检测',
+    resultFooter: 'SoundFuchs 声音检测',
     resultFailed: '无法生成图片。',
   },
 
@@ -1298,7 +1299,8 @@ export const zh: TranslationDict = {
     cycleDeviant: '偏高',
     cyclePending: '观察中……',
     recommendTitle: '检测到非平稳机器',
-    recommendBody: '这台机器听起来是非平稳的（音量变化、节拍或周期）。时序模式引擎（Tier 2）正是为此而设计。',
+    recommendBody:
+      '这台机器听起来是非平稳的（音量变化、节拍或周期）。时序模式引擎（Tier 2）正是为此而设计。',
     recommendAction: '启用时序引擎',
     recommendSwitched: '时序引擎已启用——适用于新录制的参考。',
   },
@@ -1671,7 +1673,7 @@ export const zh: TranslationDict = {
     formatPDF: 'PDF（可打印）',
     formatCSV: 'CSV（Excel）',
     formatJSON: 'JSON（工单系统）',
-    title: 'Zanobo 检查报告',
+    title: 'SoundFuchs 检查报告',
     fleetTitle: '车队检查报告',
     allMachinesTitle: '机器概览',
     totalLabel: '总计',
@@ -1685,7 +1687,7 @@ export const zh: TranslationDict = {
     colTrend: '趋势',
     colRecommendation: '建议',
     colDate: '日期',
-    footer: '由 Zanobo 生成 · 声学机器检查',
+    footer: '由 SoundFuchs 生成 · 声学机器检查',
     exported: '报告已导出',
   },
   maintenance: {
