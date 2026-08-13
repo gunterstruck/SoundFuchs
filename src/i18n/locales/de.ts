@@ -59,6 +59,7 @@ export const de: TranslationDict = {
   // MODAL TITLES
   // ============================================================================
   modals: {
+    unsuitableSignal: 'Signal nicht geeignet',
     referenceRecording: 'Normalzustand aufnehmen',
     liveDiagnosis: 'Live Diagnosis - Find Sweet Spot',
     qrScanner: 'QR/Barcode Scanner',
@@ -141,6 +142,8 @@ export const de: TranslationDict = {
     },
 
     errors: {
+      createFailed: 'Maschine konnte nicht angelegt werden.',
+      invalidReferenceUrl: 'Ungültige Adresse für die Referenzdatenbank.',
       scannerStart: 'Fehler beim Starten des Scanners',
       cameraAccessDenied: 'Kamerazugriff wurde verweigert',
       cameraAccessHint: 'Bitte erlauben Sie den Kamerazugriff in Ihren Browser-Einstellungen',
@@ -284,6 +287,12 @@ export const de: TranslationDict = {
     },
 
     errors: {
+      recordingTooShort:
+        'Aufnahme zu kurz: {duration} s. Nach {warmup} s Vorlauf bleibt zu wenig übrig – mindestens {minDuration} s aufnehmen.',
+      trainingDataTooShort:
+        'Nutzbarer Teil zu kurz: {duration} s, nötig sind {minDuration} s. Insgesamt mindestens {totalMinDuration} s aufnehmen.',
+      baselineScoreTooLow:
+        'Die Referenz stimmt nur zu {baselineScore} % mit sich selbst überein; nötig sind {minScore} %. Bitte in ruhigerer Umgebung neu aufnehmen.',
       tooShort:
         'Aufnahme zu kurz: {{duration}}s Gesamtdauer ist kürzer als die {{warmup}}s Warmup-Phase. Mindestdauer: {{minDuration}}s',
       trainingTooShort:
@@ -303,6 +312,7 @@ export const de: TranslationDict = {
     },
 
     success: {
+      downloadPrompt: 'Datei wird heruntergeladen.',
       modelTrained:
         '✅ Referenzmodell erfolgreich trainiert!\n\nMaschine: {{name}}\n\nMöchten Sie die Referenz-Audiodatei herunterladen?\n(Empfohlen für Backup)',
       canStartNew: 'Sie können eine neue Referenzaufnahme starten.',
@@ -651,6 +661,11 @@ export const de: TranslationDict = {
   // HARDWARE CHECK
   // ============================================================================
   hardware: {
+    sampleRateLow: 'Abtastrate zu niedrig ({sampleRate} Hz)',
+    currentSampleRate: 'Aktuell: {sampleRate} Hz',
+    recommendedSampleRate: 'Empfohlen: mindestens {minRate} Hz',
+    microphoneId: 'Mikrofon {id}',
+    optimizedForDiagnosis: '{label} – für die Prüfung geeignet',
     suitable: 'Hardware geeignet für Maschinenprüfung',
     voiceOptimized: 'Sprach-optimierte Hardware filtert Maschinengeräusche.',
     useStudioMic: 'Verwenden Sie ein Studio-Mikrofon oder das eingebaute Geräte-Mikrofon',

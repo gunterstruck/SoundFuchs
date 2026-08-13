@@ -33,7 +33,7 @@ const QUELLEN = [
   'README.md',
   'NOTICE',
   'index.html',
-  'docs/about-zanobo.md',
+  'docs/about-soundfuchs.md',
   'src/i18n/locales/de.ts',
   'src/i18n/locales/en.ts',
   'src/i18n/locales/es.ts',

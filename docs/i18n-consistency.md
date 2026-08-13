@@ -78,19 +78,28 @@ Translations are organized into logical sections:
 
 ## Consistency Checker Tool
 
-The consistency checker (`scripts/check-i18n-consistency.mjs`) performs structural validation:
+`tools/i18n-check.mjs` · `npm run check-i18n`
 
 ✅ **Checks:**
-- All keys present in reference language (English)
-- No extra keys that don't exist in reference
-- Proper nesting structure
-- Both expanded and compact notation support
+- Every language carries the same key set as German
+- **Every key used in code or markup actually exists**
+- Locale files are evaluated, not pattern-matched, so nested objects count correctly
 
 ❌ **Does NOT check:**
 - Translation quality or accuracy
 - Grammar or spelling
 - String length or formatting
-- Parameter placeholders (`{{param}}`) usage
+- Whether placeholders in a translation match the ones the caller passes
+
+### Why the second check exists
+
+Until 13 Aug 2026 the tool only compared languages against each other. That
+passes as long as all five languages are *equally* incomplete — which is exactly
+what happened: 28 keys were used in the app and defined in no language at all.
+
+`t()` returns the key itself when it cannot resolve one, so the interface showed
+a literal `buttons.ok` where a button label belonged. Nothing failed; the text
+was simply wrong. The check now covers both halves.
 
 ## Current Status
 

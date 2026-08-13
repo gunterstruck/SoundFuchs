@@ -42,6 +42,7 @@ export const fr: TranslationDict = {
     strongDeviation: 'Strong deviation – check recommended',
   },
   modals: {
+    unsuitableSignal: 'Signal inadapté',
     referenceRecording: "Enregistrer l'état normal",
     liveDiagnosis: 'Vérification en direct - Trouver le point optimal',
     qrScanner: 'Scanner QR/Code-barres',
@@ -112,6 +113,8 @@ export const fr: TranslationDict = {
       cta: 'Créer la première machine',
     },
     errors: {
+      createFailed: 'Impossible de créer la machine.',
+      invalidReferenceUrl: 'Adresse de base de référence invalide.',
       scannerStart: 'Erreur lors du démarrage du scanner',
       cameraAccessDenied: 'Accès à la caméra refusé',
       cameraAccessHint:
@@ -236,6 +239,12 @@ export const fr: TranslationDict = {
       hintTooWeak: 'Signal trop faible – rapprochez-vous de la source sonore',
     },
     errors: {
+      recordingTooShort:
+        'Enregistrement trop court : {duration} s. Après {warmup} s de préchauffage, il reste trop peu — enregistrez au moins {minDuration} s.',
+      trainingDataTooShort:
+        'Partie utilisable trop courte : {duration} s, {minDuration} s nécessaires. Enregistrez au moins {totalMinDuration} s au total.',
+      baselineScoreTooLow:
+        "La référence ne correspond qu'à {baselineScore} % à elle-même ; {minScore} % requis. Réenregistrez dans un endroit plus calme.",
       tooShort:
         'Enregistrement trop court : {{duration}}s de durée totale est plus court que la phase de préchauffage de {{warmup}}s. Durée minimale : {{minDuration}}s',
       trainingTooShort:
@@ -254,6 +263,7 @@ export const fr: TranslationDict = {
       machineDataMissing: 'Données de la machine manquantes',
     },
     success: {
+      downloadPrompt: 'Téléchargement du fichier.',
       modelTrained:
         '✅ Modèle de référence entraîné avec succès !\n\nMachine : {{name}}\n\nVoulez-vous télécharger le fichier audio de référence ?\n(Recommandé pour la sauvegarde)',
       canStartNew: 'Vous pouvez démarrer un nouvel enregistrement de référence.',
@@ -543,6 +553,11 @@ export const fr: TranslationDict = {
     },
   },
   hardware: {
+    sampleRateLow: "Fréquence d'échantillonnage trop basse ({sampleRate} Hz)",
+    currentSampleRate: 'Actuel : {sampleRate} Hz',
+    recommendedSampleRate: 'Recommandé : au moins {minRate} Hz',
+    microphoneId: 'Microphone {id}',
+    optimizedForDiagnosis: '{label} – adapté au contrôle',
     suitable: 'Matériel adapté à la vérification de machine',
     voiceOptimized: 'Le matériel optimisé pour la voix filtre les sons de machine.',
     useStudioMic: "Utilisez un microphone de studio ou le microphone intégré de l'appareil",

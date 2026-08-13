@@ -513,7 +513,7 @@ export class QrShareModal {
               ? `qr-fleet-${ReferenceDbService.slugifyFleetName(this.qrFleetSelect.value)}.png`
               : currentMachine && this.qrSpecificOption?.checked
                 ? `qr-${currentMachine.id}.png`
-                : 'qr-zanobot.png';
+                : 'qr-soundfuchs.png';
         link.href = downloadCanvas.toDataURL('image/png');
         link.click();
       })

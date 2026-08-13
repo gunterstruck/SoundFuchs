@@ -206,7 +206,7 @@ export class MachineDetailModal {
     meta.className = 'mds-meta';
     if (latest) {
       const when = document.createElement('span');
-      when.textContent = t('identify.lastCheck', {
+      when.textContent = t('dashboard.lastCheck', {
         time: this.deps.formatRelativeTime(latest.timestamp),
       });
       meta.appendChild(when);

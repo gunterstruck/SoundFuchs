@@ -1766,7 +1766,7 @@ export class ReferencePhase {
       } catch (error) {
         logger.error('Failed to auto-create machine:', error);
         notify.error(t('reference.errors.machineDataMissing'), error as Error, {
-          title: t('modals.error'),
+          title: t('common.error'),
           duration: 0,
         });
         return;
@@ -1777,7 +1777,7 @@ export class ReferencePhase {
       if (!existingMachine) {
         logger.error(`Cannot save: machine not found (${this.machine.id})`);
         notify.error(t('reference.errors.machineDataMissing'), new Error('Machine not found'), {
-          title: t('modals.error'),
+          title: t('common.error'),
           duration: 0,
         });
         return;

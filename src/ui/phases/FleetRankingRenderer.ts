@@ -199,7 +199,7 @@ export class FleetRankingRenderer {
     if (ranked.length === 1) {
       const hint = document.createElement('p');
       hint.className = 'fleet-single-machine-hint';
-      hint.textContent = t('fleet.ranking.singleMachineHint');
+      hint.textContent = t('fleetSelect.singleMachineHint');
       if (emptyState) {
         overviewContainer.insertBefore(hint, emptyState);
       } else {

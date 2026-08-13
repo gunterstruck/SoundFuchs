@@ -127,7 +127,7 @@ export class AboutModalController {
       reference: t('about.ipTable.headers.reference'),
       source: t('about.ipTable.headers.source'),
       protectedScope: t('about.ipTable.headers.protectedScope'),
-      zanoboDiff: t('about.ipTable.headers.zanoboDiff'),
+      soundfuchsDiff: t('about.ipTable.headers.soundfuchsDiff'),
     };
 
     // We have 6 rows (0-5) stored as object keys in i18n
@@ -141,18 +141,22 @@ export class AboutModalController {
               <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">${headers.reference}</th>
               <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">${headers.source}</th>
               <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">${headers.protectedScope}</th>
-              <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">${headers.zanoboDiff}</th>
+              <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">${headers.soundfuchsDiff}</th>
             </tr>
           </thead>
           <tbody>
-            ${rowIndices.map((index) => `
+            ${rowIndices
+              .map(
+                (index) => `
               <tr style="border-bottom: 1px solid var(--border-color);">
                 <td style="padding: 0.75rem; border: 1px solid var(--border-color);">${t(`about.ipTable.rows.${index}.reference`)}</td>
                 <td style="padding: 0.75rem; border: 1px solid var(--border-color);">${t(`about.ipTable.rows.${index}.source`)}</td>
                 <td style="padding: 0.75rem; border: 1px solid var(--border-color);">${t(`about.ipTable.rows.${index}.protectedScope`)}</td>
-                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">${t(`about.ipTable.rows.${index}.zanoboDiff`)}</td>
+                <td style="padding: 0.75rem; border: 1px solid var(--border-color);">${t(`about.ipTable.rows.${index}.soundfuchsDiff`)}</td>
               </tr>
-            `).join('')}
+            `
+              )
+              .join('')}
           </tbody>
         </table>
       </div>

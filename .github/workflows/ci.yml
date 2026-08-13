@@ -24,6 +24,17 @@ jobs:
       - run: npm run lint
       - run: npm run test:run
       - run: npm run build
-      # Fünf Sprachen, ein Schlüsselsatz: Wenn ein Key nur in einer Sprache
-      # ankommt, sieht das im Deutschen niemand.
+      # Zwei Prüfungen für Fehler, die sonst niemand meldet.
+      #
+      # check-i18n: Fünf Sprachen, ein Schlüsselsatz — und zusätzlich, ob ein
+      # verwendeter Schlüssel überhaupt existiert. Die zweite Hälfte fehlte
+      # bisher: t() gibt bei unbekanntem Schlüssel den Schlüssel selbst zurück,
+      # in der Oberfläche stand also wörtlich "buttons.ok". 28 solche Stellen
+      # lagen unbemerkt im Bestand, weil alle fünf Sprachen einträchtig
+      # dasselbe vermissten.
+      #
+      # token-check: CSS meldet einen falsch geschriebenen Variablennamen nicht.
+      # `background: var(--card-bg)` fällt still aus, wenn das Token --bg-card
+      # heißt — weiße Schrift steht dann auf durchsichtigem Grund.
       - run: npm run check-i18n
+      - run: npm run token-check
