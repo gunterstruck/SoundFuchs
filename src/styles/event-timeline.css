@@ -39,7 +39,7 @@
 }
 
 .event-timeline-dot--anomalous {
-  background: var(--color-faulty, #f44336);
+  background: var(--status-error);
 }
 
 .event-timeline-track {
@@ -63,7 +63,7 @@
 }
 
 .event-timeline-marker.event-timeline-dot--anomalous {
-  background: var(--color-faulty, #f44336);
+  background: var(--status-error);
 }
 
 .event-timeline-empty {
@@ -85,6 +85,6 @@
   padding: 6px 8px;
   border-radius: 6px;
   background: rgba(244, 67, 54, 0.12);
-  color: var(--color-faulty, #f44336);
+  color: var(--status-error);
   font-size: 0.75rem;
 }

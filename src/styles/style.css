@@ -127,6 +127,16 @@
      (0.03 zart bis 0.2 deutlich) in beiden Faellen erhalten. */
   --primary-rgb: 13, 148, 136;
   --overlay-rgb: 15, 23, 42;
+
+  /* Schriftfarbe auf der Leitfarbe. Auf Teal 600 traegt Weiss; auf dem
+     helleren Teal 400 der dunklen Fassung nicht mehr (Kontrast 1.86, also
+     unter jeder brauchbaren Schwelle). Deshalb ein eigenes Token statt
+     ueberall hart 'white'. */
+  --on-primary: #ffffff;
+
+  /* Pillenform. Wurde an zwei Stellen benutzt, war aber nie definiert –
+     die Ecken blieben dort eckig, ohne dass es jemandem auffiel. */
+  --radius-full: 9999px;
   --primary-hover: #0f766e; /* Teal 700 */
   --secondary-color: #14b8a6; /* Teal 500 */
   --accent-color: #f97316; /* Fuchs-Orange – der einzige Akzent */
@@ -203,6 +213,7 @@
     --primary-color: #2dd4bf; /* Teal 400 – auf dunklem Grund lesbarer */
     --primary-rgb: 45, 212, 191;
     --overlay-rgb: 255, 255, 255;
+    --on-primary: #0f172a; /* dunkler Text auf hellem Teal */
     --primary-hover: #5eead4; /* Teal 300 */
     --secondary-color: #14b8a6;
     --accent-color: #fb923c; /* Orange 400 */
@@ -2775,7 +2786,7 @@ body {
 }
 
 .inspection-fault-line.fault-clear {
-  color: var(--color-text-secondary, #8a97a8);
+  color: var(--text-secondary, #8a97a8);
   font-weight: 500;
   opacity: 0.85;
 }
@@ -3434,7 +3445,7 @@ body {
 
 .listen-btn:hover,
 .listen-slow-toggle:hover {
-  background: var(--bg-hover, rgba(var(--overlay-rgb), 0.12));
+  background: var(--bg-tertiary, rgba(var(--overlay-rgb), 0.12));
 }
 
 .listen-slow-toggle.active,
@@ -3454,7 +3465,7 @@ body {
   flex-basis: 100%;
   background: var(--primary-color, var(--primary-color));
   border-color: var(--primary-color, var(--primary-color));
-  color: #fff;
+  color: var(--on-primary);
   font-weight: 600;
 }
 
@@ -3490,7 +3501,7 @@ body {
 }
 
 .history-item-listen-btn:hover {
-  background: var(--bg-hover, rgba(var(--overlay-rgb), 0.12));
+  background: var(--bg-tertiary, rgba(var(--overlay-rgb), 0.12));
 }
 
 /* === SCROLLABLE AREA: Dashboard grid + Spectrum + Expert debug === */
@@ -3683,7 +3694,7 @@ body {
   background-color: rgba(255, 193, 7, 0.12);
   border: 1px solid rgba(255, 193, 7, 0.3);
   border-radius: 6px;
-  color: var(--color-warning, #ffc107);
+  color: var(--status-warning, #ffc107);
   font-size: 0.8rem;
   font-weight: 500;
   text-align: center;
@@ -3760,11 +3771,11 @@ body {
 }
 
 .op-monitor-row--warning .op-monitor-value {
-  color: var(--color-warning, #ffc107);
+  color: var(--status-warning, #ffc107);
 }
 
 .op-monitor-row--critical .op-monitor-value {
-  color: var(--color-faulty, #f44336);
+  color: var(--status-error, #f44336);
 }
 
 /* --- Tap hint arrow --- */
@@ -3804,7 +3815,7 @@ body {
 }
 
 .op-monitor-tooltip-warning {
-  color: var(--color-warning, #ffc107);
+  color: var(--status-warning, #ffc107);
   font-weight: 600;
   margin-bottom: 6px;
   font-size: 0.75rem;
@@ -3833,7 +3844,7 @@ body {
   background-color: rgba(255, 152, 0, 0.15);
   border: 1px solid rgba(255, 152, 0, 0.4);
   border-radius: 6px;
-  color: var(--color-warning, #ff9800);
+  color: var(--status-warning, #ff9800);
   font-size: 0.8rem;
   font-weight: 600;
   animation: op-invalid-pulse 2s ease-in-out infinite;
@@ -4223,7 +4234,7 @@ html[data-view-level='basic'] .dashboard-right-score .inspection-ref-info {
   font-size: 0.9rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  background: var(--bg-input);
+  background: var(--bg-secondary);
   color: var(--text-primary);
   box-sizing: border-box;
 }
@@ -4945,7 +4956,7 @@ select:focus-visible {
 
 .reset-defaults-btn:hover,
 .reset-defaults-btn:focus-visible {
-  background: rgba(var(--primary-color-rgb, 0, 184, 217), 0.08);
+  background: rgba(var(--primary-rgb, 0, 184, 217), 0.08);
 }
 
 .reset-defaults-btn.confirming {
@@ -6413,38 +6424,38 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 .machine-setup-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--spacing-lg);
 }
 
 .machine-setup-form .form-section {
-  background: var(--background-secondary);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: var(--space-lg);
+  padding: var(--spacing-lg);
 }
 
 .machine-setup-form .form-section-title {
   color: var(--text-primary);
   font-size: var(--font-md);
   font-weight: 600;
-  margin: 0 0 var(--space-md) 0;
+  margin: 0 0 var(--spacing-md) 0;
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--spacing-sm);
 }
 
 .machine-setup-form .form-group {
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--spacing-md);
 }
 
 .machine-setup-form .form-group.required label {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--spacing-sm);
 }
 
 .machine-setup-form .required-badge {
-  background: var(--status-faulty);
+  background: var(--status-error);
   color: white;
   font-size: var(--font-xs);
   padding: 2px 6px;
@@ -6456,13 +6467,13 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   display: block;
   color: var(--text-secondary);
   font-size: var(--font-sm);
-  margin-bottom: var(--space-xs);
+  margin-bottom: var(--spacing-xs);
 }
 
 .machine-setup-form .form-input {
   width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  background: var(--background-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -6479,7 +6490,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 }
 
 .machine-setup-form .form-input.input-error {
-  border-color: var(--status-faulty);
+  border-color: var(--status-error);
   box-shadow: 0 0 0 2px rgba(255, 68, 68, 0.2);
 }
 
@@ -6491,29 +6502,29 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 .machine-setup-form .form-hint {
   color: var(--text-muted);
   font-size: var(--font-xs);
-  margin-top: var(--space-xs);
+  margin-top: var(--spacing-xs);
   font-style: italic;
 }
 
 .machine-setup-form .form-error {
-  color: var(--status-faulty);
+  color: var(--status-error);
   font-size: var(--font-xs);
-  margin-top: var(--space-xs);
+  margin-top: var(--spacing-xs);
   display: none;
 }
 
 .machine-setup-form .nfc-link-section {
   border-top: 1px solid var(--border-color);
-  padding-top: var(--space-md);
-  margin-top: var(--space-md);
+  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-md);
 }
 
 .machine-setup-form .nfc-link-display {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  background: var(--background-primary);
-  padding: var(--space-sm) var(--space-md);
+  gap: var(--spacing-sm);
+  background: var(--bg-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
 }
@@ -6529,7 +6540,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 .machine-setup-form .copy-link-btn {
   background: transparent;
   border: none;
-  padding: var(--space-xs);
+  padding: var(--spacing-xs);
   cursor: pointer;
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
@@ -6540,23 +6551,23 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 
 .machine-setup-form .copy-link-btn:hover {
   color: var(--primary-color);
-  background: var(--background-secondary);
+  background: var(--bg-secondary);
 }
 
 /* Service Technician Fields (Expert Mode) */
 .service-tech-fields {
-  margin-top: var(--space-md);
-  padding-top: var(--space-md);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
 }
 
 .service-tech-fields .option-divider {
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--spacing-md);
 }
 
 .input-hint {
   color: var(--text-muted);
   font-size: var(--font-xs);
-  margin-top: var(--space-xs);
+  margin-top: var(--spacing-xs);
   font-style: italic;
   line-height: 1.4;
 }
@@ -6576,7 +6587,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 }
 
 .nfc-import-modal .modal-header.error {
-  background: var(--status-critical);
+  background: var(--status-error);
   color: white;
 }
 
@@ -6645,7 +6656,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 }
 
 .import-column li strong {
-  color: var(--accent);
+  color: var(--accent-color);
   font-variant-numeric: tabular-nums;
 }
 
@@ -6719,9 +6730,9 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 }
 
 .nfc-import-modal .btn-primary {
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: white;
+  background: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  color: var(--on-primary);
 }
 
 .nfc-import-modal .btn-primary:hover {
@@ -6729,8 +6740,8 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 }
 
 .nfc-import-modal .btn-danger {
-  background: var(--status-critical);
-  border: 1px solid var(--status-critical);
+  background: var(--status-error);
+  border: 1px solid var(--status-error);
   color: white;
 }
 
@@ -7085,7 +7096,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   justify-content: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--surface-color);
+  background: var(--bg-card);
   border: 2px solid var(--primary-color);
   border-radius: var(--radius-md);
   color: var(--primary-color);
@@ -7101,7 +7112,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 .phase3-fleet-btn:hover,
 .phase3-fleet-btn:active {
   background: var(--primary-color);
-  color: white;
+  color: var(--on-primary);
 }
 
 .phase3-fleet-btn:focus-visible {
@@ -7126,7 +7137,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-md);
-  background: var(--surface-color);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -7402,7 +7413,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   0%,
   100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 var(--primary-color-alpha, rgba(74, 222, 222, 0.4));
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.4);
   }
   50% {
     transform: scale(1.05);
@@ -7414,7 +7425,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   0%,
   100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 var(--primary-color-alpha, rgba(74, 222, 222, 0.5));
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.5);
   }
   50% {
     transform: scale(1.08);
@@ -7466,8 +7477,8 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 }
 
 .recognized-icon.status-faulty {
-  background: color-mix(in srgb, var(--status-faulty) 15%, transparent);
-  color: var(--status-faulty);
+  background: color-mix(in srgb, var(--status-error) 15%, transparent);
+  color: var(--status-error);
 }
 
 .recognized-icon.status-uncertain {
@@ -7522,8 +7533,8 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 }
 
 .recognized-status.status-faulty {
-  background: color-mix(in srgb, var(--status-faulty) 15%, transparent);
-  color: var(--status-faulty);
+  background: color-mix(in srgb, var(--status-error) 15%, transparent);
+  color: var(--status-error);
 }
 
 .recognized-status.status-uncertain {
@@ -7612,7 +7623,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 .candidate-status {
   font-size: 0.8rem;
   font-weight: 500;
-  padding: var(--spacing-xxs) var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-full);
 }
 
@@ -7622,8 +7633,8 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 }
 
 .candidate-status.status-faulty {
-  background: color-mix(in srgb, var(--status-faulty) 15%, transparent);
-  color: var(--status-faulty);
+  background: color-mix(in srgb, var(--status-error) 15%, transparent);
+  color: var(--status-error);
 }
 
 .candidate-status.status-uncertain {
@@ -8933,7 +8944,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   left: 0;
   right: 0;
   z-index: 1000;
-  background: var(--card-bg, #fff);
+  background: var(--bg-card, #fff);
   border-top: 3px solid var(--primary-color, #00bcd4);
   border-radius: var(--radius-lg, 16px) var(--radius-lg, 16px) 0 0;
   padding: var(--spacing-xl, 24px) var(--spacing-lg, 20px);
@@ -8990,7 +9001,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   padding: var(--spacing-md, 16px) var(--spacing-xl, 24px);
   font-size: 1.1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--on-primary);
   background: var(--primary-color, #00bcd4);
   border: none;
   border-radius: var(--radius-md, 12px);
@@ -9078,7 +9089,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 }
 
 .fleet-onboarding-card {
-  background: var(--card-bg, #fff);
+  background: var(--bg-card, #fff);
   border-radius: var(--radius-lg, 16px);
   padding: var(--spacing-xl, 32px) var(--spacing-lg, 24px);
   max-width: 380px;
@@ -9166,7 +9177,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   padding: var(--spacing-md, 16px) var(--spacing-xl, 24px);
   font-size: 1.1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--on-primary);
   background: var(--primary-color, #00bcd4);
   border: none;
   border-radius: var(--radius-md, 12px);
@@ -9224,7 +9235,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 .quick-compare-btn:hover,
 .quick-compare-btn:active {
   background: var(--primary-color, var(--primary-color));
-  color: #fff;
+  color: var(--on-primary);
 }
 
 .quick-compare-btn:focus-visible {
@@ -9268,7 +9279,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   font-weight: 600;
   border: 2px solid var(--border-color, #ddd);
   border-radius: var(--radius-md, 12px);
-  background: var(--card-bg, #fff);
+  background: var(--bg-card, #fff);
   color: var(--text-primary, #333);
   cursor: pointer;
   transition:
@@ -9284,7 +9295,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 .qc-count-chip.active {
   border-color: var(--primary-color, var(--primary-color));
   background: var(--primary-color, var(--primary-color));
-  color: #fff;
+  color: var(--on-primary);
 }
 
 .qc-custom-input {
@@ -9482,7 +9493,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   padding: 0.875rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--on-primary);
   background: var(--primary-color, var(--primary-color));
   border: none;
   border-radius: var(--radius-md, 12px);
@@ -9529,7 +9540,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   width: 95%;
   max-width: 480px;
   max-height: 90vh;
-  background: var(--card-bg, #fff);
+  background: var(--bg-card, #fff);
   border-radius: var(--radius-lg, 16px);
   overflow: hidden;
   display: flex;
@@ -9691,7 +9702,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   background: var(--primary-color, #00bcd4);
   border: none;
   border-radius: var(--radius-md, 12px);
-  color: #fff;
+  color: var(--on-primary);
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
@@ -9703,7 +9714,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 }
 
 .fleet-result-btn-close:hover {
-  background: var(--primary-color-dark, #0097a7);
+  background: var(--primary-hover, #0097a7);
 }
 
 .fleet-result-btn-close:active {
@@ -9726,7 +9737,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   background: var(--primary-color, #00bcd4);
   border: none;
   border-radius: var(--radius-md, 12px);
-  color: #fff;
+  color: var(--on-primary);
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
@@ -10346,7 +10357,7 @@ html[data-view-level='expert'] .diagnosis-recommendation {
   flex: 1;
   padding: var(--spacing-xs) var(--spacing-md);
   background: var(--primary-color);
-  color: #fff;
+  color: var(--on-primary);
   border: none;
   border-radius: var(--radius-sm);
   font-size: var(--font-xs);
@@ -10524,7 +10535,7 @@ html[data-view-level='expert'] .diagnosis-recommendation {
 
 .result-action-primary {
   background: var(--primary-color);
-  color: #fff;
+  color: var(--on-primary);
 }
 
 .result-action-danger {
@@ -10645,7 +10656,7 @@ html[data-view-level='expert'] .diagnosis-recommendation {
 
 .history-filter-btn.active {
   background: var(--primary-color);
-  color: #fff;
+  color: var(--on-primary);
   border-color: var(--primary-color);
 }
 
@@ -11134,7 +11145,7 @@ html[data-view-level='expert'] .diagnosis-recommendation {
   top: 6px;
   right: 6px;
   background: var(--primary-color);
-  color: #fff;
+  color: var(--on-primary);
   font-size: 0.65rem;
   font-weight: 700;
   min-width: 18px;
@@ -11210,7 +11221,7 @@ html[data-view-level='expert'] .diagnosis-recommendation {
   height: 22px;
   border-radius: 50%;
   background: var(--primary-color);
-  color: #fff;
+  color: var(--on-primary);
   font-size: 0.8rem;
   font-weight: 700;
   line-height: 1;
@@ -11307,4 +11318,22 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   font-size: var(--font-sm);
   color: var(--text-secondary);
   line-height: 1.3;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LINKS IM FLIESSTEXT
+
+   In Impressum und Datenschutz standen E-Mail-Links ohne jede Formatierung
+   und trugen daher das Browser-Blau #0000EE. Auf dem dunklen Grund ergibt das
+   einen Kontrast von 1.56 – praktisch unlesbar.
+
+   Die Regel greift bewusst nur im Fliesstext der Dialoge, nicht global: Ein
+   pauschales a { } wuerde die vielen als Link gebauten Schaltflaechen der App
+   mit einfaerben.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.legal-modal-body a,
+.modal-body p a {
+  color: var(--primary-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }

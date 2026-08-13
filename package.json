@@ -17,7 +17,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "check-i18n": "node scripts/check-i18n-consistency.mjs",
-    "attention-check": "node tools/attention-check.mjs"
+    "attention-check": "node tools/attention-check.mjs",
+    "token-check": "node tools/token-check.mjs"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
