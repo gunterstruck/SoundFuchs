@@ -41,13 +41,23 @@
   --space-section-gap: 3rem; /* 48px - after cards, before footer */
   --space-footer-bottom: 1.5rem; /* 24px - below footer to viewport edge */
 
-  /* Border Radius (Theme-Independent) */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-pill: 9999px;
+  /* ── Radien ──────────────────────────────────────────────────────────────
+     Die Leiter der Schwester-App TourFuchs (dort src/styles/variables.css):
+     12 · 18 · 26 · 34 · Pille. Unsere lag bei 4 · 8 · 12 · 16 · 24, also
+     durchgehend etwa ein Drittel kantiger — das war der Grund, warum die App
+     neben TourFuchs nüchterner wirkte, obwohl die Farben längst dieselben sind.
+
+     Geändert werden nur die Werte, nicht die Namen: Die rund 130 Verwendungen
+     im Stylesheet ziehen von selbst nach. Genau dafür gibt es Tokens. */
+  --radius-xs: 6px;
+  --radius-sm: 12px; /* TourFuchs --radius-s  */
+  --radius-md: 18px; /* TourFuchs --radius-m  */
+  --radius-lg: 26px; /* TourFuchs --radius-l  */
+  --radius-xl: 34px; /* TourFuchs --radius-xl */
+  --radius-pill: 999px;
+
+  /* Höhe der Kopfleiste; TourFuchs --topbar-height. */
+  --topbar-height: 52px;
 
   /* Font Sizes (Responsive Scale) */
   --font-xs: clamp(0.65rem, 1.5vw, 0.75rem);
@@ -134,9 +144,6 @@
      ueberall hart 'white'. */
   --on-primary: #ffffff;
 
-  /* Pillenform. Wurde an zwei Stellen benutzt, war aber nie definiert –
-     die Ecken blieben dort eckig, ohne dass es jemandem auffiel. */
-  --radius-full: 9999px;
   --primary-hover: #0f766e; /* Teal 700 */
   --secondary-color: #14b8a6; /* Teal 500 */
   --accent-color: #f97316; /* Fuchs-Orange – der einzige Akzent */
@@ -194,6 +201,34 @@
   --primary-card-icon-filter: none;
   --primary-card-badge-bg: #ccfbf1; /* Teal 100 */
   --primary-card-badge-border: #99f6e4; /* Teal 200 */
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KNOPFFORM
+
+   In TourFuchs steht die Pillenform auf dem Element selbst:
+
+       button { border-radius: var(--radius-pill); }
+
+   Das ist der Grund, warum dort jeder Knopf rund ist, ohne dass jemand daran
+   denken muss. Hier dieselbe Regel, mit derselben Absicht.
+
+   Sie steht bewusst auf `button` und nicht auf einer Klasse: Eine Klassenregel
+   gewinnt gegen sie (0,1,0 schlägt 0,0,1). Große Kachelknöpfe wie
+   `.identify-tile`, die ihren eigenen Radius setzen, behalten ihn also — eine
+   Pille wäre dort falsch. Betroffen sind nur Knöpfe, die bisher gar keine
+   Form vorgaben, und genau die sollen rund werden.
+   ═══════════════════════════════════════════════════════════════════════════ */
+button {
+  border-radius: var(--radius-pill);
+}
+
+/* Symbolknöpfe sind Kreise, 38 × 38 (TourFuchs .icon-button). Ein rundes Ziel
+   trifft man mit dem Daumen genauso gut wie ein eckiges, aber es sagt
+   deutlicher „hier ist ein Knopf, kein Feld". */
+.help-icon-btn,
+.close-modal-btn {
+  border-radius: 50%;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -6730,7 +6765,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 .recognized-status {
   display: inline-block;
   padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -6832,7 +6867,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   font-size: 0.8rem;
   font-weight: 500;
   padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
 }
 
 .candidate-status.status-healthy {
