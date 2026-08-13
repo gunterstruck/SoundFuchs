@@ -42,11 +42,18 @@
         const VIEW_LEVEL_STORAGE_KEY = 'zanobot.view-level';
         const DEFAULT_VIEW_LEVEL = 'basic';
         const AVAILABLE_VIEW_LEVELS = ['basic', 'advanced', 'expert'];
+        // Seit dem 14.08.2026 gibt es zwei Stufen statt drei: Basis und Profi.
+        // Wer 'advanced' gespeichert hat, wollte mehr als Basis - der ist bei
+        // Profi besser aufgehoben als zurueckgestuft. Die Umschreibung passiert
+        // hier, vor dem ersten Bild, damit nichts aufblitzt.
+        const AUF_ZWEI_STUFEN = (l) => (l === 'advanced' ? 'expert' : l);
 
         function getStoredViewLevel() {
           try {
             const level = localStorage.getItem(VIEW_LEVEL_STORAGE_KEY);
-            return level && AVAILABLE_VIEW_LEVELS.includes(level) ? level : DEFAULT_VIEW_LEVEL;
+            return level && AVAILABLE_VIEW_LEVELS.includes(level)
+              ? AUF_ZWEI_STUFEN(level)
+              : DEFAULT_VIEW_LEVEL;
           } catch (e) {
             return DEFAULT_VIEW_LEVEL;
           }
@@ -2749,25 +2756,6 @@
                   </span>
                   <span class="view-level-label" data-i18n="viewLevels.basicLabel">Basis</span>
                   <span class="view-level-desc" data-i18n="viewLevels.basicDesc">Einfach</span>
-                </button>
-                <button class="view-level-btn" data-level="advanced" type="button">
-                  <span class="view-level-icon">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                    </svg>
-                  </span>
-                  <span class="view-level-label" data-i18n="viewLevels.advancedLabel"
-                    >Fortgeschritten</span
-                  >
-                  <span class="view-level-desc" data-i18n="viewLevels.advancedDesc">Details</span>
                 </button>
                 <button class="view-level-btn" data-level="expert" type="button">
                   <span class="view-level-icon">

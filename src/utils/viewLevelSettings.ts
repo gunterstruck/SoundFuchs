@@ -44,6 +44,17 @@ export const viewLevelDescriptions: Record<ViewLevel, string> = {
 };
 
 /**
+ * Seit dem 14.08.2026 kennt die Oberfläche zwei Stufen: Basis und Profi.
+ *
+ * 'advanced' bleibt intern gültig — `isViewLevelAtLeast('advanced')` steht an
+ * mehreren Stellen und soll dort weiter greifen, etwa beim 3D-Gebirge auf dem
+ * Ergebnisbildschirm. Gespeicherte Werte werden aber auf 'expert' gehoben:
+ * Wer damals „Fortgeschritten" wählte, wollte mehr als Basis. Ihn auf Basis
+ * zurückzustufen würde ihm etwas wegnehmen, das er ausdrücklich gewollt hat.
+ */
+const aufZweiStufen = (level: ViewLevel): ViewLevel => (level === 'advanced' ? 'expert' : level);
+
+/**
  * Read view level from localStorage
  */
 const readFromStorage = (): ViewLevel => {
@@ -54,7 +65,7 @@ const readFromStorage = (): ViewLevel => {
     }
     // Validate the stored value
     if (validLevels.includes(raw as ViewLevel)) {
-      return raw as ViewLevel;
+      return aufZweiStufen(raw as ViewLevel);
     }
     return defaultLevel;
   } catch {
