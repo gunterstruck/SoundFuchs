@@ -11426,3 +11426,211 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   font-size: var(--font-sm);
   font-weight: 600;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DIE KUNDENKARTE (docs/kunden-und-karte.md, Schnitt 2)
+
+   Vollbild, weil eine Karte in einem Briefmarkenformat nichts nutzt: Man
+   oeffnet sie, um sich zu orientieren, und Orientierung braucht Flaeche. Die
+   Karte liegt ueber der Liste, das Blatt eines Kunden ueber der Karte - drei
+   Ebenen, jede mit ihrem eigenen Ausgang.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.customer-map-content {
+  width: 100%;
+  max-width: 900px;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 601px) {
+  .customer-map-content {
+    height: 88vh;
+    border-radius: var(--radius-lg);
+  }
+}
+
+.customer-map-content .modal-header {
+  padding: var(--spacing-sm);
+  margin: 0;
+}
+
+/* Hell - Standard - Satellit. Drei Pillen, wie bei TourFuchs: Die Wahl ist
+   Geschmack und Lichtverhaeltnis, keine Einstellung, die man suchen soll. */
+.map-basemap-row {
+  display: flex;
+  gap: var(--spacing-xs);
+  padding: 0 var(--spacing-sm) var(--spacing-xs);
+}
+
+.map-basemap-btn {
+  flex: 1;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  border-radius: var(--radius-pill);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  font-family: var(--font-primary);
+}
+
+.map-basemap-btn.is-active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+}
+
+.customer-map-canvas {
+  flex: 1;
+  min-height: 0;
+  background: var(--bg-tertiary);
+}
+
+/* Ohne Empfang bleibt die Flaeche grau. Das ist die einzige echte
+   Einschraenkung der Karte und der Grund, warum die Liste der fuehrende Weg
+   zur Maschine bleibt. */
+.map-unlocated {
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+}
+
+/* ── DER MARKER ───────────────────────────────────────────────────────────
+   Von TourFuchs uebernommen, samt der Klasse `approx`: Ein Kunde liegt auf
+   der Ortsmitte seiner Postleitzahl, nicht auf seiner Hausnummer. Der
+   gestrichelte Ring sagt das, statt eine Schaerfe zu behaupten, die die Daten
+   nicht haben. */
+.customer-marker-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 35%);
+}
+
+.customer-marker-card.approx {
+  border: 2px dashed rgb(255 255 255 / 85%);
+}
+
+.customer-marker-symbol {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* Der Name gehoert an den Marker, aber nicht ins Bild: Auf einer Karte mit
+   dreissig Kunden waeren dreissig Namen eine Wand. Er bleibt fuer
+   Bildschirmleser und als Kurzhinweis erhalten. */
+.customer-marker-copy {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* ── DAS BLATT DES KUNDEN ────────────────────────────────────────────────
+   Es faehrt von unten ueber die Karte, nicht als zweites Rechteck in der
+   Mitte: Auf einem Telefon verliert ein verschachteltes Fenster links und
+   rechts Platz, den es nicht hat. Dieselbe Form wie die Sidebar. */
+.customer-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  max-height: 62%;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--bg-primary);
+  box-shadow: 0 -8px 28px rgb(0 0 0 / 22%);
+  overflow-y: auto;
+}
+
+.customer-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+
+.customer-sheet-head h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.customer-sheet-place {
+  margin: 0.15rem 0 0;
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+}
+
+.customer-sheet-label {
+  margin: var(--spacing-sm) 0 0.35rem;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.customer-sheet-empty {
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+/* Eine Maschinenzeile im Kundenblatt fuehrt in dieselbe Maschinenansicht wie
+   die Liste. Kein zweites Blatt, kein zweiter Weg. */
+.customer-machine-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  padding: 0.7rem 0.5rem;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+  font-size: var(--font-sm);
+  text-align: left;
+}
+
+.customer-machine-row:last-child {
+  border-bottom: none;
+}
+
+.customer-machine-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.customer-machine-score {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.customer-machine-arrow {
+  color: var(--text-muted);
+}

@@ -21,6 +21,7 @@ export const zh: TranslationDict = {
     vault: '保险库',
     soon: '稍后',
     view: '视图：基础或专业',
+    map: '客户地图',
   },
 
   search: {
@@ -90,6 +91,18 @@ export const zh: TranslationDict = {
     nfcDiagnosisPrompt: '检测到机器。现在检查状态吗？',
     closeDialog: '关闭对话框',
   },
+  map: {
+    title: '客户地图',
+    tileLight: '浅色',
+    tileStandard: '标准',
+    tileSatellite: '卫星',
+    machinesLabel: '机器',
+    accuracyPlz: '市中心',
+    noMachines: '该客户尚无机器。',
+    noReference: '缺少参考',
+    unlocated: '{{count}} 位客户没有地图位置 — 其邮政编码未知。',
+  },
+
   customers: {
     label: '客户（可选）',
     none: '— 无客户 —',
@@ -1151,6 +1164,7 @@ export const zh: TranslationDict = {
     dataTitle: '所用数据',
     dataPlzPlaces: '邮编地名',
     dataPlzCoords: '邮编坐标',
+    dataMapTiles: '地图底图',
     title: '关于 SoundFuchs',
     subtitle: '机器状态声学比较助手',
     intro:

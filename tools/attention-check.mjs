@@ -597,6 +597,91 @@ try {
     );
     pruefe(inListe, 'Kunde: der angelegte Kunde erscheint nicht an seiner Maschine');
 
+    // ═════════════════════════════════════════════════════════════════════
+    // DIE KUNDENKARTE
+    //
+    // Sie läuft im selben Fenster weiter, weil sie den eben angelegten Kunden
+    // braucht. Geprüft wird die Kette, nicht das Aussehen:
+    //
+    //   Menüzeile → Karte → Marker → Kundenblatt → Maschinenansicht
+    //
+    // Jedes Glied kann still reißen. Der Marker etwa hängt daran, dass beim
+    // Anlegen Koordinaten aus der PLZ gefallen sind; fehlen sie, ist die Karte
+    // leer und sagt es nicht. Und die Quellenangabe der Kacheln ist keine
+    // Höflichkeit, sondern Bedingung der Nutzung — verschwindet sie, benutzen
+    // wir die Kacheln unzulässig, und niemandem fällt es auf.
+    //
+    // Die Kacheln selbst kommen aus dem Netz und dürfen fehlen; geprüft wird
+    // deshalb Leaflets Aufbau, nicht das Bild.
+    let zeileDa = false;
+    let markerZahl = 0;
+    let gruende = 0;
+    let quelle = '';
+    let blattDa = false;
+    let maschineImBlatt = false;
+    let karteZu = false;
+
+    if (inListe) {
+      await page.locator('#app-menu-btn').click();
+      await page.waitForTimeout(700);
+      const zeile = page.locator('.info-sheet-row[data-karte]');
+      zeileDa = await zeile.isVisible().catch(() => false);
+
+      if (zeileDa) {
+        await zeile.click();
+        // Leaflet wird erst jetzt geholt.
+        await page.waitForTimeout(2500);
+
+        markerZahl = await page.locator('#customer-map .leaflet-marker-icon').count();
+        gruende = await page.locator('#map-basemap-row .map-basemap-btn').count();
+        quelle = await page
+          .locator('#customer-map .leaflet-control-attribution')
+          .first()
+          .innerText()
+          .catch(() => '');
+
+        if (markerZahl > 0) {
+          await page.locator('#customer-map .leaflet-marker-icon').first().click();
+          await page.waitForTimeout(800);
+          blattDa = await page
+            .locator('#customer-sheet')
+            .isVisible()
+            .catch(() => false);
+          const reihe = page.locator('.customer-machine-row', { hasText: 'Pumpe 17' }).first();
+          maschineImBlatt = await reihe.isVisible().catch(() => false);
+
+          if (maschineImBlatt) {
+            await reihe.click();
+            await page.waitForTimeout(1200);
+            karteZu = !(await page
+              .locator('#customer-map-modal')
+              .isVisible()
+              .catch(() => true));
+          }
+        }
+      }
+    }
+
+    console.log('\n=== Kundenkarte ===');
+    console.log(`Menüzeile „Kundenkarte"   ${zeileDa ? 'sichtbar' : 'FEHLT'}`);
+    console.log(`Marker auf der Karte      ${markerZahl}`);
+    console.log(`Kartengründe              ${gruende}`);
+    console.log(`Quellenangabe             ${quelle.replace(/\s+/g, ' ').slice(0, 60) || '(leer)'}`);
+    console.log(`Kundenblatt               ${blattDa ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Maschine im Blatt         ${maschineImBlatt ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Karte schließt beim Tipp  ${karteZu ? 'ja' : 'nein'}`);
+
+    pruefe(zeileDa, 'Karte: die Menüzeile fehlt, obwohl ein verorteter Kunde da ist');
+    pruefe(markerZahl > 0, 'Karte: kein Marker — der Kunde ist ohne Koordinaten angelegt worden');
+    pruefe(gruende === 3, `Karte: ${gruende} statt 3 Kartengründe (Hell · Standard · Satellit)`);
+    pruefe(
+      quelle.includes('OpenStreetMap'),
+      'Karte: die Quellenangabe der Kacheln fehlt — sie ist Bedingung der Nutzung, kein Schmuck'
+    );
+    pruefe(blattDa, 'Karte: der Marker öffnet kein Kundenblatt — er tut nichts');
+    pruefe(maschineImBlatt, 'Karte: das Kundenblatt zeigt seine Maschinen nicht');
+    pruefe(karteZu, 'Karte: der Tipp auf eine Maschine führt nicht in die Maschinenansicht');
+
     await ctx.close();
   }
 } finally {

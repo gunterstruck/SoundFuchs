@@ -21,6 +21,7 @@ export const en: TranslationDict = {
     vault: 'Vault',
     soon: 'later',
     view: 'View: basic or pro',
+    map: 'Customer map',
   },
 
   search: {
@@ -103,6 +104,18 @@ export const en: TranslationDict = {
     nfcDiagnosisTitle: 'Check status?',
     nfcDiagnosisPrompt: 'Machine detected. Check status now?',
     closeDialog: 'Close dialog',
+  },
+
+  map: {
+    title: 'Customer map',
+    tileLight: 'Light',
+    tileStandard: 'Standard',
+    tileSatellite: 'Satellite',
+    machinesLabel: 'Machines',
+    accuracyPlz: 'Town centre',
+    noMachines: 'No machine at this customer yet.',
+    noReference: 'No reference',
+    unlocated: '{{count}} customer(s) without a map position — their postcode is unknown.',
   },
 
   customers: {
@@ -1463,6 +1476,7 @@ export const en: TranslationDict = {
     dataTitle: 'Data used',
     dataPlzPlaces: 'Postcode place names',
     dataPlzCoords: 'Postcode coordinates',
+    dataMapTiles: 'Map tiles',
     title: 'About SoundFuchs',
     subtitle: 'Assistant for acoustic comparison of machine states',
 

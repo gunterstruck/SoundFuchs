@@ -4219,6 +4219,35 @@
                 >OpenStreetMap-Mitwirkende</a
               >, ODbL
             </p>
+            <!-- Die Kartendarstellung der Kundenkarte. Alle drei Anbieter
+                 verlangen Namensnennung; sie steht zusätzlich unten rechts
+                 auf der Karte selbst. -->
+            <p>
+              <span data-i18n="about.dataMapTiles">Kartendarstellung</span>: ©
+              <a
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noopener"
+                style="color: var(--primary-color)"
+                >OpenStreetMap-Mitwirkende</a
+              >
+              (ODbL),
+              <a
+                href="https://carto.com/attributions"
+                target="_blank"
+                rel="noopener"
+                style="color: var(--primary-color)"
+                >CARTO</a
+              >,
+              <a
+                href="https://www.esri.com/"
+                target="_blank"
+                rel="noopener"
+                style="color: var(--primary-color)"
+                >Esri</a
+              >
+              (Maxar, Earthstar Geographics)
+            </p>
           </div>
         </div>
         <div class="modal-actions">
@@ -4278,6 +4307,83 @@
         >
           Abbrechen
         </button>
+      </div>
+    </div>
+
+    <!--
+      Modal: Kundenkarte (Schnitt 2 aus docs/kunden-und-karte.md)
+
+      Auf die Karte kommt der Kunde, nicht die Maschine — der Kunde ist ein
+      Ort, an dem man ankommt, zwei Maschinen fünf Meter auseinander sind
+      dasselbe Pixel. Die Karte tritt neben die Liste und ersetzt sie nicht:
+      Ihre Kacheln brauchen Netz, in einer Halle ohne Empfang bliebe sie grau.
+
+      Leaflet und sein Stylesheet werden erst beim Öffnen geholt.
+    -->
+    <div
+      id="customer-map-modal"
+      class="modal customer-map-modal"
+      style="display: none"
+      role="dialog"
+      aria-labelledby="customer-map-title"
+      aria-modal="true"
+    >
+      <div class="modal-content customer-map-content">
+        <div class="modal-header">
+          <h3 id="customer-map-title" data-i18n="map.title">Kundenkarte</h3>
+          <button class="close-modal-btn" id="close-customer-map" aria-label="Schließen">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <!-- Hell · Standard · Satellit — eins zu eins von TourFuchs. Die
+             Quellenangaben hängen an den Kacheln selbst und stehen unten
+             rechts auf der Karte; sie sind Bedingung der Nutzung. -->
+        <div class="map-basemap-row" id="map-basemap-row"></div>
+        <div class="customer-map-canvas" id="customer-map"></div>
+        <p class="map-unlocated" id="map-unlocated" style="display: none"></p>
+
+        <!-- Das Blatt des Kunden: Name, Ort, seine Maschinen. Ein Tipp auf
+             eine Maschine führt in die Ansicht, die es längst gibt. -->
+        <div class="customer-sheet" id="customer-sheet" style="display: none">
+          <div class="customer-sheet-head">
+            <div>
+              <h4 id="customer-sheet-title">—</h4>
+              <p class="customer-sheet-place" id="customer-sheet-place">—</p>
+            </div>
+            <button
+              type="button"
+              class="close-modal-btn"
+              id="close-customer-sheet"
+              aria-label="Schließen"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+          <p class="customer-sheet-label" data-i18n="map.machinesLabel">Maschinen</p>
+          <div class="customer-sheet-machines" id="customer-sheet-machines"></div>
+        </div>
       </div>
     </div>
 

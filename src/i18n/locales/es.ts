@@ -21,6 +21,7 @@ export const es: TranslationDict = {
     vault: 'Caja fuerte',
     soon: 'más adelante',
     view: 'Vista: básica o profesional',
+    map: 'Mapa de clientes',
   },
 
   search: {
@@ -90,6 +91,18 @@ export const es: TranslationDict = {
     nfcDiagnosisPrompt: 'Máquina detectada. ¿Verificar estado ahora?',
     closeDialog: 'Cerrar diálogo',
   },
+  map: {
+    title: 'Mapa de clientes',
+    tileLight: 'Claro',
+    tileStandard: 'Estándar',
+    tileSatellite: 'Satélite',
+    machinesLabel: 'Máquinas',
+    accuracyPlz: 'Centro de la localidad',
+    noMachines: 'Este cliente aún no tiene ninguna máquina.',
+    noReference: 'Falta la referencia',
+    unlocated: '{{count}} cliente(s) sin punto en el mapa: su código postal es desconocido.',
+  },
+
   customers: {
     label: 'Cliente (opcional)',
     none: '— sin cliente —',
@@ -1220,6 +1233,7 @@ export const es: TranslationDict = {
     dataTitle: 'Datos utilizados',
     dataPlzPlaces: 'Nombres de localidad por CP',
     dataPlzCoords: 'Coordenadas por CP',
+    dataMapTiles: 'Representación del mapa',
     title: 'Acerca de SoundFuchs',
     subtitle: 'Asistente para comparación acústica de estados de máquinas',
     intro:
