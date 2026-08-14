@@ -553,3 +553,36 @@ gebaut, bis er etwas kann.
 
 **Eine auffällige Aufnahme nachträglich als Fehler-Arbeitspunkt hinterlegen**
 (§11) bleibt, wie dort beschrieben, ein eigenes Vorhaben.
+
+## 20. Die Schrittkarten erscheinen erst mit einer Maschine (14.08.2026)
+
+§19 hatte das offengelassen und dem Auftraggeber vorgelegt. Die Entscheidung
+ist gefallen: Die Karten können weg.
+
+Beim Umsetzen ist die Sorge aus §19 kleiner geworden, als sie aussah — aber
+nicht ganz verschwunden.
+
+**Nachgemessen.** Ohne geladene Maschine zeigt die Aufnahme-Karte einen
+zweiten Zustand: „Keine Maschine ausgewählt — wird automatisch erstellt", mit
+freigeschaltetem Knopf. Der funktioniert; die Aufnahme startet, die Maschine
+entsteht dabei. Die Prüf-Karte dagegen steht mit gesperrtem Knopf da, also als
+verschlossene Tür.
+
+**Was das kostet.** Dieser eine Weg — aufnehmen, ohne vorher zu benennen —
+verschwindet von der Startseite. Es ist kein Verlust an Können: Dieselbe
+Maschine entsteht weiterhin über „Neue Maschine", nur mit einem Namen davor.
+Was verloren geht, ist ein gesparter Schritt, nicht eine Fähigkeit. Wer ihn
+zurück will, holt ihn mit einer Zeile zurück (`#card-record` aus der Regel
+nehmen) — dann steht aber auch die Karte wieder auf der Startseite.
+
+**Wie.** `lockPhases`/`unlockPhases` setzen und entfernen `body.zb-no-machine`;
+zwei CSS-Regeln blenden `#card-record` und `#card-check` aus. Sobald eine
+Maschine geladen ist — Zeilen-Tipp, Scan, NFC, Flotte —, sind beide Karten da
+und tragen den Ablauf wie bisher. Es ändert sich nur, **wann** sie zu sehen
+sind, nicht was sie können.
+
+**Was dabei sichtbar wurde.** Ohne die Karten fällt auf, dass „Schnellwahl —
+Zuletzt verwendet" dieselben Maschinen zeigt wie die Maschinenübersicht
+darunter, mit anderer Zeilengestalt und noch mit dem ⓘ-Knopf, den die
+Übersicht seit #20 nicht mehr hat. Zwei Listen für denselben Bestand: eigener
+Punkt, eigener Schnitt.
