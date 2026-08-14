@@ -27,6 +27,7 @@ import { notify } from '@utils/notifications.js';
 import { logger } from '@utils/logger.js';
 import { GlobalSearch } from '@ui/GlobalSearch.js';
 import { InfoBottomSheet } from '@ui/components/InfoBottomSheet.js';
+import { CustomerMap } from '@ui/components/CustomerMap.js';
 import { escapeHtml } from '@utils/sanitize.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
 import { initPwaUpdate } from '@utils/pwaUpdate.js';
@@ -54,6 +55,13 @@ declare global {
 
 class ZanobotApp {
   private router: Router | null = null;
+  /**
+   * Die Kundenkarte (docs/kunden-und-karte.md). Leaflet steckt dahinter und
+   * wird erst beim ersten Öffnen geholt — das Feld hier kostet nichts.
+   */
+  private kundenkarte = new CustomerMap({
+    zeigeMaschine: (machine) => this.router?.showMachineView(machine),
+  });
 
   constructor() {
     this.init();
@@ -773,7 +781,7 @@ class ZanobotApp {
    * Über SoundFuchs, Datenschutz und Impressum lösen weiterhin ihre Knöpfe
    * dort aus, statt deren Logik nachzubauen.
    */
-  private oeffneEinstellungsfenster(): void {
+  private async oeffneEinstellungsfenster(): Promise<void> {
     /**
      * Zeigt dieses Thema auf der aktuellen Stufe überhaupt etwas?
      *
@@ -787,9 +795,19 @@ class ZanobotApp {
         document.querySelectorAll<HTMLElement>(`.setting-category[data-thema~="${thema}"]`)
       ).some((kat) => window.getComputedStyle(kat).display !== 'none');
 
+    /**
+     * Führt die Karte überhaupt irgendwohin?
+     *
+     * Dieselbe Frage wie bei den Themen, nur zu Daten statt zu Stufen: Eine
+     * Karte ohne einen einzigen verorteten Kunden ist ein leeres graues Feld.
+     * Solange keiner da ist, bleibt die Zeile weg.
+     */
+    const karteHatKunden = await CustomerMap.hatKunden();
+
     type Zeile =
       | { art: 'thema'; thema: string; icon: string; key: string }
       | { art: 'knopf'; id: string; icon: string; key: string }
+      | { art: 'karte'; icon: string; key: string }
       | { art: 'bald'; icon: string; key: string };
 
     const gruppen: Array<{ titel: string; zeilen: Zeile[] }> = [
@@ -805,6 +823,7 @@ class ZanobotApp {
         zeilen: [
           { art: 'thema', thema: 'etiketten', icon: '🏷', key: 'sheet.labels' },
           { art: 'thema', thema: 'daten', icon: '💾', key: 'sheet.data' },
+          { art: 'karte', icon: '🗺', key: 'sheet.map' },
           { art: 'bald', icon: '🔐', key: 'sheet.vault' },
         ],
       },
@@ -829,7 +848,9 @@ class ZanobotApp {
       const ziel =
         z.art === 'thema'
           ? `data-thema="${z.thema}" data-label="${escapeHtml(t(z.key))}"`
-          : `data-target="${escapeHtml(z.id)}"`;
+          : z.art === 'karte'
+            ? 'data-karte="1"'
+            : `data-target="${escapeHtml(z.id)}"`;
       return `<button type="button" class="info-sheet-row" ${ziel}>${kopf}<span class="info-sheet-arrow">›</span></button>`;
     };
 
@@ -838,6 +859,7 @@ class ZanobotApp {
         const zeilen = g.zeilen.filter((z) => {
           if (z.art === 'thema') return themaHatInhalt(z.thema);
           if (z.art === 'knopf') return Boolean(document.getElementById(z.id));
+          if (z.art === 'karte') return karteHatKunden;
           return true;
         });
         if (zeilen.length === 0) return '';
@@ -856,6 +878,14 @@ class ZanobotApp {
           const ziel = document.getElementById(zeile.dataset.target ?? '');
           InfoBottomSheet.close();
           ziel?.click();
+        });
+      });
+
+      // Der Weg auf die Karte.
+      document.querySelectorAll<HTMLElement>('.info-sheet-row[data-karte]').forEach((zeile) => {
+        zeile.addEventListener('click', () => {
+          InfoBottomSheet.close();
+          void this.kundenkarte.oeffne();
         });
       });
 
@@ -922,11 +952,28 @@ class ZanobotApp {
     ].filter((el): el is HTMLElement => el !== null);
 
     for (const knopf of ausloeser) {
-      knopf.addEventListener('click', () => this.oeffneEinstellungsfenster());
+      knopf.addEventListener('click', () => void this.oeffneEinstellungsfenster());
     }
 
     this.griffZiehbarMachen();
     this.setupPillen();
+    this.setupKarte();
+  }
+
+  /**
+   * Die Ausgänge der Kundenkarte verdrahten.
+   *
+   * Zwei Ebenen, zwei Schließen-Knöpfe: Das Blatt eines Kunden liegt über der
+   * Karte, die Karte über der Liste. Wer das Blatt schließt, will die Karte
+   * behalten — deshalb schließt der obere nicht gleich beides.
+   */
+  private setupKarte(): void {
+    document
+      .getElementById('close-customer-map')
+      ?.addEventListener('click', () => this.kundenkarte.schliesse());
+    document
+      .getElementById('close-customer-sheet')
+      ?.addEventListener('click', () => this.kundenkarte.schliesseBlatt());
   }
 
   /**
@@ -1011,7 +1058,7 @@ class ZanobotApp {
         // Erst jetzt öffnen, und zwar unsichtbar am unteren Rand: Von dort
         // folgt das Blatt dem Finger, statt aufzuspringen.
         if (!InfoBottomSheet.istOffen) {
-          this.oeffneEinstellungsfenster();
+          void this.oeffneEinstellungsfenster();
           InfoBottomSheet.setzeZugAnteil(0);
         }
       }
@@ -1040,7 +1087,7 @@ class ZanobotApp {
         bewegt = false;
         return;
       }
-      this.oeffneEinstellungsfenster();
+      void this.oeffneEinstellungsfenster();
     });
   }
 

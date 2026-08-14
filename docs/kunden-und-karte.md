@@ -129,9 +129,9 @@ Genauigkeit vor, die nichts bedeutet.
 1. **Kunde anlegen** — ✅ steht. Entität, PLZ-Eingabe, Ort füllt sich selbst,
    Maschine bekommt `customerId`. Nützlich ohne jede Karte: Der Bestand lässt
    sich nach Kunde gruppieren.
-2. **Die Karte** — Leaflet, Marker, Zoom.
-3. **Das Kundenblatt** — Name, Ort, seine Maschinen, Tipp führt in die
-   Maschinenansicht.
+2. **Die Karte** — ✅ steht. Leaflet, Marker, Zoom.
+3. **Das Kundenblatt** — ✅ steht, zusammen mit der Karte. Name, Ort, seine
+   Maschinen, Tipp führt in die Maschinenansicht.
 4. **Liste einlesen** — mehrere Kunden auf einmal. Erst wenn jemand mehr als
    eine Handvoll hat.
 
@@ -162,3 +162,41 @@ die Felder aufklappen, die PLZ 45127 muss „Essen" nachtragen, und der Kunde
 muss danach an seiner Maschine erscheinen. Der mittlere Punkt hängt an den
 beiden bewusst nicht vorgeladenen Geodaten-Dateien — verschiebt sie jemand,
 fällt es hier auf und nirgends sonst.
+
+### Was Schnitt 2 geworden ist
+
+Die drei Kartengründe sind eins zu eins von TourFuchs übernommen
+(`CONFIG.tileLayers`), samt Adressen, Zoomgrenzen und Quellenangaben — Hell,
+Standard, Satellit. Nicht aus Bequemlichkeit: Wer beide Apps nebeneinander
+benutzt, soll dieselbe Karte sehen. Die zuletzt gewählte Darstellung bleibt
+gemerkt.
+
+**Die Quellenangabe steht an drei Stellen**, weil sie Bedingung der Nutzung ist
+und nicht Schmuck: am Datensatz selbst (`src/services/mapTiles.ts`), unten
+rechts auf der Karte (Leaflets `attributionControl`, ausdrücklich
+eingeschaltet, nur Leaflets eigene Werbezeile ist abgeschaltet) und im Dialog
+„Über SoundFuchs". Die NOTICE führt sie ebenfalls. Ein Unit-Test hält fest,
+dass keiner der drei Einträge seine Angabe verliert.
+
+**Leaflet wird nachgeladen.** 150 KB Code und 16 KB Stylesheet stehen nicht im
+Vorrat des Service Workers (`globIgnores`), sondern kommen per `import()` beim
+ersten Öffnen und liegen danach im Zwischenspeicher — dieselbe Überlegung wie
+bei den PLZ-Daten und beim TensorFlow-Paket. Der Umfang der Installation ist
+dadurch unverändert: 30 Einträge wie zuvor.
+
+**Der Menüeintrag erscheint erst, wenn es etwas zu sehen gibt.** Ohne einen
+verorteten Kunden bliebe die Karte ein graues Feld — und ein Knopf, der auf ein
+graues Feld führt, ist genau die Sorte, die hier schon fünfmal ausgemerzt
+wurde. Dieselbe Regel wie bei den Themen in den Einstellungen, nur zu Daten
+statt zu Ansichtsstufen.
+
+**Der Marker sagt, was er weiß.** Ein Kunde liegt auf der Ortsmitte seiner
+Postleitzahl; der gestrichelte Ring und die Zeile „Ortsmitte" im Blatt halten
+das fest, statt eine Hausnummer-Genauigkeit zu behaupten. Kunden ohne
+Koordinaten verschwinden nicht stillschweigend — eine Zeile unter der Karte
+sagt, wie viele es sind.
+
+Bewacht wird die ganze Kette von `attention-check`: Menüzeile → Karte → Marker
+→ Kundenblatt → Maschinenansicht, dazu die Zahl der Kartengründe und das
+Vorhandensein der Quellenangabe. Jedes Glied kann still reißen, und keines
+davon würde ein Unit-Test bemerken.

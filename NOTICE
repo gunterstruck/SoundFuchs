@@ -72,6 +72,8 @@ Diese Lizenzen gelten unabhaengig von der MIT-Lizenz dieses Projekts fort.
 - idb ................................ ISC ........... (c) Jake Archibald
 - idb-keyval ......................... Apache-2.0 .... (c) Jake Archibald
 - qrcode ............................. MIT ........... (c) Ryan Day
+- Leaflet ............................ BSD-2-Clause .. (c) Volodymyr Agafonkin,
+                                                      CloudMade
 
 Die Werkzeuge der Entwicklungsumgebung (Vite, TypeScript, ESLint, Prettier,
 Vitest, vite-plugin-pwa/Workbox) sind nicht Bestandteil der ausgelieferten
@@ -98,5 +100,20 @@ MIT-Lizenz dieses Projekts fort:
 - PLZ-Koordinaten (public/geodata/plz-centroids.json)
   (c) OpenStreetMap-Mitwirkende, ODbL
   https://www.openstreetmap.org/copyright
+
+Fuer die Kundenkarte werden Kacheln aus dem Netz geladen. Sie liegen nicht
+bei, ihre Namensnennung ist aber Bedingung der Nutzung. Sie steht unten rechts
+auf der Karte selbst und im Dialog "Ueber SoundFuchs":
+
+- Kartendarstellung "Hell"
+  (c) OpenStreetMap-Mitwirkende (ODbL), (c) CARTO
+  https://carto.com/attributions
+
+- Kartendarstellung "Standard"
+  (c) OpenStreetMap-Mitwirkende (ODbL)
+  https://www.openstreetmap.org/copyright
+
+- Kartendarstellung "Satellit"
+  Tiles (c) Esri - Quellen: Esri, Maxar, Earthstar Geographics
 
 Wer SoundFuchs weitergibt oder abwandelt, gibt diese Pflichten mit weiter.

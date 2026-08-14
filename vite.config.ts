@@ -87,7 +87,12 @@ export default defineConfig({
         // (~1.9 MB, only needed for the optional YAMNet engine). It is loaded on
         // demand and cached at runtime below. Users of GMIA / spectral-cosine
         // never download it. The chunk has a stable name (manualChunks → 'tfjs').
-        globIgnores: ['**/tfjs-*.js'],
+        // Dasselbe für Leaflet (~150 KB Code + 16 KB Stylesheet): Es wird nur
+        // gebraucht, wenn jemand die Kundenkarte öffnet, und die setzt voraus,
+        // dass überhaupt ein Kunde angelegt wurde. Wer nur Maschinen prüft,
+        // lädt kein Byte davon. Der Name des Bündels ist stabil (manualChunks
+        // → 'leaflet'), das Stylesheet erbt ihn.
+        globIgnores: ['**/tfjs-*.js', '**/leaflet-*.js', '**/leaflet-*.css'],
         runtimeCaching: [
           {
             // On-demand caching of the lazy TF.js chunk so YAMNet works offline
@@ -97,6 +102,18 @@ export default defineConfig({
             options: {
               cacheName: 'lazy-js-cache',
               expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Leaflet nach demselben Muster: nicht im Vorrat, aber nach dem
+            // ersten Öffnen der Karte dauerhaft da. Eine feste Fassung ändert
+            // sich nicht mehr — deshalb CacheFirst.
+            urlPattern: /\/assets\/leaflet-.*\.(js|css)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'lazy-map-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
@@ -143,6 +160,13 @@ export default defineConfig({
           // excluded from the PWA precache (only fetched when YAMNet is used).
           if (id.includes('@tensorflow') || id.includes('node_modules/seedrandom')) {
             return 'tfjs';
+          }
+          // Leaflet ebenso: eigenes Bündel mit festem Namen, damit die Regeln
+          // oben (globIgnores + runtimeCaching) daran greifen können. Ohne den
+          // festen Namen hinge das Auslassen aus dem Vorrat daran, wie Rollup
+          // die Datei zufällig benennt.
+          if (id.includes('node_modules/leaflet')) {
+            return 'leaflet';
           }
           // Split DSP modules into separate chunk
           if (id.includes('src/core/dsp')) {

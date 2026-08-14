@@ -23,6 +23,7 @@ export const de: TranslationDict = {
     vault: 'Tresor',
     soon: 'später',
     view: 'Ansicht: Basis oder Profi',
+    map: 'Kundenkarte',
   },
 
   search: {
@@ -105,6 +106,21 @@ export const de: TranslationDict = {
     nfcDiagnosisTitle: 'Zustand prüfen?',
     nfcDiagnosisPrompt: 'Maschine erkannt. Zustand jetzt prüfen?',
     closeDialog: 'Dialog schließen',
+  },
+
+  // ============================================================================
+  // KUNDENKARTE (Schnitt 2 — docs/kunden-und-karte.md)
+  // ============================================================================
+  map: {
+    title: 'Kundenkarte',
+    tileLight: 'Hell',
+    tileStandard: 'Standard',
+    tileSatellite: 'Satellit',
+    machinesLabel: 'Maschinen',
+    accuracyPlz: 'Ortsmitte',
+    noMachines: 'Bei diesem Kunden steht noch keine Maschine.',
+    noReference: 'Referenz fehlt',
+    unlocated: '{{count}} Kunde(n) ohne Kartenpunkt — ihre Postleitzahl ist unbekannt.',
   },
 
   // ============================================================================
@@ -1540,6 +1556,7 @@ export const de: TranslationDict = {
     dataTitle: 'Verwendete Daten',
     dataPlzPlaces: 'PLZ-Ortsnamen',
     dataPlzCoords: 'PLZ-Koordinaten',
+    dataMapTiles: 'Kartendarstellung',
     title: 'Über SoundFuchs',
     subtitle: 'Assistent für akustischen Vergleich von Maschinenzuständen',
 
