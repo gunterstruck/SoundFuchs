@@ -1309,6 +1309,26 @@
       </footer>
     </div>
 
+    <!-- GRIFF AM UNTEREN RAND
+         Aufbau von TourFuchs übernommen und aus dem Entwurf der Startseite
+         (docs/startseite-entwurf.md, Bild A): ein schmaler Streifen, der immer
+         am unteren Rand liegt, mit Griffleiste und Beschriftung.
+
+         Er öffnet dasselbe Schiebefenster wie der ⓘ-Knopf oben rechts. Das ist
+         kein zweiter Weg zum selben Ziel, sondern derselbe Weg für eine andere
+         Hand: Oben rechts erreicht man mit dem Daumen nicht, wenn man das Gerät
+         hält und mit der anderen Hand eine Maschine anfasst. Unten schon. Beide
+         Punkte stehen so im Entwurf.
+
+         Ein `<button>` und kein Ziehbereich: Ein Tipp öffnet das Fenster, und
+         das Fenster selbst bringt seine Griffleiste und das Wischen zum
+         Schließen schon mit. Eine eigene Zieh-Erkennung wäre eine zweite
+         Mechanik für dieselbe Geste. -->
+    <button type="button" class="sheet-grip" id="sheet-grip">
+      <span class="sheet-grip-line" aria-hidden="true"></span>
+      <span class="sheet-grip-label" data-i18n="search.sheetTitle">Einstellungen &amp; mehr</span>
+    </button>
+
     <!-- Modal for Recording (Reference Phase) -->
     <div id="recording-modal" class="modal" style="display: none">
       <div class="modal-content">

@@ -753,18 +753,15 @@ class ZanobotApp {
   }
 
   /**
-   * Info-Knopf der Kopfleiste.
+   * Das Schiebefenster „Einstellungen & mehr" öffnen.
    *
-   * Er trägt, was bis zum 14.08.2026 in der Fußzeile stand: Einstellungen, Über
+   * Es trägt, was bis zum 14.08.2026 in der Fußzeile stand: Einstellungen, Über
    * SoundFuchs, Datenschutz, Impressum. Die Fußzeile selbst bleibt im Markup —
    * verborgen, aber vollständig verdrahtet. Das Schiebefenster löst deshalb die
    * vorhandenen Knöpfe aus, statt deren Logik nachzubauen: Ein zweiter Weg zum
    * selben Ziel wäre ein zweiter Weg, der kaputtgehen kann.
    */
-  private setupInfoButton(): void {
-    const knopf = document.getElementById('app-info-btn');
-    if (!knopf) return;
-
+  private oeffneEinstellungsfenster(): void {
     const eintraege = [
       { id: 'settings-btn', icon: '⚙️', key: 'footer.settings' },
       { id: 'about-btn', icon: '🦊', key: 'footer.about' },
@@ -772,32 +769,50 @@ class ZanobotApp {
       { id: 'impressum-btn', icon: '§', key: 'footer.impressum' },
     ];
 
-    knopf.addEventListener('click', () => {
-      const zeilen = eintraege
-        .filter((e) => document.getElementById(e.id))
-        .map(
-          (e) =>
-            `<button type="button" class="info-sheet-row" data-target="${e.id}">` +
-            `<span class="info-sheet-icon">${e.icon}</span>` +
-            `<span class="info-sheet-label">${t(e.key)}</span>` +
-            `<span class="info-sheet-arrow">›</span></button>`
-        )
-        .join('');
+    const zeilen = eintraege
+      .filter((e) => document.getElementById(e.id))
+      .map(
+        (e) =>
+          `<button type="button" class="info-sheet-row" data-target="${e.id}">` +
+          `<span class="info-sheet-icon">${e.icon}</span>` +
+          `<span class="info-sheet-label">${t(e.key)}</span>` +
+          `<span class="info-sheet-arrow">›</span></button>`
+      )
+      .join('');
 
-      InfoBottomSheet.show({ title: t('search.sheetTitle'), icon: '⚙️', content: zeilen });
+    InfoBottomSheet.show({ title: t('search.sheetTitle'), icon: '⚙️', content: zeilen });
 
-      // Nach dem Zeichnen verdrahten: Der Klick reicht an den vorhandenen
-      // Fußzeilen-Knopf weiter, der schon alles Nötige tut.
-      requestAnimationFrame(() => {
-        document.querySelectorAll<HTMLElement>('.info-sheet-row[data-target]').forEach((zeile) => {
-          zeile.addEventListener('click', () => {
-            const ziel = document.getElementById(zeile.dataset.target ?? '');
-            InfoBottomSheet.close();
-            ziel?.click();
-          });
+    // Nach dem Zeichnen verdrahten: Der Klick reicht an den vorhandenen
+    // Fußzeilen-Knopf weiter, der schon alles Nötige tut.
+    requestAnimationFrame(() => {
+      document.querySelectorAll<HTMLElement>('.info-sheet-row[data-target]').forEach((zeile) => {
+        zeile.addEventListener('click', () => {
+          const ziel = document.getElementById(zeile.dataset.target ?? '');
+          InfoBottomSheet.close();
+          ziel?.click();
         });
       });
     });
+  }
+
+  /**
+   * Die zwei Auslöser für das Schiebefenster verdrahten.
+   *
+   * Oben rechts der ⓘ-Knopf, unten der Griff am Bildschirmrand. Das ist kein
+   * zweiter Weg zum selben Ziel, sondern derselbe Weg für eine andere Hand: Wer
+   * das Gerät hält und mit der freien Hand an einer Maschine steht, erreicht
+   * oben rechts nichts. Unten schon. Beide Punkte stehen so im Entwurf der
+   * Startseite (docs/startseite-entwurf.md, Bild A).
+   */
+  private setupInfoButton(): void {
+    const ausloeser = [
+      document.getElementById('app-info-btn'),
+      document.getElementById('sheet-grip'),
+    ].filter((el): el is HTMLElement => el !== null);
+
+    for (const knopf of ausloeser) {
+      knopf.addEventListener('click', () => this.oeffneEinstellungsfenster());
+    }
   }
 
   private setupFooterLinks(): void {
