@@ -10434,6 +10434,29 @@ body.zb-first-run .step-badge {
   display: inline-flex;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   DIE SCHRITTKARTEN ERSCHEINEN ERST MIT EINER MASCHINE
+   (body.zb-no-machine — gesetzt von lockPhases, entfernt von unlockPhases)
+
+   Auf der Startseite ist der Bestand die Startseite. Ein Ablauf, der noch kein
+   Ziel hat, gehört nicht darüber: „Normalzustand aufnehmen" und „Zustand
+   prüfen" standen dort, solange gar keine Maschine geladen war — die
+   Prüf-Karte mit gesperrtem Knopf, also als verschlossene Tür.
+
+   Sobald eine Maschine geladen ist (Zeilen-Tipp → „Prüfung starten", Scan,
+   NFC, Flotte), sind beide Karten da und tragen den Ablauf wie bisher. Es
+   ändert sich also nur, WANN sie zu sehen sind, nicht was sie können.
+
+   Was das kostet, steht im Entwurf (§20): Der Zweit-Zustand der Aufnahme-Karte
+   („keine Maschine ausgewählt — wird automatisch erstellt") verschwindet damit
+   von der Startseite. Dieselbe Maschine entsteht weiterhin über „Neue
+   Maschine", nur mit einem Namen davor.
+   ═══════════════════════════════════════════════════════════════════════════ */
+body.zb-no-machine #card-record,
+body.zb-no-machine #card-check {
+  display: none;
+}
+
 /* UX: ⓘ-Details-Button auf Maschinen-Einträgen (Tap = Laden, ⓘ = Verwaltung) */
 .machine-details-btn {
   background: none;

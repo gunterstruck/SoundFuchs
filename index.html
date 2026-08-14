@@ -821,7 +821,12 @@
         </section>
 
         <!-- Container 3: Referenz aufnehmen -->
-        <section class="main-container collapsible">
+        <!-- Die beiden Schrittkarten erscheinen erst, wenn eine Maschine
+             geladen ist (Router: lockPhases/unlockPhases setzen
+             body.zb-no-machine). Auf der Startseite ist der Bestand die
+             Startseite; ein Ablauf, der noch kein Ziel hat, gehört nicht
+             darüber. Siehe docs/startseite-entwurf.md §2 und §20. -->
+        <section class="main-container collapsible" id="card-record">
           <div class="main-header section-header" data-target="record-reference-content">
             <div class="header-with-icon">
               <span class="step-badge" aria-hidden="true">2</span>
@@ -1017,7 +1022,7 @@
         </section>
 
         <!-- Container 4: Zustand prüfen (Primary CTA) -->
-        <section class="main-container collapsible" data-variant="primary">
+        <section class="main-container collapsible" data-variant="primary" id="card-check">
           <div class="main-header section-header" data-target="run-diagnosis-content">
             <div class="header-with-icon">
               <span class="step-badge" aria-hidden="true">3</span>

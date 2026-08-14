@@ -1128,6 +1128,7 @@ export class Router {
     this.setPhaseState('run-diagnosis-content', false);
     // Safety: re-enable tile buttons that must always stay clickable
     this.ensureTileButtonsEnabled();
+    document.body.classList.add('zb-no-machine');
   }
 
   /**
@@ -1138,6 +1139,7 @@ export class Router {
     this.setPhaseState('run-diagnosis-content', true);
     // Safety: re-enable tile buttons that must always stay clickable
     this.ensureTileButtonsEnabled();
+    document.body.classList.remove('zb-no-machine');
   }
 
   /**
