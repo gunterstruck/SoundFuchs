@@ -236,7 +236,10 @@ export class MachineHistoryModal {
     for (let i = 0; i < filtered.length; i++) {
       const d = filtered[i];
       const item = document.createElement('div');
-      item.className = 'history-list-item';
+      // Der Zustand steht am Eintrag selbst, nicht nur an der Zahl: Der
+      // Zeitstrahl faerbt seinen Punkt danach, und CSS kommt an ein
+      // Geschwisterelement nicht heran.
+      item.className = `history-list-item ${getHistoryStatusClass(d.healthScore, d.status)}`;
 
       // Header row (always visible): Date + Score + Status
       const headerRow = document.createElement('div');

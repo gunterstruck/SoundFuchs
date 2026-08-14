@@ -10692,3 +10692,145 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
 #machine-list-section {
   margin-bottom: var(--space-card-gap);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VERLAUF ALS ZEITSTRAHL
+
+   Bauweise von TourFuchs übernommen (dort `#tour-stops .stop-row::before`):
+   eine durchgehende Linie hinter einer Punktspalte, der Punkt mit weißem Ring
+   davor. Dort verbindet sie die Stopps einer Tour, hier die Prüfungen einer
+   Maschine — dieselbe Form, andere Achse: Zeit statt Route.
+
+   Die Linie endet am ersten und letzten Punkt auf halber Höhe, damit sie nicht
+   ins Leere ausläuft. Der Ring hebt den Punkt von der Linie ab; ohne ihn
+   verschwimmen beide bei kleinen Größen zu einem Strich mit Verdickungen.
+
+   Die Reihenfolge ist neueste zuerst — anders als bei einer Tour, die man von
+   vorn abarbeitet. Wer den Verlauf öffnet, fragt zuerst „wie war es zuletzt?".
+   ═══════════════════════════════════════════════════════════════════════════ */
+.history-list-item {
+  position: relative;
+  padding-left: 34px;
+  border-bottom: none;
+}
+
+/* Die Linie hinter der Punktspalte. */
+.history-list-item::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-color);
+}
+
+.history-list-item:first-child::before {
+  top: 50%;
+}
+
+.history-list-item:last-child::before {
+  bottom: 50%;
+}
+
+/* Der Punkt, eingefärbt nach dem Zustand dieser Prüfung. */
+.history-list-item::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1.15em;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  box-shadow: 0 0 0 3px var(--bg-card);
+}
+
+.history-list-item.point-healthy::after {
+  background: var(--status-healthy);
+}
+
+.history-list-item.point-warning::after {
+  background: var(--status-warning);
+}
+
+.history-list-item.point-critical::after {
+  background: var(--status-error);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MASCHINENZEILE — flach statt Kärtchen
+
+   Vorbild ist die Zeile von TourFuchs (.stop-row): flach, durch einen dünnen
+   Strich getrennt, kein eigener Schatten. Ein Kärtchen im Kärtchen setzt eine
+   Ebene, die es nicht gibt — die Liste ist der Inhalt, nicht ein Element darin.
+
+   Aufbau: Zustandspunkt und Name in der ersten Zeile, Ort und Zeitpunkt in der
+   zweiten, der letzte Wert rechts. Vier Angaben, zwei Zeilen.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.machine-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 6px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--bg-secondary);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+
+.machine-item:last-of-type {
+  border-bottom: none;
+}
+
+.machine-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.machine-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: var(--font-md);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.machine-meta {
+  margin: 1px 0 0;
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+}
+
+/* Der Wert rechts trägt die Farbe des Zustands — dieselbe Ampel wie der Punkt
+   vor dem Namen, nur als Zahl. */
+.machine-score {
+  flex: 0 0 auto;
+  font-weight: 700;
+  font-size: var(--font-md);
+  white-space: nowrap;
+}
+
+.machine-score.score-healthy {
+  color: var(--status-healthy);
+}
+
+.machine-score.score-warning {
+  color: var(--status-warning);
+}
+
+.machine-score.score-critical {
+  color: var(--status-error);
+}
+
+/* Ohne Prüfung steht dort nur ein ruhiger Hinweis, keine Zahl. */
+.machine-score.score-none {
+  font-weight: 500;
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+}
