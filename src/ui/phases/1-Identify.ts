@@ -1794,6 +1794,25 @@ export class IdentifyPhase {
     const createSection = document.getElementById('create-section');
     const nameInput = document.getElementById('machine-name-input') as HTMLInputElement | null;
 
+    // Zuerst die Karte „Maschine auswählen" aufklappen. `create-section` liegt
+    // in ihrem eingeklappten Inhalt; wer den Abschnitt nur auf sichtbar setzt,
+    // während der Kasten darüber `display:none` trägt, ändert nichts am Bild.
+    // Genau das passierte hier: Ein Tipp auf „Neue Maschine" — und beim ersten
+    // Start auf „Erste Maschine anlegen" — tat nach außen gar nichts.
+    //
+    // Aufgeklappt wird über die Kopfzeile der Karte statt über eigenen Code:
+    // Der Umschalter in main.ts merkt sich den ursprünglichen display-Wert,
+    // schließt die anderen Karten und dreht das Pfeilsymbol. Ein zweiter Weg
+    // dorthin wäre ein zweiter Weg, der aus dem Tritt geraten kann. Denselben
+    // Griff nutzt NfcOnboardingController für die Prüf-Karte.
+    const auswahlInhalt = document.getElementById('select-machine-content');
+    const auswahlKopf = document.querySelector(
+      '.section-header[data-target="select-machine-content"]'
+    ) as HTMLElement | null;
+    if (auswahlInhalt && auswahlKopf && window.getComputedStyle(auswahlInhalt).display === 'none') {
+      auswahlKopf.click();
+    }
+
     if (createSection) {
       // Hide the other identify-sections + clear active tiles, then show create.
       document
