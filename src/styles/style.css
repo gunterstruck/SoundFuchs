@@ -10434,6 +10434,25 @@ body.zb-first-run .step-badge {
   display: inline-flex;
 }
 
+/* Die Schnellwahl ist ein Profi-Werkzeug.
+
+   Sie zeigt die trainierten Maschinen, die Übersicht unmittelbar darunter
+   alle — bei üblichem Bestand also weitgehend dieselben, nur nach Anlerndatum
+   statt nach letzter Prüfung sortiert. Zwei Listen für denselben Bestand,
+   direkt untereinander, in unterschiedlicher Zeilengestalt.
+
+   Was sie einmal löste — schnell zu einer bestimmten Maschine —, löst seit dem
+   14.08.2026 die Suche in der Kopfleiste, und zwar für alle Maschinen statt
+   nur für die trainierten.
+
+   Ausdrückliche Regel statt data-view-level: Die allgemeine Regel setzt auf
+   den sichtbaren Stufen `display: revert !important` und überstimmt damit das
+   `display:none`, das QuickSelectList selbst setzt, wenn es keine trainierte
+   Maschine gibt — die Sektion stünde unter Profi leer da. */
+html[data-view-level='basic'] #quick-select-section {
+  display: none !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    DIE SCHRITTKARTEN ERSCHEINEN ERST MIT EINER MASCHINE
    (body.zb-no-machine — gesetzt von lockPhases, entfernt von unlockPhases)

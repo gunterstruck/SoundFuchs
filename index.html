@@ -278,7 +278,27 @@
            Maschinenansicht gezogen sind, wird aus ihr der Leerzustand.
            Siehe docs/startseite-entwurf.md, Abschnitt 5. -->
       <div class="identify-section" id="machine-list-section">
-        <!-- Quick Select: Recently Used Machines -->
+        <!-- Quick Select: Recently Used Machines
+             Nur unter Profi. Die Schnellwahl zeigt die trainierten Maschinen,
+             die Übersicht darunter alle — bei üblichem Bestand also weitgehend
+             dieselben, nur nach Anlerndatum statt nach letzter Prüfung
+             sortiert. Zwei Listen für denselben Bestand, direkt untereinander,
+             in unterschiedlicher Zeilengestalt.
+
+             Was die Schnellwahl einmal löste — schnell zu einer bestimmten
+             Maschine —, löst seit dem 14.08.2026 die Suche in der Kopfleiste,
+             und zwar für alle Maschinen statt nur für die trainierten.
+
+             Dieselbe Begründung wie bei Schnellvergleich und dem Reiter
+             Übersicht/Flottencheck ein Stück weiter unten: Profi-Werkzeug, das
+             sonst das Erstbild bestimmt.
+
+             Verborgen wird sie über eine ausdrückliche Regel in style.css und
+             NICHT über data-view-level: Die allgemeine Regel setzt auf den
+             sichtbaren Stufen `display: revert !important` und überstimmt damit
+             das `display:none`, das QuickSelectList selbst setzt, wenn es gar
+             keine trainierte Maschine gibt. Die Sektion stünde dann unter Profi
+             leer da. -->
         <div id="quick-select-section" class="machine-selection-option" style="display: none">
           <div class="option-divider">
             <span data-i18n="identify.quickAccess">Schnellwahl</span>

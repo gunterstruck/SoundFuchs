@@ -586,3 +586,33 @@ Zuletzt verwendet" dieselben Maschinen zeigt wie die Maschinenübersicht
 darunter, mit anderer Zeilengestalt und noch mit dem ⓘ-Knopf, den die
 Übersicht seit #20 nicht mehr hat. Zwei Listen für denselben Bestand: eigener
 Punkt, eigener Schnitt.
+
+## 21. Zwei Listen für denselben Bestand (14.08.2026)
+
+Sobald die Schrittkarten weg waren (§20), stand es offen da: „Schnellwahl —
+Zuletzt verwendet" zeigt dieselben Maschinen wie die Maschinenübersicht
+unmittelbar darunter. Die eine filtert auf trainierte und sortiert nach
+Anlerndatum, die andere zeigt alle und sortiert nach letzter Prüfung — bei
+üblichem Bestand also weitgehend dieselbe Liste, zweimal, in
+unterschiedlicher Zeilengestalt.
+
+Was die Schnellwahl einmal löste — schnell zu einer bestimmten Maschine —,
+löst seit dem 14.08.2026 die Suche in der Kopfleiste, und zwar für **alle**
+Maschinen statt nur für die trainierten.
+
+Sie steht deshalb jetzt unter Profi, mit derselben Begründung wie
+Schnellvergleich und der Reiter Übersicht/Flottencheck: ein Werkzeug für
+Wiederkehrer, das sonst das Erstbild bestimmt. Entfernt ist sie nicht.
+
+**Eine Falle dabei**, die für künftige Stufen-Gatter gilt: Der übliche Weg
+über `data-view-level` funktioniert hier nicht. Die allgemeine Regel setzt auf
+den sichtbaren Stufen `display: revert !important` und überstimmt damit das
+`display:none`, das QuickSelectList selbst setzt, wenn es keine trainierte
+Maschine gibt — die Sektion stünde unter Profi leer da. Wo JavaScript die
+Sichtbarkeit mitführt, braucht es eine ausdrückliche Regel
+(`html[data-view-level='basic'] #quick-select-section`), kein Attribut.
+
+**Offen bleibt** die Zeilengestalt: Die Schnellwahl trägt noch den ⓘ-Knopf und
+lädt beim Tippen direkt, während die Übersicht seit #20 die Maschinenansicht
+öffnet. Zwei Listen, zwei Verhalten — solange die Schnellwahl nur unter Profi
+steht, ist das erträglich, aber es ist nicht entschieden, sondern übrig.
