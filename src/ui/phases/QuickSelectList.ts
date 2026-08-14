@@ -1,12 +1,34 @@
 /**
- * ZANOBOT - QUICK SELECT LIST
+ * SOUNDFUCHS — SCHNELLWAHL
  *
- * The start-screen "recently trained machines" quick-select list extracted
- * from the Identify phase: loads trained machines (newest training first,
- * capped at 10), renders the tappable list, and opens a machine on tap.
+ * Die Liste der zuletzt angelernten Maschinen (neuestes Anlerndatum zuerst,
+ * höchstens zehn) auf der Startseite. Sie steht seit dem 14.08.2026 nur unter
+ * Profi, weil die Maschinenübersicht direkt darunter bei üblichem Bestand
+ * weitgehend dieselben Maschinen zeigt.
  *
- * Holds no phase state; error reporting, list refresh, and opening the machine
- * detail modal are injected via the deps interface.
+ * ── ZWEI LISTEN, ZWEI VERHALTEN — SO GEWOLLT ────────────────────────────────
+ *
+ * Ein Tipp auf eine Zeile hier LÄDT die Maschine in den Prüf-Ablauf. Ein Tipp
+ * auf eine Zeile der Maschinenübersicht ZEIGT sie dagegen (Maschinenansicht,
+ * s. MachineOverviewRenderer). Das ist kein Rest aus dem Umbau, sondern die
+ * Entscheidung dazu — sie folgt den Namen, die beide Listen ohnehin tragen:
+ *
+ *   Übersicht   — man verschafft sich einen Überblick, also zeigt sie.
+ *   Schnellwahl — sie ist schnell, also lädt sie.
+ *
+ * Wer die Schnellwahl benutzt, hat Profi eingeschaltet und weiß, welche
+ * Maschine er will; ihm einen Zwischenschritt zu geben, nähme ihr genau das,
+ * wofür sie da ist. Wer in der Übersicht sucht, will erst sehen.
+ *
+ * Der ⓘ-Knopf bleibt deshalb hier — anders als in der Übersicht, wo er
+ * entfallen ist, weil dort Zeile und Knopf dasselbe täten. Hier tun sie
+ * Verschiedenes: die Zeile lädt, der Knopf zeigt.
+ *
+ * Wer diese Liste einmal ganz entfernt, verliert damit nichts als den kurzen
+ * Weg — die Maschinen stehen alle in der Übersicht darunter und in der Suche.
+ *
+ * Die Klasse hält keinen Phasenzustand; Fehlermeldung, Auffrischen und das
+ * Öffnen der Maschinenansicht kommen über die deps hinein.
  */
 
 import { getAllMachines, getMachine } from '@data/db.js';
@@ -123,7 +145,9 @@ export class QuickSelectList {
       polyline.setAttribute('points', '9 18 15 12 9 6');
       chevron.appendChild(polyline);
 
-      // UX: ⓘ-Button fürs Detail-Modal — der Eintrag-Tap LÄDT direkt.
+      // ⓘ zeigt die Maschine, der Zeilen-Tipp lädt sie — beides mit Absicht,
+      // s. Kopfkommentar. In der Maschinenübersicht ist dieser Knopf entfallen,
+      // weil dort die Zeile schon zeigt.
       const detailsBtn = document.createElement('button');
       detailsBtn.className = 'machine-details-btn';
       detailsBtn.setAttribute('aria-label', t('identify.machineDetails'));
@@ -152,10 +176,11 @@ export class QuickSelectList {
   }
 
   /**
-   * Handle quick select machine click.
+   * Antippen lädt die Maschine in den Prüf-Ablauf.
    *
-   * UX: Antippen = LADEN (der 90-%-Fall ist „jetzt prüfen"); das
-   * Detail-Modal bleibt über den ⓘ-Button erreichbar (openDetails).
+   * Das ist der Unterschied zur Maschinenübersicht, wo derselbe Tipp die
+   * Maschinenansicht öffnet — festgeschrieben am 14.08.2026, Begründung im
+   * Kopfkommentar. Auskunft gibt hier der ⓘ-Knopf (openDetails).
    */
   private async handleQuickSelect(machine: Machine): Promise<void> {
     try {

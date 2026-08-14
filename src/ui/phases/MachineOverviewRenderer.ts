@@ -275,6 +275,11 @@ export class MachineOverviewRenderer {
     //
     // Damit entfällt auch der frühere ⓘ-Knopf: Zeile und Knopf täten jetzt
     // dasselbe. Der Chevron bleibt als Hinweis, dass es weitergeht.
+    //
+    // Die Schnellwahl darüber (nur unter Profi, s. QuickSelectList) macht
+    // bewusst das Gegenteil: Dort lädt der Zeilen-Tipp direkt, und der
+    // ⓘ-Knopf bleibt. Beide folgen ihrem Namen — eine Übersicht zeigt, eine
+    // Schnellwahl ist schnell.
     machineItem.addEventListener('click', () => this.deps.showDetails(machine));
 
     return machineItem;
