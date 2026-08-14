@@ -10,6 +10,42 @@ import type { FeatureLayout } from '@core/dsp/filterBank.js';
 /**
  * Machine Identification
  */
+/**
+ * Ein Kunde — der Ort, an dem Maschinen stehen.
+ *
+ * Bewusst schmal gehalten. Die Schwester-App TourFuchs führt am Kunden
+ * Umsatz, Kanal, Bezirk und Zuständigkeit; das ist Vertriebswissen und
+ * gehört dorthin, nicht hierher. Hier trägt der Kunde nur, was nötig ist, um
+ * ihn auf einer Karte zu finden und ihm Maschinen zuzuordnen.
+ *
+ * Der gemeinsame Begriff ist zugleich die Brücke: Wer in TourFuchs einen
+ * Kunden vor sich hat, könnte künftig sehen, welche Maschinen bei ihm stehen.
+ * Dafür müssen beide Apps denselben Kunden meinen.
+ *
+ * Siehe docs/kunden-und-karte.md.
+ */
+export interface Customer {
+  /** Eindeutige Kennung. Geht auch in den Versatz der Kartenposition ein. */
+  id: string;
+  /** Anzeigename, das Einzige neben der Postleitzahl, was eingegeben wird. */
+  name: string;
+  /** Fünfstellige deutsche Postleitzahl — die Grundlage der Verortung. */
+  plz: string;
+  /** Ortsname. Füllt sich aus der Postleitzahl, ist aber überschreibbar. */
+  ort?: string;
+  /** Breitengrad, aus der Postleitzahl berechnet. */
+  lat?: number;
+  /** Längengrad, aus der Postleitzahl berechnet. */
+  lng?: number;
+  /**
+   * Wie genau die Position ist. `plz` heißt Ortsmitte, nicht Hausnummer;
+   * `none` heißt, die Postleitzahl war unbekannt. Wird mitgeführt, damit die
+   * Karte keine Schärfe vortäuscht, die die Daten nicht haben.
+   */
+  geo: 'plz' | 'none';
+  createdAt: number;
+}
+
 export interface Machine {
   id: string; // Unique identifier (from barcode/QR or user-generated)
   name: string; // Human-readable name
@@ -23,6 +59,15 @@ export interface Machine {
   // These fields are kept for backward compatibility but are no longer exposed in UI
   /** @internal Derived from NFC customerId parameter - not user-editable */
   referenceDbUrl?: string;
+  /**
+   * Der Kunde, bei dem diese Maschine steht (optional).
+   *
+   * Ohne ihn bleibt alles, wie es war: Der Bestand funktioniert vollständig
+   * ohne einen einzigen Kunden. Erst wer Kunden anlegt, bekommt die Karte
+   * und die Gruppierung dazu.
+   */
+  customerId?: string;
+
   /** @internal */
   location?: string;
   /** @internal */

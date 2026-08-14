@@ -59,7 +59,7 @@ describe('Database Operations', () => {
       const db = await initDB();
 
       expect(db).toBeDefined();
-      expect(db.version).toBe(8); // Current DB version (swappable evaluation engines)
+      expect(db.version).toBe(9); // Current DB version (Kunden als eigener Bestand)
     });
 
     it('should create all required object stores', async () => {
@@ -416,8 +416,8 @@ describe('Database Operations', () => {
       expect(machine).toBeDefined();
       expect(machine!.name).toBe('Pumpe 1'); // Original name preserved
       expect(machine!.referenceModels).toHaveLength(2); // Both models present
-      expect(machine!.referenceModels.map(m => m.label)).toContain('Motor-links');
-      expect(machine!.referenceModels.map(m => m.label)).toContain('Motor-rechts');
+      expect(machine!.referenceModels.map((m) => m.label)).toContain('Motor-links');
+      expect(machine!.referenceModels.map((m) => m.label)).toContain('Motor-rechts');
     });
 
     it('should skip duplicate models when merging (merge mode)', async () => {
