@@ -114,23 +114,61 @@
     <!-- Main Container -->
     <div class="container">
       <!-- Hero Header Image -->
-      <!-- Kopfzeile.
+      <!-- Kopfleiste, 52 px hoch.
+           Aufbau von TourFuchs übernommen (dort .topbar in src/styles/layout.css):
+           Zeichen links, Suche in der Mitte, runde Symbolknöpfe rechts.
 
-           Hier stand bis zum 12.08.2026 ein bildschirmfüllender Hero mit
-           Bannergrafik, Textüberlagerung und wählbarem Bild je Theme. Er ist
-           entfallen: Er kostete am Handy rund ein Fünftel der Höhe, bevor die
-           erste Entscheidung sichtbar wurde, und beantwortete keinen nächsten
-           Gedanken. Die Schwester-App TourFuchs hat aus demselben Grund keinen.
+           Der Schriftzug fehlt mit Absicht. TourFuchs blendet ihn am Handy aus
+           (`.brand-name { display: none }`), weil Zeichen, Schriftzug, Suchfeld
+           und zwei Knöpfe bei 390 px nicht nebeneinanderpassen — das Suchfeld
+           wird sonst auf „Maschine, Ort o…" gequetscht. Das Maskottchen trägt
+           die Marke allein; genau dafür ist es da. -->
+      <header class="topbar">
+        <img
+          class="topbar-mark"
+          src="./icons/favicon.svg"
+          alt="SoundFuchs"
+          width="30"
+          height="30"
+        />
 
-           Geblieben ist, was die Zeile leisten muss: sagen, wo man ist, und
-           die Frage stellen, um die es geht. -->
-      <header class="app-header">
-        <img class="app-mark" src="./icons/favicon.svg" alt="" width="36" height="36" />
-        <div class="app-header-text">
-          <h1 class="app-title">SoundFuchs</h1>
-          <p class="app-claim" data-i18n="banner.headline">Hört sich die Anlage normal an?</p>
+        <div class="topbar-search">
+          <input
+            type="search"
+            id="global-search"
+            class="topbar-search-input"
+            autocomplete="off"
+            data-i18n-placeholder="search.placeholder"
+            placeholder="Maschine, Ort oder ID…"
+            aria-label="Maschine suchen"
+          />
+          <div id="search-results" class="search-results" role="listbox" hidden></div>
         </div>
+
+        <button
+          type="button"
+          id="app-info-btn"
+          class="topbar-icon-btn"
+          aria-label="Einstellungen und Informationen"
+          title="Einstellungen &amp; mehr"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <line x1="12" y1="11" x2="12" y2="16" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+        </button>
       </header>
+
+      <p class="app-claim" data-i18n="banner.headline">Hört sich die Anlage normal an?</p>
 
       <!-- Welle 2: Status Dashboard -->
       <section class="status-dashboard" id="status-dashboard" style="display: none">
@@ -1242,7 +1280,14 @@
       </div>
 
       <!-- Footer / Legal Info - Minimalist 2x2 Grid -->
-      <footer class="footer">
+      <!-- Die Fußzeile ist verborgen, aber vollständig vorhanden.
+
+           Ihre vier Wege stehen seit dem 14.08.2026 hinter dem Info-Knopf der
+           Kopfleiste. Das Schiebefenster dort löst genau diese Knöpfe aus,
+           statt deren Logik nachzubauen — deshalb bleiben sie im Markup. Wer
+           sie entfernt, muss vier Modal-Verdrahtungen nachbauen und hat dabei
+           nichts gewonnen. -->
+      <footer hidden class="footer">
         <div class="footer-grid">
           <button class="footer-link" id="settings-btn" data-i18n="footer.settings">
             Einstellungen

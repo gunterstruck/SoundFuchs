@@ -5,7 +5,11 @@
 import type { TranslationDict } from '../index.js';
 
 export const zh: TranslationDict = {
-  buttons: {
+  search: {
+    placeholder: '设备、位置或编号…',
+    noHits: '未找到结果。',
+    sheetTitle: '设置及更多',
+  },  buttons: {
     stop: '停止',
     stopAndSave: '停止并保存',
     scan: '扫描',

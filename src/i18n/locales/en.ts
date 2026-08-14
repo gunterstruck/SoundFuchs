@@ -5,7 +5,11 @@
 import type { TranslationDict } from '../index.js';
 
 export const en: TranslationDict = {
-  // ============================================================================
+  search: {
+    placeholder: 'Machine, location or ID…',
+    noHits: 'Nothing found.',
+    sheetTitle: 'Settings & more',
+  },  // ============================================================================
   // BUTTONS
   // ============================================================================
   buttons: {
