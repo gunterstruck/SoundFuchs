@@ -491,3 +491,65 @@ button { border-radius: var(--radius-pill); }
 
 Damit ist der Familienbezug nicht mehr nur farblich, sondern auch in der Form
 — und zwar ohne dass eine einzige Funktion angefasst wird.
+
+---
+
+# Nachtrag 3: gebaut (14.08.2026)
+
+Der Entwurf ist umgesetzt. Was oben als Vorschlag steht, steht unten als
+Befund — mit dem, was beim Bauen anders kam, und mit dem, was offen bleibt.
+
+## 17. Was gebaut wurde
+
+| | Was | Wirkung |
+|---|---|---|
+| #20 | Zeilen-Tipp öffnet die Maschinenansicht | Wer in einer Liste sucht, will erst sehen. Gescanntes lädt weiter direkt. |
+| #21 | Anspruch und doppelte Überschrift entfallen | Erste Maschinenzeile von 331 px auf 209 px |
+| #22 | „Erste Maschine anlegen" tat nichts | Erstinstallation war blockiert |
+| #23 | Karte heißt „Scannen oder anlegen" | Sie hieß „Maschine auswählen", während die Liste darüber die Auswahl ist |
+| #24 | Griff am unteren Rand | Das Schiebefenster ist mit dem Daumen erreichbar |
+| #25 | `npm run durchlauf` | Der Hauptweg wird als Ganzes geprüft, mit Kunstmikrofon |
+| #26 | Hauptknopf der Maschinenansicht nach oben | Er endete 25 px unter der Bildschirmkante |
+| #27 | Zustand vor Verlauf | Der neueste Wert stand zweimal untereinander |
+
+## 18. Drei Fehler, die kein Test gefunden hätte
+
+Alle drei waren still: kein Absturz, keine Meldung, kein roter Balken.
+
+**Die Suche zeigte ins Leere.** Ein Treffer setzte
+`location.hash = '#/identify?machine=<id>'` — eine Route, die es in
+`HashRouter` nie gab. Die Adresszeile änderte sich, sonst nichts.
+
+**„Erste Maschine anlegen" führte nirgendwohin.** Der Knopf schaltete
+`create-section` auf sichtbar; der Abschnitt liegt aber in der eingeklappten
+Karte darüber. Bei leerer Liste gab es keinen zweiten Weg — die App war beim
+ersten Start nicht benutzbar.
+
+**Der Hauptknopf lag unter der Kante.** Nicht durch Entwurf, sondern durch
+Bauweise: Zwei Knöpfe entstehen erst beim Öffnen und schieben sich an den
+Anfang, der feste blieb übrig.
+
+Was sie verbindet: Jedes Element war vorhanden, beschriftet und reagierte.
+Die einzige Frage, die so etwas aufdeckt, ist **„ist danach etwas zu
+sehen?"** — und die stellt nur ein Werkzeug, das die gebaute App bedient.
+Deshalb der Wächter in `attention-check` (erster Start) und `npm run
+durchlauf` (der ganze Weg).
+
+## 19. Was offen bleibt — und wem die Entscheidung gehört
+
+**Die Karten „Normalzustand aufnehmen" und „Zustand prüfen" auf der
+Startseite.** Nach §2 sollten sie erst erscheinen, wenn eine Maschine geladen
+ist. Beim Umsetzen fand sich im Router ein ausdrücklicher Vermerk: Die
+Aufnahme ist absichtlich *ohne* vorher gewählte Maschine möglich
+(„zero friction"). Sie zu verbergen wäre damit keine UI-Änderung mehr,
+sondern nähme eine Funktion weg. Das widerspricht der Vorgabe, dass an den
+Funktionen nichts weg darf — also liegt die Entscheidung beim Auftraggeber,
+nicht beim Umsetzenden.
+
+**Der Tresor als Platzhalter.** §15 gibt ihm seinen Platz am Kopfleisten-
+Schloss. Eine Menüzeile, die „später" sagt und nichts tut, ist aber genau das
+Beiwerk, das #21 und #23 an drei Stellen entfernt haben. Bewusst nicht
+gebaut, bis er etwas kann.
+
+**Eine auffällige Aufnahme nachträglich als Fehler-Arbeitspunkt hinterlegen**
+(§11) bleibt, wie dort beschrieben, ein eigenes Vorhaben.
