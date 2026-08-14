@@ -1209,6 +1209,9 @@ export const fr: TranslationDict = {
       'La base de données a été réinitialisée suite à une mise à jour. Toutes les machines, enregistrements et vérifications ont été supprimés.',
   },
   about: {
+    dataTitle: 'Données utilisées',
+    dataPlzPlaces: 'Noms de localité par code postal',
+    dataPlzCoords: 'Coordonnées par code postal',
     title: 'À propos de SoundFuchs',
     subtitle: 'Assistant pour la comparaison acoustique des états de machines',
     intro:

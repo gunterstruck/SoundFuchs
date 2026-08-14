@@ -1200,6 +1200,9 @@ export const es: TranslationDict = {
       'La base de datos se ha restablecido debido a una actualización. Se han eliminado todas las máquinas, grabaciones y verificaciones.',
   },
   about: {
+    dataTitle: 'Datos utilizados',
+    dataPlzPlaces: 'Nombres de localidad por CP',
+    dataPlzCoords: 'Coordenadas por CP',
     title: 'Acerca de SoundFuchs',
     subtitle: 'Asistente para comparación acústica de estados de máquinas',
     intro:

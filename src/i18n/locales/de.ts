@@ -1517,6 +1517,9 @@ export const de: TranslationDict = {
   // ABOUT MODAL
   // ============================================================================
   about: {
+    dataTitle: 'Verwendete Daten',
+    dataPlzPlaces: 'PLZ-Ortsnamen',
+    dataPlzCoords: 'PLZ-Koordinaten',
     title: 'Über SoundFuchs',
     subtitle: 'Assistent für akustischen Vergleich von Maschinenzuständen',
 

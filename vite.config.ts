@@ -101,6 +101,20 @@ export default defineConfig({
             },
           },
           {
+            // PLZ-Daten (~400 KB) genauso: nicht im Vorrat, aber nach dem
+            // ersten Gebrauch dauerhaft da. Wer nie einen Kunden anlegt, lädt
+            // sie nie; wer einen anlegt, kann danach auch ohne Empfang
+            // verorten. Die Dateien ändern sich praktisch nie — deshalb
+            // CacheFirst statt StaleWhileRevalidate.
+            urlPattern: /\/geodata\/.*\.json$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'geodata-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
