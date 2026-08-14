@@ -10863,6 +10863,144 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   color: var(--text-primary);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   ZWEI SCHWEBENDE PILLEN ÜBER DEM BESTAND
+
+   Vorbild: `.map-fab-row` / `.map-fab` aus TourFuchs. Zwei gleichrangige
+   Angebote, also zwei gleich aussehende Pillen nebeneinander; die Zeile
+   positioniert, die Knöpfe selbst sind schlicht.
+
+   Sie sitzen über dem Griff, nicht über dem Inhalt: `bottom` rechnet die Höhe
+   des Griffs samt Sicherheitsabstand mit ein. Ohne das lägen sie auf der
+   Griffleiste und nähmen ihr die Geste.
+
+   `pointer-events` liegt auf den Knöpfen, nicht auf der Zeile — sonst finge
+   der unsichtbare Streifen dazwischen Tipps ab, die dem Bestand gelten.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.fab-row {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--sheet-grip-height) + env(safe-area-inset-bottom, 0px) + 12px);
+  z-index: var(--z-fixed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Umbrechen statt aus dem Bild laufen — zwei Pillen passen auf jedes
+     Telefon, aber nicht in jeder Sprache gleich knapp. */
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 10px;
+  pointer-events: none;
+}
+
+.fab {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 46vw;
+  padding: 10px 16px;
+  border: 1px solid var(--border-color);
+  /* Der kräftige linke Rand ist das Erkennungszeichen dieser Knopfform in der
+     Familie — er sagt „hier geht etwas los", ohne die ganze Pille zu färben. */
+  border-left: 3px solid var(--primary-color);
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.fab:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.fab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fab-icon {
+  font-size: 1.1rem;
+}
+
+/* Beide Knöpfe tragen einen Fuchs. Damit sie nicht im Gleichschritt zucken,
+   startet der zweite eine halbe Runde später — sie wackeln abwechselnd.
+   Übernommen aus TourFuchs, samt der langen Pause: Das Wackeln ist ein
+   Augenzwinkern, kein Blinken, das um Aufmerksamkeit bettelt. */
+.fab-fox {
+  font-size: 0.95rem;
+  opacity: 0.85;
+  transform-origin: 50% 70%;
+  animation: fab-wiggle 3.2s ease-in-out infinite;
+}
+
+#fab-new-machine .fab-fox {
+  animation-delay: 1.6s;
+}
+
+@keyframes fab-wiggle {
+  0%,
+  86%,
+  100% {
+    transform: rotate(0);
+  }
+  90% {
+    transform: rotate(-12deg);
+  }
+  94% {
+    transform: rotate(9deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab-fox {
+    animation: none;
+  }
+}
+
+/* Mit der Pille ist die gestrichelte Kachel „Neue Maschine" am Ende der Liste
+   ein zweiter Weg in denselben Raum — und der schlechtere: Sie wandert mit der
+   Liste nach unten, die Pille bleibt am Daumen.
+
+   Am Handy tritt sie deshalb zurück. Verborgen statt entfernt, weil die Pille
+   genau diesen Knopf auslöst (`#add-new-machine-btn`) — derselbe Griff wie bei
+   der Fußzeile hinter dem Schiebefenster. Ein Element ohne `display` verliert
+   seine Ereignisse nicht.
+
+   Auf breiten Schirmen bleibt sie: Dort ist Platz, und am Ende einer Liste ist
+   „noch eine anlegen" die naheliegende Geste.
+
+   Nebenbei hält das die Zahl der Bedienelemente im Erstbild bei elf — mit den
+   zwei Pillen wäre sie auf zwölf gestiegen, genau auf die Budgetgrenze. Ein
+   Budget, das man exakt ausschöpft, ist eines ohne Spielraum. */
+@media (max-width: 600px) {
+  #add-new-machine-btn {
+    display: none;
+  }
+}
+
+/* Auf sehr schmalen Geräten (iPhone SE, 320 px) reicht 46vw nicht für
+   „Erkennen" samt Zeichen und Fuchs — die Beschriftung wurde beschnitten.
+   Weniger Polsterung und ein etwas kleineres Zeichen holen die nötigen Pixel,
+   ohne dass ein Wort gekürzt werden muss. Dieselbe Stelle regelt TourFuchs
+   ebenso nach. */
+@media (max-width: 360px) {
+  .fab {
+    max-width: 48vw;
+    padding: 10px 12px;
+    gap: 5px;
+  }
+
+  .fab-icon {
+    font-size: 1rem;
+  }
+}
+
 /* `touch-action: none` ist die Bedingung fürs Ziehen: Ohne sie fängt der
    Browser die senkrechte Geste als Scrollen ab, und pointermove kommt gar
    nicht erst an. Genauso im Vorbild (TourFuchs, .sheet-grip). */
