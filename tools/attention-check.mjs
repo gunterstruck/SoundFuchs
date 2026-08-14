@@ -383,6 +383,58 @@ try {
 
     await ctx.close();
   }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // ERSTER START
+  //
+  // Führt der einzige Knopf des Leerzustands irgendwohin?
+  //
+  // Am 14.08.2026 tat er das nicht. „Erste Maschine anlegen" schaltete den
+  // Abschnitt `create-section` auf sichtbar — der liegt aber in der
+  // eingeklappten Karte „Maschine auswählen", also blieb das Bild, wie es
+  // war. Keine Fehlermeldung, kein fehlender Knopf, nichts, was eine Prüfung
+  // über Bausteine gefunden hätte: Der Knopf war da, war beschriftet und
+  // reagierte auf den Tipp — er führte nur nirgendwohin.
+  //
+  // Deshalb steht das hier und nicht bei den Unit-Tests. Die Frage ist nicht,
+  // ob eine Funktion aufgerufen wurde, sondern ob danach etwas zu sehen ist.
+  // Beim ersten Start ist das die härteste Frage, die es gibt: Wer hier
+  // hängen bleibt, hat keinen zweiten Weg — die Liste ist ja leer.
+  {
+    const ctx = await browser.newContext({
+      viewport: FORMATE[0].viewport,
+      hasTouch: true,
+      isMobile: true,
+      locale: 'de-DE',
+    });
+    const page = await ctx.newPage();
+    await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2000);
+
+    const knopf = page.locator('#empty-state-cta');
+    const knopfDa = await knopf.isVisible().catch(() => false);
+    let feldDa = false;
+    if (knopfDa) {
+      await knopf.click();
+      await page.waitForTimeout(1200);
+      feldDa = await page
+        .locator('#machine-name-input')
+        .isVisible()
+        .catch(() => false);
+    }
+
+    console.log('\n=== erster Start (leerer Bestand) ===');
+    console.log(`„Erste Maschine anlegen"  ${knopfDa ? 'sichtbar' : 'FEHLT'}`);
+    console.log(`Namensfeld danach         ${feldDa ? 'sichtbar' : 'NICHT sichtbar'}`);
+
+    pruefe(knopfDa, 'erster Start: „Erste Maschine anlegen" ist im Leerzustand nicht sichtbar');
+    pruefe(
+      feldDa,
+      'erster Start: „Erste Maschine anlegen" führt nicht zum Namensfeld — der Knopf tut nichts'
+    );
+
+    await ctx.close();
+  }
 } finally {
   await browser.close();
   vorschau.kill();
