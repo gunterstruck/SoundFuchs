@@ -2396,9 +2396,15 @@
         <div class="modal-actions shell-footer">
           <!-- Welle 2: Context-aware action buttons -->
           <div class="result-actions" id="result-actions">
+            <!-- „Details" springt zum Klangbild (.result-fingerprint). Das
+                 trägt data-view-level="advanced" und ist unter Basis verborgen
+                 — der Knopf sprang dort also zu etwas, das es nicht gibt, und
+                 tat nach außen gar nichts. Er trägt jetzt dieselbe Stufe wie
+                 sein Ziel: Ein Knopf gehört dorthin, wo er hinführt. -->
             <button
               class="result-action-btn result-action-secondary"
               id="result-btn-details"
+              data-view-level="advanced"
               data-i18n="resultActions.details"
             >
               Details
