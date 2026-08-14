@@ -92,7 +92,7 @@ export const de: TranslationDict = {
   // PHASE 1: IDENTIFY (Machine Selection)
   // ============================================================================
   identify: {
-    selectMachine: 'Maschine auswählen',
+    addMachine: 'Scannen oder anlegen',
     scanQrCode: 'QR-Code scannen',
     scanQrDescription: 'Identifiziere Maschine via QR-Code',
     manualEntry: 'Manuell anlegen',

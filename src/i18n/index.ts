@@ -274,7 +274,7 @@ export function getLocale(): string {
  * Translate all DOM elements with data-i18n attributes
  *
  * Usage in HTML:
- * - Text content:      <h3 data-i18n="identify.selectMachine">Maschine auswählen</h3>
+ * - Text content:      <h3 data-i18n="identify.addMachine">Scannen oder anlegen</h3>
  * - Placeholder:       <input data-i18n-placeholder="identify.machineName" placeholder="Maschinenname">
  * - Aria label:        <button data-i18n-aria="buttons.close" aria-label="Schließen">
  *
