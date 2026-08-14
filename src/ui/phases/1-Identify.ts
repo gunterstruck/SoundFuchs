@@ -939,7 +939,6 @@ export class IdentifyPhase {
     // Welle 2: Also update dashboard when machine lists refresh
     await this.updateDashboard();
     // Welle 5: Update tile badge count
-    this.updateIdentifyTileBadge();
   }
 
   /**
@@ -977,18 +976,6 @@ export class IdentifyPhase {
     });
 
     // Update machine count badge
-    this.updateIdentifyTileBadge();
-  }
-
-  /**
-   * Welle 5: Update the machine count badge on the list tile
-   */
-  private async updateIdentifyTileBadge(): Promise<void> {
-    const badge = document.getElementById('identify-tile-count');
-    if (!badge) return;
-    const machines = await getAllMachines();
-    badge.textContent = machines.length > 0 ? String(machines.length) : '';
-    badge.style.display = machines.length > 0 ? '' : 'none';
   }
 
   /**

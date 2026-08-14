@@ -10288,23 +10288,6 @@ html[data-view-level='expert'] .diagnosis-recommendation {
   line-height: 1.2;
 }
 
-.identify-tile-badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: var(--primary-color);
-  color: var(--on-primary);
-  font-size: 0.65rem;
-  font-weight: 700;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 5px;
-}
-
 /* Section transitions */
 .identify-section {
   animation: fadeSlideIn 0.2s ease;
@@ -10358,11 +10341,24 @@ html[data-view-level='expert'] .diagnosis-recommendation {
 
 /* Erst-Lauf: Diagnose-Karte zurück an Position 3, ohne Primär-Prominenz */
 
-/* Erst-Lauf: Schritt-Karten in voller Breite untereinander */
+/* ── Schrittziffern ①②③ — nur im Erst-Lauf ──────────────────────────────────
+   `body.zb-first-run` setzen DashboardRenderer und main.ts, sobald der Bestand
+   leer ist. Die Ziffern erscheinen also nur, solange es nichts anderes zu
+   zeigen gibt.
 
-/* Erst-Lauf: Schritt 1 (Maschine wählen) trägt jetzt die Prominenz */
+   Das ist der dritte Mechanismus dieser Art. Zwei andere — eine feste
+   `order: -1`-Regel und die Breiten- und Ziffern-Änderungen des Fokus-Themes —
+   wurden am 13.08.2026 entfernt, und ich hatte dabei behauptet, damit sei die
+   datenabhängige Umgestaltung erledigt. Das stimmte nicht: Dieser hier blieb.
 
-/* Schritt-Badges (①②③) — nur im Erst-Lauf sichtbar */
+   Er bleibt auch — anders als die beiden anderen ist er richtig. Eine
+   Schrittleiter ist eine Anleitung, und eine Anleitung gehört dorthin, wo noch
+   nichts steht. Sie verschiebt hier nichts und blendet nichts aus, was
+   gebraucht wird; sie nimmt nur die Nummerierung zurück, sobald sie ihren
+   Zweck erfüllt hat. Genau das schlägt docs/startseite-entwurf.md vor.
+
+   Die zwei leeren Kommentare, die hier standen, gehörten zu den entfernten
+   Regeln und sind mitgegangen. */
 .step-badge {
   display: none;
   width: 22px;
@@ -10648,4 +10644,51 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
    ═══════════════════════════════════════════════════════════════════════════ */
 [hidden] {
   display: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANSICHTSTIEFE — schwebende Pille unter der Kopfleiste
+
+   Aufbau von TourFuchs (.mobile-topnav .depth-switch): durchscheinender Grund
+   mit Weichzeichner, Pillenform, aktives Segment teal gefüllt. Sie schwebt
+   über dem Inhalt, statt eine eigene Zeile zu beanspruchen — deshalb der
+   leichte Grund und der flache Schatten.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.depth-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  margin: 0 0 0.75rem;
+  padding: 2px;
+  background: rgba(var(--overlay-rgb), 0.04);
+  backdrop-filter: blur(9px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+}
+
+.depth-seg {
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  padding: 7px 5px;
+  min-height: 34px;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.depth-seg.active {
+  background: var(--primary-color);
+  color: var(--on-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+}
+
+/* Der Bestand steht vorn und braucht keinen Kartenrahmen — er ist der Inhalt,
+   nicht ein Element darin. */
+#machine-list-section {
+  margin-bottom: var(--space-card-gap);
 }

@@ -168,6 +168,27 @@
         </button>
       </header>
 
+      <!-- Ansichtstiefe, schwebend unter der Kopfleiste.
+
+           Aufbau von TourFuchs (dort .mobile-topnav .depth-switch): eine
+           durchscheinende Pille, aktives Segment teal gefüllt. Der Kommentar
+           dort nennt auch den Grund für die Stelle — Ansichtstiefe und
+           Navigation wurden bewusst aus dem Bottom-Sheet nach oben geholt,
+           „damit sie immer sichtbar oben hängen".
+
+           Die Knöpfe tragen dieselbe Klasse und dasselbe data-level wie die im
+           Einstellungsdialog. main.ts verdrahtet alle
+           `.view-level-btn[data-level]` gemeinsam, deshalb bleiben beide Orte
+           ohne Zusatzarbeit im Gleichklang: ein Zustand, zwei Anzeigen. -->
+      <div class="depth-switch" role="group" aria-label="Ansichtstiefe">
+        <button class="view-level-btn depth-seg active" data-level="basic" type="button">
+          <span data-i18n="viewLevels.basicLabel">Basis</span>
+        </button>
+        <button class="view-level-btn depth-seg" data-level="expert" type="button">
+          <span data-i18n="viewLevels.expertLabel">Profi</span>
+        </button>
+      </div>
+
       <p class="app-claim" data-i18n="banner.headline">Hört sich die Anlage normal an?</p>
 
       <!-- Welle 2: Status Dashboard -->
@@ -237,6 +258,238 @@
         </button>
       </section>
 
+      <!-- Der Bestand steht vorn.
+
+           Bis zum 14.08.2026 lag diese Liste in der Karte „Maschine auswählen"
+           und war erst nach einem Tipp auf die Kachel „Gespeicherte Maschinen"
+           zu sehen. Damit verdeckte die Anleitung das, weswegen jemand die App
+           öffnet: seine Maschinen.
+
+           Die Kachel ist entfallen — die Liste ist die Auswahl. Steht sie
+           ohnehin da, wäre ein Knopf, der zu ihr führt, ein Knopf ins Hier.
+
+           Die Schrittleiter darunter bleibt vorerst vollständig erhalten; sie
+           trägt weiterhin Aufnahme und Prüfung. Erst wenn beide in die
+           Maschinenansicht gezogen sind, wird aus ihr der Leerzustand.
+           Siehe docs/startseite-entwurf.md, Abschnitt 5. -->
+      <div class="identify-section" id="machine-list-section">
+        <!-- Quick Select: Recently Used Machines -->
+        <div id="quick-select-section" class="machine-selection-option" style="display: none">
+          <div class="option-divider">
+            <span data-i18n="identify.quickAccess">Schnellwahl</span>
+          </div>
+          <div class="option-header">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--primary-color)"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <!-- Professional History/Clock Icon -->
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <h5 class="option-title" data-i18n="identify.recentlyUsed">Zuletzt verwendet</h5>
+          </div>
+          <p class="option-description" data-i18n="identify.quickAccessDescription">
+            Schneller Zugriff auf kürzlich verwendete Maschinen
+          </p>
+          <div id="quick-select-list" class="quick-select-list">
+            <!-- Machine buttons will be added dynamically -->
+          </div>
+        </div>
+
+        <!-- Sprint 7: Quick Compare CTA -->
+        <!-- Schnellvergleich und der Reiter Übersicht/Flottencheck sind Profi-
+             Werkzeuge. Seit der Bestand vorn steht, würden sie sonst das
+             Erstbild bestimmen: Die Messung stieg dadurch von 5 auf 10
+             Bedienelemente. Unter Basis bleibt die Liste allein; wer sie
+             braucht, ist einen Tipp entfernt — der Stufenschalter hängt
+             sichtbar unter der Kopfleiste. -->
+        <div id="quick-compare-cta" class="quick-compare-cta" data-view-level="expert">
+          <button
+            id="quick-compare-btn"
+            class="action-btn quick-compare-btn"
+            data-i18n="quickCompare.startButton"
+          ></button>
+          <p class="quick-compare-hint" data-i18n="quickCompare.hint"></p>
+        </div>
+
+        <!-- Maschinenübersicht -->
+        <div class="machine-selection-option" id="machine-overview-section">
+          <div class="option-divider">
+            <span data-i18n="identify.overview">Übersicht</span>
+          </div>
+          <div class="option-header">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--primary-color)"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <!-- List/Grid Icon -->
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+            </svg>
+            <h5 class="option-title" data-i18n="identify.machineOverview">Maschinenübersicht</h5>
+            <button class="help-icon-btn" id="help-machines" aria-label="Hilfe: Maschinen">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </button>
+          </div>
+          <!-- Sprint 5 UX: Toggle + Help wrapper -->
+          <div class="workflow-toggle-row" data-view-level="expert">
+            <!-- Sprint 4 UX: Workflow mode toggle -->
+            <div class="workflow-toggle" id="workflow-toggle">
+              <button
+                class="toggle-btn toggle-btn-active"
+                id="toggle-series"
+                aria-pressed="true"
+                aria-label=""
+              >
+                <!-- Text set via i18n -->
+              </button>
+              <button class="toggle-btn" id="toggle-fleet" aria-pressed="false" aria-label="">
+                <!-- Text set via i18n -->
+              </button>
+            </div>
+            <button
+              class="help-icon-btn help-icon-inline"
+              id="help-fleet"
+              aria-label="Hilfe: Flottencheck"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </button>
+          </div>
+
+          <div id="machine-overview" class="machine-list">
+            <!-- Machine items will be added dynamically -->
+            <!-- Sprint 2 UX: Empty state mini 1-2-3 guide -->
+            <div id="machine-overview-empty" class="empty-state-guide" style="display: none">
+              <p class="empty-state-title" data-i18n="identify.emptyGuide.title">
+                So funktioniert SoundFuchs
+              </p>
+              <div class="guide-steps">
+                <div class="guide-step">
+                  <span class="guide-step-number">1</span>
+                  <div class="guide-step-content">
+                    <strong data-i18n="identify.emptyGuide.step1Title">Maschine anlegen</strong>
+                    <span data-i18n="identify.emptyGuide.step1Desc"
+                      >Gib deiner Maschine einen eindeutigen Namen.</span
+                    >
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <span class="guide-step-number">2</span>
+                  <div class="guide-step-content">
+                    <strong data-i18n="identify.emptyGuide.step2Title">Referenz aufnehmen</strong>
+                    <span data-i18n="identify.emptyGuide.step2Desc"
+                      >10 Sekunden Normalzustand aufnehmen.</span
+                    >
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <span class="guide-step-number">3</span>
+                  <div class="guide-step-content">
+                    <strong data-i18n="identify.emptyGuide.step3Title">Zustand prüfen</strong>
+                    <span data-i18n="identify.emptyGuide.step3Desc"
+                      >Vergleiche jederzeit gegen die Referenz.</span
+                    >
+                  </div>
+                </div>
+              </div>
+              <button
+                class="guide-cta-btn"
+                id="empty-state-cta"
+                data-i18n="identify.emptyGuide.cta"
+              >
+                Erste Maschine anlegen
+              </button>
+            </div>
+          </div>
+          <button class="add-reference-btn" id="add-new-machine-btn">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span data-i18n="buttons.newMachine">Neue Maschine</span>
+          </button>
+        </div>
+
+        <!-- Historie (Prüf-Verlauf) -->
+        <div class="machine-selection-option" id="history-section">
+          <div class="option-divider">
+            <span data-i18n="identify.history">Verlauf</span>
+          </div>
+          <div class="option-header">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--primary-color)"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <!-- Clock/History Icon -->
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <h5 class="option-title" data-i18n="identify.history">Historie</h5>
+          </div>
+          <div id="history-list" class="history-list">
+            <!-- History items will be added dynamically -->
+            <p class="empty-state" id="history-empty" data-i18n="identify.noMeasurements">
+              Noch keine Messungen vorhanden
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- /machine-list-section -->
+
       <div class="main-actions">
         <!-- Container 2: Maschine auswählen -->
         <section class="main-container collapsible">
@@ -277,36 +530,6 @@
             <div class="container-content">
               <!-- Welle 5: Entry tiles for "Maschine auswählen" -->
               <div class="identify-tiles" id="identify-tiles">
-                <button
-                  class="identify-tile"
-                  id="identify-tile-list"
-                  data-target="machine-list-section"
-                >
-                  <div class="identify-tile-icon">
-                    <svg
-                      width="32"
-                      height="32"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    >
-                      <rect x="3" y="3" width="7" height="7" rx="1" />
-                      <rect x="14" y="3" width="7" height="7" rx="1" />
-                      <rect x="3" y="14" width="7" height="7" rx="1" />
-                      <rect x="14" y="14" width="7" height="7" rx="1" />
-                    </svg>
-                  </div>
-                  <span class="identify-tile-label" data-i18n="identify.tiles.savedMachines"
-                    >Gespeicherte Maschinen</span
-                  >
-                  <span
-                    class="identify-tile-badge"
-                    id="identify-tile-count"
-                    style="display: none"
-                  ></span>
-                </button>
-
                 <button class="identify-tile" id="identify-tile-scan" data-target="scan-section">
                   <div class="identify-tile-icon">
                     <svg
@@ -578,240 +801,6 @@
               <!-- /create-section -->
 
               <!-- Welle 5: Machine overview section (initially hidden, shown via tile) -->
-              <div class="identify-section" id="machine-list-section" style="display: none">
-                <!-- Quick Select: Recently Used Machines -->
-                <div
-                  id="quick-select-section"
-                  class="machine-selection-option"
-                  style="display: none"
-                >
-                  <div class="option-divider">
-                    <span data-i18n="identify.quickAccess">Schnellwahl</span>
-                  </div>
-                  <div class="option-header">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="var(--primary-color)"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <!-- Professional History/Clock Icon -->
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    <h5 class="option-title" data-i18n="identify.recentlyUsed">
-                      Zuletzt verwendet
-                    </h5>
-                  </div>
-                  <p class="option-description" data-i18n="identify.quickAccessDescription">
-                    Schneller Zugriff auf kürzlich verwendete Maschinen
-                  </p>
-                  <div id="quick-select-list" class="quick-select-list">
-                    <!-- Machine buttons will be added dynamically -->
-                  </div>
-                </div>
-
-                <!-- Sprint 7: Quick Compare CTA -->
-                <div id="quick-compare-cta" class="quick-compare-cta">
-                  <button
-                    id="quick-compare-btn"
-                    class="action-btn quick-compare-btn"
-                    data-i18n="quickCompare.startButton"
-                  ></button>
-                  <p class="quick-compare-hint" data-i18n="quickCompare.hint"></p>
-                </div>
-
-                <!-- Maschinenübersicht -->
-                <div class="machine-selection-option" id="machine-overview-section">
-                  <div class="option-divider">
-                    <span data-i18n="identify.overview">Übersicht</span>
-                  </div>
-                  <div class="option-header">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="var(--primary-color)"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <!-- List/Grid Icon -->
-                      <rect x="3" y="3" width="7" height="7" />
-                      <rect x="14" y="3" width="7" height="7" />
-                      <rect x="3" y="14" width="7" height="7" />
-                      <rect x="14" y="14" width="7" height="7" />
-                    </svg>
-                    <h5 class="option-title" data-i18n="identify.machineOverview">
-                      Maschinenübersicht
-                    </h5>
-                    <button class="help-icon-btn" id="help-machines" aria-label="Hilfe: Maschinen">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                      </svg>
-                    </button>
-                  </div>
-                  <!-- Sprint 5 UX: Toggle + Help wrapper -->
-                  <div class="workflow-toggle-row">
-                    <!-- Sprint 4 UX: Workflow mode toggle -->
-                    <div class="workflow-toggle" id="workflow-toggle">
-                      <button
-                        class="toggle-btn toggle-btn-active"
-                        id="toggle-series"
-                        aria-pressed="true"
-                        aria-label=""
-                      >
-                        <!-- Text set via i18n -->
-                      </button>
-                      <button
-                        class="toggle-btn"
-                        id="toggle-fleet"
-                        aria-pressed="false"
-                        aria-label=""
-                      >
-                        <!-- Text set via i18n -->
-                      </button>
-                    </div>
-                    <button
-                      class="help-icon-btn help-icon-inline"
-                      id="help-fleet"
-                      aria-label="Hilfe: Flottencheck"
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div id="machine-overview" class="machine-list">
-                    <!-- Machine items will be added dynamically -->
-                    <!-- Sprint 2 UX: Empty state mini 1-2-3 guide -->
-                    <div
-                      id="machine-overview-empty"
-                      class="empty-state-guide"
-                      style="display: none"
-                    >
-                      <p class="empty-state-title" data-i18n="identify.emptyGuide.title">
-                        So funktioniert SoundFuchs
-                      </p>
-                      <div class="guide-steps">
-                        <div class="guide-step">
-                          <span class="guide-step-number">1</span>
-                          <div class="guide-step-content">
-                            <strong data-i18n="identify.emptyGuide.step1Title"
-                              >Maschine anlegen</strong
-                            >
-                            <span data-i18n="identify.emptyGuide.step1Desc"
-                              >Gib deiner Maschine einen eindeutigen Namen.</span
-                            >
-                          </div>
-                        </div>
-                        <div class="guide-step">
-                          <span class="guide-step-number">2</span>
-                          <div class="guide-step-content">
-                            <strong data-i18n="identify.emptyGuide.step2Title"
-                              >Referenz aufnehmen</strong
-                            >
-                            <span data-i18n="identify.emptyGuide.step2Desc"
-                              >10 Sekunden Normalzustand aufnehmen.</span
-                            >
-                          </div>
-                        </div>
-                        <div class="guide-step">
-                          <span class="guide-step-number">3</span>
-                          <div class="guide-step-content">
-                            <strong data-i18n="identify.emptyGuide.step3Title"
-                              >Zustand prüfen</strong
-                            >
-                            <span data-i18n="identify.emptyGuide.step3Desc"
-                              >Vergleiche jederzeit gegen die Referenz.</span
-                            >
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        class="guide-cta-btn"
-                        id="empty-state-cta"
-                        data-i18n="identify.emptyGuide.cta"
-                      >
-                        Erste Maschine anlegen
-                      </button>
-                    </div>
-                  </div>
-                  <button class="add-reference-btn" id="add-new-machine-btn">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <line x1="12" y1="5" x2="12" y2="19" />
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                    </svg>
-                    <span data-i18n="buttons.newMachine">Neue Maschine</span>
-                  </button>
-                </div>
-
-                <!-- Historie (Prüf-Verlauf) -->
-                <div class="machine-selection-option" id="history-section">
-                  <div class="option-divider">
-                    <span data-i18n="identify.history">Verlauf</span>
-                  </div>
-                  <div class="option-header">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="var(--primary-color)"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <!-- Clock/History Icon -->
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    <h5 class="option-title" data-i18n="identify.history">Historie</h5>
-                  </div>
-                  <div id="history-list" class="history-list">
-                    <!-- History items will be added dynamically -->
-                    <p class="empty-state" id="history-empty" data-i18n="identify.noMeasurements">
-                      Noch keine Messungen vorhanden
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <!-- /machine-list-section -->
             </div>
           </div>
         </section>
