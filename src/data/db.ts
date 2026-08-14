@@ -16,6 +16,7 @@ import type {
   SpectralCosineModel,
   ReferenceModel,
   ReferenceDatabase,
+  Customer,
 } from './types.js';
 import { logger } from '@utils/logger.js';
 
@@ -67,10 +68,20 @@ interface ZanobotDB extends DBSchema {
       'by-downloaded': number;
     };
   };
+  customers: {
+    key: string;
+    value: Customer;
+    indexes: {
+      'by-name': string;
+      'by-plz': string;
+    };
+  };
 }
 
 const DB_NAME = 'zanobot-db';
-const DB_VERSION = 8; // Incremented for swappable evaluation engines (ReferenceModel union)
+// v9: Kunden als eigener Bestand (docs/kunden-und-karte.md). Rein additiv —
+// ein neuer Speicher kommt hinzu, an den vorhandenen ändert sich nichts.
+const DB_VERSION = 9;
 
 let dbInstance: IDBPDatabase<ZanobotDB> | null = null;
 
@@ -104,6 +115,14 @@ export async function initDB(): Promise<IDBPDatabase<ZanobotDB>> {
         const machineStore = db.createObjectStore('machines', { keyPath: 'id' });
         machineStore.createIndex('by-name', 'name');
         machineStore.createIndex('by-created', 'createdAt');
+      }
+
+      // Kunden (v9). Additiv: Wer die App schon benutzt, verliert nichts —
+      // der Speicher kommt hinzu, die vorhandenen bleiben unberührt.
+      if (!db.objectStoreNames.contains('customers')) {
+        const customerStore = db.createObjectStore('customers', { keyPath: 'id' });
+        customerStore.createIndex('by-name', 'name');
+        customerStore.createIndex('by-plz', 'plz');
       }
 
       // Create recordings store
@@ -172,12 +191,15 @@ export async function initDB(): Promise<IDBPDatabase<ZanobotDB>> {
         // CRITICAL: Store migration info in localStorage to show user warning
         // This will be displayed on next page load in main.ts
         try {
-          localStorage.setItem('zanobot-migration-v3-occurred', JSON.stringify({
-            timestamp: Date.now(),
-            oldVersion,
-            newVersion: 3,
-            dataCleared: true
-          }));
+          localStorage.setItem(
+            'zanobot-migration-v3-occurred',
+            JSON.stringify({
+              timestamp: Date.now(),
+              oldVersion,
+              newVersion: 3,
+              dataCleared: true,
+            })
+          );
         } catch (e) {
           logger.error('   ❌ Could not save migration info to localStorage:', e);
         }
@@ -193,7 +215,9 @@ export async function initDB(): Promise<IDBPDatabase<ZanobotDB>> {
           diagnosisStore.clear();
 
           logger.info('   ✅ Database reset complete - ready for multiclass diagnosis');
-          logger.warn('   ⚠️ IMPORTANT: All previous data has been deleted due to schema incompatibility');
+          logger.warn(
+            '   ⚠️ IMPORTANT: All previous data has been deleted due to schema incompatibility'
+          );
           logger.warn('   ℹ️ You will need to re-record reference audio for all machines');
         } catch (error) {
           logger.error('   ❌ Migration error:', error);
@@ -276,7 +300,7 @@ export async function saveAppSetting<T>(key: string, value: T): Promise<void> {
 
 export async function getAppSetting<T>(key: string): Promise<AppSetting<T> | undefined> {
   const db = await initDB();
-  return await db.get('app_settings', key) as AppSetting<T> | undefined;
+  return (await db.get('app_settings', key)) as AppSetting<T> | undefined;
 }
 
 export async function deleteAppSetting(key: string): Promise<void> {
@@ -331,7 +355,7 @@ export async function checkStorageQuota(estimatedSizeBytes: number): Promise<voi
       const requiredMB = (estimatedSizeBytes / 1024 / 1024).toFixed(2);
       throw new Error(
         `Insufficient storage: Need ${requiredMB}MB but only ${availableMB}MB available. ` +
-        `Please free up space by deleting old recordings or machines.`
+          `Please free up space by deleting old recordings or machines.`
       );
     }
   } catch (error) {
@@ -349,12 +373,15 @@ export async function checkStorageQuota(estimatedSizeBytes: number): Promise<voi
  *
  * @returns Storage usage info or undefined if not available
  */
-export async function getStorageUsage(): Promise<{
-  usedBytes: number;
-  quotaBytes: number;
-  availableBytes: number;
-  percentUsed: number;
-} | undefined> {
+export async function getStorageUsage(): Promise<
+  | {
+      usedBytes: number;
+      quotaBytes: number;
+      availableBytes: number;
+      percentUsed: number;
+    }
+  | undefined
+> {
   // Siehe checkStorageQuota: erst prüfen, ob es `navigator` überhaupt gibt.
   if (typeof navigator === 'undefined' || !navigator.storage || !navigator.storage.estimate) {
     return undefined;
@@ -398,10 +425,10 @@ export async function getNextAutoMachineNumber(): Promise<number> {
   // Matches: "Maschine 01", "Machine 1", "机器 05", etc.
   const usedNumbers = new Set<number>();
   const patterns = [
-    /^Maschine\s+(\d+)$/i,    // German
-    /^Machine\s+(\d+)$/i,     // English
-    /^Máquina\s+(\d+)$/i,     // Spanish
-    /^机器\s+(\d+)$/i,         // Chinese
+    /^Maschine\s+(\d+)$/i, // German
+    /^Machine\s+(\d+)$/i, // English
+    /^Máquina\s+(\d+)$/i, // Spanish
+    /^机器\s+(\d+)$/i, // Chinese
   ];
 
   for (const machine of machines) {
@@ -541,13 +568,16 @@ export async function deleteMachine(id: string): Promise<void> {
  * @param modelLabel - Label of the model to delete
  * @returns true if model was found and deleted
  */
-export async function deleteReferenceModel(machineId: string, modelLabel: string): Promise<boolean> {
+export async function deleteReferenceModel(
+  machineId: string,
+  modelLabel: string
+): Promise<boolean> {
   const machine = await getMachine(machineId);
   if (!machine) return false;
 
   const before = machine.referenceModels?.length || 0;
   machine.referenceModels = (machine.referenceModels || []).filter(
-    m => m.label?.toLowerCase().trim() !== modelLabel.toLowerCase().trim()
+    (m) => m.label?.toLowerCase().trim() !== modelLabel.toLowerCase().trim()
   );
   const after = machine.referenceModels.length;
 
@@ -951,9 +981,7 @@ function deserializeReferenceModel(
     const gmia = model as SerializedGMIAModel & { weightVector: number[] | Float64Array };
     const wv = gmia.weightVector;
     if (!(wv instanceof Float64Array) && !Array.isArray(wv)) {
-      throw new Error(
-        `Reference model "${gmia.label || 'unnamed'}" has an invalid weightVector`
-      );
+      throw new Error(`Reference model "${gmia.label || 'unnamed'}" has an invalid weightVector`);
     }
     return {
       ...(gmia as object),
@@ -1261,12 +1289,14 @@ export async function importData(
           if (existingMachine) {
             // Deduplicate by label (case-insensitive) – same logic as applyModelsToMachine
             const existingNames = new Set(
-              (existingMachine.referenceModels || []).map(m => m.label?.toLowerCase().trim())
+              (existingMachine.referenceModels || []).map((m) => m.label?.toLowerCase().trim())
             );
-            const newModels = normalizedReferenceModels.filter(model => {
+            const newModels = normalizedReferenceModels.filter((model) => {
               const modelName = model.label?.toLowerCase().trim();
               if (modelName && existingNames.has(modelName)) {
-                logger.info(`⏭️ Merge: skipping model "${model.label}" – already exists for machine ${machine.id}`);
+                logger.info(
+                  `⏭️ Merge: skipping model "${model.label}" – already exists for machine ${machine.id}`
+                );
                 return false;
               }
               return true;
@@ -1280,10 +1310,12 @@ export async function importData(
             // prefer the imported name so NFC provisioning gets the real name.
             const preferImportedName = existingMachine.nameIsPlaceholder && normalizedMachine.name;
             const mergedMachine: Machine = {
-              ...normalizedMachine,              // import as base
-              ...existingMachine,                // existing data overwrites
+              ...normalizedMachine, // import as base
+              ...existingMachine, // existing data overwrites
               // Explicitly merge fields where we want "fill gaps" behavior:
-              name: preferImportedName ? normalizedMachine.name : (existingMachine.name || normalizedMachine.name),
+              name: preferImportedName
+                ? normalizedMachine.name
+                : existingMachine.name || normalizedMachine.name,
               // Clear placeholder flag after merge (name is now definitive)
               nameIsPlaceholder: preferImportedName ? undefined : existingMachine.nameIsPlaceholder,
               location: existingMachine.location || normalizedMachine.location,
@@ -1295,19 +1327,26 @@ export async function importData(
               // Preserve existing calibration data (never overwrite)
               refLogMean: existingMachine.refLogMean ?? normalizedMachine.refLogMean,
               refLogStd: existingMachine.refLogStd ?? normalizedMachine.refLogStd,
-              refLogResidualStd: existingMachine.refLogResidualStd ?? normalizedMachine.refLogResidualStd,
-              refDriftBaseline: existingMachine.refDriftBaseline ?? normalizedMachine.refDriftBaseline,
+              refLogResidualStd:
+                existingMachine.refLogResidualStd ?? normalizedMachine.refLogResidualStd,
+              refDriftBaseline:
+                existingMachine.refDriftBaseline ?? normalizedMachine.refDriftBaseline,
               refT60: existingMachine.refT60 ?? normalizedMachine.refT60,
-              refT60Classification: existingMachine.refT60Classification ?? normalizedMachine.refT60Classification,
+              refT60Classification:
+                existingMachine.refT60Classification ?? normalizedMachine.refT60Classification,
               // Keep existing image
               referenceImage: existingMachine.referenceImage || normalizedReferenceImage,
             };
             await db.put('machines', mergedMachine);
 
             if (newModels.length > 0) {
-              logger.info(`📋 Merged machine "${machine.id}": ${newModels.length} new model(s) added, ${normalizedReferenceModels.length - newModels.length} duplicate(s) skipped`);
+              logger.info(
+                `📋 Merged machine "${machine.id}": ${newModels.length} new model(s) added, ${normalizedReferenceModels.length - newModels.length} duplicate(s) skipped`
+              );
             } else {
-              logger.info(`📋 Merged machine "${machine.id}": no new models (${normalizedReferenceModels.length} duplicate(s) skipped)`);
+              logger.info(
+                `📋 Merged machine "${machine.id}": no new models (${normalizedReferenceModels.length} duplicate(s) skipped)`
+              );
             }
             machinesImported++;
             continue;
@@ -1319,10 +1358,14 @@ export async function importData(
         machinesImported++;
       } catch (error) {
         machinesSkipped++;
-        logger.warn(`⚠️ Skipped machine "${machine.id || 'unknown'}": ${error instanceof Error ? error.message : error}`);
+        logger.warn(
+          `⚠️ Skipped machine "${machine.id || 'unknown'}": ${error instanceof Error ? error.message : error}`
+        );
       }
     }
-    logger.info(`📥 Imported ${machinesImported} machines${machinesSkipped > 0 ? ` (${machinesSkipped} skipped due to errors)` : ''}`);
+    logger.info(
+      `📥 Imported ${machinesImported} machines${machinesSkipped > 0 ? ` (${machinesSkipped} skipped due to errors)` : ''}`
+    );
   }
 
   // Import recordings with AudioBuffer rehydration
@@ -1350,10 +1393,14 @@ export async function importData(
         recordingsImported++;
       } catch (error) {
         recordingsSkipped++;
-        logger.warn(`⚠️ Skipped recording "${recording.id || 'unknown'}": ${error instanceof Error ? error.message : error}`);
+        logger.warn(
+          `⚠️ Skipped recording "${recording.id || 'unknown'}": ${error instanceof Error ? error.message : error}`
+        );
       }
     }
-    logger.info(`📥 Imported ${recordingsImported} recordings${recordingsSkipped > 0 ? ` (${recordingsSkipped} skipped due to errors)` : ''}`);
+    logger.info(
+      `📥 Imported ${recordingsImported} recordings${recordingsSkipped > 0 ? ` (${recordingsSkipped} skipped due to errors)` : ''}`
+    );
   }
 
   // Import diagnoses
@@ -1366,10 +1413,14 @@ export async function importData(
         diagnosesImported++;
       } catch (error) {
         diagnosesSkipped++;
-        logger.warn(`⚠️ Skipped diagnosis "${diagnosis.id || 'unknown'}": ${error instanceof Error ? error.message : error}`);
+        logger.warn(
+          `⚠️ Skipped diagnosis "${diagnosis.id || 'unknown'}": ${error instanceof Error ? error.message : error}`
+        );
       }
     }
-    logger.info(`📥 Imported ${diagnosesImported} diagnoses${diagnosesSkipped > 0 ? ` (${diagnosesSkipped} skipped due to errors)` : ''}`);
+    logger.info(
+      `📥 Imported ${diagnosesImported} diagnoses${diagnosesSkipped > 0 ? ` (${diagnosesSkipped} skipped due to errors)` : ''}`
+    );
   }
 
   const totalSkipped = machinesSkipped + recordingsSkipped + diagnosesSkipped;
@@ -1561,7 +1612,9 @@ export async function saveReferenceDatabase(refDb: ReferenceDatabase): Promise<v
  * @param machineId - Machine ID
  * @returns Reference database or undefined
  */
-export async function getReferenceDatabase(machineId: string): Promise<ReferenceDatabase | undefined> {
+export async function getReferenceDatabase(
+  machineId: string
+): Promise<ReferenceDatabase | undefined> {
   const db = await initDB();
   return await db.get('reference_data', machineId);
 }
@@ -1597,4 +1650,70 @@ export async function hasReferenceDatabase(machineId: string): Promise<boolean> 
 export async function getAllReferenceDatabases(): Promise<ReferenceDatabase[]> {
   const db = await initDB();
   return await db.getAll('reference_data');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// KUNDEN
+//
+// Ein Kunde ist der Ort, an dem Maschinen stehen (docs/kunden-und-karte.md).
+// Der Bestand funktioniert vollständig ohne einen einzigen Kunden — erst wer
+// welche anlegt, bekommt Karte und Gruppierung dazu.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Einen Kunden anlegen oder überschreiben.
+ */
+export async function saveCustomer(customer: Customer): Promise<void> {
+  const db = await initDB();
+  await db.put('customers', customer);
+  logger.info(`💾 Kunde gespeichert: ${customer.name} (${customer.plz})`);
+}
+
+/**
+ * Einen Kunden holen.
+ */
+export async function getCustomer(id: string): Promise<Customer | undefined> {
+  const db = await initDB();
+  return await db.get('customers', id);
+}
+
+/**
+ * Alle Kunden, alphabetisch nach Name.
+ *
+ * Nach Name und nicht nach Anlegedatum: Eine Kundenliste liest man, um einen
+ * bestimmten zu finden — anders als der Maschinenbestand, wo „zuletzt
+ * angefasst" die nützlichere Reihenfolge ist.
+ */
+export async function getAllCustomers(): Promise<Customer[]> {
+  const db = await initDB();
+  const alle = await db.getAll('customers');
+  return alle.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+
+/**
+ * Einen Kunden löschen.
+ *
+ * Seine Maschinen bleiben — sie verlieren nur ihre Zuordnung. Maschinen mit
+ * einem Kunden zu löschen wäre eine böse Überraschung: Der Kunde ist eine
+ * Beschriftung, die Maschine ist die Arbeit von Wochen.
+ */
+export async function deleteCustomer(id: string): Promise<void> {
+  const db = await initDB();
+  const maschinen = await db.getAll('machines');
+  const betroffen = maschinen.filter((m) => m.customerId === id);
+  for (const maschine of betroffen) {
+    delete maschine.customerId;
+    await db.put('machines', maschine);
+  }
+  await db.delete('customers', id);
+  logger.info(`🗑️ Kunde gelöscht: ${id} (${betroffen.length} Maschinen ohne Zuordnung)`);
+}
+
+/**
+ * Die Maschinen eines Kunden.
+ */
+export async function getMachinesForCustomer(customerId: string): Promise<Machine[]> {
+  const db = await initDB();
+  const alle = await db.getAll('machines');
+  return alle.filter((m) => m.customerId === customerId);
 }

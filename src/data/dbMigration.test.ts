@@ -99,9 +99,11 @@ describe('DB-Migration erhält Bestandsdaten (Update-Policy)', () => {
     const { initDB, getMachine, getAllMachines } = await import('./db.js');
     const db = await initDB();
 
-    // Alle historischen Stores existieren weiter + neue Stores sind da
+    // Alle historischen Stores existieren weiter + neue Stores sind da.
+    // `customers` kam mit v9 hinzu (docs/kunden-und-karte.md) — rein additiv,
+    // deshalb muss der Bestand darunter unverändert durchkommen.
     expect([...db.objectStoreNames].sort()).toEqual(
-      ['app_settings', 'diagnoses', 'machines', 'recordings', 'reference_data'].sort()
+      ['app_settings', 'customers', 'diagnoses', 'machines', 'recordings', 'reference_data'].sort()
     );
 
     // Daten haben die Migration überlebt
@@ -115,5 +117,8 @@ describe('DB-Migration erhält Bestandsdaten (Update-Policy)', () => {
     expect(diag?.healthScore).toBe(91.5);
     const rec = await db.get('recordings', 'rec-legacy-1');
     expect(rec?.machineId).toBe('legacy-pumpe');
+
+    // Der neue Bestand ist da und leer — eine Migration legt keine Kunden an.
+    expect(await db.getAll('customers')).toEqual([]);
   });
 });
