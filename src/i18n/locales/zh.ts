@@ -1131,6 +1131,9 @@ export const zh: TranslationDict = {
     dataCleared: '由于更新，数据库已被重置。所有机器、录音和检查都已删除。',
   },
   about: {
+    dataTitle: '所用数据',
+    dataPlzPlaces: '邮编地名',
+    dataPlzCoords: '邮编坐标',
     title: '关于 SoundFuchs',
     subtitle: '机器状态声学比较助手',
     intro:

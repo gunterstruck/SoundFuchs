@@ -84,3 +84,19 @@ Sie trifft keine Aussage ueber Schutzrechte Dritter und keine Aussage darueber,
 ob der Einsatz in einem bestimmten Umfeld zulaessig ist. Der Abschnitt
 "Technische Abgrenzung" in README und Anwendung beschreibt die eigene Bauweise
 - er ist eine Beschreibung, kein Gutachten.
+
+7. FREMDE DATEN
+
+Fuer die Verortung von Kunden ueber die Postleitzahl liegen zwei Datensaetze
+bei. Ihre Lizenzen verlangen Namensnennung und gelten unabhaengig von der
+MIT-Lizenz dieses Projekts fort:
+
+- PLZ-Ortsnamen (public/geodata/plz-places.json)
+  (c) GeoNames, CC BY 4.0
+  https://download.geonames.org/export/zip/DE.zip
+
+- PLZ-Koordinaten (public/geodata/plz-centroids.json)
+  (c) OpenStreetMap-Mitwirkende, ODbL
+  https://www.openstreetmap.org/copyright
+
+Wer SoundFuchs weitergibt oder abwandelt, gibt diese Pflichten mit weiter.
