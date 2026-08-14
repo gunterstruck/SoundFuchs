@@ -826,6 +826,39 @@ body {
   margin-bottom: 0;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   AM HANDY: EINE POLSTERUNG, NICHT ZWEI
+
+   Gemessen bei 390 px, von außen nach innen bis zur Maschinenzeile:
+
+       .container                 390 px          Polsterung 24
+       #machine-overview-section  366 px  malt    Polsterung 48
+       .machine-item              316 px
+
+   Also 24 px von der Seite und noch einmal 24 px vom Abschnitt — 48 px weg,
+   bevor ein Zeichen erscheint. TourFuchs hat an derselben Stelle genau eine
+   Polsterung: `.tab-panel { padding: 14px }`, und die Zeilen darin tragen
+   ihren Grund selbst. Kein Kasten um die Liste, weil das Blatt schon der
+   Kasten ist.
+
+   Deshalb hier dasselbe: Am Handy legen die Abschnitte ihren Rahmen ab —
+   keinen Grund, keine Linie, keine seitliche Polsterung. Die Seite gibt den
+   Rand vor, die Zeilen tragen ihre eigene Fläche. Senkrecht bleibt die
+   Polsterung, sie trennt die Abschnitte voneinander.
+
+   Ab 600 px bleibt der Rahmen: Auf breiten Schirmen ordnet er, dort ist
+   Breite kein knappes Gut.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .machine-selection-option {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 .option-header {
   display: flex;
   align-items: center;
