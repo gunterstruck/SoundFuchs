@@ -5,6 +5,19 @@
 import type { TranslationDict } from '../index.js';
 
 export const zh: TranslationDict = {
+  sheet: {
+    groupCheck: '检测',
+    groupMachines: '机器',
+    groupApp: '应用',
+    recording: '录制与分析',
+    room: '环境与背景噪声',
+    labels: '写入 NFC 与二维码',
+    data: '备份与重置数据',
+    vault: '保险库',
+    soon: '稍后',
+    view: '视图：基础或专业',
+  },
+
   search: {
     placeholder: '设备、位置或编号…',
     noHits: '未找到结果。',
@@ -644,6 +657,7 @@ export const zh: TranslationDict = {
     recordingRunning: '录制中',
   },
   settingsUI: {
+    allSettings: '全部设置',
     title: '设置',
     nfcWriterTitle: 'NFC 标签',
     nfcWriterDescription: '为应用入口或选定机器写入 NFC 标签。',

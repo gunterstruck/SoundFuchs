@@ -27,6 +27,7 @@ import { notify } from '@utils/notifications.js';
 import { logger } from '@utils/logger.js';
 import { GlobalSearch } from '@ui/GlobalSearch.js';
 import { InfoBottomSheet } from '@ui/components/InfoBottomSheet.js';
+import { escapeHtml } from '@utils/sanitize.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
 import { initPwaUpdate } from '@utils/pwaUpdate.js';
 import {
@@ -755,36 +756,101 @@ class ZanobotApp {
   /**
    * Das Schiebefenster „Einstellungen & mehr" öffnen.
    *
-   * Es trägt, was bis zum 14.08.2026 in der Fußzeile stand: Einstellungen, Über
-   * SoundFuchs, Datenschutz, Impressum. Die Fußzeile selbst bleibt im Markup —
-   * verborgen, aber vollständig verdrahtet. Das Schiebefenster löst deshalb die
-   * vorhandenen Knöpfe aus, statt deren Logik nachzubauen: Ein zweiter Weg zum
-   * selben Ziel wäre ein zweiter Weg, der kaputtgehen kann.
+   * ── DIE FEHLENDE ZOOMSTUFE ──────────────────────────────────────────────
+   *
+   * Bis zum 14.08.2026 standen hier vier Zeilen, und hinter der ersten lag
+   * alles: sechs Einstellungs-Kategorien unter Basis, dreizehn unter Profi,
+   * 28 Bedienelemente. Zwischen „ich will etwas einstellen" und „hier ist
+   * alles" gab es keine Stufe — man sprang von vier Wörtern in eine Wand.
+   *
+   * Jetzt führt das Fenster die Themen selbst auf, in drei Gruppen. Ein Tipp
+   * öffnet den Einstellungen-Dialog **nur mit diesem Thema** (der Dialog
+   * bekommt `data-filter`, s. style.css). Von dort führt ein Rückweg auf alle
+   * Einstellungen. Das ist der Semantische Zoom: Jede Stufe zeigt so viel,
+   * wie man auf ihr entscheiden muss, und nicht mehr.
+   *
+   * Die Fußzeile bleibt im Markup — verborgen, aber vollständig verdrahtet.
+   * Über SoundFuchs, Datenschutz und Impressum lösen weiterhin ihre Knöpfe
+   * dort aus, statt deren Logik nachzubauen.
    */
   private oeffneEinstellungsfenster(): void {
-    const eintraege = [
-      { id: 'settings-btn', icon: '⚙️', key: 'footer.settings' },
-      { id: 'about-btn', icon: '🦊', key: 'footer.about' },
-      { id: 'datenschutz-btn', icon: '🛡️', key: 'footer.privacy' },
-      { id: 'impressum-btn', icon: '§', key: 'footer.impressum' },
+    /**
+     * Zeigt dieses Thema auf der aktuellen Stufe überhaupt etwas?
+     *
+     * Ohne diese Frage stünde unter Basis eine Zeile „Raum & Störgeräusche",
+     * hinter der zwei von drei Kategorien verborgen wären — oder schlimmer,
+     * gar keine. Ein Knopf gehört dorthin, wo er hinführt; dieselbe Regel wie
+     * bei „Details" im Prüfergebnis, nur hier zur Laufzeit statt in CSS.
+     */
+    const themaHatInhalt = (thema: string): boolean =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>(`.setting-category[data-thema~="${thema}"]`)
+      ).some((kat) => window.getComputedStyle(kat).display !== 'none');
+
+    type Zeile =
+      | { art: 'thema'; thema: string; icon: string; key: string }
+      | { art: 'knopf'; id: string; icon: string; key: string }
+      | { art: 'bald'; icon: string; key: string };
+
+    const gruppen: Array<{ titel: string; zeilen: Zeile[] }> = [
+      {
+        titel: t('sheet.groupCheck'),
+        zeilen: [
+          { art: 'thema', thema: 'pruefen', icon: '🎚', key: 'sheet.recording' },
+          { art: 'thema', thema: 'raum', icon: '📐', key: 'sheet.room' },
+        ],
+      },
+      {
+        titel: t('sheet.groupMachines'),
+        zeilen: [
+          { art: 'thema', thema: 'etiketten', icon: '🏷', key: 'sheet.labels' },
+          { art: 'thema', thema: 'daten', icon: '💾', key: 'sheet.data' },
+          { art: 'bald', icon: '🔐', key: 'sheet.vault' },
+        ],
+      },
+      {
+        titel: t('sheet.groupApp'),
+        zeilen: [
+          { art: 'thema', thema: 'ansicht', icon: '🌱', key: 'sheet.view' },
+          { art: 'knopf', id: 'about-btn', icon: '🦊', key: 'footer.about' },
+          { art: 'knopf', id: 'datenschutz-btn', icon: '🛡️', key: 'footer.privacy' },
+          { art: 'knopf', id: 'impressum-btn', icon: '§', key: 'footer.impressum' },
+        ],
+      },
     ];
 
-    const zeilen = eintraege
-      .filter((e) => document.getElementById(e.id))
-      .map(
-        (e) =>
-          `<button type="button" class="info-sheet-row" data-target="${e.id}">` +
-          `<span class="info-sheet-icon">${e.icon}</span>` +
-          `<span class="info-sheet-label">${t(e.key)}</span>` +
-          `<span class="info-sheet-arrow">›</span></button>`
-      )
+    const zeileHtml = (z: Zeile): string => {
+      const kopf = `<span class="info-sheet-icon">${z.icon}</span><span class="info-sheet-label">${escapeHtml(t(z.key))}</span>`;
+      if (z.art === 'bald') {
+        // Kein Knopf, sondern eine Ankündigung: Sie sagt, dass es kommt, und
+        // täuscht nicht vor, dass man schon darauf tippen könnte.
+        return `<div class="info-sheet-row info-sheet-row-soon">${kopf}<span class="info-sheet-soon">${escapeHtml(t('sheet.soon'))}</span></div>`;
+      }
+      const ziel =
+        z.art === 'thema'
+          ? `data-thema="${z.thema}" data-label="${escapeHtml(t(z.key))}"`
+          : `data-target="${escapeHtml(z.id)}"`;
+      return `<button type="button" class="info-sheet-row" ${ziel}>${kopf}<span class="info-sheet-arrow">›</span></button>`;
+    };
+
+    const inhalt = gruppen
+      .map((g) => {
+        const zeilen = g.zeilen.filter((z) => {
+          if (z.art === 'thema') return themaHatInhalt(z.thema);
+          if (z.art === 'knopf') return Boolean(document.getElementById(z.id));
+          return true;
+        });
+        if (zeilen.length === 0) return '';
+        return (
+          `<p class="info-sheet-group">${escapeHtml(g.titel)}</p>` + zeilen.map(zeileHtml).join('')
+        );
+      })
       .join('');
 
-    InfoBottomSheet.show({ title: t('search.sheetTitle'), icon: '⚙️', content: zeilen });
+    InfoBottomSheet.show({ title: t('search.sheetTitle'), icon: '⚙️', content: inhalt });
 
-    // Nach dem Zeichnen verdrahten: Der Klick reicht an den vorhandenen
-    // Fußzeilen-Knopf weiter, der schon alles Nötige tut.
     requestAnimationFrame(() => {
+      // Der Weg über die verborgene Fußzeile: Der Klick reicht durch.
       document.querySelectorAll<HTMLElement>('.info-sheet-row[data-target]').forEach((zeile) => {
         zeile.addEventListener('click', () => {
           const ziel = document.getElementById(zeile.dataset.target ?? '');
@@ -792,7 +858,52 @@ class ZanobotApp {
           ziel?.click();
         });
       });
+
+      // Der Weg in ein Thema: Einstellungen öffnen und auf das Thema stellen.
+      document.querySelectorAll<HTMLElement>('.info-sheet-row[data-thema]').forEach((zeile) => {
+        zeile.addEventListener('click', () => {
+          // Die Beschriftung kommt aus `data-label`, nicht aus dem Text der
+          // Zeile: Der enthält auch das Symbol und den Pfeil, und die stünden
+          // sonst in der Überschrift des Dialogs.
+          const thema = zeile.dataset.thema ?? '';
+          InfoBottomSheet.close();
+          this.oeffneEinstellungenMitThema(thema, zeile.dataset.label ?? '');
+        });
+      });
     });
+  }
+
+  /**
+   * Den Einstellungen-Dialog öffnen und auf ein Thema stellen.
+   *
+   * Gefiltert wird über ein Attribut am Container, nicht durch Umbauen des
+   * Markups: Die Kategorien bleiben, wo sie sind, samt ihrer Verdrahtung und
+   * ihrer Stufen-Regeln. Beim Weg über die verborgene Fußzeile fehlt das
+   * Attribut, und der Dialog zeigt wie bisher alles.
+   */
+  private oeffneEinstellungenMitThema(thema: string, beschriftung: string): void {
+    const liste = document.querySelector<HTMLElement>('.settings-list');
+    const titel = document.getElementById('settings-title');
+    if (liste) liste.dataset.filter = thema;
+    if (titel && beschriftung) titel.textContent = beschriftung;
+
+    // Rückweg auf alle Einstellungen — einmal anlegen, danach wiederverwenden.
+    if (liste && !liste.querySelector('.settings-back')) {
+      const zurueck = document.createElement('button');
+      zurueck.type = 'button';
+      zurueck.className = 'settings-back';
+      zurueck.innerHTML = `<span aria-hidden="true">‹</span><span></span>`;
+      zurueck.addEventListener('click', () => {
+        delete liste.dataset.filter;
+        if (titel) titel.textContent = t('settingsUI.title');
+        zurueck.remove();
+      });
+      liste.insertBefore(zurueck, liste.firstChild);
+    }
+    const beschriftungEl = liste?.querySelector('.settings-back span:last-child');
+    if (beschriftungEl) beschriftungEl.textContent = t('settingsUI.allSettings');
+
+    document.getElementById('settings-btn')?.click();
   }
 
   /**

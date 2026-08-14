@@ -10475,6 +10475,99 @@ body.zb-first-run .step-badge {
   display: inline-flex;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   EINSTELLUNGEN NACH THEMA — DIE FEHLENDE ZOOMSTUFE
+
+   Der Dialog trug alles auf einmal: sechs Kategorien unter Basis, dreizehn
+   unter Profi, 28 Bedienelemente — und davor genau eine Zeile im
+   Schiebefenster, „Einstellungen". Zwischen „ich will was einstellen" und
+   „hier ist alles" lag keine Stufe.
+
+   Jetzt trägt jede Kategorie ihr Thema (`data-thema`), das Schiebefenster
+   führt die Themen einzeln auf, und der Dialog zeigt beim Öffnen nur das
+   gewählte. Ohne `data-filter` — etwa beim Weg über die verborgene Fußzeile —
+   bleibt alles sichtbar wie bisher.
+
+   Das `!important` ist hier nicht Bequemlichkeit: Die Stufen-Regeln weiter
+   oben setzen für sichtbare Ebenen `display: revert !important`. Ohne
+   Gegengewicht bliebe eine Profi-Kategorie trotz Filter stehen.
+
+   Die Trennlinien gehen mit: Sie stehen zwischen den Kategorien, und übrig
+   gebliebene Striche über und unter einem einzelnen Abschnitt sähen aus wie
+   etwas, das fehlt. */
+/* Das führende `html` ist kein Zierrat: Weiter oben steht
+   `html[data-view-level='expert'] .settings-divider[data-view-level='expert']
+   { display: block !important }`. Diese Regel hat ein Element mehr in der
+   Stärke und schlug den Filter — die Trenner blieben stehen, während die
+   Kategorien dazwischen verschwanden. Mit `html` davor sind beide gleich
+   stark, und die spätere gewinnt. */
+html .settings-list[data-filter] > .setting-category:not([data-thema]),
+html .settings-list[data-filter] > .settings-divider {
+  display: none !important;
+}
+
+html .settings-list[data-filter='ansicht'] > .setting-category:not([data-thema~='ansicht']),
+html .settings-list[data-filter='pruefen'] > .setting-category:not([data-thema~='pruefen']),
+html .settings-list[data-filter='raum'] > .setting-category:not([data-thema~='raum']),
+html .settings-list[data-filter='etiketten'] > .setting-category:not([data-thema~='etiketten']),
+html .settings-list[data-filter='daten'] > .setting-category:not([data-thema~='daten']) {
+  display: none !important;
+}
+
+/* Gruppenüberschrift im Schiebefenster — leise, damit sie ordnet und nicht
+   mitredet. Dieselbe Machart wie die Trennlinien der Startseite. */
+.info-sheet-group {
+  margin: var(--spacing-md) 0 4px;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.info-sheet-group:first-child {
+  margin-top: 0;
+}
+
+/* Der Tresor ist angekündigt, nicht bedienbar: kein Knopf, kein Pfeil, keine
+   Reaktion auf Berührung. Eine Zeile, die „später" sagt, ist ehrlich; ein
+   Knopf, der nichts tut, wäre der Fehler, den diese Sitzung viermal gefunden
+   hat. */
+.info-sheet-row-soon {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.info-sheet-soon {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-secondary);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Zurück zur Übersicht der Themen — nur da, wenn gefiltert wird. */
+.settings-back {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 4px 0;
+  margin-bottom: var(--spacing-sm);
+  color: var(--primary-color);
+  font-family: inherit;
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+
+.settings-list[data-filter] ~ .settings-back,
+.settings-list[data-filter] .settings-back {
+  display: inline-flex;
+}
+
 /* Die Schnellwahl ist ein Profi-Werkzeug.
 
    Sie zeigt die trainierten Maschinen, die Übersicht unmittelbar darunter

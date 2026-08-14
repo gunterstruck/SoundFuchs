@@ -5,6 +5,19 @@
 import type { TranslationDict } from '../index.js';
 
 export const en: TranslationDict = {
+  sheet: {
+    groupCheck: 'Checking',
+    groupMachines: 'Machines',
+    groupApp: 'App',
+    recording: 'Recording & analysis',
+    room: 'Room & background noise',
+    labels: 'Write NFC & QR',
+    data: 'Back up & reset data',
+    vault: 'Vault',
+    soon: 'later',
+    view: 'View: basic or pro',
+  },
+
   search: {
     placeholder: 'Machine, location or ID…',
     noHits: 'Nothing found.',
@@ -807,6 +820,7 @@ export const en: TranslationDict = {
   },
 
   settingsUI: {
+    allSettings: 'All settings',
     title: 'Settings',
     nfcWriterTitle: 'NFC tags',
     nfcWriterDescription: 'Write NFC tags for app access or a selected machine.',
