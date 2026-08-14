@@ -319,6 +319,8 @@ export const zh: TranslationDict = {
       waitingForSignal: '等待信号...',
       spectrumReveal: '👁 查看频谱',
       spectrumHide: '隐藏频谱',
+      listenSectionLabel: '试听',
+      listenSectionHint: '将正常状态与本次测量对比，或只听新出现的部分。',
       listenReference: '🔊 参考',
       listenMeasurement: '🔊 本次测量',
       listenStop: '⏹ 停止',

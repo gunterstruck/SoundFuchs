@@ -3146,6 +3146,35 @@ body {
   margin-top: var(--spacing-sm, 8px);
 }
 
+/* Überschrift und Satz über den Abhör-Knöpfen.
+
+   `flex-basis: 100%` statt eines eigenen Kastens: Der Behälter ist eine
+   umbrechende Reihe, und eine Zeile, die die volle Breite beansprucht,
+   erzwingt den Umbruch von selbst. Ein zusätzlicher Rahmen nur fürs
+   Untereinander wäre eine Schachtel mehr in einer App, die schon reichlich
+   davon hat. */
+.listen-controls-label,
+.listen-controls-hint {
+  flex: 0 0 100%;
+  margin: 0;
+  text-align: center;
+}
+
+.listen-controls-label {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.listen-controls-hint {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  line-height: 1.35;
+  margin-bottom: var(--spacing-xs, 4px);
+}
+
 /* Expert spectrum comparison (reference ↔ measurement) in the listen modal */
 .spectrum-comparison {
   margin-top: var(--spacing-md, 16px);
