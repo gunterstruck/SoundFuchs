@@ -70,7 +70,7 @@ export class MachineOverviewRenderer {
     if (latestDiagnosis) {
       statusClass = `status-${latestDiagnosis.status}`;
       statusLabel = this.deps.getStatusLabel(latestDiagnosis.status);
-      timeLabel = `Letzte Prüfung ${this.deps.formatRelativeTime(latestDiagnosis.timestamp)}`;
+      timeLabel = this.deps.formatRelativeTime(latestDiagnosis.timestamp);
     } else if (machine.referenceModels && machine.referenceModels.length > 0) {
       // Has reference models but no diagnosis yet
       statusLabel = t('status.ready');
@@ -106,17 +106,36 @@ export class MachineOverviewRenderer {
     machineName.appendChild(statusDot);
     machineName.appendChild(document.createTextNode(machine.name));
 
-    const machineStatus = document.createElement('p');
-    machineStatus.className = `machine-status ${statusClass}`;
-    machineStatus.textContent = statusLabel;
-
-    const machineTime = document.createElement('p');
-    machineTime.className = 'machine-time';
-    machineTime.textContent = timeLabel;
+    // Eine Nebenzeile statt zweier: Ort und Zeitpunkt, durch einen Punkt
+    // getrennt. Zuvor standen Zustandswort ("Keine Daten") und Zeit
+    // untereinander und beanspruchten zwei Zeilen fuer eine Aussage. Das
+    // Zustandswort traegt jetzt der farbige Punkt vor dem Namen, den es
+    // ohnehin schon gab - eine Farbe liest sich schneller als ein Wort.
+    const machineMeta = document.createElement('p');
+    machineMeta.className = `machine-meta ${statusClass}`;
+    machineMeta.textContent = [machine.location, timeLabel].filter(Boolean).join(' · ');
 
     machineInfo.appendChild(machineName);
-    machineInfo.appendChild(machineStatus);
-    machineInfo.appendChild(machineTime);
+    machineInfo.appendChild(machineMeta);
+
+    // Der letzte Wert steht rechts - das ist die Antwort, weswegen jemand die
+    // Liste ueberfliegt. Ohne Pruefung bleibt die Stelle leer statt "Keine
+    // Daten" zu behaupten; eine leere Stelle sagt dasselbe, ruhiger.
+    const machineScore = document.createElement('span');
+    machineScore.className = 'machine-score';
+    if (latestDiagnosis) {
+      machineScore.textContent = `${Math.round(latestDiagnosis.healthScore)} %`;
+      machineScore.classList.add(
+        latestDiagnosis.healthScore >= 75
+          ? 'score-healthy'
+          : latestDiagnosis.healthScore >= 50
+            ? 'score-warning'
+            : 'score-critical'
+      );
+    } else {
+      machineScore.textContent = statusLabel;
+      machineScore.classList.add('score-none');
+    }
 
     // Sprint 3 UX: Reference quality badge
     if (machine.referenceModels && machine.referenceModels.length > 0) {
@@ -137,6 +156,7 @@ export class MachineOverviewRenderer {
     // Sprint 3 UX: Sparkline container (filled lazily after render)
     const sparkContainer = document.createElement('div');
     sparkContainer.className = 'sparkline-container';
+    sparkContainer.setAttribute('data-view-level', 'expert');
     sparkContainer.dataset.machineId = machine.id;
     machineInfo.appendChild(sparkContainer);
 
@@ -144,6 +164,7 @@ export class MachineOverviewRenderer {
     if (machine.lastDiagnosisAt) {
       const historyLink = document.createElement('button');
       historyLink.className = 'machine-history-link';
+      historyLink.setAttribute('data-view-level', 'expert');
       historyLink.textContent = t('history.viewHistory');
       historyLink.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -169,6 +190,7 @@ export class MachineOverviewRenderer {
     // Sprint 1 UX: Delete button on machine card
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'machine-delete-btn';
+    deleteBtn.setAttribute('data-view-level', 'expert');
     deleteBtn.setAttribute('aria-label', t('identify.deleteMachine'));
     deleteBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -258,6 +280,7 @@ export class MachineOverviewRenderer {
 
     // Assemble item
     machineItem.appendChild(machineInfo);
+    machineItem.appendChild(machineScore);
     machineItem.appendChild(detailsBtn);
     machineItem.appendChild(deleteBtn);
     machineItem.appendChild(chevron);
