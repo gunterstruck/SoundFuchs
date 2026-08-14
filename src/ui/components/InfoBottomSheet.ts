@@ -28,11 +28,7 @@ export class InfoBottomSheet {
   /**
    * Show the bottom sheet with given content
    */
-  public static show(options: {
-    title: string;
-    content: string;
-    icon?: string;
-  }): void {
+  public static show(options: { title: string; content: string; icon?: string }): void {
     if (!InfoBottomSheet.instance) {
       InfoBottomSheet.instance = new InfoBottomSheet();
     }
@@ -44,6 +40,38 @@ export class InfoBottomSheet {
    */
   public static close(): void {
     InfoBottomSheet.instance?.dismiss();
+  }
+
+  /**
+   * Das Blatt dem Finger folgen lassen.
+   *
+   * `anteil` ist 0 (ganz unten, unsichtbar) bis 1 (ganz offen). Solange
+   * gezogen wird, ist der Übergang abgeschaltet — sonst liefe die Animation
+   * der Bewegung hinterher und das Blatt klebte am Finger vorbei.
+   *
+   * Gedacht für den Griff am unteren Rand (main.ts). Vorbild ist TourFuchs,
+   * wo `setSheetHeight` dasselbe über die Höhe löst; hier ist es die
+   * Verschiebung, weil das Blatt seine Höhe aus dem Inhalt nimmt.
+   */
+  public static setzeZugAnteil(anteil: number): void {
+    const blatt = InfoBottomSheet.instance?.sheet;
+    if (!blatt) return;
+    const geklammert = Math.max(0, Math.min(1, anteil));
+    blatt.style.transition = 'none';
+    blatt.style.transform = `translateY(${(1 - geklammert) * 100}%)`;
+  }
+
+  /** Den Zug beenden: Übergang und Endlage wieder der CSS-Klasse überlassen. */
+  public static beendeZug(): void {
+    const blatt = InfoBottomSheet.instance?.sheet;
+    if (!blatt) return;
+    blatt.style.transition = '';
+    blatt.style.transform = '';
+  }
+
+  /** Ist gerade ein Blatt offen? */
+  public static get istOffen(): boolean {
+    return Boolean(InfoBottomSheet.instance?.sheet?.isConnected);
   }
 
   private render(options: { title: string; content: string; icon?: string }): void {
@@ -148,12 +176,16 @@ export class InfoBottomSheet {
       overlayEl.classList.remove('bottomsheet-overlay-visible');
       overlayEl.addEventListener('transitionend', () => overlayEl.remove(), { once: true });
       // Fallback: remove after timeout if transitionend doesn't fire
-      setTimeout(() => { if (overlayEl.parentNode) overlayEl.remove(); }, 400);
+      setTimeout(() => {
+        if (overlayEl.parentNode) overlayEl.remove();
+      }, 400);
     }
     if (sheetEl) {
       sheetEl.classList.remove('bottomsheet-visible');
       sheetEl.addEventListener('transitionend', () => sheetEl.remove(), { once: true });
-      setTimeout(() => { if (sheetEl.parentNode) sheetEl.remove(); }, 400);
+      setTimeout(() => {
+        if (sheetEl.parentNode) sheetEl.remove();
+      }, 400);
     }
 
     // Restore focus

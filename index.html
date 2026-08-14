@@ -8,7 +8,7 @@
     />
     <!-- Grundfarbe der Browserleiste; das Skript unten zieht sie vor dem
          ersten Bild auf hell oder dunkel nach. -->
-    <meta name="theme-color" content="#f8fafc" />
+    <meta name="theme-color" content="#0d9488" />
     <meta
       name="description"
       content="SoundFuchs – Maschinengeräusche lokal am Gerät vergleichen. Vergleich statt Diagnose."
@@ -59,14 +59,20 @@
           }
         }
 
-        // Die Browserleiste soll dieselbe Farbe tragen wie der Seitengrund,
-        // damit sie nicht als Fremdkörper über der App steht.
+        // Die Browserleiste trägt die Leitfarbe, in beiden Helligkeiten.
+        //
+        // Bis zum 14.08.2026 nahm sie den Seitengrund an, damit sie nicht als
+        // Fremdkörper über der App steht. Das war nicht falsch, aber es ist
+        // nicht der Familienzug: TourFuchs setzt `theme-color` fest auf
+        // #0d9488, und der grüne Streifen ganz oben ist das Erste, was man von
+        // der App sieht — auf dem Handy noch vor dem eigenen Kopfbereich.
+        // Deshalb hier dasselbe. Die Funktion bleibt, weil das Umschalten der
+        // Helligkeit sie weiterhin aufruft; sie setzt jetzt in beiden Fällen
+        // denselben Wert.
         function syncBrowserChrome() {
           const meta = document.querySelector('meta[name="theme-color"]');
           if (!meta) return;
-          const dunkel =
-            window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-          meta.setAttribute('content', dunkel ? '#0f172a' : '#f8fafc');
+          meta.setAttribute('content', '#0d9488');
         }
 
         async function loadConfig() {
@@ -124,6 +130,22 @@
            wird sonst auf „Maschine, Ort o…" gequetscht. Das Maskottchen trägt
            die Marke allein; genau dafür ist es da. -->
       <header class="topbar">
+        <!-- Die drei Striche ganz links, wie bei TourFuchs (`#sidebar-toggle`).
+             Sie öffnen dasselbe Schiebefenster wie der Griff am unteren Rand —
+             der dritte Auslöser, und der einzige, den man auf einem Handy mit
+             der linken Hand erreicht. `aria-expanded` sagt Vorlesewerkzeugen,
+             ob offen oder zu. -->
+        <button
+          type="button"
+          id="app-menu-btn"
+          class="topbar-icon-btn topbar-menu-btn"
+          aria-label="Menü öffnen"
+          aria-expanded="false"
+          title="Einstellungen &amp; mehr"
+        >
+          ☰
+        </button>
+
         <img
           class="topbar-mark"
           src="./icons/favicon.svg"
@@ -180,48 +202,20 @@
            Einstellungsdialog. main.ts verdrahtet alle
            `.view-level-btn[data-level]` gemeinsam, deshalb bleiben beide Orte
            ohne Zusatzarbeit im Gleichklang: ein Zustand, zwei Anzeigen. -->
-      <!-- Die beiden Zeichen sind dieselben, die der Umschalter im
-           Einstellungen-Dialog trägt (`.view-level-icon`): das Gesicht für
-           Basis, die spitzen Klammern für Profi. Zwei Zeichen für dieselbe
-           Sache wären zwei Sachen — wer den Schalter einmal im Dialog gesehen
-           hat, erkennt ihn oben wieder.
-
-           `aria-hidden`, weil daneben das Wort steht: Ein Vorlesewerkzeug soll
-           „Basis" sagen, nicht „Bild, Basis". -->
+      <!-- Zeichen als Emoji, nicht als Strichgrafik.
+           TourFuchs schreibt sie direkt in die Beschriftung („🌱 Basis",
+           „🛠️ Profi"). Am 14.08.2026 standen hier zuerst die SVGs aus dem
+           Einstellungen-Dialog; das war konsequent, aber nicht das Vorbild —
+           die Emoji tragen Farbe, sind auf einen Blick unterscheidbar und
+           brauchen keine eigene Regel. Der Dialog behält seine Strichgrafiken,
+           dort stehen sie groß über einer Erklärzeile. -->
       <div class="depth-switch" role="group" aria-label="Ansichtstiefe">
         <button class="view-level-btn depth-seg active" data-level="basic" type="button">
-          <svg
-            class="depth-seg-icon"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-            <line x1="9" y1="9" x2="9.01" y2="9" />
-            <line x1="15" y1="9" x2="15.01" y2="9" />
-          </svg>
+          <span class="depth-seg-icon" aria-hidden="true">🌱</span>
           <span data-i18n="viewLevels.basicLabel">Basis</span>
         </button>
         <button class="view-level-btn depth-seg" data-level="expert" type="button">
-          <svg
-            class="depth-seg-icon"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <polyline points="16 18 22 12 16 6" />
-            <polyline points="8 6 2 12 8 18" />
-            <line x1="12" y1="2" x2="12" y2="22" />
-          </svg>
+          <span class="depth-seg-icon" aria-hidden="true">🛠️</span>
           <span data-i18n="viewLevels.expertLabel">Profi</span>
         </button>
       </div>
