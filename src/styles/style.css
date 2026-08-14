@@ -10859,8 +10859,23 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   font-weight: 700;
   color: var(--text-muted);
   display: flex;
+  /* `.view-level-btn` stellt für den großen Umschalter im Dialog auf Spalte —
+     dort steht das Zeichen über der Beschriftung und darunter noch eine
+     Erklärzeile. Oben in der Kopfleiste ist dafür kein Platz und auch kein
+     Grund: Zeichen und Wort nebeneinander halten die Pille flach. Diese Regel
+     steht weiter unten in der Datei und gewinnt daher bei gleicher Stärke. */
+  flex-direction: row;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+}
+
+/* Das Zeichen nimmt die Farbe des Segments an (`stroke: currentColor` im
+   Markup), wird also mit dem aktiven Segment hell und ist sonst so gedämpft
+   wie seine Beschriftung. `flex-shrink: 0`, damit es auf schmalen Geräten
+   nicht zusammengedrückt wird, während das Wort umbricht. */
+.depth-seg-icon {
+  flex-shrink: 0;
 }
 
 .depth-seg.active {

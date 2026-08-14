@@ -180,11 +180,48 @@
            Einstellungsdialog. main.ts verdrahtet alle
            `.view-level-btn[data-level]` gemeinsam, deshalb bleiben beide Orte
            ohne Zusatzarbeit im Gleichklang: ein Zustand, zwei Anzeigen. -->
+      <!-- Die beiden Zeichen sind dieselben, die der Umschalter im
+           Einstellungen-Dialog trägt (`.view-level-icon`): das Gesicht für
+           Basis, die spitzen Klammern für Profi. Zwei Zeichen für dieselbe
+           Sache wären zwei Sachen — wer den Schalter einmal im Dialog gesehen
+           hat, erkennt ihn oben wieder.
+
+           `aria-hidden`, weil daneben das Wort steht: Ein Vorlesewerkzeug soll
+           „Basis" sagen, nicht „Bild, Basis". -->
       <div class="depth-switch" role="group" aria-label="Ansichtstiefe">
         <button class="view-level-btn depth-seg active" data-level="basic" type="button">
+          <svg
+            class="depth-seg-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+            <line x1="9" y1="9" x2="9.01" y2="9" />
+            <line x1="15" y1="9" x2="15.01" y2="9" />
+          </svg>
           <span data-i18n="viewLevels.basicLabel">Basis</span>
         </button>
         <button class="view-level-btn depth-seg" data-level="expert" type="button">
+          <svg
+            class="depth-seg-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
+            <line x1="12" y1="2" x2="12" y2="22" />
+          </svg>
           <span data-i18n="viewLevels.expertLabel">Profi</span>
         </button>
       </div>
