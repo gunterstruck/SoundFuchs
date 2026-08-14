@@ -10830,12 +10830,35 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   color: var(--text-primary);
 }
 
+/* `touch-action: none` ist die Bedingung fürs Ziehen: Ohne sie fängt der
+   Browser die senkrechte Geste als Scrollen ab, und pointermove kommt gar
+   nicht erst an. Genauso im Vorbild (TourFuchs, .sheet-grip). */
+.sheet-grip {
+  touch-action: none;
+  cursor: grab;
+}
+
+.sheet-grip:active {
+  cursor: grabbing;
+}
+
 .sheet-grip-line {
   display: block;
   width: 36px;
   height: 4px;
   border-radius: var(--radius-pill);
   background: var(--border-color);
+  transition:
+    background 0.14s ease,
+    width 0.14s ease;
+}
+
+/* Wie im Vorbild: Der Balken wächst und färbt sich, sobald man ihn anfasst —
+   das ist der Hinweis, dass hier gezogen werden kann. */
+.sheet-grip:hover .sheet-grip-line,
+.sheet-grip:active .sheet-grip-line {
+  width: 52px;
+  background: var(--primary-color);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -10963,12 +10986,22 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   gap: 6px;
 }
 
-/* Das Zeichen nimmt die Farbe des Segments an (`stroke: currentColor` im
-   Markup), wird also mit dem aktiven Segment hell und ist sonst so gedämpft
-   wie seine Beschriftung. `flex-shrink: 0`, damit es auf schmalen Geräten
-   nicht zusammengedrückt wird, während das Wort umbricht. */
+/* Emoji, kein Strich-Symbol: TourFuchs schreibt sie direkt in die
+   Beschriftung. Sie bringen ihre Farbe mit und bleiben deshalb auf dem
+   aktiven wie auf dem ruhenden Segment gleich gut lesbar — anders als eine
+   Strichgrafik, die `currentColor` folgt und auf Teal fast verschwindet.
+   `flex-shrink: 0`, damit sie auf schmalen Geräten nicht gequetscht werden. */
 .depth-seg-icon {
   flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Die drei Striche ganz links. Größer als die Strichstärke der übrigen
+   Symbolknöpfe, weil ☰ als Schriftzeichen kommt und sonst zierlich wirkt. */
+.topbar-menu-btn {
+  font-size: 1.35rem;
+  line-height: 1;
 }
 
 .depth-seg.active {

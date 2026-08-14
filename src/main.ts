@@ -917,13 +917,94 @@ class ZanobotApp {
    */
   private setupInfoButton(): void {
     const ausloeser = [
+      document.getElementById('app-menu-btn'),
       document.getElementById('app-info-btn'),
-      document.getElementById('sheet-grip'),
     ].filter((el): el is HTMLElement => el !== null);
 
     for (const knopf of ausloeser) {
       knopf.addEventListener('click', () => this.oeffneEinstellungsfenster());
     }
+
+    this.griffZiehbarMachen();
+  }
+
+  /**
+   * Den Griff am unteren Rand zum Hochziehen machen.
+   *
+   * Vorbild ist TourFuchs (`initSheetGrip` in src/ui/sidebar.js): Ein Zeiger
+   * geht runter, ab vier Pixeln Bewegung gilt es als Ziehen, und das Blatt
+   * folgt dem Finger, statt zu springen. Beim Loslassen entscheidet der Weg,
+   * ob es offen bleibt oder zurückfällt.
+   *
+   * Ein Unterschied zum Vorbild, mit Absicht: Dort tut ein reiner Tipp am
+   * Handy nichts, weil das Blatt ohnehin auf Guckhöhe steht und der Griff nur
+   * seine Größe ändert. Hier ist der Griff der Weg ins Fenster — ein Tipp
+   * muss es öffnen, sonst wäre der Streifen ein Knopf, der nichts tut. Beides
+   * geht: ziehen für die, die es kennen, tippen für alle anderen.
+   */
+  private griffZiehbarMachen(): void {
+    const griff = document.getElementById('sheet-grip');
+    if (!griff) return;
+
+    /** Ab hier ist es ein Ziehen und kein Tipp mehr. */
+    const SCHWELLE = 4;
+    /** So weit muss gezogen sein, damit das Blatt offen bleibt. */
+    const HALTEWEG = 80;
+
+    let startY = 0;
+    let zieht = false;
+    let bewegt = false;
+    let weg = 0;
+
+    griff.addEventListener('pointerdown', (ev) => {
+      startY = ev.clientY;
+      zieht = true;
+      bewegt = false;
+      weg = 0;
+      griff.setPointerCapture?.(ev.pointerId);
+    });
+
+    griff.addEventListener('pointermove', (ev) => {
+      if (!zieht) return;
+      // Nach oben ziehen ist ein negatives dy — der Weg zählt positiv.
+      weg = startY - ev.clientY;
+      if (!bewegt) {
+        if (Math.abs(weg) < SCHWELLE) return;
+        bewegt = true;
+        // Erst jetzt öffnen, und zwar unsichtbar am unteren Rand: Von dort
+        // folgt das Blatt dem Finger, statt aufzuspringen.
+        if (!InfoBottomSheet.istOffen) {
+          this.oeffneEinstellungsfenster();
+          InfoBottomSheet.setzeZugAnteil(0);
+        }
+      }
+      const hoehe = document.querySelector('.bottomsheet')?.getBoundingClientRect().height || 1;
+      InfoBottomSheet.setzeZugAnteil(weg / hoehe);
+    });
+
+    const loslassen = () => {
+      if (!zieht) return;
+      zieht = false;
+      if (!bewegt) return; // reiner Tipp — den erledigt der click-Listener
+      InfoBottomSheet.beendeZug();
+      if (weg < HALTEWEG) InfoBottomSheet.close();
+    };
+
+    griff.addEventListener('pointerup', loslassen);
+    griff.addEventListener('pointercancel', loslassen);
+
+    // Der Tipp wird hier behandelt und nicht über die allgemeine Schleife
+    // oben: Nach einem Ziehen feuert der Browser trotzdem noch `click`, und
+    // der würde das Fenster ein zweites Mal aufbauen — sichtbar als Zucken,
+    // weil `show()` das offene Blatt vorher wegräumt. `bewegt` unterscheidet
+    // die beiden Fälle.
+    griff.addEventListener('click', () => {
+      if (bewegt) {
+        bewegt = false;
+        return;
+      }
+      this.oeffneEinstellungsfenster();
+    });
   }
 
   private setupFooterLinks(): void {
