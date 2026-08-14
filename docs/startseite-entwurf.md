@@ -313,54 +313,78 @@ Der Entwurf nimmt beides: **Zeile mit 42-px-Vorschaubild links**, Zustandspunkt
 am Bild, Name und Ort in der Mitte, Wert rechts. Die Wiedererkennung des Bildes
 zum Preis der Dichte einer Zeile.
 
-## 11. Prüfen als Tour — und warum das der stärkste Teil ist
+## 11. Prüfen als Tour — zurückgezogen (14.08.2026)
 
-Der Vorschlag lautet: *Maschine → Arbeitspunkt → Prüfen*. Das ist **keine neue
-Funktion.** Das Datenmodell führt sie bereits:
+Der Vorschlag lautete: *Maschine → Arbeitspunkt → Prüfen*, mit einem eigenen
+Schritt, in dem man den Arbeitspunkt wählt. Er stand hier als „der stärkste
+Teil", weil das Datenmodell ihn bereits trägt.
+
+**Er wird nicht gebaut.** Nicht weil er falsch wäre, sondern weil die App das
+Problem bereits löst — und besser, als der Vorschlag es vorsah.
+
+### Was tatsächlich passiert
+
+Der Prüfpfad nimmt nicht ein Modell, sondern alle:
 
 ```ts
-export interface SpectralCosineModel {
-  label: string;                    // "Baseline", "Lagerschaden"
-  type: 'healthy' | 'faulty';       // gesund ODER bekannter Fehler
-  …
-}
-export interface WorkPoint {
-  name: string; score: number; isHealthy: boolean;
-}
+// 3-Diagnose.ts
+const partition = partitionModels(this.machine.referenceModels, this.actualSampleRate);
+this.activeModels = partition.usable;          // ALLE brauchbaren
+…
+const diagnosis = classifyWithEngines(this.activeModels, { feature, sampleRate });
 ```
 
-`Machine.referenceModels` ist ein **Feld**, jedes Modell trägt einen Namen und
-die Angabe gesund/fehlerhaft, und `WorkPointRanking` stellt sie bereits als
-Rangliste dar. Die Maschine rechnet also längst mehrklassig.
+`classifyWithEngines` klassifiziert mehrklassig gegen den ganzen Satz und gibt
+in `metadata.detectedState` zurück, welcher Zustand getroffen wurde. Das
+Ergebnis zeigt ihn bereits an:
 
-Nur wählen kann man nicht: `3-Diagnose.ts:485` greift auf
-`referenceModels[0]` zu — das erste Modell, ohne Frage. In `2-Reference.ts`
-steht dazu ein Kommentar über einen Marker, der „still auf `referenceModels[0]`
-zurückfiel".
+```
+Unauffällig | Volllast
+Auffällig   | Lagerschaden (87 %)
+```
 
-**Schritt 2 macht sichtbar, was die App bereits kann.** Das ist der beste
-Grund, den ein Vorschlag haben kann.
+Der Wert wird mit der Prüfung gespeichert (`DiagnosisResult.detectedState`).
 
-### Eine Einschränkung
+### Warum das besser ist als der eigene Vorschlag
 
-Schritt 2 erscheint **nur, wenn es etwas zu wählen gibt.** Bei einer einzigen
-Referenz ist die Frage „welcher Arbeitspunkt?" eine Frage ohne Antwortmöglichkeit
-— dieselbe Sorte Ballast wie eine Leiter für jemanden, der den Weg kennt. Eine
-Referenz: Schritt 2 entfällt, die Tour hat zwei Stationen.
+**Eine Frage vorher wäre eine Fehlerquelle.** Wer den falschen Arbeitspunkt
+wählt, bekommt eine falsche Antwort — und merkt es nicht. Heute kann die App
+so nicht in die Irre geführt werden.
 
-### Nach dem Prüfen
+**Eine Antwort hinterher ist mehr wert als eine Frage vorher.** „Verglichen
+mit: Volllast" sagt dasselbe, kostet keinen Schritt und lehrt nebenbei etwas
+über die Maschine. Aus einer Bedienaufgabe wird ein Befund.
 
-Hier ein eigener Vorschlag, weil die Stelle mehr hergibt als „weitere Optionen":
+**Der Schritt hätte den häufigsten Weg verlängert** — für eine Entscheidung,
+die die Maschine zuverlässiger trifft als der Mensch am Gerät.
 
-Wenn die Prüfung etwas Auffälliges findet und der Techniker später weiß, was
-es war, sollte er **diese Aufnahme als Fehler-Arbeitspunkt hinterlegen**
-können — „das war Lagerschaden". Beim nächsten Mal erkennt die App den Fehler
-beim Namen statt nur „auffällig" zu sagen.
+### „Alle Referenzen ohne Ausnahme"
 
-Das schließt den Kreis: Die mehrklassige Fähigkeit wächst im Betrieb, aus der
-Arbeit heraus, ohne dass jemand Modelle pflegen muss. Es ist auch der einzige
-realistische Weg, an Fehlerbeispiele zu kommen — absichtlich einen Lagerschaden
-herbeizuführen wird niemand.
+Gilt, mit zwei technisch zwingenden Ausnahmen: Modelle mit fremdem
+Merkmals-Layout und solche mit unpassender Abtastrate. Ein Vergleich damit
+ergäbe Unsinn, keine Aussage.
+
+Wichtig ist, dass die App das nicht verschweigt. `partitionModels` trennt, und
+3-Diagnose meldet:
+
+- fallen **alle** heraus → Prüfung bricht ab, mit Grund
+- fallen **einige** heraus → Hinweis `models.layoutOutdatedPartial`
+
+Ein still ausgeschlossenes Fehlermodell wäre eine Fehlerklasse, die nie
+zuschlagen kann. Genau das passiert nicht.
+
+### Was offen bleibt
+
+Der eine Teil aus dem ursprünglichen Abschnitt, den es wirklich nicht gibt:
+**eine auffällige Aufnahme nachträglich als Fehler-Arbeitspunkt hinterlegen.**
+
+Fehlerzustände lassen sich heute nur anlernen, indem man sie *aufnimmt* — ab
+der zweiten Aufnahme fragt die App nach Name und Art (gesund/fehlerhaft).
+Einen gespeicherten Messwert nachträglich zu etikettieren, geht nicht.
+
+Das bleibt der einzige realistische Weg an Fehlerbeispiele: Absichtlich einen
+Lagerschaden herbeizuführen wird niemand. Es ist ein eigenes Vorhaben, kein
+Teil dieses Entwurfs.
 
 ## 12. Was ich als Produktowner entschieden habe
 
@@ -373,7 +397,7 @@ herbeizuführen wird niemand.
 | Bottom-Sheet, hochziehbar | ✅ übernommen, **mit beschriftetem Griff und Ablageregel** |
 | Zwei Stufen Basis/Profi | ✅ übernommen |
 | Keine Landkarte | ✅ einig |
-| Tour: Maschine → Arbeitspunkt → Prüfen | ✅ **stärkster Teil**, Datenmodell trägt ihn schon |
+| Tour: Maschine → Arbeitspunkt → Prüfen | ❌ **zurückgezogen** — die App löst es bereits besser, siehe §11 |
 | Tresor | ⏸ vertagt, im Sheet als „später" sichtbar |
 | Live-Demos hinter Info | ⏸ vertagt, Platz vorgesehen |
 
