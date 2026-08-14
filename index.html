@@ -752,6 +752,76 @@
                       >Bitte gib einen Maschinennamen ein.</span
                     >
                   </div>
+                  <!--
+                    Kunde — der Ort, an dem die Maschine steht.
+                    Steht bewusst vor der Maschinen-ID: Wo eine Maschine steht,
+                    weiß man beim Anlegen; eine SAP-Nummer trägt man später
+                    nach. Voreinstellung ist "kein Kunde", das Feld kostet also
+                    niemanden etwas. Siehe docs/kunden-und-karte.md.
+                  -->
+                  <div class="input-group" id="machine-customer-form">
+                    <label for="machine-customer-select" data-i18n="customers.label"
+                      >Kunde (optional)</label
+                    >
+                    <select id="machine-customer-select" class="machine-input">
+                      <!-- Die beiden festen Einträge stehen hier und nicht im
+                           Quelltext, damit sie beim Sprachwechsel mitziehen.
+                           Die Kunden selbst werden dazwischen eingefügt. -->
+                      <option value="" data-i18n="customers.none">— kein Kunde —</option>
+                      <option value="__neu__" data-i18n="customers.new">+ Neuer Kunde</option>
+                    </select>
+                    <div id="new-customer-fields" class="new-customer-fields" style="display: none">
+                      <div class="input-group input-group-required">
+                        <label for="customer-name-input">
+                          <span data-i18n="customers.nameLabel">Firmenname</span
+                          ><span class="required-star">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="customer-name-input"
+                          class="machine-input"
+                          maxlength="80"
+                          autocomplete="off"
+                          placeholder="z.B. Müller Guss GmbH"
+                          data-i18n-placeholder="customers.namePlaceholder"
+                        />
+                      </div>
+                      <div class="customer-place-row">
+                        <div class="input-group input-group-required">
+                          <label for="customer-plz-input">
+                            <span data-i18n="customers.plzLabel">PLZ</span
+                            ><span class="required-star">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            id="customer-plz-input"
+                            class="machine-input"
+                            inputmode="numeric"
+                            maxlength="5"
+                            autocomplete="postal-code"
+                            placeholder="45127"
+                            data-i18n-placeholder="customers.plzPlaceholder"
+                          />
+                        </div>
+                        <div class="input-group">
+                          <label for="customer-ort-input" data-i18n="customers.ortLabel">Ort</label>
+                          <input
+                            type="text"
+                            id="customer-ort-input"
+                            class="machine-input"
+                            maxlength="80"
+                            autocomplete="address-level2"
+                          />
+                        </div>
+                      </div>
+                      <span class="input-hint" id="customer-plz-hint" role="status"></span>
+                      <span class="input-hint" data-i18n="customers.hint"
+                        >Aus der Postleitzahl kommen Ort und Kartenpunkt — mehr wird nicht
+                        gebraucht.</span
+                      >
+                    </div>
+                  </div>
+
                   <div class="input-group" data-view-level="advanced">
                     <label for="machine-id-input" data-i18n="identify.machineId"
                       >Maschinen-ID (optional)</label
@@ -4242,6 +4312,11 @@
         <div class="modal-body" id="machine-detail-body">
           <div class="machine-detail-info">
             <h4 id="machine-detail-name" class="machine-detail-name">—</h4>
+            <!-- Der Kunde, bei dem die Maschine steht. Bleibt leer und
+                 unsichtbar, solange keiner hinterlegt ist. -->
+            <p id="machine-detail-customer" class="machine-detail-customer" style="display: none">
+              —
+            </p>
             <p id="machine-detail-id" class="machine-detail-id">—</p>
           </div>
           <!-- Kurzer Zeitstrahl der letzten Prüfungen. Er ist eine Vorschau,

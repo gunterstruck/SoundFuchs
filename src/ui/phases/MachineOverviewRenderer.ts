@@ -21,6 +21,7 @@ import {
   saveMachine,
   getMachine,
   getDiagnosesForMachine,
+  getCustomer,
 } from '@data/db.js';
 import { notify } from '@utils/notifications.js';
 import { logger } from '@utils/logger.js';
@@ -109,9 +110,18 @@ export class MachineOverviewRenderer {
     // untereinander und beanspruchten zwei Zeilen fuer eine Aussage. Das
     // Zustandswort traegt jetzt der farbige Punkt vor dem Namen, den es
     // ohnehin schon gab - eine Farbe liest sich schneller als ein Wort.
+    // Steht die Maschine bei einem Kunden, tritt dessen Name an die Stelle des
+    // freien Ortsfelds — nicht daneben. Die Nebenzeile bleibt einzeilig; wer
+    // beides zeigt, bekommt auf einem Telefon drei Punkte statt einer Angabe.
+    let ortsangabe = machine.location;
+    if (machine.customerId) {
+      const kunde = await getCustomer(machine.customerId);
+      if (kunde) ortsangabe = kunde.name;
+    }
+
     const machineMeta = document.createElement('p');
     machineMeta.className = `machine-meta ${statusClass}`;
-    machineMeta.textContent = [machine.location, timeLabel].filter(Boolean).join(' · ');
+    machineMeta.textContent = [ortsangabe, timeLabel].filter(Boolean).join(' · ');
 
     machineInfo.appendChild(machineName);
     machineInfo.appendChild(machineMeta);

@@ -65,6 +65,14 @@ export interface Machine {
    * Ohne ihn bleibt alles, wie es war: Der Bestand funktioniert vollständig
    * ohne einen einzigen Kunden. Erst wer Kunden anlegt, bekommt die Karte
    * und die Gruppierung dazu.
+   *
+   * ⚠ NICHT ZU VERWECHSELN mit dem `c`-Parameter aus dem NFC-Link, den
+   * `HashRouter` intern ebenfalls `customerId` nennt. Der ist kein Kunde,
+   * sondern der Name einer Referenz-Sammlung auf GitHub Pages — die
+   * Oberfläche heißt ihn deshalb längst „Referenz-Sammlung (c)". Er landet
+   * NIE hier, sondern ausschließlich in `referenceDbUrl` (siehe oben).
+   * Wer ihn eines Tages hierher schreibt, hängt jede über NFC eingerichtete
+   * Maschine an einen Kunden, den es nicht gibt.
    */
   customerId?: string;
 

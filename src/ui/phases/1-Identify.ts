@@ -34,6 +34,7 @@ import { NfcOnboardingController } from './NfcOnboardingController.js';
 import { ScannerController } from './ScannerController.js';
 import { DashboardRenderer } from './DashboardRenderer.js';
 import { QuickSelectList } from './QuickSelectList.js';
+import { CustomerField } from './CustomerField.js';
 
 export class IdentifyPhase {
   private onMachineSelected: (machine: Machine) => void;
@@ -66,6 +67,8 @@ export class IdentifyPhase {
   private fleetCreationModal: FleetCreationModal;
   // Per-machine detail modal (extracted)
   private machineDetailModal: MachineDetailModal;
+  // Kundenfeld im Anlegen-Formular (docs/kunden-und-karte.md)
+  private customerField: CustomerField = new CustomerField();
 
   /** Sprint 4 UX: Current workflow mode */
   private currentWorkflowMode: 'series' | 'fleet' = 'series';
@@ -149,6 +152,9 @@ export class IdentifyPhase {
 
     // QR/Barcode scanner modal (own controller)
     this.scanner.init();
+
+    // Kundenfeld im Anlegen-Formular
+    this.customerField.init();
 
     // Create machine button
     const createBtn = document.getElementById('create-machine-btn');
@@ -871,6 +877,15 @@ export class IdentifyPhase {
       ) as HTMLInputElement | null;
       const fleetGroup = fleetGroupInput?.value?.trim() || null;
 
+      // Kunde: entweder ein bestehender oder ein hier neu angelegter. Zuletzt
+      // ausgewertet, weil dabei ein Kunde entsteht — steht die Maschine noch
+      // vor einer Hürde, hätten wir sonst einen Kunden ohne Maschine.
+      const kundenwahl = await this.customerField.ermittleKunde();
+      if (kundenwahl.fehler) {
+        this.showError(kundenwahl.fehler);
+        return;
+      }
+
       // Create new machine with service technician fields
       const machine: Machine = {
         id,
@@ -883,6 +898,8 @@ export class IdentifyPhase {
         notes,
         // Sprint 4 UX: Optional fleet group
         fleetGroup,
+        // Kunde (optional) — der Ort, an dem die Maschine steht
+        customerId: kundenwahl.kundeId,
       };
 
       await saveMachine(machine);
@@ -903,6 +920,7 @@ export class IdentifyPhase {
       if (locationInput) locationInput.value = '';
       if (notesInput) notesInput.value = '';
       if (fleetGroupInput) fleetGroupInput.value = '';
+      this.customerField.zuruecksetzen();
 
       // Sprint 4 UX: Update fleet group autocomplete suggestions
       this.populateFleetGroupSuggestions();

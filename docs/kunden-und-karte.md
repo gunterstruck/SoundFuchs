@@ -1,7 +1,7 @@
 # Kunden und Karte
 
-*Ausgearbeitet am 14.08.2026, nachdem der Auftraggeber einen Kompromiss zur
-Karten-Frage vorgeschlagen hat.*
+_Ausgearbeitet am 14.08.2026, nachdem der Auftraggeber einen Kompromiss zur
+Karten-Frage vorgeschlagen hat._
 
 ## 1. Warum das den Streit auflöst
 
@@ -34,14 +34,14 @@ Begriff legt dieses Dokument an.
 Bewusst schmal. TourFuchs führt Umsatz, Kanal, Bezirk, Zuständigkeit — das ist
 Vertriebswissen und gehört nicht hierher. Ein Kunde in SoundFuchs ist:
 
-| Feld | Pflicht | Herkunft |
-|---|---|---|
-| `id` | ja | vergeben |
-| `name` | ja | eingegeben |
-| `plz` | ja | eingegeben |
-| `ort` | nein | **füllt sich aus der PLZ selbst** |
-| `lat`, `lng` | nein | aus der PLZ berechnet |
-| `geo` | ja | `plz` \| `none` |
+| Feld         | Pflicht | Herkunft                          |
+| ------------ | ------- | --------------------------------- |
+| `id`         | ja      | vergeben                          |
+| `name`       | ja      | eingegeben                        |
+| `plz`        | ja      | eingegeben                        |
+| `ort`        | nein    | **füllt sich aus der PLZ selbst** |
+| `lat`, `lng` | nein    | aus der PLZ berechnet             |
+| `geo`        | ja      | `plz` \| `none`                   |
 
 Mehr nicht. Straße, Ansprechpartner, Telefon: erst, wenn jemand danach fragt.
 
@@ -96,11 +96,11 @@ startet. Kein neues Blatt, kein zweiter Weg.
 Ehrlich beziffert, weil der Installationsumfang in dieser App ein Thema ist
 (die Symbole wurden von 3,3 MB auf 88 KB gedrückt):
 
-| Posten | Größe |
-|---|---|
-| `plz-centroids.json` (8.300 PLZ) | 226 KB |
-| `plz-places.json` (Ortsnamen) | 175 KB |
-| Leaflet | ~150 KB |
+| Posten                           | Größe   |
+| -------------------------------- | ------- |
+| `plz-centroids.json` (8.300 PLZ) | 226 KB  |
+| `plz-places.json` (Ortsnamen)    | 175 KB  |
+| Leaflet                          | ~150 KB |
 
 Zusammen gut 550 KB. Das ist kein Nichts, aber es ist einmalig, es liegt
 offline vor, und es kauft eine ganze Ebene.
@@ -126,9 +126,9 @@ Genauigkeit vor, die nichts bedeutet.
 
 ## 7. Schnitte
 
-1. **Kunde anlegen** — Entität, PLZ-Eingabe, Ort füllt sich selbst, Maschine
-   bekommt `customerId`. Nützlich ohne jede Karte: Der Bestand lässt sich nach
-   Kunde gruppieren.
+1. **Kunde anlegen** — ✅ steht. Entität, PLZ-Eingabe, Ort füllt sich selbst,
+   Maschine bekommt `customerId`. Nützlich ohne jede Karte: Der Bestand lässt
+   sich nach Kunde gruppieren.
 2. **Die Karte** — Leaflet, Marker, Zoom.
 3. **Das Kundenblatt** — Name, Ort, seine Maschinen, Tipp führt in die
    Maschinenansicht.
@@ -137,3 +137,28 @@ Genauigkeit vor, die nichts bedeutet.
 
 Schnitt 1 steht für sich und ist der einzige, der ohne Netz auskommt. Er
 kommt zuerst.
+
+### Was Schnitt 1 geworden ist
+
+Das Kundenfeld sitzt im Anlegen-Formular der Maschine, nicht in einer eigenen
+Verwaltung. Wer eine Maschine anlegt, weiß in genau diesem Moment, bei wem sie
+steht — später weiß es niemand mehr. Voreingestellt ist „kein Kunde"; wer die
+Auswahl stehen lässt, merkt vom ganzen Vorgang nichts.
+
+Sichtbar wird der Kunde an zwei Stellen: in der Nebenzeile der Maschinenzeile
+(an der Stelle des freien Ortsfelds, nicht daneben — die Zeile bleibt
+einzeilig) und im Maschinenblatt unter dem Namen.
+
+**Eine Namensgleichheit, die täuscht.** `HashRouter` führt intern ebenfalls ein
+`customerId` — das ist der `c`-Parameter aus dem NFC-Link und **kein Kunde**,
+sondern der Name einer Referenz-Sammlung; die Oberfläche heißt ihn längst
+„Referenz-Sammlung (c)". Er landet ausschließlich in `referenceDbUrl` und nie
+an der Maschine. In `types.ts` steht das jetzt als Warnung, weil ein
+Verwechseln jede über NFC eingerichtete Maschine an einen Kunden hängen würde,
+den es nicht gibt.
+
+Bewacht wird der Schnitt von `npm run attention-check`: „+ Neuer Kunde" muss
+die Felder aufklappen, die PLZ 45127 muss „Essen" nachtragen, und der Kunde
+muss danach an seiner Maschine erscheinen. Der mittlere Punkt hängt an den
+beiden bewusst nicht vorgeladenen Geodaten-Dateien — verschiebt sie jemand,
+fällt es hier auf und nirgends sonst.

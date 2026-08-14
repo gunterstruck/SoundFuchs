@@ -105,6 +105,22 @@ export const en: TranslationDict = {
     closeDialog: 'Close dialog',
   },
 
+  customers: {
+    label: 'Customer (optional)',
+    none: '— no customer —',
+    new: '+ New customer',
+    nameLabel: 'Company name',
+    namePlaceholder: 'e.g. Müller Guss GmbH',
+    plzLabel: 'Postcode',
+    plzPlaceholder: '45127',
+    ortLabel: 'Town',
+    hint: 'The postcode supplies town and map position — nothing else is needed.',
+    nameRequired: 'Please enter a company name for the customer.',
+    plzInvalid: 'Please enter a five-digit German postcode.',
+    plzFound: '{{ort}} — taken from the postcode.',
+    plzUnknown: 'This postcode is unknown. The customer is created, but without a map position.',
+  },
+
   // ============================================================================
   // PHASE 1: IDENTIFY (Machine Selection)
   // ============================================================================
