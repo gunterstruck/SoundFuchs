@@ -90,6 +90,22 @@ export const zh: TranslationDict = {
     nfcDiagnosisPrompt: '检测到机器。现在检查状态吗？',
     closeDialog: '关闭对话框',
   },
+  customers: {
+    label: '客户（可选）',
+    none: '— 无客户 —',
+    new: '+ 新建客户',
+    nameLabel: '公司名称',
+    namePlaceholder: '例如 Müller Guss GmbH',
+    plzLabel: '邮政编码',
+    plzPlaceholder: '45127',
+    ortLabel: '城市',
+    hint: '邮政编码即可确定城市和地图位置，无需其他信息。',
+    nameRequired: '请输入客户的公司名称。',
+    plzInvalid: '请输入五位德国邮政编码。',
+    plzFound: '{{ort}} — 取自邮政编码。',
+    plzUnknown: '未知的邮政编码。客户仍会创建，但没有地图位置。',
+  },
+
   identify: {
     addMachine: '扫描或新建',
     scanQrCode: '扫描二维码',

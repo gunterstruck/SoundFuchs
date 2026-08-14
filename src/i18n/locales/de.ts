@@ -108,6 +108,25 @@ export const de: TranslationDict = {
   },
 
   // ============================================================================
+  // KUNDEN (der Ort, an dem Maschinen stehen — docs/kunden-und-karte.md)
+  // ============================================================================
+  customers: {
+    label: 'Kunde (optional)',
+    none: '— kein Kunde —',
+    new: '+ Neuer Kunde',
+    nameLabel: 'Firmenname',
+    namePlaceholder: 'z.B. Müller Guss GmbH',
+    plzLabel: 'PLZ',
+    plzPlaceholder: '45127',
+    ortLabel: 'Ort',
+    hint: 'Aus der Postleitzahl kommen Ort und Kartenpunkt — mehr wird nicht gebraucht.',
+    nameRequired: 'Bitte einen Firmennamen für den Kunden eingeben.',
+    plzInvalid: 'Bitte eine fünfstellige Postleitzahl eingeben.',
+    plzFound: '{{ort}} — aus der Postleitzahl übernommen.',
+    plzUnknown: 'Diese Postleitzahl ist unbekannt. Der Kunde wird angelegt, aber ohne Kartenpunkt.',
+  },
+
+  // ============================================================================
   // PHASE 1: IDENTIFY (Machine Selection)
   // ============================================================================
   identify: {

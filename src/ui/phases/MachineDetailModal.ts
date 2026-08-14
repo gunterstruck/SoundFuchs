@@ -17,6 +17,7 @@ import {
   getDiagnosesForMachine,
   deleteReferenceModel,
   promoteToBaseline,
+  getCustomer,
 } from '@data/db.js';
 import { ReferenceDbService } from '@data/ReferenceDbService.js';
 import { notify } from '@utils/notifications.js';
@@ -90,6 +91,9 @@ export class MachineDetailModal {
     nameEl.textContent = machine.name;
     idEl.textContent = machine.id;
 
+    // Kunde nachtragen, sobald er aus dem Bestand kommt.
+    void this.renderCustomer(machine);
+
     // Acoustic fingerprint "portrait" for this machine (radial signature of
     // its reference spectrum), shown prominently above the name.
     const infoEl = modal.querySelector('.machine-detail-info');
@@ -159,6 +163,36 @@ export class MachineDetailModal {
     // Show modal
     modal.style.display = 'flex';
     logger.info(`Machine detail modal opened for: ${machine.name} (${machine.id})`);
+  }
+
+  /**
+   * Den Kunden zeigen, bei dem die Maschine steht.
+   *
+   * Eine Zeile: Name, darunter Postleitzahl und Ort. Mehr führt der Kunde
+   * hier nicht (docs/kunden-und-karte.md §2). Hängt keiner an der Maschine,
+   * bleibt die Zeile weg — eine leere Zeile „Kunde: —" wäre eine Angabe über
+   * nichts.
+   */
+  private async renderCustomer(machine: Machine): Promise<void> {
+    const zeile = document.getElementById('machine-detail-customer');
+    if (!zeile) return;
+
+    if (!machine.customerId) {
+      zeile.style.display = 'none';
+      return;
+    }
+
+    const kunde = await getCustomer(machine.customerId);
+    if (!kunde) {
+      // Der Kunde wurde gelöscht, die Maschine hat es überlebt — genau so ist
+      // es gedacht (siehe deleteCustomer in db.ts).
+      zeile.style.display = 'none';
+      return;
+    }
+
+    const ort = [kunde.plz, kunde.ort].filter(Boolean).join(' ');
+    zeile.textContent = ort ? `${kunde.name} · ${ort}` : kunde.name;
+    zeile.style.display = '';
   }
 
   /**

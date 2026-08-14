@@ -512,6 +512,93 @@ try {
 
     await ctx.close();
   }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // KUNDE ANLEGEN
+  //
+  // Der Kunde ist die Ebene, auf der später die Karte steht
+  // (docs/kunden-und-karte.md). Drei Dinge müssen dafür zusammenspielen, und
+  // jedes einzelne kann still ausfallen:
+  //
+  //   1. „+ Neuer Kunde" muss die Felder aufklappen. Tut es das nicht, sitzt
+  //      man vor einer Auswahl, die eine Möglichkeit nennt, die es nicht gibt.
+  //   2. Die Postleitzahl muss den Ort nachtragen. Genau dafür ist die
+  //      Postleitzahl gewählt worden statt einer Adresse — trägt sie nichts
+  //      nach, ist die Entscheidung sinnlos geworden.
+  //   3. Der angelegte Kunde muss an der Maschine ankommen und in der Liste
+  //      auftauchen. Sonst hat man Daten angelegt, die nirgends erscheinen.
+  //
+  // Punkt 2 hängt an zwei Dateien, die absichtlich nicht vorgeladen werden.
+  // Wenn jemand `globPatterns` ändert oder die Dateien verschiebt, fällt genau
+  // hier auf, dass der Ort leer bleibt — und nirgends sonst.
+  {
+    const ctx = await browser.newContext({
+      viewport: FORMATE[0].viewport,
+      hasTouch: true,
+      isMobile: true,
+      locale: 'de-DE',
+    });
+    const page = await ctx.newPage();
+    await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2000);
+
+    const cta = page.locator('#empty-state-cta');
+    if (await cta.isVisible().catch(() => false)) {
+      await cta.click();
+      await page.waitForTimeout(1000);
+    }
+
+    const auswahl = page.locator('#machine-customer-select');
+    const auswahlDa = await auswahl.isVisible().catch(() => false);
+
+    let felderDa = false;
+    let ort = '';
+    let inListe = false;
+
+    if (auswahlDa) {
+      await auswahl.selectOption('__neu__');
+      await page.waitForTimeout(400);
+      felderDa = await page
+        .locator('#customer-name-input')
+        .isVisible()
+        .catch(() => false);
+
+      if (felderDa) {
+        await page.locator('#customer-name-input').fill('Müller Guss GmbH');
+        await page.locator('#customer-plz-input').fill('45127');
+        // Die Ortsdatei kommt erst jetzt aus dem Netz.
+        await page.waitForTimeout(1500);
+        ort = await page.locator('#customer-ort-input').inputValue();
+
+        await page.locator('#machine-name-input').fill('Pumpe 17');
+        await page.locator('#create-machine-btn').click();
+        await page.waitForTimeout(2000);
+
+        // Der Kundenname steht in der Nebenzeile der Maschinenzeile.
+        inListe = await page
+          .locator('.machine-item .machine-meta', { hasText: 'Müller Guss' })
+          .first()
+          .isVisible()
+          .catch(() => false);
+      }
+    }
+
+    console.log('\n=== Kunde anlegen ===');
+    console.log(`Auswahlfeld               ${auswahlDa ? 'sichtbar' : 'FEHLT'}`);
+    console.log(`Felder nach „Neuer Kunde" ${felderDa ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Ort aus PLZ 45127         ${ort || '(leer)'}`);
+    console.log(`Kunde an der Maschine     ${inListe ? 'sichtbar' : 'NICHT sichtbar'}`);
+
+    pruefe(auswahlDa, 'Kunde: das Auswahlfeld fehlt im Anlegen-Formular');
+    pruefe(felderDa, 'Kunde: „+ Neuer Kunde" klappt die Felder nicht auf — die Auswahl tut nichts');
+    pruefe(
+      ort === 'Essen',
+      `Kunde: PLZ 45127 trägt den Ort nicht nach (gefunden: „${ort}") — die PLZ-Daten kommen nicht an`
+    );
+    pruefe(inListe, 'Kunde: der angelegte Kunde erscheint nicht an seiner Maschine');
+
+    await ctx.close();
+  }
 } finally {
   await browser.close();
   vorschau.kill();

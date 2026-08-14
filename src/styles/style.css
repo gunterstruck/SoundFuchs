@@ -923,6 +923,40 @@ body {
   margin-bottom: var(--spacing-xs);
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   KUNDE ANLEGEN — die Felder, die hinter "+ Neuer Kunde" aufklappen
+
+   Sie stehen eingerueckt und abgesetzt, damit sichtbar bleibt, dass sie zum
+   Kunden gehoeren und nicht zur Maschine. Ohne diese Absetzung stuenden im
+   Formular fuenf gleich aussehende Felder untereinander, von denen drei etwas
+   ganz anderes beschreiben.
+   ──────────────────────────────────────────────────────────────────────────── */
+.new-customer-fields {
+  margin-top: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  border-left: 3px solid rgba(var(--primary-rgb), 0.35);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: rgba(var(--primary-rgb), 0.04);
+}
+
+.new-customer-fields .input-group:last-of-type {
+  margin-bottom: 0;
+}
+
+/* PLZ und Ort in einer Zeile: die PLZ braucht fuenf Zeichen, der Ort den Rest.
+   Zwei volle Zeilen fuer zusammen acht Zeichen waeren verschenkter Platz. */
+.customer-place-row {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: var(--spacing-xs);
+}
+
+@media (max-width: 360px) {
+  .customer-place-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .machine-input {
   width: 100%;
   padding: 0.75rem;
@@ -1693,6 +1727,15 @@ body {
   font-size: 0.8rem;
   color: var(--text-muted);
   font-family: var(--font-mono);
+}
+
+/* Der Kunde im Maschinenblatt: eine Zeile zwischen Name und Kennung. Er steht
+   naeher am Namen als an der Kennung, weil er zur Frage "welche Maschine ist
+   das" gehoert und nicht zur Verwaltung. */
+.machine-detail-customer {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
 }
 
 /* Machine detail: compact health-status summary (last result + trend + ref quality) */

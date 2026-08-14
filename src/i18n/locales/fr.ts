@@ -90,6 +90,22 @@ export const fr: TranslationDict = {
     nfcDiagnosisPrompt: "Machine détectée. Vérifier l'état maintenant ?",
     closeDialog: 'Fermer le dialogue',
   },
+  customers: {
+    label: 'Client (facultatif)',
+    none: '— aucun client —',
+    new: '+ Nouveau client',
+    nameLabel: "Nom de l'entreprise",
+    namePlaceholder: 'p. ex. Müller Guss GmbH',
+    plzLabel: 'Code postal',
+    plzPlaceholder: '45127',
+    ortLabel: 'Ville',
+    hint: 'Le code postal fournit la ville et le point sur la carte — rien de plus.',
+    nameRequired: "Veuillez saisir le nom de l'entreprise du client.",
+    plzInvalid: 'Veuillez saisir un code postal allemand à cinq chiffres.',
+    plzFound: '{{ort}} — repris du code postal.',
+    plzUnknown: 'Code postal inconnu. Le client est créé, mais sans point sur la carte.',
+  },
+
   identify: {
     addMachine: 'Scanner ou créer',
     scanQrCode: 'Scanner le code QR',
