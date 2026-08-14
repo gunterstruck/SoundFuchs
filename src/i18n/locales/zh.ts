@@ -509,6 +509,7 @@ export const zh: TranslationDict = {
   },
   update: {
     available: {
+      later: '稍后',
       title: '有新版本可用',
       message: '新版本已就绪。您的数据将保留。',
       action: '更新',
