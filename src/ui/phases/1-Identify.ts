@@ -108,7 +108,6 @@ export class IdentifyPhase {
     this.overviewRenderer = new MachineOverviewRenderer({
       getStatusLabel: (status) => this.getStatusLabel(status),
       formatRelativeTime: (timestamp) => this.formatRelativeTime(timestamp),
-      onMachineSelect: (machine) => void this.handleMachineSelect(machine),
       onRefresh: () => this.refreshMachineLists(),
       showHistory: (machine) => void this.machineHistoryModal.show(machine),
       showDetails: (machine) => void this.handleMachineDetails(machine),
@@ -1553,12 +1552,14 @@ export class IdentifyPhase {
   }
 
   /**
-   * Handle machine selection from overview
+   * Eine Maschine in den Prüf-Ablauf laden.
    *
-   * UX: Antippen = LADEN. Der 90-%-Fall ist „diese Maschine jetzt prüfen" —
-   * der Umweg über das Detail-Modal (+ „Maschine laden"-Tap) entfällt.
-   * Verwaltung (⭐/Löschen/Verlauf) bleibt über den ⓘ-Button am Eintrag
-   * erreichbar (öffnet weiterhin das Detail-Modal, s. handleMachineDetails).
+   * Diesen Weg nehmen alle Anstöße, bei denen die Maschine schon feststeht:
+   * Scanner und NFC (s. handleMachineId), die Schnellauswahl und die
+   * Flottenliste. Der Tipp auf eine Zeile der Übersicht gehört seit dem
+   * 14.08.2026 nicht mehr dazu — der öffnet die Maschinenansicht
+   * (s. handleMachineDetails), und von dort geht es mit einem zweiten,
+   * bewussten Tipp weiter ins Prüfen.
    */
   private async handleMachineSelect(machine: Machine): Promise<void> {
     logger.info(`Machine selected from overview: ${machine.name} (${machine.id})`);
@@ -1574,7 +1575,20 @@ export class IdentifyPhase {
     this.onMachineSelected(freshMachine);
   }
 
-  /** Detail-Modal (⭐/Löschen/Verlauf) für einen Listeneintrag öffnen. */
+  /**
+   * Die Maschinenansicht von außen öffnen — heute die Suche in der Kopfleiste.
+   *
+   * Ein Treffer soll dasselbe zeigen wie ein Tipp auf die Zeile, sonst hätte
+   * dieselbe Maschine je nach Weg zwei Gesichter.
+   */
+  public showMachineView(machine: Machine): void {
+    void this.handleMachineDetails(machine);
+  }
+
+  /**
+   * Die Maschinenansicht öffnen — Zustand, Zeitstrahl, hinterlegte Zustände und
+   * der Knopf, der die Prüfung startet. Ziel des Zeilen-Tipps und der Suche.
+   */
   private async handleMachineDetails(machine: Machine): Promise<void> {
     const freshMachine = await getMachine(machine.id);
     if (!freshMachine) {

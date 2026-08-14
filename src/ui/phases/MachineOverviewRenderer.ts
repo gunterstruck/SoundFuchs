@@ -38,13 +38,11 @@ export interface MachineOverviewDeps {
   getStatusLabel: (status: DiagnosisResult['status']) => string;
   /** Relative time string (e.g. "2 days ago") for a timestamp. */
   formatRelativeTime: (timestamp: number) => string;
-  /** Open a machine (card click). */
-  onMachineSelect: (machine: Machine) => void;
   /** Reload all machine lists (after a delete). */
   onRefresh: () => Promise<void>;
   /** Open the per-machine history modal. */
   showHistory: (machine: Machine) => void;
-  /** Open the per-machine detail modal (⭐/Löschen/Verlauf) via ⓘ button. */
+  /** Open the machine view (Zeilen-Tipp) — von dort aus wird geprüft. */
   showDetails: (machine: Machine) => void;
 }
 
@@ -262,31 +260,22 @@ export class MachineOverviewRenderer {
       });
     }
 
-    // UX: ⓘ-Button — Detail-Modal (⭐/Löschen/Verlauf) bleibt erreichbar,
-    // obwohl der Karten-Tap jetzt DIREKT lädt (kein Umweg mehr).
-    const detailsBtn = document.createElement('button');
-    detailsBtn.className = 'machine-details-btn';
-    detailsBtn.setAttribute('aria-label', t('identify.machineDetails'));
-    detailsBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="16" x2="12" y2="12"></line>
-        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-    </svg>`;
-    detailsBtn.addEventListener('click', (e) => {
-      e.stopPropagation(); // Karten-Tap (= Laden) nicht auslösen
-      this.deps.showDetails(machine);
-    });
-
     // Assemble item
     machineItem.appendChild(machineInfo);
     machineItem.appendChild(machineScore);
-    machineItem.appendChild(detailsBtn);
     machineItem.appendChild(deleteBtn);
     machineItem.appendChild(chevron);
 
-    // Add click handler
-    machineItem.addEventListener('click', () => this.deps.onMachineSelect(machine));
+    // Ein Tipp auf die Zeile ZEIGT die Maschine, er lädt sie nicht mehr direkt
+    // in den Prüf-Ablauf. Wer eine Liste durchsieht, sucht meist erst Auskunft
+    // ("wie steht es um die Pumpe?"); geprüft wird danach, mit einem zweiten,
+    // bewussten Tipp in der Maschinenansicht. Der Scanner- und NFC-Weg bleibt
+    // davon unberührt: Wer ein Etikett scannt, hat die Maschine schon gewählt
+    // und will prüfen — der lädt weiterhin direkt (siehe handleMachineId).
+    //
+    // Damit entfällt auch der frühere ⓘ-Knopf: Zeile und Knopf täten jetzt
+    // dasselbe. Der Chevron bleibt als Hinweis, dass es weitergeht.
+    machineItem.addEventListener('click', () => this.deps.showDetails(machine));
 
     return machineItem;
   }

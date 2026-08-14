@@ -105,7 +105,8 @@ export const fr: TranslationDict = {
     },
     machineDetail: {
       title: 'Machine',
-      select: 'Charger la machine',
+      startCheck: 'Lancer le contrôle',
+      startRecording: 'Enregistrer l\u2019état normal',
     },
     emptyGuide: {
       title: 'Comment fonctionne SoundFuchs',

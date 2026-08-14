@@ -120,6 +120,17 @@ export class MachineDetailModal {
     // Wire up select button (remove old listeners by cloning)
     const newSelectBtn = selectBtn.cloneNode(true) as HTMLButtonElement;
     selectBtn.parentNode!.replaceChild(newSelectBtn, selectBtn);
+
+    // Der Knopf trägt den nächsten Schritt, nicht die Technik dahinter. Wohin
+    // er führt, entscheidet ohnehin der Bestand an Referenzen (s. Router,
+    // onMachineSelected): mit Referenz die Prüf-Sektion, ohne sie die Aufnahme.
+    // Stand hier „Maschine laden", versprach der Knopf einer Maschine ohne
+    // Referenz eine Prüfung, die es noch gar nicht geben kann.
+    const hatReferenz = (machine.referenceModels?.length ?? 0) > 0;
+    newSelectBtn.textContent = hatReferenz
+      ? t('identify.machineDetail.startCheck')
+      : t('identify.machineDetail.startRecording');
+
     newSelectBtn.addEventListener('click', () => {
       this.close();
       this.deps.showNotification(t('identify.success.machineLoaded', { name: machine.name }));

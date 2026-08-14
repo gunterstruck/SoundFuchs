@@ -217,6 +217,16 @@ export class Router {
   }
 
   /**
+   * Die Maschinenansicht für eine Maschine öffnen (Suche in der Kopfleiste).
+   *
+   * Der Router reicht durch, statt dass die Suche sich die Identify-Phase
+   * selbst heraussucht: So bleibt es bei einem Weg von außen in die Phasen.
+   */
+  public showMachineView(machine: Machine): void {
+    this.identifyPhase.showMachineView(machine);
+  }
+
+  /**
    * Called when a machine is selected in Phase 1
    */
   private onMachineSelected(machine: Machine): void {
