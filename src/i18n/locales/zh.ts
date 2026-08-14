@@ -27,6 +27,7 @@ export const zh: TranslationDict = {
     stopRecording: '停止录制',
     saveReference: '保存正常状态',
     continue: '继续',
+    toOverview: '返回总览',
   },
   banner: {
     headline: '系统听起来正常吗?',

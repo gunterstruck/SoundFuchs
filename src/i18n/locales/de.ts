@@ -31,6 +31,7 @@ export const de: TranslationDict = {
     stopRecording: 'Aufnahme stoppen',
     saveReference: 'Normalzustand speichern',
     continue: 'Weiter',
+    toOverview: 'Zur Übersicht',
   },
 
   // ============================================================================

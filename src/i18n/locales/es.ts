@@ -27,6 +27,7 @@ export const es: TranslationDict = {
     stopRecording: 'Detener grabación',
     saveReference: 'Guardar estado normal',
     continue: 'Continuar',
+    toOverview: 'A la vista general',
   },
   banner: {
     headline: '¿El sistema suena normal?',

@@ -2425,12 +2425,17 @@
           >
             Verlauf anzeigen
           </button>
+          <!-- Der Knopf beendet die Prüfung und setzt auf die Grundansicht
+               zurück (Router: resetToGrundansicht). „Weiter" versprach einen
+               nächsten Schritt und lieferte den Weg zurück an den Anfang —
+               daneben steht „Neue Prüfung", die tatsächlich weitergeht. Jetzt
+               sagt die Beschriftung, wo man landet. -->
           <button
             class="modal-btn btn-primary"
             id="close-diagnosis-result-btn"
-            data-i18n="buttons.continue"
+            data-i18n="buttons.toOverview"
           >
-            Weiter
+            Zur Übersicht
           </button>
         </div>
       </div>
