@@ -545,6 +545,7 @@ export const fr: TranslationDict = {
   },
   update: {
     available: {
+      later: 'Plus tard',
       title: 'Nouvelle version disponible',
       message: 'Une nouvelle version est prête. Vos données sont conservées.',
       action: 'Mettre à jour',

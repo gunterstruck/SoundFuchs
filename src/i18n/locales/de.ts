@@ -643,6 +643,7 @@ export const de: TranslationDict = {
   // ============================================================================
   update: {
     available: {
+      later: 'Später',
       title: 'Neue Version verfügbar',
       message: 'Eine neue Version ist bereit. Deine Daten bleiben erhalten.',
       action: 'Aktualisieren',

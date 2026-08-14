@@ -20,8 +20,9 @@ import { logger } from './logger.js';
 import { isMeasurementActive, onMeasurementEnd } from './measurementActivity.js';
 
 const DISMISS_KEY = 'zanobot-update-prompt-shown-at';
-const PROMPT_COOLDOWN_MS = 24 * 60 * 60 * 1000; // re-prompt at most once per day
-const CHECK_INTERVAL_MS = 60 * 60 * 1000; // re-check hourly while the app is open
+const PROMPT_COOLDOWN_MS = 24 * 60 * 60 * 1000; // nur nach ausdrücklichem „Später"
+const CHECK_INTERVAL_MS = 60 * 60 * 1000; // stündlich, solange die App offen ist
+const FOCUS_CHECK_THROTTLE_MS = 5 * 60 * 1000; // beim Zurückkommen, aber nicht ständig
 
 export function initPwaUpdate(): void {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
@@ -40,14 +41,31 @@ export function initPwaUpdate(): void {
     onRegisteredSW(_swUrl, registration) {
       if (!registration) return;
       const check = () => void registration.update().catch(() => {});
-      // On resume from background: re-check and re-evaluate the prompt.
+
+      // Gleich beim Start einmal nachsehen. Ohne das erfährt eine App, die
+      // tagelang als Kachel offen liegt, erst nach einer Stunde von einer
+      // neuen Fassung — oder gar nicht, wenn sie vorher geschlossen wird.
+      check();
+
+      // Beim Zurückkommen aus dem Hintergrund erneut, aber gedrosselt: Wer
+      // zwischen Apps hin- und herspringt, löst sonst im Minutentakt aus.
+      let letzterBlick = 0;
+      const beiRueckkehr = () => {
+        const jetzt = Date.now();
+        if (jetzt - letzterBlick < FOCUS_CHECK_THROTTLE_MS) return;
+        letzterBlick = jetzt;
+        check();
+        maybeShowPrompt();
+      };
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          check();
-          maybeShowPrompt();
-        }
+        if (document.visibilityState === 'visible') beiRueckkehr();
       });
-      // Periodic check while the app stays open.
+      // `focus` zusätzlich zu `visibilitychange`: Auf dem Schreibtisch wechselt
+      // man das Fenster, ohne dass die Seite je unsichtbar wird. So macht es
+      // auch TourFuchs (src/ui/pwaUpdate.js).
+      window.addEventListener('focus', beiRueckkehr);
+
+      // Und turnusmäßig, solange die App offen bleibt.
       setInterval(check, CHECK_INTERVAL_MS);
     },
     onRegisterError(error) {
@@ -86,10 +104,19 @@ export function initPwaUpdate(): void {
     if (promptOnCooldown()) return; // declined recently → at most once per day
 
     promptVisible = true;
-    // Record the show time so an ignored/declined prompt does not reappear for
-    // 24h (across sessions). Accepting it reloads anyway.
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
 
+    // Die Sperre startet NICHT hier.
+    //
+    // Bis zum 14.08.2026 wurde der Zeitpunkt beim Anzeigen weggeschrieben.
+    // Damit schwieg die App 24 Stunden lang über eine neue Fassung, sobald der
+    // Hinweis einmal erschienen war — auch wenn ihn niemand gesehen hatte,
+    // weil er im Hintergrund auflief, weggewischt wurde oder die Seite neu
+    // lud. Das ist der Grund, warum man „immer Probleme hat, die aktuelle
+    // Version zu haben": Der Hinweis kam genau einmal und dann einen Tag lang
+    // nicht mehr, während die alte Fassung weiterlief.
+    //
+    // Jetzt schweigt die App nur, wenn jemand ausdrücklich „Später" sagt. Wer
+    // den Hinweis übersieht, bekommt ihn beim nächsten Start wieder.
     notify.info(t('update.available.message'), {
       title: t('update.available.title'),
       duration: 0,
@@ -100,6 +127,13 @@ export function initPwaUpdate(): void {
           onClick: () => {
             promptVisible = false;
             applyUpdate();
+          },
+        },
+        {
+          label: t('update.available.later'),
+          onClick: () => {
+            promptVisible = false;
+            localStorage.setItem(DISMISS_KEY, String(Date.now()));
           },
         },
       ],

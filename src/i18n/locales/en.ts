@@ -634,6 +634,7 @@ export const en: TranslationDict = {
   // ============================================================================
   update: {
     available: {
+      later: 'Later',
       title: 'New version available',
       message: 'A new version is ready. Your data stays intact.',
       action: 'Update',

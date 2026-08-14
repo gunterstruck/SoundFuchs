@@ -540,6 +540,7 @@ export const es: TranslationDict = {
   },
   update: {
     available: {
+      later: 'Más tarde',
       title: 'Nueva versión disponible',
       message: 'Hay una nueva versión lista. Tus datos se conservan.',
       action: 'Actualizar',
