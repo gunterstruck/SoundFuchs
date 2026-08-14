@@ -1826,6 +1826,23 @@ body {
   width: 100%;
 }
 
+/* Der Knopf, der weitermacht — „Prüfung starten" bzw. „Normalzustand
+   aufnehmen" — steht immer oben.
+
+   Die anderen beiden entstehen erst beim Öffnen und schieben sich jeweils an
+   den Anfang (`insertBefore(…, firstChild)`): „Verlauf" nur mit mindestens
+   einer Prüfung, „Sammlung teilen" nur mit mindestens einer Referenz. Der
+   Hauptknopf steht fest im Markup und landete damit als Letztes — bei 390×790
+   endete er 25 px unterhalb der Bildschirmkante. Wer die Maschinenansicht
+   öffnet, um zu prüfen, sah zuerst einen Export.
+
+   `order` statt Umsortieren im Code: Die Reihenfolge hängt sonst davon ab, in
+   welcher Folge drei Stellen ihre Knöpfe einhängen. So bleibt sie richtig,
+   auch wenn später ein vierter dazukommt. */
+.machine-detail-actions #machine-detail-select-btn {
+  order: -1;
+}
+
 /* Recording Modal Specific */
 #waveform-canvas {
   width: 100%;
