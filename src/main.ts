@@ -926,6 +926,43 @@ class ZanobotApp {
     }
 
     this.griffZiehbarMachen();
+    this.setupPillen();
+  }
+
+  /**
+   * Die zwei schwebenden Pillen verdrahten.
+   *
+   * Sie decken die beiden Fälle ab, in denen die Liste nicht weiterhilft:
+   *
+   *   „Erkennen"      — hinhalten, die App hört hin und sagt, welche Maschine
+   *                     das ist. Das kann sie längst (AutoDetectionPhase); der
+   *                     Weg dorthin lag bisher in der eingeklappten Prüf-Karte.
+   *   „Neue Maschine" — die gibt es noch gar nicht.
+   *
+   * Beide lösen den vorhandenen Knopf aus, statt dessen Logik nachzubauen —
+   * derselbe Weg wie beim Schiebefenster. Der Erkennen-Knopf liegt seit dem
+   * 14.08.2026 in einer Karte, die ohne geladene Maschine verborgen ist; ein
+   * Klick per Skript erreicht ihn trotzdem, denn `display:none` nimmt einem
+   * Element nicht seine Ereignisse.
+   */
+  private setupPillen(): void {
+    const paare: Array<[string, string]> = [
+      ['fab-detect', 'diagnose-auto-detect-btn'],
+      ['fab-new-machine', 'add-new-machine-btn'],
+    ];
+
+    for (const [pille, ziel] of paare) {
+      const knopf = document.getElementById(pille);
+      const zielKnopf = document.getElementById(ziel);
+      // Kein Ziel, keine Pille: Ein Knopf gehört dorthin, wo er hinführt.
+      if (!knopf) continue;
+      if (!zielKnopf) {
+        knopf.remove();
+        logger.warn(`Pille ${pille} entfernt — Ziel ${ziel} fehlt`);
+        continue;
+      }
+      knopf.addEventListener('click', () => zielKnopf.click());
+    }
   }
 
   /**

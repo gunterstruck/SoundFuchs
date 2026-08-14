@@ -1368,6 +1368,35 @@
       </footer>
     </div>
 
+    <!-- ZWEI SCHWEBENDE PILLEN
+         Vorbild ist die Knopfzeile über der Karte von TourFuchs
+         (`.map-fab-row` / `.map-fab`): zwei gleichrangige Angebote, gleich
+         aussehend, nebeneinander, jeweils mit einem Fuchs, der abwechselnd
+         wackelt.
+
+         Sie decken die zwei Fälle ab, in denen die Liste nicht weiterhilft:
+         „ich weiß nicht, welche Maschine das ist" (hinhalten, die App hört
+         hin) und „die gibt es noch gar nicht" (anlegen). Beide lösen
+         vorhandene Knöpfe aus, statt deren Logik nachzubauen — derselbe Weg
+         wie beim Schiebefenster.
+
+         Die Zeile spannt von links nach rechts und zentriert darin, statt mit
+         `left: 50%` zu arbeiten: Ein fixiertes Element ohne rechte Kante
+         bekommt als verfügbare Breite nur den Rest rechts vom Startpunkt, und
+         die zweite Pille bräche um. Steht so auch im Vorbild. -->
+    <div class="fab-row" id="fab-row">
+      <button type="button" class="fab" id="fab-detect">
+        <span class="fab-icon" aria-hidden="true">🎧</span>
+        <span class="fab-label" data-i18n="fab.detect">Erkennen</span>
+        <span class="fab-fox" aria-hidden="true">🦊</span>
+      </button>
+      <button type="button" class="fab" id="fab-new-machine">
+        <span class="fab-icon" aria-hidden="true">➕</span>
+        <span class="fab-label" data-i18n="fab.newMachine">Anlegen</span>
+        <span class="fab-fox" aria-hidden="true">🦊</span>
+      </button>
+    </div>
+
     <!-- GRIFF AM UNTEREN RAND
          Aufbau von TourFuchs übernommen und aus dem Entwurf der Startseite
          (docs/startseite-entwurf.md, Bild A): ein schmaler Streifen, der immer

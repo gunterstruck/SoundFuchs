@@ -5,6 +5,11 @@
 import type { TranslationDict } from '../index.js';
 
 export const fr: TranslationDict = {
+  fab: {
+    detect: 'Identifier',
+    newMachine: 'Créer',
+  },
+
   sheet: {
     groupCheck: 'Contrôle',
     groupMachines: 'Machines',

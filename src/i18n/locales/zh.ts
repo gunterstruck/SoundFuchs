@@ -5,6 +5,11 @@
 import type { TranslationDict } from '../index.js';
 
 export const zh: TranslationDict = {
+  fab: {
+    detect: '识别',
+    newMachine: '新建',
+  },
+
   sheet: {
     groupCheck: '检测',
     groupMachines: '机器',
