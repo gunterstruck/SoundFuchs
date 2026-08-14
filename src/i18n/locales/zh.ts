@@ -105,7 +105,8 @@ export const zh: TranslationDict = {
     },
     machineDetail: {
       title: '机器',
-      select: '加载机器',
+      startCheck: '开始检测',
+      startRecording: '录制正常状态',
     },
     emptyGuide: {
       title: 'SoundFuchs 的工作原理',

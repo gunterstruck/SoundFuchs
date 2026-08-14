@@ -130,7 +130,8 @@ export const de: TranslationDict = {
     // Machine detail modal
     machineDetail: {
       title: 'Maschine',
-      select: 'Maschine laden',
+      startCheck: 'Prüfung starten',
+      startRecording: 'Normalzustand aufnehmen',
     },
 
     // Sprint 2 UX: Empty state mini guide

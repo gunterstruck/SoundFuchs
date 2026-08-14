@@ -733,13 +733,19 @@ class ZanobotApp {
   /**
    * Suche in der Kopfleiste einhängen.
    *
-   * Der Treffer geht denselben Weg wie die Auswahl aus der Liste oder per Scan:
-   * über den Router, der die Identify-Phase mit der Maschine öffnet. So gibt es
-   * genau einen Pfad in die Maschine, egal woher der Anstoß kam.
+   * Ein Treffer öffnet die Maschinenansicht — denselben Weg, den auch ein Tipp
+   * auf eine Zeile der Übersicht nimmt. Wer sucht, will zuerst sehen; geprüft
+   * wird von dort aus mit einem zweiten, bewussten Tipp.
+   *
+   * Der Aufruf geht über den Router, weil `main` die Phasen nicht kennt. Bis
+   * zum 14.08.2026 stand hier stattdessen ein `location.hash = '#/identify?…'`
+   * — eine Route, die es nie gab: Der Treffer änderte nur die Adresszeile und
+   * sonst nichts. Ein Aufruf, der ins Leere zeigt, fällt still aus; ein
+   * Methodenaufruf tut das nicht.
    */
   private setupGlobalSearch(): void {
     const suche = new GlobalSearch((machine) => {
-      window.location.hash = `#/identify?machine=${encodeURIComponent(machine.id)}`;
+      this.router?.showMachineView(machine);
     });
     if (!suche.istVerfuegbar) return;
     suche.init();

@@ -4088,13 +4088,12 @@
           </div>
         </div>
         <div class="modal-actions machine-detail-actions">
-          <button
-            class="action-btn"
-            id="machine-detail-select-btn"
-            data-i18n="identify.machineDetail.select"
-          >
-            Maschine laden
-          </button>
+          <!-- Die Beschriftung setzt MachineDetailModal.show(), weil sie davon
+               abhängt, was als Nächstes dran ist: prüfen, wenn es eine Referenz
+               gibt — sonst zuerst den Normalzustand aufnehmen. Deshalb steht
+               hier kein data-i18n; das würde beim Sprachwechsel die passende
+               Beschriftung durch eine feste ersetzen. -->
+          <button class="action-btn" id="machine-detail-select-btn">Prüfung starten</button>
         </div>
       </div>
     </div>
