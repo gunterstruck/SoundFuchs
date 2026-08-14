@@ -1522,6 +1522,47 @@ body {
   animation: slideUp 0.3s ease-out;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   AM HANDY SIND DIALOGE SCHIEBEFENSTER, KEINE SCHWEBENDEN KÄRTCHEN
+
+   Ein Dialog lag als gerundetes Kärtchen mitten auf dem abgedunkelten Grund:
+   24 px Rand links, 24 px rechts, dazu die eigene Polsterung. Gemessen bei
+   390 px Gerätebreite kam beim Text der Einstellungen noch 276 px an — 71 %.
+   Und es stapelt sich: Was aus einem Dialog heraus einen weiteren öffnet,
+   verliert erneut. Auf einem Handy ist Breite das eine, was man nicht
+   nachschieben kann.
+
+   Deshalb hier dasselbe, was die Schwester-App TourFuchs am Handy tut und was
+   diese App im InfoBottomSheet ohnehin schon kann: Der Dialog geht über die
+   volle Breite und sitzt am unteren Rand, oben gerundet. Damit ist er
+   dieselbe Sache wie das Schiebefenster — eine Form statt zweier.
+
+   Dialoge, die von sich aus den ganzen Schirm füllen (Prüfung, Aufnahme im
+   Diagnose-Bild), bringen eigene, spezifischere Regeln mit und bleiben, wie
+   sie sind: `.inspection-modal .modal-content` schlägt `.modal-content`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .modal {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal-content {
+    max-width: none;
+    max-height: 92dvh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  /* Die Polsterung eine Stufe zurück: Am Handy zählt jedes Pixel Satzbreite,
+     und der Rahmen ringsum ist ohnehin entfallen. */
+  .modal-body {
+    padding: var(--spacing-md);
+  }
+}
+
 .app-shell-container {
   display: flex;
   flex-direction: column;
