@@ -10556,13 +10556,6 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   font-size: var(--font-sm);
 }
 
-.app-claim {
-  margin: 0 0 1rem;
-  font-size: var(--font-sm);
-  color: var(--text-secondary);
-  line-height: 1.3;
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════
    LINKS IM FLIESSTEXT
 
