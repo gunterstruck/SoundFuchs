@@ -4779,6 +4779,19 @@ select:focus-visible {
   margin: 0;
 }
 
+/* Der Stand unter einem Zwei-Zustands-Knopf (Beispieldaten, Kundenimport):
+   "34 Beispielkunden geladen" oder das Ergebnis eines Imports. Bleibt leer
+   und ohne eigene Zeilenhoehe, solange es nichts zu sagen gibt. */
+.setting-status-line {
+  margin: 0.35rem 0 0;
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+}
+
+.setting-status-line:empty {
+  display: none;
+}
+
 .setting-description {
   font-size: 0.8125rem;
   color: var(--text-muted);
@@ -10586,7 +10599,8 @@ html .settings-list[data-filter='ansicht'] > .setting-category:not([data-thema~=
 html .settings-list[data-filter='pruefen'] > .setting-category:not([data-thema~='pruefen']),
 html .settings-list[data-filter='raum'] > .setting-category:not([data-thema~='raum']),
 html .settings-list[data-filter='etiketten'] > .setting-category:not([data-thema~='etiketten']),
-html .settings-list[data-filter='daten'] > .setting-category:not([data-thema~='daten']) {
+html .settings-list[data-filter='daten'] > .setting-category:not([data-thema~='daten']),
+html .settings-list[data-filter='kunden'] > .setting-category:not([data-thema~='kunden']) {
   display: none !important;
 }
 

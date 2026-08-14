@@ -132,8 +132,7 @@ Genauigkeit vor, die nichts bedeutet.
 2. **Die Karte** — ✅ steht. Leaflet, Marker, Zoom.
 3. **Das Kundenblatt** — ✅ steht, zusammen mit der Karte. Name, Ort, seine
    Maschinen, Tipp führt in die Maschinenansicht.
-4. **Liste einlesen** — mehrere Kunden auf einmal. Erst wenn jemand mehr als
-   eine Handvoll hat.
+4. **Liste einlesen** — ✅ steht. Mehrere Kunden auf einmal, aus einer CSV.
 
 Schnitt 1 steht für sich und ist der einzige, der ohne Netz auskommt. Er
 kommt zuerst.
@@ -200,3 +199,54 @@ Bewacht wird die ganze Kette von `attention-check`: Menüzeile → Karte → Mar
 → Kundenblatt → Maschinenansicht, dazu die Zahl der Kartengründe und das
 Vorhandensein der Quellenangabe. Jedes Glied kann still reißen, und keines
 davon würde ein Unit-Test bemerken.
+
+### Beispieldaten und Schnitt 4: eine Liste einlesen
+
+Zwei weitere Bausteine, in derselben Kategorie „Kunden" der Einstellungen
+(Experten-Stufe, wie die Datenverwaltung direkt daneben — beides
+Einrichtungs-, keine Alltagsaufgaben).
+
+**Beispieldaten.** Wer die App vorführen will, braucht etwas zum Zeigen, ohne
+vorher fremde Kunden einzutippen. Rund 100 erfundene Kunden entstehen
+deutschlandweit verteilt — dasselbe Grundprinzip wie bei TourFuchs
+(`createDemoCustomers`): ein deterministischer Zufallsgenerator, grobe
+Bezirks-Anker über das Land verteilt, jede Postleitzahl ihrem nächsten Anker
+zugeordnet. Nicht übernommen ist TourFuchs' Vertriebslogik — Umsatz, Kanal,
+Zuständigkeit —, die passt zu TourFuchs, nicht zu einer App, die
+Maschinenzustände prüft. Die Branchen sind deshalb andere: Gießerei, Sägewerk,
+Kläranlage — Orte mit rotierenden Maschinen.
+
+Jeder Beispielkunde trägt `demo: true` und einen Namen, der mit
+„SoundFuchs Demo · " beginnt; jede seiner Maschinen (genau eine je Kunde)
+trägt dasselbe Feld. „Beispieldaten entfernen" löscht gezielt darüber, nicht
+über den Namen — und lässt jeden echten Kunden unberührt, was ein Test
+festhält.
+
+**Keine erfundene Referenz.** Die Beispielmaschinen bleiben unangelernt und
+zeigen „Referenz fehlt". Das ist eine bewusste Entscheidung, keine
+Unterlassung: Eine Referenz ist ein trainiertes Muster aus einer echten
+Aufnahme. Sie vorzutäuschen hieße, Gewichte zu erfinden, die wie eine Messung
+aussehen, aber keine ist — dieselbe Art Täuschung, die die
+Postleitzahl-Verortung an anderer Stelle bewusst vermeidet (sie sagt
+„Ortsmitte", statt eine Hausnummer-Genauigkeit zu behaupten, die sie nicht
+hat). Ein erfundenes Klangbild wäre dasselbe, nur im Ton statt auf der Karte.
+
+**Schnitt 4 — eine Kundenliste einlesen.** Eine CSV-Datei mit bis zu vier
+Spalten: Name und PLZ Pflicht, Ort und Maschine optional. Von TourFuchs
+abgeschaut ist die Idee des Imports, nicht das Format — dort wird eine ganze
+Kundenverwaltung mit Umsatz, Vertriebsbezirk und Kanal eingelesen
+(`src/services/excel.js` + `src/ui/importWizard.js`, zusammen rund 1700
+Zeilen); das gehört zu TourFuchs' Aufgabe. Ein Kunde hier ist schmal (§2), und
+die Liste, die jemand mitbringt, ist es auch. Ein erneutes Einlesen derselben
+Datei verdoppelt nichts — Name und PLZ zusammen sind der Schlüssel, gegen den
+geprüft wird.
+
+Bewacht wird beides von `attention-check`: der Knopf lädt tatsächlich rund 100
+Maschinen und wechselt seine Beschriftung, „entfernen" räumt tatsächlich
+alles wieder ab, und — der eigentliche Fund beim Bauen — das Thema „Kunden"
+blendet fremde Abschnitte im Dialog auch wirklich aus. Diese letzte Prüfung
+kam nicht aus Vorsicht dazu: Die CSS-Regel, die Themen filtert, zählt sie
+einzeln auf statt sie generisch zu behandeln; „kunden" fehlte zunächst in
+dieser Liste, der Dialog zeigte beim Test klaglos _alles_ statt nur der
+eigenen Kategorie, und kein einzelner Sichtbarkeits-Check hätte das bemerkt,
+weil der eigene Knopf ja trotzdem da war.

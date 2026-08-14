@@ -22,6 +22,7 @@ export const fr: TranslationDict = {
     soon: 'plus tard',
     view: 'Vue : simple ou pro',
     map: 'Carte des clients',
+    customerData: 'Clients : exemples et import',
   },
 
   search: {
@@ -117,6 +118,24 @@ export const fr: TranslationDict = {
     plzInvalid: 'Veuillez saisir un code postal allemand à cinq chiffres.',
     plzFound: '{{ort}} — repris du code postal.',
     plzUnknown: 'Code postal inconnu. Le client est créé, mais sans point sur la carte.',
+    demoTitle: "Données d'exemple",
+    demoDescription:
+      "Une centaine de clients inventés, répartis dans toute l'Allemagne, chacun avec une machine sans référence. Pour les démonstrations — les données réelles restent intactes.",
+    demoLoad: "Charger les données d'exemple",
+    demoRemove: "Supprimer les données d'exemple",
+    demoCount: '{{count}} clients d’exemple chargés',
+    demoLoaded: '{{count}} clients d’exemple créés',
+    demoRemoved: '{{count}} clients d’exemple supprimés',
+    demoError: "Les données d'exemple n'ont pas pu être traitées.",
+    importTitle: 'Importer une liste de clients',
+    importDescription:
+      'Fichier CSV avec les colonnes Nom, Code postal, éventuellement Ville et Machine. La ville et la position sur la carte proviennent du code postal.',
+    importButton: 'Choisir un CSV',
+    importSummary:
+      '{{angelegt}} clients créés, {{maschinen}} machines, {{uebersprungen}} ignorés, {{fehler}} lignes invalides',
+    importNoColumns:
+      'Le fichier ne contient aucune colonne "Nom" ou "Code postal" — rien n’a été importé.',
+    importError: "La liste de clients n'a pas pu être importée.",
   },
 
   identify: {

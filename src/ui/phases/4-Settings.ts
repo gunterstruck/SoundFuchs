@@ -85,6 +85,7 @@ export class SettingsPhase {
     this.initRecordingSettings();
     this.initEvaluationEngineSettings();
     this.initMessLaborEntry();
+    this.initCustomerDataSettings();
 
     // Initialize banner settings (advanced/expert only)
 
@@ -1506,6 +1507,117 @@ export class SettingsPhase {
         duration: 0,
       });
     }
+  }
+
+  /**
+   * Beispieldaten und Kundenliste-Import (Schnitt 4 aus
+   * docs/kunden-und-karte.md).
+   *
+   * Ein Knopf trägt beide Zustände von "Beispieldaten laden" und "entfernen",
+   * je nachdem, was gerade im Bestand liegt — dieselbe Ökonomie wie beim
+   * Zwei-Zustands-Knopf für die Grundeinstellung weiter unten, nur ohne dessen
+   * Bestätigungs-Sekunden: Hier geht nie etwas Echtes verloren, nur erfundene
+   * Kunden, die man jederzeit neu anlegen kann.
+   *
+   * Nach jeder Änderung folgt derselbe Weg wie bei Datenbank-Import und
+   * -Löschung: ein kurzer Hinweis, dann `window.location.reload()`. Ein
+   * eigener Rückkanal zur Maschinenliste und zur Kundenkarte wäre eine zweite
+   * Wahrheit über denselben Bestand — der Neustart liest ihn einmal ein.
+   */
+  private initCustomerDataSettings(): void {
+    this.initDemoToggle();
+    this.initCustomerImport();
+  }
+
+  private async initDemoToggle(): Promise<void> {
+    const knopf = document.getElementById('demo-toggle-btn');
+    const beschriftung = document.getElementById('demo-toggle-label');
+    const statuszeile = document.getElementById('demo-status-line');
+    if (!knopf || !beschriftung) return;
+
+    const { gibEsBeispieldaten, zaehleBeispieldaten, ladeBeispieldaten, entferneBeispieldaten } =
+      await import('../../services/demoCustomers.js');
+
+    const zeigeStand = async (): Promise<void> => {
+      const vorhanden = await gibEsBeispieldaten();
+      beschriftung.textContent = t(vorhanden ? 'customers.demoRemove' : 'customers.demoLoad');
+      if (statuszeile) {
+        statuszeile.textContent = vorhanden
+          ? t('customers.demoCount', { count: String(await zaehleBeispieldaten()) })
+          : '';
+      }
+    };
+
+    const handler = (): void => {
+      void (async () => {
+        (knopf as HTMLButtonElement).disabled = true;
+        try {
+          if (await gibEsBeispieldaten()) {
+            const anzahl = await entferneBeispieldaten();
+            notify.success(t('customers.demoRemoved', { count: String(anzahl) }));
+          } else {
+            const anzahl = await ladeBeispieldaten();
+            notify.success(t('customers.demoLoaded', { count: String(anzahl) }));
+          }
+          setTimeout(() => window.location.reload(), 1200);
+        } catch (error) {
+          logger.error('Beispieldaten-Fehler:', error);
+          notify.error(t('customers.demoError'), error as Error, { duration: 0 });
+          (knopf as HTMLButtonElement).disabled = false;
+        }
+      })();
+    };
+
+    this.registerEventHandler('demo-toggle-btn', handler);
+    void zeigeStand();
+  }
+
+  private initCustomerImport(): void {
+    const knopf = document.getElementById('import-customers-btn');
+    const statuszeile = document.getElementById('customer-import-status');
+    if (!knopf) return;
+
+    const handler = (): void => {
+      const eingabe = document.createElement('input');
+      eingabe.type = 'file';
+      eingabe.accept = '.csv,text/csv';
+
+      eingabe.onchange = async (e: Event) => {
+        const datei = (e.target as HTMLInputElement).files?.[0];
+        if (!datei) return;
+
+        (knopf as HTMLButtonElement).disabled = true;
+        try {
+          const text = await datei.text();
+          const { importiereKundenliste } = await import('../../services/customerImport.js');
+          const ergebnis = await importiereKundenliste(text);
+
+          if (ergebnis.angelegt === 0 && ergebnis.uebersprungen === 0) {
+            notify.error(t('customers.importNoColumns'));
+            (knopf as HTMLButtonElement).disabled = false;
+            return;
+          }
+
+          const meldung = t('customers.importSummary', {
+            angelegt: String(ergebnis.angelegt),
+            maschinen: String(ergebnis.maschinenAngelegt),
+            uebersprungen: String(ergebnis.uebersprungen),
+            fehler: String(ergebnis.fehlerzeilen.length),
+          });
+          if (statuszeile) statuszeile.textContent = meldung;
+          notify.success(meldung);
+          setTimeout(() => window.location.reload(), 1600);
+        } catch (error) {
+          logger.error('Kundenimport-Fehler:', error);
+          notify.error(t('customers.importError'), error as Error, { duration: 0 });
+          (knopf as HTMLButtonElement).disabled = false;
+        }
+      };
+
+      eingabe.click();
+    };
+
+    this.registerEventHandler('import-customers-btn', handler);
   }
 
   /**
