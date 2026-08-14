@@ -72,7 +72,7 @@ export const zh: TranslationDict = {
     closeDialog: '关闭对话框',
   },
   identify: {
-    selectMachine: '选择机器',
+    addMachine: '扫描或新建',
     scanQrCode: '扫描二维码',
     scanQrDescription: '通过二维码识别机器',
     manualEntry: '手动创建',

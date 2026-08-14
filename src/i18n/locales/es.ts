@@ -72,7 +72,7 @@ export const es: TranslationDict = {
     closeDialog: 'Cerrar diálogo',
   },
   identify: {
-    selectMachine: 'Seleccionar máquina',
+    addMachine: 'Escanear o crear',
     scanQrCode: 'Escanear código QR',
     scanQrDescription: 'Identificar máquina via código QR',
     manualEntry: 'Crear manualmente',
