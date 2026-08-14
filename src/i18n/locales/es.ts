@@ -9,7 +9,8 @@ export const es: TranslationDict = {
     placeholder: 'Máquina, ubicación o ID…',
     noHits: 'No se encontró nada.',
     sheetTitle: 'Ajustes y más',
-  },  buttons: {
+  },
+  buttons: {
     stop: 'Detener',
     stopAndSave: 'Detener y guardar',
     scan: 'Escanear',
@@ -1748,6 +1749,7 @@ export const es: TranslationDict = {
   },
 
   history: {
+    fullHistory: 'Historial completo',
     openHistory: 'View history for {{name}}',
     viewHistory: 'History',
     diagnosisCount: '{{count}} checks',

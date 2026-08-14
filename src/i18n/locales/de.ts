@@ -11,7 +11,7 @@ export const de: TranslationDict = {
     placeholder: 'Maschine, Ort oder ID…',
     noHits: 'Nichts gefunden.',
     sheetTitle: 'Einstellungen & mehr',
-  },  // ============================================================================
+  }, // ============================================================================
   // BUTTONS
   // ============================================================================
   buttons: {
@@ -2157,6 +2157,7 @@ export const de: TranslationDict = {
   // WELLE 3: HISTORY MODAL + UNIFIED FLOW
   // ============================================================================
   history: {
+    fullHistory: 'Ganzer Verlauf',
     openHistory: 'Verlauf von {{name}} anzeigen',
     viewHistory: 'Verlauf',
     diagnosisCount: '{{count}} Prüfungen',

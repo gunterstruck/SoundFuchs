@@ -10834,3 +10834,40 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   font-size: var(--font-xs);
   color: var(--text-muted);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ZEITSTRAHL IN DER MASCHINENANSICHT
+
+   Kurzfassung des Verlaufs, direkt in der Maschine. Er nutzt dieselben Klassen
+   wie der volle Verlauf — Linie, Punkt, Farbe kommen von dort und müssen nicht
+   zweimal gepflegt werden.
+
+   Der Knopf darunter führt zum vollen Verlauf. Er trägt keinen eigenen Rahmen:
+   Er ist ein Weg, keine Handlung.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.machine-detail-timeline {
+  margin: 0 0 var(--spacing-md);
+}
+
+.machine-detail-timeline:empty {
+  display: none;
+}
+
+.machine-detail-timeline-title {
+  margin: 0 0 0.5rem;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.machine-detail-timeline-more {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0;
+  border: none;
+  background: transparent;
+  color: var(--primary-color);
+  font-size: var(--font-sm);
+  font-weight: 600;
+}

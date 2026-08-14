@@ -9,7 +9,7 @@ export const en: TranslationDict = {
     placeholder: 'Machine, location or ID…',
     noHits: 'Nothing found.',
     sheetTitle: 'Settings & more',
-  },  // ============================================================================
+  }, // ============================================================================
   // BUTTONS
   // ============================================================================
   buttons: {
@@ -2084,6 +2084,7 @@ export const en: TranslationDict = {
   // WELLE 3: HISTORY MODAL + UNIFIED FLOW
   // ============================================================================
   history: {
+    fullHistory: 'Full history',
     openHistory: 'View history for {{name}}',
     viewHistory: 'History',
     diagnosisCount: '{{count}} checks',
