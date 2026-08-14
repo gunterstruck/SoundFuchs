@@ -234,8 +234,13 @@ export class MachineDetailModal {
     }
     if (meta.childElementCount > 0) summary.appendChild(meta);
 
-    // Insert above the trained-states list
-    parent.insertBefore(summary, signaturesContainer);
+    // Vor den Zeitstrahl, nicht dahinter: Die Zusammenfassung beantwortet
+    // „wie steht es jetzt?", der Zeitstrahl „wie war es davor?". Stand sie
+    // darunter, las man den neuesten Wert zweimal kurz hintereinander — einmal
+    // als obersten Punkt des Zeitstrahls, einmal als Überschrift —, und die
+    // Antwort auf die erste Frage kam nach der Antwort auf die zweite.
+    const zeitstrahl = parent.querySelector('#machine-detail-timeline');
+    parent.insertBefore(summary, zeitstrahl ?? signaturesContainer);
   }
 
   /**
