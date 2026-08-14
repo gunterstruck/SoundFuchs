@@ -350,13 +350,17 @@ try {
       `${format.name}: Schritte offen ${offen.bedienelemente} > Budget ${BUDGET.schritteOffen}`
     );
 
-    // Einstellungen: der globale Komplexitätsschalter liegt hier drin.
-    // Seit dem 14.08.2026 liegt der Weg zu den Einstellungen hinter dem
-    // Info-Knopf der Kopfleiste; die Fusszeile ist verborgen. Erst das
-    // Schiebefenster oeffnen, dann den Eintrag darin.
-    await page.click('#app-info-btn');
-    await page.waitForSelector('.info-sheet-row[data-target="settings-btn"]', { timeout: 4000 });
-    await page.click('.info-sheet-row[data-target="settings-btn"]');
+    // Einstellungen: der globale Komplexitaetsschalter liegt hier drin.
+    //
+    // Gemessen wird der Dialog UNGEFILTERT, ueber den verborgenen
+    // Fusszeilen-Knopf. Seit dem 14.08.2026 fuehrt das Schiebefenster in
+    // einzelne Themen (`data-filter`) und zeigt jeweils nur einen Ausschnitt —
+    // das ist der Sinn der Sache, waere hier aber die falsche Zahl: Die Frage
+    // dieser Messung ist, wie schwer die Einstellungen INSGESAMT sind. Wer den
+    // Dialog entlastet, indem er Teile hinter Filter schiebt, hat ihn nicht
+    // entlastet. Der Weg ueber ein Thema ist trotzdem der normale; er ist im
+    // Durchlauf abgedeckt.
+    await page.evaluate(() => document.getElementById('settings-btn')?.click());
     await page.waitForTimeout(1000);
     const basis = await page.evaluate(SICHTBAR_PROBE);
     console.log(

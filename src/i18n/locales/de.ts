@@ -7,6 +7,19 @@
 import type { TranslationDict } from '../index.js';
 
 export const de: TranslationDict = {
+  sheet: {
+    groupCheck: 'Prüfen',
+    groupMachines: 'Maschinen',
+    groupApp: 'App',
+    recording: 'Aufnahme & Analyse',
+    room: 'Raum & Störgeräusche',
+    labels: 'NFC & QR schreiben',
+    data: 'Daten sichern & zurücksetzen',
+    vault: 'Tresor',
+    soon: 'später',
+    view: 'Ansicht: Basis oder Profi',
+  },
+
   search: {
     placeholder: 'Maschine, Ort oder ID…',
     noHits: 'Nichts gefunden.',
@@ -843,6 +856,7 @@ export const de: TranslationDict = {
   // SETTINGS UI (index.html)
   // ============================================================================
   settingsUI: {
+    allSettings: 'Alle Einstellungen',
     title: 'Einstellungen',
     nfcWriterTitle: 'NFC-Tags',
     nfcWriterDescription:
