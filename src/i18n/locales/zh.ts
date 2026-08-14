@@ -9,7 +9,8 @@ export const zh: TranslationDict = {
     placeholder: '设备、位置或编号…',
     noHits: '未找到结果。',
     sheetTitle: '设置及更多',
-  },  buttons: {
+  },
+  buttons: {
     stop: '停止',
     stopAndSave: '停止并保存',
     scan: '扫描',
@@ -1651,6 +1652,7 @@ export const zh: TranslationDict = {
   },
 
   history: {
+    fullHistory: '完整记录',
     openHistory: 'View history for {{name}}',
     viewHistory: 'History',
     diagnosisCount: '{{count}} checks',

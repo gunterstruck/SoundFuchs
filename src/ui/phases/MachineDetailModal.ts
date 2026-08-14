@@ -25,8 +25,9 @@ import { logger } from '@utils/logger.js';
 import { renderMachineFingerprint } from '../components/MachineFingerprint.js';
 import { getReferenceIrisVector } from './referenceIris.js';
 import { getAverageBaselineScore, getBaselineRating } from './machineStatus.js';
+import { getHistoryStatusClass } from './historyRender.js';
 import { calculateMedian } from './fleetStats.js';
-import type { Machine } from '@data/types.js';
+import type { Machine, DiagnosisResult } from '@data/types.js';
 import { isGMIAModel } from '@data/types.js';
 
 /** Phase-side behaviour the machine detail modal needs. */
@@ -110,6 +111,8 @@ export class MachineDetailModal {
     // Health status summary (last result + trend + reference quality),
     // inserted above the trained-states list. Filled asynchronously.
     void this.renderStatusSummary(machine, signaturesContainer);
+
+    void this.renderTimeline(machine);
 
     // Render signatures / reference models
     this.renderSignatures(signaturesContainer, machine);
@@ -280,6 +283,69 @@ export class MachineDetailModal {
   /**
    * Render reference model / signature list inside the machine detail modal.
    */
+  /**
+   * Kurzer Zeitstrahl der letzten Prüfungen.
+   *
+   * Dieselbe Bauweise wie im Verlaufsdialog — durchgehende Linie, Punkt in der
+   * Farbe des Zustands, neueste oben. Hier bewusst nur fünf Einträge und ohne
+   * Aufklappen: Er soll die erste Frage beantworten („wie war es zuletzt?"),
+   * nicht den vollen Verlauf ersetzen. Der liegt mit Diagramm, A/B-Hören und
+   * 3D-Gebirge einen Tipp entfernt.
+   *
+   * Gemeinsam ist beiden die Statusklasse aus historyRender; damit stimmen die
+   * Farben überein, ohne dass jemand sie an zwei Stellen pflegen muss.
+   */
+  private async renderTimeline(machine: Machine): Promise<void> {
+    const container = document.getElementById('machine-detail-timeline');
+    if (!container) return;
+    container.innerHTML = '';
+
+    let diagnoses: DiagnosisResult[] = [];
+    try {
+      diagnoses = await getDiagnosesForMachine(machine.id, 5);
+    } catch (error) {
+      logger.warn('Zeitstrahl: Prüfungen konnten nicht gelesen werden', error);
+      return;
+    }
+    if (diagnoses.length === 0) return;
+
+    const titel = document.createElement('p');
+    titel.className = 'machine-detail-timeline-title';
+    titel.textContent = t('history.viewHistory');
+    container.appendChild(titel);
+
+    for (const d of diagnoses) {
+      const eintrag = document.createElement('div');
+      eintrag.className = `history-list-item ${getHistoryStatusClass(d.healthScore, d.status)}`;
+
+      const kopf = document.createElement('div');
+      kopf.className = 'history-item-header';
+
+      const datum = document.createElement('span');
+      datum.className = 'history-item-date';
+      datum.textContent = this.deps.formatRelativeTime(d.timestamp);
+
+      const wert = document.createElement('span');
+      wert.className = `history-item-score ${getHistoryStatusClass(d.healthScore, d.status)}`;
+      wert.textContent = `${Math.round(d.healthScore)}%`;
+
+      const zustand = document.createElement('span');
+      zustand.className = 'history-item-status';
+      zustand.textContent = t(`status.${d.status ?? 'uncertain'}`);
+
+      kopf.append(datum, wert, zustand);
+      eintrag.appendChild(kopf);
+      container.appendChild(eintrag);
+    }
+
+    const mehr = document.createElement('button');
+    mehr.type = 'button';
+    mehr.className = 'machine-detail-timeline-more';
+    mehr.textContent = t('history.fullHistory');
+    mehr.addEventListener('click', () => this.deps.showHistory(machine));
+    container.appendChild(mehr);
+  }
+
   private renderSignatures(container: HTMLElement, machine: Machine): void {
     container.innerHTML = '';
 
