@@ -41,6 +41,11 @@
   --space-section-gap: 3rem; /* 48px - after cards, before footer */
   --space-footer-bottom: 1.5rem; /* 24px - below footer to viewport edge */
 
+  /* Höhe des Griffs am unteren Rand (.sheet-grip). Er liegt fest über dem
+     Inhalt, deshalb muss der Inhalt so viel Platz unter sich frei lassen —
+     sonst verdeckt der Streifen die letzte Zeile. */
+  --sheet-grip-height: 46px;
+
   /* ── Radien ──────────────────────────────────────────────────────────────
      Die Leiter der Schwester-App TourFuchs (dort src/styles/variables.css):
      12 · 18 · 26 · 34 · Pille. Unsere lag bei 4 · 8 · 12 · 16 · 24, also
@@ -478,7 +483,11 @@ body {
      vorhanden (man scrollt), Breite ist es nicht (man kann nicht breiter
      scrollen, ohne den Satz zu zerbrechen). */
   padding: var(--spacing-md) var(--space-shell-x);
-  padding-bottom: var(--space-footer-bottom);
+  /* Der Griff am unteren Rand liegt fest über dem Inhalt; ohne diesen Zuschlag
+     verschwände die letzte Zeile darunter. */
+  padding-bottom: calc(
+    var(--space-footer-bottom) + var(--sheet-grip-height) + env(safe-area-inset-bottom, 0px)
+  );
   display: flex;
   flex-direction: column;
   /* Pack items from top - natural flow like a normal website */
@@ -10554,6 +10563,57 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   padding: 12px 13px;
   color: var(--text-muted);
   font-size: var(--font-sm);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GRIFF AM UNTEREN RAND
+
+   Der Streifen liegt fest am unteren Rand und öffnet das Schiebefenster mit
+   Einstellungen, Über, Datenschutz und Impressum.
+
+   Er sitzt unter allen Dialogen (--z-fixed = 500, Dialoge liegen bei 1100):
+   Wer eine Prüfung laufen hat, soll den Streifen nicht darüberliegen sehen.
+   Über dem Inhalt der Seite liegt er dagegen sehr wohl — dafür lässt
+   `.container` unten so viel Platz frei, wie er hoch ist.
+
+   Der Schatten zeigt nach oben, weil das Licht von oben kommt: Ein Streifen,
+   der sich vom Blatt abhebt, wirft seinen Schatten auf das, was hinter ihm
+   verschwindet.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.sheet-grip {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-fixed);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 0 calc(9px + env(safe-area-inset-bottom, 0px));
+  border: none;
+  border-top: 1px solid var(--border-color);
+  /* Die Ecken nur oben runden — unten stößt der Streifen an den Gerätrand. */
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--bg-card);
+  box-shadow: 0 -6px 22px rgba(var(--overlay-rgb), 0.14);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+
+.sheet-grip:hover {
+  color: var(--text-primary);
+}
+
+.sheet-grip-line {
+  display: block;
+  width: 36px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--border-color);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
