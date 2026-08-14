@@ -612,7 +612,16 @@ Maschine gibt — die Sektion stünde unter Profi leer da. Wo JavaScript die
 Sichtbarkeit mitführt, braucht es eine ausdrückliche Regel
 (`html[data-view-level='basic'] #quick-select-section`), kein Attribut.
 
-**Offen bleibt** die Zeilengestalt: Die Schnellwahl trägt noch den ⓘ-Knopf und
-lädt beim Tippen direkt, während die Übersicht seit #20 die Maschinenansicht
-öffnet. Zwei Listen, zwei Verhalten — solange die Schnellwahl nur unter Profi
-steht, ist das erträglich, aber es ist nicht entschieden, sondern übrig.
+**Zwei Listen, zwei Verhalten — entschieden am 14.08.2026.** Die Schnellwahl
+lädt beim Tippen direkt und behält ihren ⓘ-Knopf; die Übersicht öffnet seit
+#20 die Maschinenansicht und hat ihren verloren. Das stand zunächst als Rest
+da und ist auf Nachfrage als Absicht festgeschrieben worden, weil es den Namen
+folgt, die beide Listen ohnehin tragen:
+
+| | Zeilen-Tipp | ⓘ | warum |
+|---|---|---|---|
+| Maschinenübersicht | zeigt | entfallen | Eine Übersicht verschafft einen Überblick. Wer eine Liste durchsieht, will erst sehen. Zeile und Knopf täten dasselbe. |
+| Schnellwahl (Profi) | lädt | zeigt | Sie heißt Schnellwahl. Wer sie benutzt, hat Profi eingeschaltet und weiß, welche Maschine er will; ein Zwischenschritt nähme ihr genau das, wofür sie da ist. Hier tun Zeile und Knopf Verschiedenes. |
+
+Die Begründung steht im Kopfkommentar von `QuickSelectList`, damit sie am Code
+klebt und nicht nur im Entwurf.
