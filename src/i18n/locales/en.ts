@@ -29,6 +29,7 @@ export const en: TranslationDict = {
     stopRecording: 'Stop Recording',
     saveReference: 'Save Normal State',
     continue: 'Continue',
+    toOverview: 'Back to overview',
   },
 
   // ============================================================================
