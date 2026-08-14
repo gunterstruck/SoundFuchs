@@ -44,6 +44,13 @@ export interface Customer {
    */
   geo: 'plz' | 'none';
   createdAt: number;
+  /**
+   * Erfundener Vorführ-Kunde, keine echten Daten (docs/beispieldaten.md).
+   *
+   * Trennt Beispieldaten sauber vom echten Bestand: „Beispieldaten entfernen"
+   * löscht genau die Kunden mit diesem Feld und keinen einzigen echten.
+   */
+  demo?: boolean;
 }
 
 export interface Machine {
@@ -75,6 +82,8 @@ export interface Machine {
    * Maschine an einen Kunden, den es nicht gibt.
    */
   customerId?: string;
+  /** Erfundene Vorführ-Maschine, keine echten Daten. Siehe `Customer.demo`. */
+  demo?: boolean;
 
   /** @internal */
   location?: string;

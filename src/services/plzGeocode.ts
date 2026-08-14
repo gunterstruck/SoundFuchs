@@ -129,3 +129,35 @@ export async function verorteUeberPlz(plz: string, kennung: string): Promise<Ver
     return null;
   }
 }
+
+/** Eine Postleitzahl mit allem, was zu ihr bekannt ist. */
+export interface PlzEintrag {
+  plz: string;
+  lat: number;
+  lng: number;
+  ort: string;
+}
+
+/**
+ * Alle Postleitzahlen, zu denen sowohl ein Ortsname als auch ein Mittelpunkt
+ * vorliegt.
+ *
+ * Für die Verortung eines einzelnen Kunden reichen `ortZurPlz` und
+ * `verorteUeberPlz`. Diese Funktion ist für den Fall gedacht, der eine ganze
+ * Liste von Postleitzahlen braucht — die Beispieldaten
+ * (`src/services/demoCustomers.ts`), die deutschlandweit verteilt sein
+ * sollen, und der Kundenimport, der eine unbekannte Postleitzahl von einer
+ * fehlenden Ortsangabe unterscheiden muss. Beide laden dieselben zwei
+ * Dateien, die hier schon liegen — nicht noch einmal von vorn.
+ */
+export async function alleOrte(): Promise<PlzEintrag[]> {
+  const [zentren, namen] = await Promise.all([ladeSchwerpunkte(), ladeOrtsnamen()]);
+  const out: PlzEintrag[] = [];
+  for (const plz in zentren) {
+    const ort = namen[plz];
+    if (!ort) continue;
+    const [lat, lng] = zentren[plz];
+    out.push({ plz, lat, lng, ort });
+  }
+  return out;
+}

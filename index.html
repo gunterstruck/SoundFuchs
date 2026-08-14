@@ -3792,6 +3792,76 @@
             <!-- Divider (Expert) -->
             <div class="settings-divider" data-view-level="expert"></div>
 
+            <!--
+              Kunden: Beispieldaten und Kundenliste-Import (Schnitt 4 aus
+              docs/kunden-und-karte.md).
+
+              Expert-only wie die Datenverwaltung direkt darunter: Beide sind
+              Einrichtungs-, nicht Alltagsaufgaben. Ein einziger Knopf trägt
+              beide Zustände von "Beispieldaten laden"/"entfernen" — dieselbe
+              Idee wie beim Zwei-Zustands-Knopf "Grundeinstellung
+              wiederherstellen" weiter unten, nur ohne die
+              Bestätigungs-Sekunden, weil hier nichts Echtes verloren geht.
+            -->
+            <div class="setting-category" data-thema="kunden" data-view-level="expert">
+              <h4 class="setting-category-title" data-i18n="customers.demoTitle">Beispieldaten</h4>
+              <p class="setting-category-description" data-i18n="customers.demoDescription">
+                Rund 100 erfundene Kunden, deutschlandweit verteilt, je einer Maschine ohne
+                Referenz. Zum Vorführen — echte Daten bleiben unberührt.
+              </p>
+              <p class="setting-status-line" id="demo-status-line"></p>
+              <button class="action-btn secondary-btn" id="demo-toggle-btn" type="button">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="16" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+                <span id="demo-toggle-label" data-i18n="customers.demoLoad"
+                  >Beispieldaten laden</span
+                >
+              </button>
+            </div>
+
+            <div class="setting-category" data-thema="kunden" data-view-level="expert">
+              <h4 class="setting-category-title" data-i18n="customers.importTitle">
+                Kundenliste einlesen
+              </h4>
+              <p class="setting-category-description" data-i18n="customers.importDescription">
+                CSV-Datei mit den Spalten Name, PLZ, optional Ort und Maschine. Ort und
+                Kartenposition kommen aus der Postleitzahl.
+              </p>
+              <p class="setting-status-line" id="customer-import-status"></p>
+              <button class="action-btn secondary-btn" id="import-customers-btn" type="button">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span data-i18n="customers.importButton">CSV auswählen</span>
+              </button>
+            </div>
+
+            <!-- Divider (Expert) -->
+            <div class="settings-divider" data-view-level="expert"></div>
+
             <!-- Database Management (Expert only) -->
             <div class="setting-category" data-thema="daten" data-view-level="expert">
               <h4 class="setting-category-title" data-i18n="settingsUI.dataManagement">

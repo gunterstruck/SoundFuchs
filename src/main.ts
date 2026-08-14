@@ -822,6 +822,7 @@ class ZanobotApp {
         titel: t('sheet.groupMachines'),
         zeilen: [
           { art: 'thema', thema: 'etiketten', icon: '🏷', key: 'sheet.labels' },
+          { art: 'thema', thema: 'kunden', icon: '🧾', key: 'sheet.customerData' },
           { art: 'thema', thema: 'daten', icon: '💾', key: 'sheet.data' },
           { art: 'karte', icon: '🗺', key: 'sheet.map' },
           { art: 'bald', icon: '🔐', key: 'sheet.vault' },

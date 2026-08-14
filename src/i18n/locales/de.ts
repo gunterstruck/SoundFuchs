@@ -24,6 +24,7 @@ export const de: TranslationDict = {
     soon: 'später',
     view: 'Ansicht: Basis oder Profi',
     map: 'Kundenkarte',
+    customerData: 'Kunden: Beispiele & Import',
   },
 
   search: {
@@ -140,6 +141,23 @@ export const de: TranslationDict = {
     plzInvalid: 'Bitte eine fünfstellige Postleitzahl eingeben.',
     plzFound: '{{ort}} — aus der Postleitzahl übernommen.',
     plzUnknown: 'Diese Postleitzahl ist unbekannt. Der Kunde wird angelegt, aber ohne Kartenpunkt.',
+    demoTitle: 'Beispieldaten',
+    demoDescription:
+      'Rund 100 erfundene Kunden, deutschlandweit verteilt, je einer Maschine ohne Referenz. Zum Vorführen — echte Daten bleiben unberührt.',
+    demoLoad: 'Beispieldaten laden',
+    demoRemove: 'Beispieldaten entfernen',
+    demoCount: '{{count}} Beispielkunden geladen',
+    demoLoaded: '{{count}} Beispielkunden angelegt',
+    demoRemoved: '{{count}} Beispielkunden entfernt',
+    demoError: 'Beispieldaten konnten nicht bearbeitet werden.',
+    importTitle: 'Kundenliste einlesen',
+    importDescription:
+      'CSV-Datei mit den Spalten Name, PLZ, optional Ort und Maschine. Ort und Kartenposition kommen aus der Postleitzahl.',
+    importButton: 'CSV auswählen',
+    importSummary:
+      '{{angelegt}} Kunden angelegt, {{maschinen}} Maschinen, {{uebersprungen}} übersprungen, {{fehler}} fehlerhafte Zeilen',
+    importNoColumns: 'Die Datei hat keine Spalte „Name" oder „PLZ" — nichts wurde eingelesen.',
+    importError: 'Die Kundenliste konnte nicht eingelesen werden.',
   },
 
   // ============================================================================

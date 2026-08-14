@@ -22,6 +22,7 @@ export const zh: TranslationDict = {
     soon: '稍后',
     view: '视图：基础或专业',
     map: '客户地图',
+    customerData: '客户：示例与导入',
   },
 
   search: {
@@ -117,6 +118,23 @@ export const zh: TranslationDict = {
     plzInvalid: '请输入五位德国邮政编码。',
     plzFound: '{{ort}} — 取自邮政编码。',
     plzUnknown: '未知的邮政编码。客户仍会创建，但没有地图位置。',
+    demoTitle: '示例数据',
+    demoDescription:
+      '约 100 个虚构客户，分布在德国各地，每个客户配一台未训练参考的机器。用于演示——真实数据不受影响。',
+    demoLoad: '加载示例数据',
+    demoRemove: '移除示例数据',
+    demoCount: '已加载 {{count}} 个示例客户',
+    demoLoaded: '已创建 {{count}} 个示例客户',
+    demoRemoved: '已移除 {{count}} 个示例客户',
+    demoError: '无法处理示例数据。',
+    importTitle: '导入客户列表',
+    importDescription:
+      'CSV 文件包含列：名称、邮政编码，可选城市和机器。城市和地图位置由邮政编码得出。',
+    importButton: '选择 CSV',
+    importSummary:
+      '已创建 {{angelegt}} 个客户，{{maschinen}} 台机器，跳过 {{uebersprungen}} 个，{{fehler}} 行无效',
+    importNoColumns: '文件中没有“名称”或“邮政编码”列 — 未导入任何内容。',
+    importError: '无法导入客户列表。',
   },
 
   identify: {

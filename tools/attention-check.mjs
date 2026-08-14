@@ -47,6 +47,9 @@
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
+import { writeFileSync, mkdtempSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const require = createRequire(import.meta.url);
 
@@ -666,7 +669,9 @@ try {
     console.log(`Menüzeile „Kundenkarte"   ${zeileDa ? 'sichtbar' : 'FEHLT'}`);
     console.log(`Marker auf der Karte      ${markerZahl}`);
     console.log(`Kartengründe              ${gruende}`);
-    console.log(`Quellenangabe             ${quelle.replace(/\s+/g, ' ').slice(0, 60) || '(leer)'}`);
+    console.log(
+      `Quellenangabe             ${quelle.replace(/\s+/g, ' ').slice(0, 60) || '(leer)'}`
+    );
     console.log(`Kundenblatt               ${blattDa ? 'sichtbar' : 'NICHT sichtbar'}`);
     console.log(`Maschine im Blatt         ${maschineImBlatt ? 'sichtbar' : 'NICHT sichtbar'}`);
     console.log(`Karte schließt beim Tipp  ${karteZu ? 'ja' : 'nein'}`);
@@ -681,6 +686,181 @@ try {
     pruefe(blattDa, 'Karte: der Marker öffnet kein Kundenblatt — er tut nichts');
     pruefe(maschineImBlatt, 'Karte: das Kundenblatt zeigt seine Maschinen nicht');
     pruefe(karteZu, 'Karte: der Tipp auf eine Maschine führt nicht in die Maschinenansicht');
+
+    await ctx.close();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // BEISPIELDATEN
+  //
+  // Eigenes Fenster, eigener Bestand: Die Zahl der Beispielkunden soll nicht
+  // von den zwei Kunden aus dem vorigen Block verfälscht werden.
+  //
+  // Geprüft wird die Kette Knopf → Bestand → Knopf zeigt den neuen Zustand →
+  // Rückgängig macht wirklich alles rückgängig. Der zweite Teil ist der
+  // eigentliche Grund für diesen Test: „Beispieldaten entfernen" hängt am
+  // `demo`-Feld. Verlöre eine künftige Änderung dieses Feld irgendwo auf dem
+  // Weg, entfernte der Knopf nichts mehr — und niemand bemerkte es, weil er
+  // anschließend anstandslos wieder „laden" anböte.
+  {
+    const ctx = await browser.newContext({
+      viewport: FORMATE[0].viewport,
+      hasTouch: true,
+      isMobile: true,
+      locale: 'de-DE',
+    });
+    const page = await ctx.newPage();
+    await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2000);
+
+    // Die Kategorie liegt hinter der Experten-Stufe (wie die Datenverwaltung
+    // direkt daneben) — ohne den Wechsel bliebe die Menüzeile unsichtbar und
+    // der Test träfe die falsche Ursache.
+    await page.locator('.view-level-btn[data-level="expert"]').first().click();
+    await page.waitForTimeout(500);
+
+    await page.locator('#app-menu-btn').click();
+    await page.waitForTimeout(700);
+    const kundenZeile = page.locator('.info-sheet-row[data-thema="kunden"]');
+    const zeileDa = await kundenZeile.isVisible().catch(() => false);
+    if (zeileDa) await kundenZeile.click();
+    await page.waitForTimeout(500);
+
+    const knopf = page.locator('#demo-toggle-btn');
+    const knopfDa = await knopf.isVisible().catch(() => false);
+    const beschriftungVorher = knopfDa ? await knopf.innerText() : '';
+
+    // Der Filter selbst: Ein themenfremder Abschnitt (hier "Ansicht") muss
+    // verschwinden. Ohne diese Prüfung würde ein fehlender Eintrag in der
+    // CSS-Aufzählung der Filter (style.css, ".settings-list[data-filter=…]")
+    // nicht auffallen — der Knopf oben wäre trotzdem sichtbar, nur eben
+    // zusammen mit alldem, was eigentlich ausgeblendet gehört. Genau das ist
+    // beim Einbau dieser Kategorie passiert und wäre unbemerkt geblieben,
+    // hätte nicht diese Zeile danach gefragt statt nur nach dem eigenen Knopf.
+    const fremdesThemaSichtbar = await page
+      .locator('.setting-category[data-thema~="ansicht"]')
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    let maschinenNachLaden = 0;
+    let beschriftungNachLaden = '';
+    let maschinenNachEntfernen = 0;
+
+    if (knopfDa) {
+      await knopf.click();
+      // Rund 100 Kunden plus Maschinen anlegen, dann laedt die Seite neu.
+      await page.waitForTimeout(6000);
+      maschinenNachLaden = await page.locator('.machine-item').count();
+
+      await page.locator('.view-level-btn[data-level="expert"]').first().click();
+      await page.waitForTimeout(300);
+      await page.locator('#app-menu-btn').click();
+      await page.waitForTimeout(700);
+      await page.locator('.info-sheet-row[data-thema="kunden"]').click();
+      await page.waitForTimeout(500);
+      beschriftungNachLaden = await page.locator('#demo-toggle-btn').innerText();
+
+      await page.locator('#demo-toggle-btn').click();
+      await page.waitForTimeout(3000);
+      maschinenNachEntfernen = await page.locator('.machine-item').count();
+    }
+
+    console.log('\n=== Beispieldaten ===');
+    console.log(`Menüzeile „Kunden"        ${zeileDa ? 'sichtbar' : 'FEHLT'}`);
+    console.log(`Beschriftung vorher       ${beschriftungVorher || '(kein Knopf)'}`);
+    console.log(`Filter blendet aus        ${fremdesThemaSichtbar ? 'NEIN' : 'ja'}`);
+    console.log(`Maschinen nach dem Laden  ${maschinenNachLaden}`);
+    console.log(`Beschriftung danach       ${beschriftungNachLaden}`);
+    console.log(`Maschinen nach Entfernen  ${maschinenNachEntfernen}`);
+
+    pruefe(zeileDa, 'Beispieldaten: die Menüzeile „Kunden" fehlt auf Experten-Stufe');
+    pruefe(knopfDa, 'Beispieldaten: der Knopf fehlt in der Kategorie');
+    pruefe(
+      !fremdesThemaSichtbar,
+      'Beispieldaten: das Thema "kunden" filtert nicht — ein fremder Abschnitt ("Ansicht") bleibt sichtbar (style.css: .settings-list[data-filter] fehlt der Eintrag)'
+    );
+    pruefe(
+      maschinenNachLaden >= 50,
+      `Beispieldaten: nur ${maschinenNachLaden} Maschinen nach dem Laden — erwartet nahe 100`
+    );
+    pruefe(
+      beschriftungNachLaden.toLowerCase().includes('entfernen'),
+      `Beispieldaten: der Knopf zeigt nach dem Laden „${beschriftungNachLaden}" statt „entfernen"`
+    );
+    pruefe(
+      maschinenNachEntfernen === 0,
+      `Beispieldaten: nach „entfernen" stehen noch ${maschinenNachEntfernen} Maschinen im Bestand`
+    );
+
+    await ctx.close();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // KUNDENLISTE EINLESEN
+  //
+  // Dieselbe Kategorie, der zweite Knopf. Eine winzige CSV-Datei mit einer
+  // Kopfzeile in eigener Schreibweise ("Firma" statt "Name") prüft genau die
+  // Stelle, die am leichtesten stumm bricht: die Spaltenerkennung. Erkennt
+  // sie „Firma" nicht mehr, legt die Funktion nichts an — nicht lautstark,
+  // sondern einfach gar nicht.
+  {
+    const csvPfad = join(mkdtempSync(join(tmpdir(), 'kunden-')), 'kunden.csv');
+    writeFileSync(
+      csvPfad,
+      'Firma,PLZ,Maschine\nAttention-Check Import GmbH,45127,Import-Pumpe 1\n',
+      'utf8'
+    );
+
+    const ctx = await browser.newContext({
+      viewport: FORMATE[0].viewport,
+      hasTouch: true,
+      isMobile: true,
+      locale: 'de-DE',
+    });
+    const page = await ctx.newPage();
+    await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2000);
+
+    await page.locator('.view-level-btn[data-level="expert"]').first().click();
+    await page.waitForTimeout(500);
+    await page.locator('#app-menu-btn').click();
+    await page.waitForTimeout(700);
+    const kundenZeileDa = await page
+      .locator('.info-sheet-row[data-thema="kunden"]')
+      .isVisible()
+      .catch(() => false);
+    if (kundenZeileDa) await page.locator('.info-sheet-row[data-thema="kunden"]').click();
+    await page.waitForTimeout(500);
+
+    const importKnopf = page.locator('#import-customers-btn');
+    const importKnopfDa = await importKnopf.isVisible().catch(() => false);
+
+    let maschineDa = false;
+    if (importKnopfDa) {
+      const [dateiwahl] = await Promise.all([
+        page.waitForEvent('filechooser'),
+        importKnopf.click(),
+      ]);
+      await dateiwahl.setFiles(csvPfad);
+      // Import plus Neuladen der Seite.
+      await page.waitForTimeout(3500);
+      maschineDa = await page
+        .locator('.machine-item', { hasText: 'Import-Pumpe 1' })
+        .first()
+        .isVisible()
+        .catch(() => false);
+    }
+
+    console.log('\n=== Kundenliste einlesen ===');
+    console.log(`Importknopf               ${importKnopfDa ? 'sichtbar' : 'FEHLT'}`);
+    console.log(`Maschine aus der CSV      ${maschineDa ? 'sichtbar' : 'NICHT sichtbar'}`);
+
+    pruefe(importKnopfDa, 'Kundenimport: der Knopf fehlt in der Kategorie');
+    pruefe(
+      maschineDa,
+      'Kundenimport: die aus „Firma,PLZ,Maschine" eingelesene Maschine erscheint nicht im Bestand — die Spalte „Firma" wird nicht mehr als Name erkannt'
+    );
 
     await ctx.close();
   }

@@ -22,6 +22,7 @@ export const en: TranslationDict = {
     soon: 'later',
     view: 'View: basic or pro',
     map: 'Customer map',
+    customerData: 'Customers: samples & import',
   },
 
   search: {
@@ -132,6 +133,23 @@ export const en: TranslationDict = {
     plzInvalid: 'Please enter a five-digit German postcode.',
     plzFound: '{{ort}} — taken from the postcode.',
     plzUnknown: 'This postcode is unknown. The customer is created, but without a map position.',
+    demoTitle: 'Sample data',
+    demoDescription:
+      'About 100 invented customers, spread across Germany, each with one machine without a reference. For demos — real data stays untouched.',
+    demoLoad: 'Load sample data',
+    demoRemove: 'Remove sample data',
+    demoCount: '{{count}} sample customers loaded',
+    demoLoaded: '{{count}} sample customers created',
+    demoRemoved: '{{count}} sample customers removed',
+    demoError: 'Sample data could not be processed.',
+    importTitle: 'Import a customer list',
+    importDescription:
+      'CSV file with the columns Name, Postcode, optionally Town and Machine. Town and map position come from the postcode.',
+    importButton: 'Choose CSV',
+    importSummary:
+      '{{angelegt}} customers created, {{maschinen}} machines, {{uebersprungen}} skipped, {{fehler}} invalid rows',
+    importNoColumns: 'The file has no "Name" or "Postcode" column — nothing was imported.',
+    importError: 'The customer list could not be imported.',
   },
 
   // ============================================================================
