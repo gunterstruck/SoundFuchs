@@ -25,6 +25,8 @@ import { HashRouter } from '@ui/HashRouter.js';
 import { ReferenceLoadingOverlay } from '@ui/components/ReferenceLoadingOverlay.js';
 import { notify } from '@utils/notifications.js';
 import { logger } from '@utils/logger.js';
+import { GlobalSearch } from '@ui/GlobalSearch.js';
+import { InfoBottomSheet } from '@ui/components/InfoBottomSheet.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
 import { initPwaUpdate } from '@utils/pwaUpdate.js';
 import {
@@ -266,6 +268,8 @@ class ZanobotApp {
       this.setupViewLevelSelector();
       this.setupDiagnosisAudioSelector();
       this.setupFooterLinks();
+      this.setupGlobalSearch();
+      this.setupInfoButton();
 
       // Initialize About Modal with dynamic i18n content
       new AboutModalController();
@@ -726,6 +730,70 @@ class ZanobotApp {
   /**
    * Setup footer links (Impressum, Datenschutz, Über Zanobot)
    */
+  /**
+   * Suche in der Kopfleiste einhängen.
+   *
+   * Der Treffer geht denselben Weg wie die Auswahl aus der Liste oder per Scan:
+   * über den Router, der die Identify-Phase mit der Maschine öffnet. So gibt es
+   * genau einen Pfad in die Maschine, egal woher der Anstoß kam.
+   */
+  private setupGlobalSearch(): void {
+    const suche = new GlobalSearch((machine) => {
+      window.location.hash = `#/identify?machine=${encodeURIComponent(machine.id)}`;
+    });
+    if (!suche.istVerfuegbar) return;
+    suche.init();
+    logger.debug('🔍 Suche in der Kopfleiste bereit');
+  }
+
+  /**
+   * Info-Knopf der Kopfleiste.
+   *
+   * Er trägt, was bis zum 14.08.2026 in der Fußzeile stand: Einstellungen, Über
+   * SoundFuchs, Datenschutz, Impressum. Die Fußzeile selbst bleibt im Markup —
+   * verborgen, aber vollständig verdrahtet. Das Schiebefenster löst deshalb die
+   * vorhandenen Knöpfe aus, statt deren Logik nachzubauen: Ein zweiter Weg zum
+   * selben Ziel wäre ein zweiter Weg, der kaputtgehen kann.
+   */
+  private setupInfoButton(): void {
+    const knopf = document.getElementById('app-info-btn');
+    if (!knopf) return;
+
+    const eintraege = [
+      { id: 'settings-btn', icon: '⚙️', key: 'footer.settings' },
+      { id: 'about-btn', icon: '🦊', key: 'footer.about' },
+      { id: 'datenschutz-btn', icon: '🛡️', key: 'footer.privacy' },
+      { id: 'impressum-btn', icon: '§', key: 'footer.impressum' },
+    ];
+
+    knopf.addEventListener('click', () => {
+      const zeilen = eintraege
+        .filter((e) => document.getElementById(e.id))
+        .map(
+          (e) =>
+            `<button type="button" class="info-sheet-row" data-target="${e.id}">` +
+            `<span class="info-sheet-icon">${e.icon}</span>` +
+            `<span class="info-sheet-label">${t(e.key)}</span>` +
+            `<span class="info-sheet-arrow">›</span></button>`
+        )
+        .join('');
+
+      InfoBottomSheet.show({ title: t('search.sheetTitle'), icon: '⚙️', content: zeilen });
+
+      // Nach dem Zeichnen verdrahten: Der Klick reicht an den vorhandenen
+      // Fußzeilen-Knopf weiter, der schon alles Nötige tut.
+      requestAnimationFrame(() => {
+        document.querySelectorAll<HTMLElement>('.info-sheet-row[data-target]').forEach((zeile) => {
+          zeile.addEventListener('click', () => {
+            const ziel = document.getElementById(zeile.dataset.target ?? '');
+            InfoBottomSheet.close();
+            ziel?.click();
+          });
+        });
+      });
+    });
+  }
+
   private setupFooterLinks(): void {
     // Helper function to close a modal
     const closeModal = (modal: HTMLElement) => {

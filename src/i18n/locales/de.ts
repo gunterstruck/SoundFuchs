@@ -7,7 +7,11 @@
 import type { TranslationDict } from '../index.js';
 
 export const de: TranslationDict = {
-  // ============================================================================
+  search: {
+    placeholder: 'Maschine, Ort oder ID…',
+    noHits: 'Nichts gefunden.',
+    sheetTitle: 'Einstellungen & mehr',
+  },  // ============================================================================
   // BUTTONS
   // ============================================================================
   buttons: {

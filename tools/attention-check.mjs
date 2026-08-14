@@ -140,7 +140,7 @@ const ERSTBILD_PROBE = `(() => {
         ['Maschine', '#select-machine-content, [data-target="select-machine-content"]'],
         ['Referenz', '#record-reference-content, [data-target="record-reference-content"]'],
         ['Pruefen', '#run-diagnosis-content, [data-target="run-diagnosis-content"]'],
-        ['Fusszeile', '.footer']
+        ['Fusszeile', 'footer, .info-sheet-row']
     ];
 
     const imBild = entdoppelt([...document.querySelectorAll(BEDIENBAR)].filter(imFenster));
@@ -351,7 +351,12 @@ try {
     );
 
     // Einstellungen: der globale Komplexitätsschalter liegt hier drin.
-    await page.click('#settings-btn');
+    // Seit dem 14.08.2026 liegt der Weg zu den Einstellungen hinter dem
+    // Info-Knopf der Kopfleiste; die Fusszeile ist verborgen. Erst das
+    // Schiebefenster oeffnen, dann den Eintrag darin.
+    await page.click('#app-info-btn');
+    await page.waitForSelector('.info-sheet-row[data-target="settings-btn"]', { timeout: 4000 });
+    await page.click('.info-sheet-row[data-target="settings-btn"]');
     await page.waitForTimeout(1000);
     const basis = await page.evaluate(SICHTBAR_PROBE);
     console.log(
