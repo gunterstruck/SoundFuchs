@@ -3974,6 +3974,25 @@ export class DiagnosePhase {
 
     container.innerHTML = '';
 
+    // Überschrift und ein Satz dazu.
+    //
+    // Bis zum 14.08.2026 standen hier sieben Knöpfe ohne Beschriftung des
+    // Ganzen — „Nur Unterschied", „Auf hörbaren Bereich", „Referenz", „Diese
+    // Messung", „Langsam", „Normal", „Höher". Jeder einzelne ist benannt, aber
+    // wofür sie zusammen da sind, stand nirgends. Dass man den Unterschied
+    // zwischen Normalzustand und Messung *hören* kann, ist das, was diese App
+    // von einer Zahl auf einem Schirm unterscheidet — und ausgerechnet das war
+    // der einzige Teil des Ergebnisses, den man erraten musste.
+    const beschriftung = document.createElement('p');
+    beschriftung.className = 'listen-controls-label';
+    beschriftung.textContent = t('diagnose.display.listenSectionLabel');
+    container.appendChild(beschriftung);
+
+    const hinweis = document.createElement('p');
+    hinweis.className = 'listen-controls-hint';
+    hinweis.textContent = t('diagnose.display.listenSectionHint');
+    container.appendChild(hinweis);
+
     let speedFactor = 1; // 0.5 = slower/lower, 2 = faster/higher
     const buttons: Array<{ key: string; el: HTMLButtonElement; label: string }> = [];
     const buffers: Record<string, AudioBuffer> = {};

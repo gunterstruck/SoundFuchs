@@ -390,6 +390,9 @@ export const de: TranslationDict = {
       waitingForSignal: 'Warte auf Signal...',
       spectrumReveal: '👁 Spektrum ansehen',
       spectrumHide: 'Spektrum ausblenden',
+      listenSectionLabel: 'Anhören',
+      listenSectionHint:
+        'Normalzustand und Messung vergleichen — oder nur das hören, was dazugekommen ist.',
       listenReference: '🔊 Referenz',
       listenMeasurement: '🔊 Diese Messung',
       listenStop: '⏹ Stopp',
