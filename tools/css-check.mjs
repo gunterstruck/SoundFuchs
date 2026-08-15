@@ -28,6 +28,12 @@ import { join } from 'node:path';
 const CSS_ORT = 'src/styles';
 
 // Von aussen gesetzt oder vom Browser vergeben, nie im Projekt geschrieben.
+//
+// Der zweite Block kommt von Leaflet. Es baut seine Bedienelemente selbst und
+// vergibt dabei eigene Namen; im Quelltext dieses Projekts stehen sie nirgends,
+// und trotzdem muessen wir sie ansprechen koennen - die Zoom-Bedienung sitzt
+// unten rechts und muss dem Blatt ausweichen. Sie hier zu nennen ist keine
+// Ausnahme vom Massstab, sondern die Angabe der fehlenden Quelle.
 const VON_AUSSEN = new Set([
   'active',
   'hidden',
@@ -43,6 +49,12 @@ const VON_AUSSEN = new Set([
   'dragging',
   'expanded',
   'collapsed',
+  'leaflet-top',
+  'leaflet-bottom',
+  'leaflet-left',
+  'leaflet-right',
+  'leaflet-control',
+  'leaflet-popup',
 ]);
 
 const quelltext = [];

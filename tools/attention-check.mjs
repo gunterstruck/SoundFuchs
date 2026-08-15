@@ -1192,6 +1192,187 @@ try {
 
     await ctx.close();
   }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // DIE KETTE VON DER KARTE IN DIE PRÜFUNG (Schnitt 3)
+  //
+  //   Marker → Standortblatt → Maschinenzeile → Maschinenblatt → Prüfung
+  //
+  // Das ist die Reise, um die es in der neuen Schale geht: Der Maschinenknopf
+  // im Standort-Popup entspricht TourFuchs' Briefing-Knopf, und dahinter baut
+  // sich im semantischen Zoom der Prüfablauf auf (§0c des Papiers).
+  //
+  // Jedes Glied kann still reißen, und zwei sind es beim Bauen auch:
+  //
+  //   1. Die Karte kannte ihren freien Bereich nicht. Deutschland lag unter
+  //      dem Blatt, die Marker waren nicht anzutippen — die Kette begann
+  //      nicht einmal. Gemessen wird deshalb, wo das erste Marker-Symbol
+  //      wirklich liegt, nicht ob es existiert.
+  //   2. Der letzte Sprung landete in einer eingeklappten Tafel. Getippt,
+  //      nichts passiert, die Karte steht unverändert da. Gemessen wird
+  //      deshalb, ob der nächste Abschnitt am Ende IM BILD steht.
+  {
+    const ctx = await browser.newContext({
+      viewport: FORMATE[0].viewport,
+      hasTouch: true,
+      isMobile: true,
+      locale: 'de-DE',
+    });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'neu'));
+    await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2500);
+
+    // Beispieldaten über den Knopf in der leeren Karte — derselbe Weg, den
+    // ein Neuling nimmt.
+    const einstieg = page.locator('#map-empty-demo-btn');
+    if (await einstieg.isVisible().catch(() => false)) {
+      await einstieg.click();
+      await page.waitForTimeout(8000);
+    }
+
+    // JETZT messen, mit noch aufgezogenem Blatt. Genau das ist die Lage, in
+    // der es brach: Das Blatt verdeckt 439 von 792 Punkten, und die Karte muss
+    // ihren Inhalt in den Rest darüber schieben. Erst danach einklappen —
+    // eingeklappt hätte die Messung nichts zu sagen, weil dann ohnehin fast
+    // die ganze Fläche frei ist.
+    const messeMarker = () =>
+      page.evaluate(() => {
+        const blatt = document.getElementById('schale-blatt')?.getBoundingClientRect();
+        const alle = [...document.querySelectorAll('#customer-map .leaflet-marker-icon')];
+        const oberstes = alle.length
+          ? Math.min(...alle.map((e) => Math.round(e.getBoundingClientRect().top)))
+          : null;
+        const grenze = blatt ? blatt.top : window.innerHeight;
+        return {
+          marker: alle.length,
+          einzeln: document.querySelectorAll('#customer-map .customer-marker-wrapper').length,
+          stapel: document.querySelectorAll('#customer-map .customer-cluster-wrapper').length,
+          oberstesMarkerY: oberstes,
+          blattOben: blatt ? Math.round(blatt.top) : null,
+          // Nicht das oberste Symbol zählt, sondern das unterste: Rutscht die
+          // Karte nach unten, verschwinden zuerst die südlichen Standorte, und
+          // das oberste steht weiter unschuldig im Bild.
+          hinterDemBlatt: alle.filter((e) => e.getBoundingClientRect().top >= grenze).length,
+        };
+      });
+    const karte = await messeMarker();
+
+    // Das Blatt einklappen: Die Karte ist der Grund, und man sieht sie an.
+    await page
+      .locator('#schale-griff')
+      .click()
+      .catch(() => {});
+    await page.waitForTimeout(1400);
+
+    // In Stapel hineinzoomen, bis ein einzelner Standort dasteht.
+    for (let i = 0; i < 8; i += 1) {
+      const einzeln = page.locator('#customer-map .customer-marker-wrapper');
+      if ((await einzeln.count()) > 0) {
+        await einzeln.first().click({ force: true });
+        await page.waitForTimeout(1300);
+        break;
+      }
+      const stapel = page.locator('#customer-map .customer-cluster-wrapper');
+      if ((await stapel.count()) === 0) break;
+      await stapel.first().click({ force: true });
+      await page.waitForTimeout(1400);
+    }
+
+    const blattDa = await page
+      .locator('#customer-sheet')
+      .isVisible()
+      .catch(() => false);
+    const zeilen = await page.locator('#customer-sheet .customer-machine-row').count();
+
+    let fensterDa = false;
+    let knopfText = '(nicht erreicht)';
+    if (zeilen > 0) {
+      await page.locator('#customer-sheet .customer-machine-row').first().click({ force: true });
+      await page.waitForTimeout(1600);
+      fensterDa = await page
+        .locator('#machine-detail-modal')
+        .isVisible()
+        .catch(() => false);
+      const knopf = page.locator('#machine-detail-select-btn');
+      if (await knopf.isVisible().catch(() => false)) {
+        knopfText = (await knopf.innerText()).trim();
+        await knopf.click({ force: true });
+        await page.waitForTimeout(2500);
+      }
+    }
+
+    const ziel = await page.evaluate(() => {
+      const imBild = (id) => {
+        const e = document.getElementById(id);
+        if (!e) return null;
+        const cs = getComputedStyle(e);
+        if (cs.display === 'none') return null;
+        const r = e.getBoundingClientRect();
+        return r.height > 0 && r.top < window.innerHeight && r.bottom > 0
+          ? { y: Math.round(r.top), h: Math.round(r.height) }
+          : null;
+      };
+      return {
+        blattOffen: document.getElementById('schale-blatt')?.classList.contains('offen') ?? false,
+        reiter: document.querySelector('.schale-reiter-btn.active')?.dataset.reiter ?? '—',
+        aufnahme: imBild('record-reference-content'),
+        pruefung: imBild('run-diagnosis-content'),
+      };
+    });
+    const naechsterSchritt = ziel.aufnahme ?? ziel.pruefung;
+
+    console.log('\n=== Kette: Karte → Prüfung ===');
+    console.log(`Marker (einzeln/Stapel)   ${karte.einzeln} / ${karte.stapel}`);
+    console.log(
+      `Marker hinter dem Blatt   ${karte.hinterDemBlatt} von ${karte.marker} (Blatt ab ${karte.blattOben} px)`
+    );
+    console.log(`Standortblatt             ${blattDa ? 'offen' : 'ZU'}`);
+    console.log(`Maschinenzeilen darin     ${zeilen}`);
+    console.log(`Maschinenblatt            ${fensterDa ? 'offen' : 'NICHT offen'}`);
+    console.log(`Knopf darin               ${knopfText}`);
+    console.log(`danach: Blatt             ${ziel.blattOffen ? 'aufgezogen' : 'EINGEKLAPPT'}`);
+    console.log(`danach: Reiter            ${ziel.reiter}`);
+    console.log(
+      `danach: nächster Schritt  ${naechsterSchritt ? `im Bild bei ${naechsterSchritt.y} px` : 'NICHT IM BILD'}`
+    );
+
+    pruefe(
+      karte.marker > 0,
+      'Kette: kein Marker auf der Karte — die Beispieldaten kommen im Grund nicht an'
+    );
+    // Warum 3 und nicht 0: Das aufgezogene Blatt nimmt 55 % der Karte. Was
+    // bleibt, reicht für Deutschland gerade so — die Karte kann nicht unter
+    // ihre kleinste Stufe, und der Rand um den Bestand (`pad(0.25)`) will auch
+    // noch Platz. Null zu verlangen hieße, eine Zusage zu geben, die die
+    // Fläche nicht hergibt. Gemessen: ohne Polsterung 9 von 12, mit ihr 2 —
+    // die Schwelle liegt weit genug von beiden, um den Rückfall zu fangen,
+    // ohne bei jedem Punkt am Rand anzuschlagen.
+    pruefe(
+      karte.hinterDemBlatt <= 3,
+      `Kette: ${karte.hinterDemBlatt} von ${karte.marker} Markern liegen hinter dem aufgezogenen Blatt — die Karte kennt ihren freien Bereich nicht, und diese Standorte sind nicht anzutippen`
+    );
+    pruefe(blattDa, 'Kette: der Marker öffnet kein Standortblatt');
+    pruefe(
+      zeilen > 0,
+      'Kette: das Standortblatt zeigt keine Maschinenzeile — es gibt keinen Knopf'
+    );
+    pruefe(fensterDa, 'Kette: die Maschinenzeile öffnet das Maschinenblatt nicht');
+    pruefe(
+      ziel.blattOffen,
+      'Kette: nach dem Knopf bleibt das Blatt eingeklappt — es sieht aus, als sei nichts passiert'
+    );
+    pruefe(
+      ziel.reiter === 'daten',
+      `Kette: nach dem Knopf steht Reiter „${ziel.reiter}" statt „daten"`
+    );
+    pruefe(
+      Boolean(naechsterSchritt),
+      'Kette: der nächste Schritt steht am Ende nicht im Bild — der rote Faden reißt an der letzten Stelle'
+    );
+
+    await ctx.close();
+  }
 } finally {
   await browser.close();
   vorschau.kill();

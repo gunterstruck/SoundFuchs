@@ -351,6 +351,69 @@ export class CustomerMap {
     return this.stapel;
   }
 
+  /**
+   * Wie viel von der Karte tatsächlich frei liegt.
+   *
+   * Im Fenster ist das die ganze Fläche. Im Grund der neuen Schale liegt oben
+   * der Kopfstreifen und unten das Blatt darüber — und ohne diese Polsterung
+   * rechnet Leaflet mit der vollen Höhe: Beim ersten Messen saß Deutschland
+   * unter dem Blatt, und die Marker, um die es geht, waren nicht anzutippen.
+   *
+   * Gemessen wird, was dasteht, nicht was im CSS steht. Das Blatt ist mal
+   * 46 px hoch und mal halbhoch, der Streifen mal ein-, mal zweizeilig; jede
+   * feste Zahl wäre nur so lange richtig, bis jemand eine Zeile ergänzt.
+   * Dieselbe Überlegung steht bei TourFuchs über `fitPadding()` und
+   * `syncTopnavMetrics()`.
+   */
+  private freieFlaeche(): { oben: number; unten: number; links: number; rechts: number } {
+    const grund = this.karte?.getContainer().getBoundingClientRect();
+    const rand = { oben: 24, unten: 24, links: 18, rechts: 18 };
+    if (!grund) return rand;
+
+    const sichtbar = (id: string): DOMRect | null => {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const stil = getComputedStyle(el);
+      if (stil.display === 'none' || stil.visibility === 'hidden') return null;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 ? r : null;
+    };
+
+    const streifen = sichtbar('schale-streifen');
+    if (streifen && streifen.bottom > grund.top) {
+      rand.oben = Math.max(rand.oben, Math.round(streifen.bottom - grund.top) + 12);
+    }
+    const blatt = sichtbar('schale-blatt');
+    if (blatt && blatt.top < grund.bottom) {
+      rand.unten = Math.max(rand.unten, Math.round(grund.bottom - blatt.top) + 12);
+    }
+
+    // ── WARUM DIE POLSTERUNG GEDECKELT WIRD ───────────────────────────────
+    //
+    // Beim ersten Messen war sie ungedeckelt, und Deutschland lag trotzdem
+    // unter dem Blatt — genauso falsch wie ganz ohne Polsterung. Der Grund
+    // liegt eine Ebene tiefer: Die Karte hat einen Rahmen (`setMaxBounds`),
+    // über den hinaus sie nicht schwenkt. Ein aufgezogenes Blatt verdeckt 439
+    // von 792 Punkten; die Karte hätte den Inhalt in den schmalen Rest darüber
+    // schieben müssen und wäre dabei aus ihrem Rahmen gelaufen. Also zog der
+    // Rahmen sie wieder zurück, und die Polsterung war wirkungslos. Sichtbar
+    // wurde das erst an einer Zahl: das erste Marker-Symbol bei 466 px, das
+    // Blatt beginnt bei 405.
+    //
+    // Deshalb eine Obergrenze: Zusammen nehmen sich Kopfstreifen und Blatt
+    // höchstens 68 % der Höhe. Darüber hinaus zu reservieren nützt nichts
+    // mehr — die Karte kann nicht unter ihre kleinste Stufe, und was übrig
+    // bliebe, wäre kleiner als Deutschland. Gemessen im Einstiegszustand, in
+    // dem das Blatt 55 % einnimmt: ohne Polsterung liegen 9 von 12 Markern
+    // dahinter, mit ihr 2. TourFuchs deckelt aus demselben Grund, dort mit
+    // einer festen Zahl (`fitPadding`: `Math.min(mobileBottom, overlap + 16)`).
+    const obergrenze = Math.round(grund.height * 0.68);
+    if (rand.oben + rand.unten > obergrenze) {
+      rand.unten = Math.max(24, obergrenze - rand.oben);
+    }
+    return rand;
+  }
+
   private async zeichneKunden(): Promise<void> {
     if (!this.karte) return;
     const L = (await import('leaflet')).default;
@@ -406,11 +469,17 @@ export class CustomerMap {
       hinweis.style.display = ohne > 0 ? '' : 'none';
     }
 
-    // Alle Kunden ins Bild holen — aber nicht näher als der Startzoom, sonst
-    // klebt man bei einem einzigen Kunden auf Straßenebene.
+    // Alle Standorte ins Bild holen — aber nicht näher als der Startzoom, sonst
+    // klebt man bei einem einzigen Standort auf Straßenebene. Die Polsterung
+    // hält Kopfstreifen und Blatt frei, siehe `freieFlaeche()`.
     if (verortet.length > 0) {
       const punkte = verortet.map((k) => [k.lat!, k.lng!] as [number, number]);
-      this.karte.fitBounds(L.latLngBounds(punkte).pad(0.25), { maxZoom: 11 });
+      const rand = this.freieFlaeche();
+      this.karte.fitBounds(L.latLngBounds(punkte).pad(0.25), {
+        maxZoom: 11,
+        paddingTopLeft: L.point(rand.links, rand.oben),
+        paddingBottomRight: L.point(rand.rechts, rand.unten),
+      });
     }
 
     this.zeigeLeerzustand(verortet.length === 0);

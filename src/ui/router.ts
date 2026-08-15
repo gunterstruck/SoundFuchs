@@ -36,6 +36,7 @@ import { getRecordingSettings, RECORDING_SETTINGS_EVENT } from '@utils/recording
 import { QuickCompareController } from './QuickCompareController.js';
 import { exportAsPrintablePDF, type ReportData, type ReportEntry } from '@utils/reportExport.js';
 import { hapticForScore } from '@utils/haptics.js';
+import { MASCHINE_GEWAEHLT, type MaschineGewaehltDetail } from './shell/ereignisse.js';
 
 /**
  * Lazy-load the heavy phase modules on demand and cache the module promise.
@@ -269,6 +270,25 @@ export class Router {
     // Fire-and-forget: phase modules are prefetched; downstream auto-start paths
     // already poll/delay for the diagnose button, so they tolerate async init.
     void this.initializePhases(machine);
+
+    // Ansagen, welcher Abschnitt gleich aufgeklappt und angesprungen wird.
+    //
+    // In der neuen Schale (docs/nutzerreise-wie-tourfuchs.md) liegt dieser
+    // Abschnitt im Blatt, und das Blatt kann eingeklappt sein. Wer dann
+    // „Prüfung starten" tippt, sähe gar nichts geschehen — der rote Faden
+    // risse genau an der Stelle, an der er halten muss. Die Schale hört zu
+    // und zieht auf; wer sie nicht benutzt, für den kostet die Zeile nichts.
+    // Der Router selbst weiß nichts von einer Schale, und das soll so bleiben.
+    const naechsterAbschnitt = this.quickCompareController.isActive
+      ? 'record-reference-content'
+      : (machine.referenceModels?.length ?? 0) > 0
+        ? 'run-diagnosis-content'
+        : 'record-reference-content';
+    document.dispatchEvent(
+      new CustomEvent<MaschineGewaehltDetail>(MASCHINE_GEWAEHLT, {
+        detail: { abschnitt: naechsterAbschnitt },
+      })
+    );
 
     // Quick Compare: auto-expand reference section and scroll to it so the
     // user lands directly on the recording UI instead of seeing the main page

@@ -35,6 +35,7 @@
 
 import { logger } from '@utils/logger.js';
 import { t } from '../../i18n/index.js';
+import { MASCHINE_GEWAEHLT, type MaschineGewaehltDetail } from './ereignisse.js';
 
 /** Die vier Reiter. „Prüfen" fehlt mit Absicht — siehe §0c des Papiers. */
 export const REITER = ['daten', 'flotte', 'karte', 'filter'] as const;
@@ -176,6 +177,7 @@ export class Schale {
 
     await this.setzeBlattzustand();
     this.zeigeReiter(this.reiter);
+    this.hoereAufMaschinenwahl();
 
     // Die Karte zuletzt: Leaflet misst beim Anlegen die Größe des Behälters,
     // und der muss dafür schon an seinem endgültigen Platz stehen.
@@ -338,6 +340,25 @@ export class Schale {
     document.body.classList.toggle('blatt-offen', offen);
     const griff = document.getElementById('schale-griff');
     griff?.setAttribute('aria-label', t(offen ? 'schale.gripClose' : 'schale.gripLabel'));
+    // Erst nach der Überblendung messen, sonst steht die alte Höhe drin.
+    window.setTimeout(() => this.meldeBlattmass(), 280);
+    this.meldeBlattmass();
+  }
+
+  /**
+   * Veröffentlichen, wie viel vom unteren Bildrand das Blatt verdeckt.
+   *
+   * Alles, was über der Karte schwebt — die Grundwahl, das Standortblatt —,
+   * muss oberhalb davon bleiben. Eine feste Zahl im CSS wäre nur so lange
+   * richtig, bis das Blatt seinen Zustand wechselt: 46 px im Peek, halbhoch
+   * im Einstieg, weit mehr aufgezogen. Gemessen wird deshalb, was dasteht.
+   * TourFuchs veröffentlicht aus demselben Grund `--mobile-topnav-bottom`.
+   */
+  private meldeBlattmass(): void {
+    if (!this.blatt) return;
+    const r = this.blatt.getBoundingClientRect();
+    const verdeckt = Math.max(0, Math.round(window.innerHeight - r.top));
+    document.documentElement.style.setProperty('--blatt-verdeckt', `${verdeckt}px`);
   }
 
   /**
@@ -355,6 +376,41 @@ export class Schale {
     }
     this.blatt?.classList.toggle('einstieg', !bestand);
     this.oeffneBlatt(!bestand);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Die Kette von der Karte in die Prüfung
+  // ══════════════════════════════════════════════════════════════════════
+
+  /**
+   * Marker → Standortblatt → Maschinenzeile → Maschinenblatt → **Prüfung**.
+   *
+   * Das letzte Glied riss, als das Blatt dazukam. Der Ablauf klappt den
+   * nächsten Abschnitt auf und springt ihn an — nur liegt der jetzt in einer
+   * Tafel, die eingeklappt `display: none` trägt. Getippt, nichts passiert,
+   * die Karte steht unverändert da: der klassische stille Bruch, denn kein
+   * Fehler wird gemeldet und jede einzelne Stelle arbeitet korrekt.
+   *
+   * Die Schale zieht deshalb auf, bevor der Ablauf springt. Sie tut es
+   * synchron: Der Ablauf springt im nächsten Einzelbild, und dann muss die
+   * Tafel schon sichtbar sein.
+   */
+  private hoereAufMaschinenwahl(): void {
+    const zuhoerer = (e: Event) => {
+      if (!this.an_) return;
+      const abschnitt = (e as CustomEvent<MaschineGewaehltDetail>).detail?.abschnitt;
+      this.zeigeReiter('daten');
+      this.oeffneBlatt(true);
+      if (!abschnitt) return;
+      // Nach der Überblendung noch einmal nachfassen: Der Sprung des Ablaufs
+      // fällt in ein Blatt, das sich gerade noch bewegt, und landet dann zu
+      // kurz. Ein zweiter, sanfter Anlauf kostet nichts und trifft.
+      window.setTimeout(() => {
+        document.getElementById(abschnitt)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 320);
+    };
+    document.addEventListener(MASCHINE_GEWAEHLT, zuhoerer);
+    this.aufraeumer.push(() => document.removeEventListener(MASCHINE_GEWAEHLT, zuhoerer));
   }
 
   // ══════════════════════════════════════════════════════════════════════

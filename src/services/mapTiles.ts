@@ -69,7 +69,23 @@ export const KACHELGRUENDE: Record<Kachelwahl, Kachelgrund> = {
  *
  * Der Mittelpunkt liegt in der Mitte Deutschlands, die Grenzen umfassen
  * Mitteleuropa. Wer weiter hinausziehen will, kann es nicht: Eine Weltkarte
- * mit drei Kunden im Ruhrgebiet zeigt vor allem Ozean.
+ * mit drei Standorten im Ruhrgebiet zeigt vor allem Ozean.
+ *
+ * ── WARUM DIE GRENZEN WEITER SIND ALS DAS BILD ──────────────────────────────
+ *
+ * Sie standen auf 40–62° Nord und −10–30° Ost, also knapp um das, was man
+ * sehen will. Zu knapp: In der neuen Schale (Schnitt 2) verdeckt das Blatt
+ * einen Teil der Karte, und die Karte schiebt ihren Inhalt dann in den freien
+ * Rest darüber. Genau dabei lief sie aus diesen Grenzen — und wurde
+ * zurückgezogen. Das Ergebnis war paradox: Mit Polsterung lag Deutschland
+ * ebenso unter dem Blatt wie ohne, gemessen am ersten Marker bei 466 Punkten,
+ * während das Blatt bei 405 beginnt. Nichts meldete sich; die Grenzen tun ja
+ * genau das, wofür sie da sind.
+ *
+ * Mit 36–66° und −16–36° hat die Karte den Spielraum, den das Verschieben
+ * braucht (derselbe Marker liegt jetzt bei 371), und bleibt trotzdem, was sie
+ * sein soll: ein Ausschnitt um Mitteleuropa, kein Globus. `maxBoundsViscosity`
+ * zieht wie bisher zurück, wer daran zerrt.
  */
 export const KARTENSICHT = {
   mitte: [51.16, 10.45] as [number, number],
@@ -77,8 +93,8 @@ export const KARTENSICHT = {
   minZoom: 5,
   maxZoom: 19,
   grenzen: [
-    [40.0, -10.0],
-    [62.0, 30.0],
+    [36.0, -16.0],
+    [66.0, 36.0],
   ] as [[number, number], [number, number]],
 };
 

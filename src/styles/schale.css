@@ -17,6 +17,10 @@ html[data-schale='neu'] {
   /* Im Ruhezustand schaut nur der Griff heraus. Ansichtstiefe und Reiter
      hängen oben, das Blatt ist reine Inhaltsfläche auf Abruf. */
   --blatt-peek: 46px;
+  /* Wie viel vom unteren Bildrand das Blatt gerade verdeckt. Die Schale misst
+     und setzt den Wert (`meldeBlattmass`); der Anfangswert gilt nur die eine
+     Bildfolge lang, bis die erste Messung da ist. */
+  --blatt-verdeckt: var(--blatt-peek);
   --blatt-halb: min(68dvh, 620px);
   --blatt-einstieg: min(52dvh, 480px);
 }
@@ -75,7 +79,7 @@ html[data-schale='neu'] .karten-grund #customer-map {
 html[data-schale='neu'] .karten-grund #map-basemap-row {
   position: absolute;
   left: 10px;
-  bottom: calc(var(--blatt-peek) + var(--safe-bottom) + 12px);
+  bottom: calc(var(--blatt-verdeckt) + 12px);
   z-index: 500;
   margin: 0;
 }
@@ -97,14 +101,25 @@ html[data-schale='neu'] .karten-grund .map-empty {
   top: 30%;
 }
 
-/* Das Standortblatt legt sich über die Karte, wie im Fenster auch. */
+/* Leaflets Zoom-Bedienung sitzt unten rechts — im Grund läge sie hinter dem
+   Blatt und, sobald ein Standort gewählt ist, unter dessen Blatt. Sie steigt
+   deshalb mit. */
+html[data-schale='neu'] .karten-grund .leaflet-bottom.leaflet-right {
+  bottom: calc(var(--blatt-verdeckt) + 8px);
+}
+
+/* Das Standortblatt legt sich über die Karte, wie im Fenster auch — und über
+   Leaflets eigene Bedienelemente, die bei 1000 liegen. Ein Blatt, durch das
+   ein Zoomknopf sticht, ist kein Blatt. */
 html[data-schale='neu'] .karten-grund #customer-sheet {
   position: absolute;
   left: 10px;
   right: 10px;
-  bottom: calc(var(--blatt-peek) + var(--safe-bottom) + 12px);
-  z-index: 600;
-  max-height: 52dvh;
+  bottom: calc(var(--blatt-verdeckt) + 12px);
+  z-index: 1100;
+  /* Was zwischen Kopfstreifen und Blatt frei bleibt — nicht mehr. Die
+     Maschinenliste darin scrollt, statt oben aus dem Bild zu wachsen. */
+  max-height: calc(100% - var(--blatt-verdeckt) - 120px);
   overflow-y: auto;
 }
 
