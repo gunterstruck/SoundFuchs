@@ -492,11 +492,179 @@ html[data-schale='neu'] #machine-overview-empty .guide-steps {
   display: none;
 }
 
-html[data-schale='neu'] .schale-platzhalter {
-  margin: 24px 16px;
+/* ══════════════════════════════════════════════════════════════════════
+   DER REITER „KARTE" — „In der Nähe"
+   ══════════════════════════════════════════════════════════════════════ */
+
+html[data-schale='neu'] .nahliste {
+  padding: 12px 14px 16px;
+}
+
+html[data-schale='neu'] .nahliste-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+html[data-schale='neu'] .nahliste-titel {
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+}
+
+/* Dieselbe Segment-Pille wie oben im Kopfstreifen — es ist dieselbe Art
+   Entscheidung: zwei Möglichkeiten, eine davon gilt. */
+html[data-schale='neu'] .nahliste-bezug {
+  display: flex;
+  gap: 3px;
+  padding: 2px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill);
+}
+
+html[data-schale='neu'] .nahliste-bezug-btn {
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  padding: 5px 10px;
+  font-size: var(--font-xs);
+  font-weight: 700;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+html[data-schale='neu'] .nahliste-bezug-btn.active {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+html[data-schale='neu'] .nahliste-zahlen {
+  margin: 8px 0 4px;
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+}
+
+html[data-schale='neu'] .nahliste-zeilen {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+html[data-schale='neu'] .nahliste-zeile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+html[data-schale='neu'] .nahliste-punkt {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--text-muted);
+}
+
+html[data-schale='neu'] .nahliste-punkt.zustand-gesund {
+  background: var(--status-healthy);
+}
+
+html[data-schale='neu'] .nahliste-punkt.zustand-warnung {
+  background: var(--status-warning);
+}
+
+html[data-schale='neu'] .nahliste-punkt.zustand-kritisch {
+  background: var(--status-error);
+}
+
+html[data-schale='neu'] .nahliste-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-xs);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-schale='neu'] .nahliste-name small {
+  color: var(--text-secondary);
+}
+
+html[data-schale='neu'] .nahliste-wert,
+html[data-schale='neu'] .nahliste-weite {
+  flex: 0 0 auto;
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+html[data-schale='neu'] .nahliste-weite {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+html[data-schale='neu'] .nahliste-leer {
+  margin: 16px 0 0;
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
   text-align: center;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DER REITER „FILTER"
+   ══════════════════════════════════════════════════════════════════════ */
+
+html[data-schale='neu'] .filterleiste {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+html[data-schale='neu'] .filter-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+html[data-schale='neu'] .filter-feld-name {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+html[data-schale='neu'] .filter-feld-wahl {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: var(--font-xs);
+}
+
+html[data-schale='neu'] .filter-zuruecksetzen {
+  align-self: flex-start;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  background: var(--bg-secondary);
+  padding: 8px 14px;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+html[data-schale='neu'] .filter-zuruecksetzen[hidden] {
+  display: none;
 }
 
 /* Der bisherige Rumpf zieht als Ganzes in den Reiter „Daten". Er bringt seine

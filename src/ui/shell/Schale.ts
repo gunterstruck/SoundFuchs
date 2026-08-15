@@ -34,8 +34,9 @@
  * Bestand pendelt dafür zwischen „Daten" und „Flotte" — eine Liste, nicht
  * zwei.
  *
- * „Karte" und „Filter" sind noch leer und sagen das auch; sie füllen sich in
- * Schnitt 6.
+ * Schnitt 6 füllte „Karte" (die Nahliste zur Kartenmitte) und „Filter"
+ * (Zustand · Standort · Flottengruppe). Damit trägt jeder Reiter Inhalt; die
+ * Platzhalterzeile, die sagte „kommt noch", wird nicht mehr gebraucht.
  *
  * DER RÜCKWEG IST EIN SCHALTER
  *
@@ -52,6 +53,8 @@ import {
   MASCHINE_LOSGELASSEN,
   type MaschineGewaehltDetail,
 } from './ereignisse.js';
+import { Nahliste } from './Nahliste.js';
+import { Filterleiste } from './Filterleiste.js';
 
 /** Die vier Reiter. „Prüfen" fehlt mit Absicht — siehe §0c des Papiers. */
 export const REITER = ['daten', 'flotte', 'karte', 'filter'] as const;
@@ -81,21 +84,6 @@ const REITER_NAME: Record<Reiter, string> = {
   },
 };
 
-const REITER_LEER: Record<Reiter, string> = {
-  get daten() {
-    return t('schale.soon.daten');
-  },
-  get flotte() {
-    return t('schale.soon.flotte');
-  },
-  get karte() {
-    return t('schale.soon.karte');
-  },
-  get filter() {
-    return t('schale.soon.filter');
-  },
-};
-
 /** Was die Schale von außen braucht. */
 export interface SchaleDeps {
   /**
@@ -112,6 +100,10 @@ export interface SchaleDeps {
   oeffneThema: (thema: string, beschriftung: string) => void;
   /** Die Maschinenliste nach Flotten gruppieren — oder wieder als Reihe. */
   setzeFlottenmodus: (anzeigen: boolean) => Promise<void>;
+  /** Wohin schaut die Karte? Die Nahliste rechnet von hier aus. */
+  kartenmitte: () => { lat: number; lng: number } | null;
+  /** Zu einem Standort fliegen und sein Blatt öffnen. */
+  zeigeStandort: (id: string) => void;
 }
 
 /** Die drei Schritte des ersten Laufs, jeder für sich getan oder offen. */
@@ -172,6 +164,8 @@ export class Schale {
   private blatt: HTMLElement | null = null;
   /** Aufräumer, die `aus()` in umgekehrter Reihenfolge abarbeitet. */
   private aufraeumer: Array<() => void> = [];
+  private nahliste: Nahliste | null = null;
+  private filterleiste: Filterleiste | null = null;
 
   constructor(private readonly deps: SchaleDeps) {}
 
@@ -243,6 +237,7 @@ export class Schale {
 
     this.baueDatenkopf();
     this.baueFlottenkopf();
+    this.baueKarteUndFilter();
     await this.setzeBlattzustand();
     this.zeigeTafel('daten');
     this.hoereAufMaschinenwahl();
@@ -396,15 +391,6 @@ export class Schale {
       tafel.className = 'schale-tafel';
       tafel.dataset.reiter = name;
       tafel.setAttribute('role', name === PRUEFEN ? 'region' : 'tabpanel');
-      if (name === 'karte' || name === 'filter') {
-        // Ein leerer Reiter, der nichts sagt, wirkt kaputt. Er sagt lieber,
-        // dass er noch nichts kann. „Daten", „Flotte" und die Zoomstufe
-        // haben Inhalt und brauchen die Zeile nicht mehr.
-        const platzhalter = document.createElement('p');
-        platzhalter.className = 'schale-platzhalter';
-        platzhalter.textContent = REITER_LEER[name];
-        tafel.appendChild(platzhalter);
-      }
       blatt.appendChild(tafel);
     }
 
@@ -452,6 +438,44 @@ export class Schale {
     const knopf = tafel.querySelector('#quick-compare-cta');
     if (knopf) tafel.insertBefore(ohneBestand, knopf);
     else tafel.appendChild(ohneBestand);
+  }
+
+  /**
+   * Die letzten beiden Reiter (Schnitt 6).
+   *
+   * „Karte" trägt nicht noch eine Karte — die liegt als Grund darunter und
+   * verschwindet nie. Der Reiter trägt die Liste zu ihr, wie bei TourFuchs
+   * (`#tab-karte` mit „In der Nähe"). „Filter" verkleinert, was auf dem Grund
+   * liegt; alles Weitere arbeitet dann auf der kleineren Menge.
+   */
+  private baueKarteUndFilter(): void {
+    const karte = this.tafel('karte');
+    if (karte) {
+      this.nahliste = new Nahliste({
+        kartenmitte: () => this.deps.kartenmitte(),
+        zeigeStandort: (id) => {
+          this.deps.zeigeStandort(id);
+          // Das Blatt gibt den Grund frei: Wer auf eine Zeile tippt, will den
+          // Standort auf der Karte sehen, nicht die Zeile, die er getippt hat.
+          this.oeffneBlatt(false);
+        },
+      });
+      this.nahliste.baue(karte);
+      this.aufraeumer.push(() => {
+        this.nahliste?.abbauen();
+        this.nahliste = null;
+      });
+    }
+
+    const filter = this.tafel('filter');
+    if (filter) {
+      this.filterleiste = new Filterleiste();
+      this.filterleiste.baue(filter);
+      this.aufraeumer.push(() => {
+        this.filterleiste?.abbauen();
+        this.filterleiste = null;
+      });
+    }
   }
 
   /**
@@ -635,6 +659,13 @@ export class Schale {
     // Zoomstufe zählt dabei als „nicht Flotte" — sie gehört einer einzelnen
     // Maschine, und der Bestand soll hinter ihr an seinem Platz stehen.
     void this.verschiebeBestand(name === 'flotte');
+
+    // Nahliste und Filter erst zeichnen, wenn man sie ansieht. Beide lesen
+    // den ganzen Bestand; das bei jedem Reiterwechsel zu tun wäre Arbeit für
+    // eine Ansicht, die niemand offen hat. TourFuchs macht es ebenso
+    // („Nur berechnen/zeichnen, wenn der Karte-Tab aktiv ist").
+    if (name === 'karte') void this.nahliste?.zeichne();
+    if (name === 'filter') void this.filterleiste?.zeichne();
   }
 
   /**

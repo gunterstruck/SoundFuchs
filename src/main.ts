@@ -94,6 +94,8 @@ class ZanobotApp {
     setzeFlottenmodus: async (anzeigen) => {
       await this.router?.setzeFlottenmodus(anzeigen);
     },
+    kartenmitte: () => this.kundenkarte.mitte(),
+    zeigeStandort: (id) => void this.kundenkarte.zeigeStandort(id),
   });
 
   constructor() {
