@@ -437,6 +437,105 @@ html[data-schale='neu'] .schale-datenzeile-pfeil {
 }
 
 /* ══════════════════════════════════════════════════════════════════════
+   DER SCHREIBTISCH
+
+   Ab 769 Punkten Breite ist das Blatt keine Schublade von unten, sondern
+   eine Spalte links — und der schwebende Kopfstreifen wird leer, weil
+   Ansichtstiefe und Reiter wieder in die Spalte ziehen (`richteNachBreite`).
+   Dasselbe tut TourFuchs mit seiner Sidebar; die Breite 340–400 stammt von
+   dort (`SIDEBAR_MIN`/`SIDEBAR_MAX`).
+
+   Vorher war die Schale eine gedehnte Handy-Ansicht: zwei Pillen über 1440
+   Punkte gezogen, darunter die Karte, und ganz unten ein 1440 Punkte breites
+   Blatt, von dem nur der Griff herausschaute. Gemessen, nicht vermutet.
+   ══════════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 769px) {
+  html[data-schale='neu'] .schale-blatt {
+    top: var(--topbar-height);
+    right: auto;
+    bottom: 0;
+    width: min(400px, 32vw);
+    height: auto;
+    border-top: none;
+    border-right: 1px solid var(--border-color);
+    border-radius: 0;
+    box-shadow: 4px 0 22px rgba(15, 23, 42, 0.1);
+    transform: none;
+  }
+
+  /* Der Einstiegszustand ist eine Handy-Sache: Dort entscheidet die Höhe des
+     Blatts, wie viel Karte bleibt. Die Spalte lässt beides nebeneinander. */
+  html[data-schale='neu'] .schale-blatt.einstieg {
+    height: auto;
+  }
+
+  /* Der Griff zieht nichts mehr auf — die Spalte steht. Er bleibt als
+     schmale Linie stehen, damit der Kopf des Blatts nicht an der Kopfleiste
+     klebt. */
+  html[data-schale='neu'] .schale-griff {
+    min-height: 0;
+    padding: 8px 0 2px;
+    cursor: default;
+  }
+
+  html[data-schale='neu'] .schale-griff span {
+    width: 34px;
+    height: 4px;
+    opacity: 0.5;
+  }
+
+  /* Der Streifen ist am Schreibtisch leer — sein Inhalt steht in der Spalte.
+     Er bliebe sonst als unsichtbarer Balken über der Karte liegen und finge
+     Klicks ab, die dem Kartenschwenken gehören. */
+  html[data-schale='neu'] .schale-streifen {
+    display: none;
+  }
+
+  /* Tiefe, Reiter und Zoomleiste in der Spalte: gleicher Rand wie der
+     übrige Inhalt, kein Schweben, keine Durchsicht — hinter ihnen liegt
+     keine Karte mehr, sondern das Blatt selbst. */
+  html[data-schale='neu'] .schale-blatt > #depth-switch,
+  html[data-schale='neu'] .schale-blatt > .schale-reiter,
+  html[data-schale='neu'] .schale-blatt > .schale-zoom {
+    flex: 0 0 auto;
+    margin: 0 12px 8px;
+    background: var(--bg-secondary);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--border-color);
+    box-shadow: none;
+  }
+
+  /* Die Karte bekommt den Rest. Der Grund liegt weiterhin unter allem — nur
+     seine linke Kante beginnt hinter der Spalte, damit die Kartenmitte auch
+     wirklich die Mitte dessen ist, was man sieht. */
+  html[data-schale='neu'] .karten-grund {
+    left: min(400px, 32vw);
+  }
+
+  /* Alles, was über der Karte schwebt, rechnet am Handy gegen das Blatt von
+     unten. Am Schreibtisch verdeckt das Blatt nichts mehr — die Werte gehen
+     auf ihren Ruhewert zurück. */
+  html[data-schale='neu'] .karten-grund #map-basemap-row,
+  html[data-schale='neu'] .karten-grund #customer-sheet,
+  html[data-schale='neu'] .karten-grund .leaflet-bottom.leaflet-right {
+    bottom: 12px;
+  }
+
+  html[data-schale='neu'] .karten-grund #customer-sheet {
+    left: auto;
+    right: 12px;
+    width: min(360px, 30vw);
+    max-height: calc(100% - 24px);
+  }
+
+  html[data-schale='neu'] .karten-grund .map-empty {
+    top: 50%;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
    DER REITER „FLOTTE"
    ══════════════════════════════════════════════════════════════════════ */
 
@@ -678,6 +777,14 @@ html[data-schale='neu'] .schale-tafel .container {
   min-height: 0;
   margin: 0;
   padding-top: 0;
+}
+
+/* Die untere Griffleiste („Einstellungen & mehr") war der Weg ins
+   Schiebefenster, solange es unten keinen anderen gab. In der neuen Schale
+   liegt dort das Blatt, und dieselbe Tür steht als ☰ links in der Kopfleiste.
+   Am Schreibtisch spannte sie sich außerdem quer unter die Karte. */
+html[data-schale='neu'] #sheet-grip {
+  display: none;
 }
 
 /* Die beiden schwebenden Pillen und der Fuß gehören zur alten Reise. Sie

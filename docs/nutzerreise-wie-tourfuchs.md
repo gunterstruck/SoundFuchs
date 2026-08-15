@@ -589,9 +589,31 @@ _Prüfbar:_ `attention-check` misst Sortierung und Bezugspunkte der Nahliste,
 die Herkunft der Filterwerte und — der Kern — dass der Filter die Karte
 wirklich leert und die Nahliste mitzieht.
 
-**7 — Schreibtisch, Umschalten, Aufräumen.** Breite Ansicht, Voreinstellung
-auf die neue Schale drehen, alte Schale als Rückweg behalten, sie zuletzt
-entfernen. Erst wenn die Zahlen aus Schnitt 3 stimmen.
+**7 — Schreibtisch und Umschalten.** ✅ _erledigt._ Breite Ansicht,
+Voreinstellung auf die neue Schale gedreht, alte Schale als Rückweg behalten.
+
+- **Der Schreibtisch.** Ab 769 Punkten ist das Blatt keine Schublade von
+  unten, sondern eine Spalte links; Ansichtstiefe und Reiter ziehen aus dem
+  schwebenden Kopfstreifen wieder in sie hinein. Das ist wörtlich TourFuchs'
+  `syncTopnavPlacement()`, nur in die andere Richtung. Vorher war die Schale
+  am Schreibtisch eine gedehnte Handy-Ansicht: zwei Pillen über 1440 Punkte
+  gezogen, darunter die Karte, und ein 1440 Punkte breites Blatt, von dem nur
+  der Griff herausschaute.
+- **Die Voreinstellung** steht auf `neu`, nachdem `schalenvergleich` beide
+  Schalen nebeneinandergelegt hat (§7a) und `durchlauf` **14 / 14** auch in
+  der neuen trägt — Hauptweg und die drei Auflagen.
+- **Der Schalter bleibt.** „Neue Oberfläche" in den Einstellungen führt
+  zurück.
+
+**Das Aufräumen steht aus, und zwar mit Absicht.** §6 sah vor, die alte Schale
+zuletzt zu entfernen, „wenn niemand sie mehr braucht". Das ist heute nicht
+entschieden: Der Auftraggeber hat die neue Reise noch nicht benutzt, und
+solange sie steht, ist die alte der Rückweg — kein Ballast. Sie zu entfernen
+wäre außerdem das Ende des Vergleichs: `schalenvergleich` misst beide, und
+`attention-check` hält seine Budgets ausdrücklich gegen die alte Schale, weil
+sie eine andere Sorte Bild beschreiben (dort zählt jedes Bedienelement ein
+Verlangen; in der neuen sind zwei Drittel der gezählten Elemente Kartenpunkte,
+also Inhalt). Der Rückbau ist eine eigene Entscheidung, keine Aufräumarbeit.
 
 Schnitt 2 und 3 sind zusammen die Entscheidung. Wenn danach die Zahlen
 schlechter sind als heute, ist das die Antwort — und der Schalter bleibt aus.
