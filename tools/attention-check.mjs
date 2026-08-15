@@ -517,18 +517,18 @@ try {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // KUNDE ANLEGEN
+  // STANDORT ANLEGEN
   //
-  // Der Kunde ist die Ebene, auf der später die Karte steht
+  // Der Standort ist die Ebene, auf der später die Karte steht
   // (docs/kunden-und-karte.md). Drei Dinge müssen dafür zusammenspielen, und
   // jedes einzelne kann still ausfallen:
   //
-  //   1. „+ Neuer Kunde" muss die Felder aufklappen. Tut es das nicht, sitzt
+  //   1. „+ Neuer Standort" muss die Felder aufklappen. Tut es das nicht, sitzt
   //      man vor einer Auswahl, die eine Möglichkeit nennt, die es nicht gibt.
   //   2. Die Postleitzahl muss den Ort nachtragen. Genau dafür ist die
   //      Postleitzahl gewählt worden statt einer Adresse — trägt sie nichts
   //      nach, ist die Entscheidung sinnlos geworden.
-  //   3. Der angelegte Kunde muss an der Maschine ankommen und in der Liste
+  //   3. Der angelegte Standort muss an der Maschine ankommen und in der Liste
   //      auftauchen. Sonst hat man Daten angelegt, die nirgends erscheinen.
   //
   // Punkt 2 hängt an zwei Dateien, die absichtlich nicht vorgeladen werden.
@@ -577,7 +577,7 @@ try {
         await page.locator('#create-machine-btn').click();
         await page.waitForTimeout(2000);
 
-        // Der Kundenname steht in der Nebenzeile der Maschinenzeile.
+        // Der Standortname steht in der Nebenzeile der Maschinenzeile.
         inListe = await page
           .locator('.machine-item .machine-meta', { hasText: 'Müller Guss' })
           .first()
@@ -586,27 +586,30 @@ try {
       }
     }
 
-    console.log('\n=== Kunde anlegen ===');
+    console.log('\n=== Standort anlegen ===');
     console.log(`Auswahlfeld               ${auswahlDa ? 'sichtbar' : 'FEHLT'}`);
-    console.log(`Felder nach „Neuer Kunde" ${felderDa ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Felder nach „Neuer Standort" ${felderDa ? 'sichtbar' : 'NICHT sichtbar'}`);
     console.log(`Ort aus PLZ 45127         ${ort || '(leer)'}`);
-    console.log(`Kunde an der Maschine     ${inListe ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Standort an der Maschine  ${inListe ? 'sichtbar' : 'NICHT sichtbar'}`);
 
-    pruefe(auswahlDa, 'Kunde: das Auswahlfeld fehlt im Anlegen-Formular');
-    pruefe(felderDa, 'Kunde: „+ Neuer Kunde" klappt die Felder nicht auf — die Auswahl tut nichts');
+    pruefe(auswahlDa, 'Standort: das Auswahlfeld fehlt im Anlegen-Formular');
+    pruefe(
+      felderDa,
+      'Standort: „+ Neuer Standort" klappt die Felder nicht auf — die Auswahl tut nichts'
+    );
     pruefe(
       ort === 'Essen',
-      `Kunde: PLZ 45127 trägt den Ort nicht nach (gefunden: „${ort}") — die PLZ-Daten kommen nicht an`
+      `Standort: PLZ 45127 trägt den Ort nicht nach (gefunden: „${ort}") — die PLZ-Daten kommen nicht an`
     );
-    pruefe(inListe, 'Kunde: der angelegte Kunde erscheint nicht an seiner Maschine');
+    pruefe(inListe, 'Standort: der angelegte Standort erscheint nicht an seiner Maschine');
 
     // ═════════════════════════════════════════════════════════════════════
-    // DIE KUNDENKARTE
+    // DIE STANDORTKARTE
     //
-    // Sie läuft im selben Fenster weiter, weil sie den eben angelegten Kunden
+    // Sie läuft im selben Fenster weiter, weil sie den eben angelegten Standort
     // braucht. Geprüft wird die Kette, nicht das Aussehen:
     //
-    //   Menüzeile → Karte → Marker → Kundenblatt → Maschinenansicht
+    //   Menüzeile → Karte → Marker → Standortblatt → Maschinenansicht
     //
     // Jedes Glied kann still reißen. Der Marker etwa hängt daran, dass beim
     // Anlegen Koordinaten aus der PLZ gefallen sind; fehlen sie, ist die Karte
@@ -670,28 +673,31 @@ try {
       }
     }
 
-    console.log('\n=== Kundenkarte ===');
-    console.log(`Menüzeile „Kundenkarte"   ${zeileDa ? 'sichtbar' : 'FEHLT'}`);
+    console.log('\n=== Standortkarte ===');
+    console.log(`Menüzeile „Standortkarte" ${zeileDa ? 'sichtbar' : 'FEHLT'}`);
     console.log(`Marker auf der Karte      ${markerZahl}`);
     console.log(`Kartengründe              ${gruende}`);
     console.log(`PLZ-Gebiete (Flächen)     ${gebiete}`);
     console.log(
       `Quellenangabe             ${quelle.replace(/\s+/g, ' ').slice(0, 60) || '(leer)'}`
     );
-    console.log(`Kundenblatt               ${blattDa ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Standortblatt             ${blattDa ? 'sichtbar' : 'NICHT sichtbar'}`);
     console.log(`Maschine im Blatt         ${maschineImBlatt ? 'sichtbar' : 'NICHT sichtbar'}`);
     console.log(`Karte schließt beim Tipp  ${karteZu ? 'ja' : 'nein'}`);
 
-    pruefe(zeileDa, 'Karte: die Menüzeile fehlt, obwohl ein verorteter Kunde da ist');
+    pruefe(zeileDa, 'Karte: die Menüzeile fehlt, obwohl ein verorteter Standort da ist');
     pruefe(gebiete >= 10, `Karte: nur ${gebiete} Postleitzahlgebiete — das Deutschlandbild fehlt`);
-    pruefe(markerZahl > 0, 'Karte: kein Marker — der Kunde ist ohne Koordinaten angelegt worden');
+    pruefe(
+      markerZahl > 0,
+      'Karte: kein Marker — der Standort ist ohne Koordinaten angelegt worden'
+    );
     pruefe(gruende === 3, `Karte: ${gruende} statt 3 Kartengründe (Hell · Standard · Satellit)`);
     pruefe(
       quelle.includes('OpenStreetMap'),
       'Karte: die Quellenangabe der Kacheln fehlt — sie ist Bedingung der Nutzung, kein Schmuck'
     );
-    pruefe(blattDa, 'Karte: der Marker öffnet kein Kundenblatt — er tut nichts');
-    pruefe(maschineImBlatt, 'Karte: das Kundenblatt zeigt seine Maschinen nicht');
+    pruefe(blattDa, 'Karte: der Marker öffnet kein Standortblatt — er tut nichts');
+    pruefe(maschineImBlatt, 'Karte: das Standortblatt zeigt seine Maschinen nicht');
     pruefe(karteZu, 'Karte: der Tipp auf eine Maschine führt nicht in die Maschinenansicht');
 
     await ctx.close();
@@ -701,10 +707,10 @@ try {
   // DER WEG HINEIN — aus dem Zustand, in dem jemand wirklich anfängt
   //
   // Dieser Block hat einen konkreten Anlass. Am 15.08.2026 schickte der
-  // Auftraggeber einen Screenshot: Basis-Stufe, eine Maschine, kein Kunde —
+  // Auftraggeber einen Screenshot: Basis-Stufe, eine Maschine, kein Standort —
   // und die Frage, wo denn das Deutschlandbild bleibe. Nachgemessen war die
   // Antwort unangenehm: In genau dieser Lage war die Karte nicht erreichbar,
-  // und auch auf Profi nicht, weil sie einen Kunden voraussetzte, den nur die
+  // und auch auf Profi nicht, weil sie einen Standort voraussetzte, den nur die
   // ebenfalls versteckten Beispieldaten geliefert hätten.
   //
   // Die Regel dahinter — „kein Knopf auf ein leeres graues Feld" — war
@@ -736,7 +742,7 @@ try {
       .isVisible()
       .catch(() => false);
     const kundenImMenue = await page
-      .locator('.info-sheet-row[data-thema="kunden"]')
+      .locator('.info-sheet-row[data-thema="standorte"]')
       .isVisible()
       .catch(() => false);
 
@@ -763,28 +769,28 @@ try {
 
     console.log('\n=== Weg hinein (leerer Bestand, Voreinstellung) ===');
     console.log(`Ansichtsstufe             ${stufe}`);
-    console.log(`„Kundenkarte" im Menü     ${karteImMenue ? 'ja' : 'NEIN'}`);
-    console.log(`„Kunden" im Menü          ${kundenImMenue ? 'ja' : 'NEIN'}`);
-    console.log(`PLZ-Gebiete ohne Kunden   ${flaechen}`);
+    console.log(`„Standortkarte" im Menü   ${karteImMenue ? 'ja' : 'NEIN'}`);
+    console.log(`„Standorte" im Menü       ${kundenImMenue ? 'ja' : 'NEIN'}`);
+    console.log(`PLZ-Gebiete ohne Punkte   ${flaechen}`);
     console.log(`Einstieg in der Karte     ${einstiegDa ? 'sichtbar' : 'NICHT sichtbar'}`);
     console.log(`Marker nach dem Einstieg  ${markerNachEinstieg}`);
 
     pruefe(
       karteImMenue,
-      `Weg hinein: „Kundenkarte" fehlt im Menü auf Stufe „${stufe}" — die Karte ist aus dem Anfangszustand nicht erreichbar`
+      `Weg hinein: „Standortkarte" fehlt im Menü auf Stufe „${stufe}" — die Karte ist aus dem Anfangszustand nicht erreichbar`
     );
     pruefe(
       kundenImMenue,
-      `Weg hinein: „Kunden" fehlt im Menü auf Stufe „${stufe}" — die Beispieldaten sind ausgerechnet dem Neuling verborgen`
+      `Weg hinein: „Standorte" fehlt im Menü auf Stufe „${stufe}" — die Beispieldaten sind ausgerechnet dem Neuling verborgen`
     );
     pruefe(
       flaechen >= 10,
-      `Weg hinein: nur ${flaechen} Flächen auf der leeren Karte — ohne Kunden bliebe sie ein graues Feld statt Deutschland zu zeigen`
+      `Weg hinein: nur ${flaechen} Flächen auf der leeren Karte — ohne Standorte bliebe sie ein graues Feld statt Deutschland zu zeigen`
     );
     pruefe(einstiegDa, 'Weg hinein: die leere Karte bietet keinen Schritt an, der sie füllt');
     pruefe(
       markerNachEinstieg > 0,
-      'Weg hinein: der Knopf in der leeren Karte bringt keine Kunden auf die Karte'
+      'Weg hinein: der Knopf in der leeren Karte bringt keine Standorte auf die Karte'
     );
 
     await ctx.close();
@@ -867,8 +873,8 @@ try {
   // ═══════════════════════════════════════════════════════════════════════
   // BEISPIELDATEN
   //
-  // Eigenes Fenster, eigener Bestand: Die Zahl der Beispielkunden soll nicht
-  // von den zwei Kunden aus dem vorigen Block verfälscht werden.
+  // Eigenes Fenster, eigener Bestand: Die Zahl der Beispiel-Standorte soll nicht
+  // von den zwei Standorten aus dem vorigen Block verfälscht werden.
   //
   // Geprüft wird die Kette Knopf → Bestand → Knopf zeigt den neuen Zustand →
   // Rückgängig macht wirklich alles rückgängig. Der zweite Teil ist der
@@ -895,7 +901,7 @@ try {
 
     await page.locator('#app-menu-btn').click();
     await page.waitForTimeout(700);
-    const kundenZeile = page.locator('.info-sheet-row[data-thema="kunden"]');
+    const kundenZeile = page.locator('.info-sheet-row[data-thema="standorte"]');
     const zeileDa = await kundenZeile.isVisible().catch(() => false);
     if (zeileDa) await kundenZeile.click();
     await page.waitForTimeout(500);
@@ -923,7 +929,7 @@ try {
 
     if (knopfDa) {
       await knopf.click();
-      // Rund 100 Kunden plus Maschinen anlegen, dann laedt die Seite neu.
+      // Rund 100 Standorte plus Maschinen anlegen, dann laedt die Seite neu.
       await page.waitForTimeout(6000);
       maschinenNachLaden = await page.locator('.machine-item').count();
 
@@ -931,7 +937,7 @@ try {
       await page.waitForTimeout(300);
       await page.locator('#app-menu-btn').click();
       await page.waitForTimeout(700);
-      await page.locator('.info-sheet-row[data-thema="kunden"]').click();
+      await page.locator('.info-sheet-row[data-thema="standorte"]').click();
       await page.waitForTimeout(500);
       beschriftungNachLaden = await page.locator('#demo-toggle-btn').innerText();
 
@@ -941,18 +947,18 @@ try {
     }
 
     console.log('\n=== Beispieldaten ===');
-    console.log(`Menüzeile „Kunden"        ${zeileDa ? 'sichtbar' : 'FEHLT'}`);
+    console.log(`Menüzeile „Standorte"     ${zeileDa ? 'sichtbar' : 'FEHLT'}`);
     console.log(`Beschriftung vorher       ${beschriftungVorher || '(kein Knopf)'}`);
     console.log(`Filter blendet aus        ${fremdesThemaSichtbar ? 'NEIN' : 'ja'}`);
     console.log(`Maschinen nach dem Laden  ${maschinenNachLaden}`);
     console.log(`Beschriftung danach       ${beschriftungNachLaden}`);
     console.log(`Maschinen nach Entfernen  ${maschinenNachEntfernen}`);
 
-    pruefe(zeileDa, 'Beispieldaten: die Menüzeile „Kunden" fehlt auf Experten-Stufe');
+    pruefe(zeileDa, 'Beispieldaten: die Menüzeile „Standorte" fehlt auf Experten-Stufe');
     pruefe(knopfDa, 'Beispieldaten: der Knopf fehlt in der Kategorie');
     pruefe(
       !fremdesThemaSichtbar,
-      'Beispieldaten: das Thema "kunden" filtert nicht — ein fremder Abschnitt ("Ansicht") bleibt sichtbar (style.css: .settings-list[data-filter] fehlt der Eintrag)'
+      'Beispieldaten: das Thema "standorte" filtert nicht — ein fremder Abschnitt ("Ansicht") bleibt sichtbar (style.css: .settings-list[data-filter] fehlt der Eintrag)'
     );
     pruefe(
       maschinenNachLaden >= 50,
@@ -971,7 +977,7 @@ try {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // KUNDENLISTE EINLESEN
+  // STANDORTLISTE EINLESEN
   //
   // Dieselbe Kategorie, der zweite Knopf. Eine winzige CSV-Datei mit einer
   // Kopfzeile in eigener Schreibweise ("Firma" statt "Name") prüft genau die
@@ -1001,10 +1007,10 @@ try {
     await page.locator('#app-menu-btn').click();
     await page.waitForTimeout(700);
     const kundenZeileDa = await page
-      .locator('.info-sheet-row[data-thema="kunden"]')
+      .locator('.info-sheet-row[data-thema="standorte"]')
       .isVisible()
       .catch(() => false);
-    if (kundenZeileDa) await page.locator('.info-sheet-row[data-thema="kunden"]').click();
+    if (kundenZeileDa) await page.locator('.info-sheet-row[data-thema="standorte"]').click();
     await page.waitForTimeout(500);
 
     const importKnopf = page.locator('#import-customers-btn');
@@ -1026,14 +1032,14 @@ try {
         .catch(() => false);
     }
 
-    console.log('\n=== Kundenliste einlesen ===');
+    console.log('\n=== Standortliste einlesen ===');
     console.log(`Importknopf               ${importKnopfDa ? 'sichtbar' : 'FEHLT'}`);
     console.log(`Maschine aus der CSV      ${maschineDa ? 'sichtbar' : 'NICHT sichtbar'}`);
 
-    pruefe(importKnopfDa, 'Kundenimport: der Knopf fehlt in der Kategorie');
+    pruefe(importKnopfDa, 'Standortimport: der Knopf fehlt in der Kategorie');
     pruefe(
       maschineDa,
-      'Kundenimport: die aus „Firma,PLZ,Maschine" eingelesene Maschine erscheint nicht im Bestand — die Spalte „Firma" wird nicht mehr als Name erkannt'
+      'Standortimport: die aus „Firma,PLZ,Maschine" eingelesene Maschine erscheint nicht im Bestand — die Spalte „Firma" wird nicht mehr als Name erkannt'
     );
 
     await ctx.close();

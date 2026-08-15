@@ -3,6 +3,14 @@
 _Ausgearbeitet am 14.08.2026, nachdem der Auftraggeber einen Kompromiss zur
 Karten-Frage vorgeschlagen hat._
 
+> **Nachtrag 15.08.2026 — das Wort heißt jetzt „Standort".**
+> Was dieses Papier „Kunde" nennt, heißt in der Oberfläche seit Schnitt 1 der
+> Nutzerreise (`nutzerreise-wie-tourfuchs.md`) **Standort**: Name,
+> Postleitzahl, Stadt — und der Name darf „Zuhause" sein, es muss niemandes
+> Kunde sein. Die Datenstruktur ist unberührt geblieben, im Quelltext heißt
+> die Sache weiterhin `customer`. Wer hier „Kunde" liest, lese „Standort";
+> die Begründungen unten gelten unverändert.
+
 ## 1. Warum das den Streit auflöst
 
 Gegen eine Karte in SoundFuchs standen bisher vier Einwände

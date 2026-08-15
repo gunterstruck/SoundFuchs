@@ -23,8 +23,8 @@ export const de: TranslationDict = {
     vault: 'Tresor',
     soon: 'später',
     view: 'Ansicht: Basis oder Profi',
-    map: 'Kundenkarte',
-    customerData: 'Kunden: Beispiele & Import',
+    map: 'Standortkarte',
+    customerData: 'Standorte: Beispiele & Import',
   },
 
   search: {
@@ -110,60 +110,61 @@ export const de: TranslationDict = {
   },
 
   // ============================================================================
-  // KUNDENKARTE (Schnitt 2 — docs/kunden-und-karte.md)
+  // STANDORTKARTE (Schnitt 2 — docs/kunden-und-karte.md)
   // ============================================================================
   map: {
-    title: 'Kundenkarte',
+    title: 'Standortkarte',
     tileLight: 'Hell',
     tileStandard: 'Standard',
     tileSatellite: 'Satellit',
     machinesLabel: 'Maschinen',
     accuracyPlz: 'Ortsmitte',
-    noMachines: 'Bei diesem Kunden steht noch keine Maschine.',
+    noMachines: 'An diesem Standort steht noch keine Maschine.',
     noReference: 'Referenz fehlt',
-    unlocated: '{{count}} Kunde(n) ohne Kartenpunkt — ihre Postleitzahl ist unbekannt.',
+    unlocated: '{{count}} Standort(e) ohne Kartenpunkt — die Postleitzahl ist unbekannt.',
     areaWithMachines: 'PLZ-Gebiet {{plz}} · {{count}} Maschinen',
     areaEmpty: 'PLZ-Gebiet {{plz}} · noch keine Maschine',
-    emptyTitle: 'Noch kein Kunde auf der Karte',
-    emptyText: 'Kunden entstehen beim Anlegen einer Maschine — oder hier, zum Ausprobieren.',
+    emptyTitle: 'Noch kein Standort auf der Karte',
+    emptyText: 'Standorte entstehen beim Anlegen einer Maschine — oder hier, zum Ausprobieren.',
     emptyButton: 'Beispieldaten laden',
     emptyLoading: 'Wird geladen …',
   },
 
   // ============================================================================
-  // KUNDEN (der Ort, an dem Maschinen stehen — docs/kunden-und-karte.md)
+  // STANDORTE (Kundenname, PLZ, Stadt — docs/kunden-und-karte.md)
   // ============================================================================
   customers: {
-    label: 'Kunde (optional)',
-    none: '— kein Kunde —',
-    new: '+ Neuer Kunde',
-    nameLabel: 'Firmenname',
-    namePlaceholder: 'z.B. Müller Guss GmbH',
+    label: 'Standort (optional)',
+    none: '— kein Standort —',
+    new: '+ Neuer Standort',
+    nameLabel: 'Name',
+    namePlaceholder: 'z.B. Müller Guss GmbH oder Zuhause',
     plzLabel: 'PLZ',
     plzPlaceholder: '45127',
     ortLabel: 'Ort',
     hint: 'Aus der Postleitzahl kommen Ort und Kartenpunkt — mehr wird nicht gebraucht.',
-    nameRequired: 'Bitte einen Firmennamen für den Kunden eingeben.',
+    nameRequired: 'Bitte einen Namen für den Standort eingeben.',
     plzInvalid: 'Bitte eine fünfstellige Postleitzahl eingeben.',
     plzFound: '{{ort}} — aus der Postleitzahl übernommen.',
-    plzUnknown: 'Diese Postleitzahl ist unbekannt. Der Kunde wird angelegt, aber ohne Kartenpunkt.',
+    plzUnknown:
+      'Diese Postleitzahl ist unbekannt. Der Standort wird angelegt, aber ohne Kartenpunkt.',
     demoTitle: 'Beispieldaten',
     demoDescription:
-      'Rund 100 erfundene Kunden, deutschlandweit verteilt, je einer Maschine ohne Referenz. Zum Vorführen — echte Daten bleiben unberührt.',
+      'Rund 100 erfundene Standorte, deutschlandweit verteilt, je einer Maschine ohne Referenz. Zum Vorführen — echte Daten bleiben unberührt.',
     demoLoad: 'Beispieldaten laden',
     demoRemove: 'Beispieldaten entfernen',
-    demoCount: '{{count}} Beispielkunden geladen',
-    demoLoaded: '{{count}} Beispielkunden angelegt',
-    demoRemoved: '{{count}} Beispielkunden entfernt',
+    demoCount: '{{count}} Beispiel-Standorte geladen',
+    demoLoaded: '{{count}} Beispiel-Standorte angelegt',
+    demoRemoved: '{{count}} Beispiel-Standorte entfernt',
     demoError: 'Beispieldaten konnten nicht bearbeitet werden.',
-    importTitle: 'Kundenliste einlesen',
+    importTitle: 'Standortliste einlesen',
     importDescription:
       'CSV-Datei mit den Spalten Name, PLZ, optional Ort und Maschine. Ort und Kartenposition kommen aus der Postleitzahl.',
     importButton: 'CSV auswählen',
     importSummary:
-      '{{angelegt}} Kunden angelegt, {{maschinen}} Maschinen, {{uebersprungen}} übersprungen, {{fehler}} fehlerhafte Zeilen',
+      '{{angelegt}} Standorte angelegt, {{maschinen}} Maschinen, {{uebersprungen}} übersprungen, {{fehler}} fehlerhafte Zeilen',
     importNoColumns: 'Die Datei hat keine Spalte „Name" oder „PLZ" — nichts wurde eingelesen.',
-    importError: 'Die Kundenliste konnte nicht eingelesen werden.',
+    importError: 'Die Standortliste konnte nicht eingelesen werden.',
   },
 
   // ============================================================================
@@ -1702,7 +1703,7 @@ export const de: TranslationDict = {
 
     nfcFunctionalityTitle: 'Funktionsweise',
     nfcTagDescription:
-      '<strong>NFC-Tag an der Maschine:</strong> Ein am Gehäuse oder an der Zugangsstelle platzierter NFC-Tag kann folgende Informationen enthalten:<ul><li>URL zur SoundFuchs-PWA (direkter App-Start im Browser)</li><li>Maschinen-ID zur automatischen Identifikation</li><li>Optional: Verweis auf kundenspezifische Referenzdaten (URL zu einer JSON-Datei)</li></ul>',
+      '<strong>NFC-Tag an der Maschine:</strong> Ein am Gehäuse oder an der Zugangsstelle platzierter NFC-Tag kann folgende Informationen enthalten:<ul><li>URL zur SoundFuchs-PWA (direkter App-Start im Browser)</li><li>Maschinen-ID zur automatischen Identifikation</li><li>Optional: Verweis auf eigene Referenzdaten (URL zu einer JSON-Datei)</li></ul>',
     nfcInstantAccess:
       '<strong>Sofortzugang ohne Installation:</strong><ul><li>Der Nutzer hält das Smartphone an den NFC-Tag</li><li>Die SoundFuchs-PWA öffnet sich direkt im Browser (kein App Store, keine Registrierung erforderlich)</li><li>Optional: Die hinterlegte Maschinen-ID wird automatisch geladen</li></ul>',
 
@@ -1716,7 +1717,7 @@ export const de: TranslationDict = {
 
     nfcDataPrivacyTitle: 'Datenhaltung und Datenschutz',
     nfcDataPrivacyImportant:
-      '<strong>Wichtig:</strong> Die Referenzdaten liegen <strong>nicht in einer Cloud von SoundFuchs</strong>. Sie werden bereitgestellt:<ul><li>Im <strong>lokalen Netzwerk</strong> des Betreibers (z. B. Intranet-Server)</li><li>In einer <strong>kundeneigenen Umgebung</strong> (z. B. GitHub Pages, eigener Webserver)</li><li>Als <strong>statische JSON-Datei</strong>, die über eine HTTPS-URL abrufbar ist</li></ul>',
+      '<strong>Wichtig:</strong> Die Referenzdaten liegen <strong>nicht in einer Cloud von SoundFuchs</strong>. Sie werden bereitgestellt:<ul><li>Im <strong>lokalen Netzwerk</strong> des Betreibers (z. B. Intranet-Server)</li><li>In einer <strong>eigenen Umgebung</strong> (z. B. GitHub Pages, eigener Webserver)</li><li>Als <strong>statische JSON-Datei</strong>, die über eine HTTPS-URL abrufbar ist</li></ul>',
     nfcDataPrivacyStorage:
       'Die Referenzdatenbank wird beim ersten NFC-Scan heruntergeladen und anschließend <strong>lokal im Gerät</strong> gespeichert (IndexedDB). Alle weiteren Vergleiche erfolgen offline.',
 
