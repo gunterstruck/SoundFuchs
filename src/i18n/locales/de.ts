@@ -27,6 +27,33 @@ export const de: TranslationDict = {
     customerData: 'Standorte: Beispiele & Import',
   },
 
+  // ============================================================================
+  // DIE SCHALE (Schnitt 2 — docs/nutzerreise-wie-tourfuchs.md)
+  // ============================================================================
+  schale: {
+    navLabel: 'Ansicht und Bereiche',
+    gripLabel: 'Blatt aufziehen',
+    gripClose: 'Blatt einklappen',
+    tab: {
+      daten: 'Daten',
+      flotte: 'Flotte',
+      karte: 'Karte',
+      filter: 'Filter',
+    },
+    soon: {
+      daten: 'Hier stehen Maschinen und Standorte.',
+      flotte:
+        'Hier kommen die beiden Flotten-Wege hin — aus dem Bestand und ohne. Noch nicht umgezogen.',
+      karte: 'Die Karte liegt schon als Grund darunter. Die Nahliste kommt hierher.',
+      filter: 'Zustand, Standort, Flottengruppe. Kommt noch.',
+    },
+    settingTitle: 'Neue Oberfläche',
+    settingDescription:
+      'Karte als Grund, Blatt von unten, Reiter — die Nutzerreise von TourFuchs. Sie wird gerade gebaut und ist noch nicht vollständig. Der Schalter geht jederzeit zurück.',
+    settingToggle: 'Neue Oberfläche verwenden',
+    settingHint: 'Vorschau. Was bisher fehlt, sagen die leeren Reiter selbst.',
+  },
+
   search: {
     placeholder: 'Maschine, Ort oder ID…',
     noHits: 'Nichts gefunden.',

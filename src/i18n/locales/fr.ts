@@ -25,6 +25,30 @@ export const fr: TranslationDict = {
     customerData: 'Sites : exemples et import',
   },
 
+  schale: {
+    navLabel: 'Vue et sections',
+    gripLabel: 'Ouvrir le panneau',
+    gripClose: 'Replier le panneau',
+    tab: {
+      daten: 'Données',
+      flotte: 'Flotte',
+      karte: 'Carte',
+      filter: 'Filtre',
+    },
+    soon: {
+      daten: 'Les machines et les sites se trouvent ici.',
+      flotte:
+        'Les deux chemins de flotte viendront ici — à partir des machines connues et sans. Pas encore déplacés.',
+      karte: 'La carte est déjà le fond en dessous. La liste de proximité viendra ici.',
+      filter: 'État, site, groupe de flotte. À venir.',
+    },
+    settingTitle: 'Nouvelle interface',
+    settingDescription:
+      "Carte en fond, panneau par le bas, onglets — le parcours de TourFuchs. Elle est en cours de construction et n'est pas encore complète. Le commutateur revient en arrière à tout moment.",
+    settingToggle: 'Utiliser la nouvelle interface',
+    settingHint: 'Aperçu. Ce qui manque encore, les onglets vides le disent eux-mêmes.',
+  },
+
   search: {
     placeholder: 'Machine, lieu ou ID…',
     noHits: 'Aucun résultat.',

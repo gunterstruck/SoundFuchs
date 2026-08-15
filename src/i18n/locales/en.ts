@@ -25,6 +25,29 @@ export const en: TranslationDict = {
     customerData: 'Sites: samples & import',
   },
 
+  schale: {
+    navLabel: 'View and sections',
+    gripLabel: 'Open sheet',
+    gripClose: 'Collapse sheet',
+    tab: {
+      daten: 'Data',
+      flotte: 'Fleet',
+      karte: 'Map',
+      filter: 'Filter',
+    },
+    soon: {
+      daten: 'Machines and sites live here.',
+      flotte: 'The two fleet paths go here — from your machines and without. Not moved yet.',
+      karte: 'The map is already the ground below. The nearby list comes here.',
+      filter: 'Condition, site, fleet group. Still to come.',
+    },
+    settingTitle: 'New interface',
+    settingDescription:
+      'Map as the ground, sheet from below, tabs — the user journey from TourFuchs. It is being built and is not complete yet. The switch goes back at any time.',
+    settingToggle: 'Use the new interface',
+    settingHint: 'Preview. What is still missing, the empty tabs say themselves.',
+  },
+
   search: {
     placeholder: 'Machine, location or ID…',
     noHits: 'Nothing found.',
