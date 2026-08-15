@@ -25,6 +25,29 @@ export const zh: TranslationDict = {
     customerData: '地点：示例与导入',
   },
 
+  schale: {
+    navLabel: '视图与区域',
+    gripLabel: '展开面板',
+    gripClose: '收起面板',
+    tab: {
+      daten: '数据',
+      flotte: '车队',
+      karte: '地图',
+      filter: '筛选',
+    },
+    soon: {
+      daten: '机器和地点在这里。',
+      flotte: '两种车队方式将放在这里——从已有机器中选，或不依赖已有机器。尚未迁移。',
+      karte: '地图已经作为底层铺在下面。附近列表将放在这里。',
+      filter: '状态、地点、车队分组。稍后加入。',
+    },
+    settingTitle: '新界面',
+    settingDescription:
+      '地图作底、面板从下方拉起、分页标签——来自 TourFuchs 的用户旅程。它正在建设中，尚未完成。此开关随时可以切回。',
+    settingToggle: '使用新界面',
+    settingHint: '预览。还缺什么，空标签页会自己说明。',
+  },
+
   search: {
     placeholder: '设备、位置或编号…',
     noHits: '未找到结果。',

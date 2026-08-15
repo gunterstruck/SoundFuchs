@@ -25,6 +25,30 @@ export const es: TranslationDict = {
     customerData: 'Ubicaciones: ejemplos e importación',
   },
 
+  schale: {
+    navLabel: 'Vista y secciones',
+    gripLabel: 'Abrir hoja',
+    gripClose: 'Plegar hoja',
+    tab: {
+      daten: 'Datos',
+      flotte: 'Flota',
+      karte: 'Mapa',
+      filter: 'Filtro',
+    },
+    soon: {
+      daten: 'Aquí están las máquinas y las ubicaciones.',
+      flotte:
+        'Aquí irán los dos caminos de flota: con máquinas conocidas y sin ellas. Aún no se han trasladado.',
+      karte: 'El mapa ya está debajo como fondo. La lista cercana vendrá aquí.',
+      filter: 'Estado, ubicación, grupo de flota. Todavía por llegar.',
+    },
+    settingTitle: 'Nueva interfaz',
+    settingDescription:
+      'Mapa como fondo, hoja desde abajo, pestañas: el recorrido de usuario de TourFuchs. Se está construyendo y aún no está completa. El interruptor vuelve atrás en cualquier momento.',
+    settingToggle: 'Usar la nueva interfaz',
+    settingHint: 'Vista previa. Lo que falta lo dicen las propias pestañas vacías.',
+  },
+
   search: {
     placeholder: 'Máquina, ubicación o ID…',
     noHits: 'No se encontró nada.',

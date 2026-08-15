@@ -1044,6 +1044,154 @@ try {
 
     await ctx.close();
   }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // DIE NEUE SCHALE (Schnitt 2 — docs/nutzerreise-wie-tourfuchs.md)
+  //
+  // Die Schale hängt vorhandene Abschnitte um, statt sie neu zu bauen. Das
+  // ist ihre ganze Sicherheit — und zugleich die Stelle, an der sie still
+  // brechen kann: Ein Element, das nach dem Umhängen nicht ankommt, ist
+  // einfach weg. Nichts stürzt ab, nichts meldet sich.
+  //
+  // Gemessen wird deshalb beides, Hinweg und Rückweg:
+  //
+  //   1. Der Grund trägt die Karte, nicht mehr das Fenster.
+  //   2. Der Kopfstreifen trägt Ansichtstiefe UND vier Reiter.
+  //   3. Das Blatt steht im leeren Bestand halbhoch, nicht als 46-px-Streifen.
+  //   4. Ein Reiterwechsel wechselt wirklich die Tafel.
+  //   5. Zurückgeschaltet steht alles wieder da, wo es herkam.
+  //
+  // Punkt 5 ist der wichtigste. Solange die alte Reise die geprüfte ist, darf
+  // der Ausflug in die neue sie nicht beschädigen.
+  {
+    const ctx = await browser.newContext({
+      viewport: FORMATE[0].viewport,
+      hasTouch: true,
+      isMobile: true,
+      locale: 'de-DE',
+    });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'neu'));
+    await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2500);
+
+    const an = await page.evaluate(() => ({
+      merkmal: document.documentElement.dataset.schale ?? '(aus)',
+      grundDa: Boolean(document.getElementById('karten-grund')),
+      karteImGrund: Boolean(document.querySelector('#karten-grund #customer-map')),
+      tiefeImStreifen: Boolean(document.querySelector('#schale-streifen #depth-switch')),
+      reiter: document.querySelectorAll('#schale-streifen .schale-reiter-btn').length,
+      rumpfInTafel: Boolean(document.querySelector('#schale-tafel-daten .container')),
+      kopfUeberAllem: document.querySelector('.topbar')?.parentElement?.tagName === 'BODY',
+      blattHoch: Math.round(
+        document.getElementById('schale-blatt')?.getBoundingClientRect().height ?? 0
+      ),
+      einstieg: document.getElementById('schale-blatt')?.classList.contains('einstieg') ?? false,
+    }));
+
+    // Ein Reiterwechsel muss die Tafel wirklich wechseln — sonst sind die
+    // Reiter vier Knöpfe, die nichts tun.
+    let tafelGewechselt = false;
+    if (an.reiter > 0) {
+      await page.locator('.schale-reiter-btn[data-reiter="filter"]').click();
+      await page.waitForTimeout(400);
+      tafelGewechselt = await page.evaluate(
+        () =>
+          (document.getElementById('schale-tafel-filter')?.classList.contains('active') ?? false) &&
+          !(document.getElementById('schale-tafel-daten')?.classList.contains('active') ?? true)
+      );
+    }
+
+    // Zurückschalten über den Schalter in den Einstellungen — den Weg, den
+    // auch ein Mensch geht.
+    await page
+      .locator('.schale-reiter-btn[data-reiter="daten"]')
+      .click()
+      .catch(() => {});
+    await page.waitForTimeout(300);
+    await page.locator('#app-info-btn').click();
+    await page.waitForTimeout(700);
+    await page.locator('.info-sheet-row[data-thema="ansicht"]').click();
+    await page.waitForTimeout(800);
+    const schalterDa = await page
+      .locator('#schale-toggle')
+      .isVisible()
+      .catch(() => false);
+    if (schalterDa) await page.locator('#schale-toggle').click({ force: true });
+    await page.waitForTimeout(1200);
+
+    const zurueck = await page.evaluate(() => ({
+      merkmal: document.documentElement.dataset.schale ?? '(aus)',
+      grundWeg: !document.getElementById('karten-grund'),
+      karteImFenster: Boolean(document.querySelector('#customer-map-modal #customer-map')),
+      tiefeImRumpf: Boolean(document.querySelector('.container > #depth-switch')),
+      kopfImRumpf: Boolean(document.querySelector('.container > .topbar')),
+      rumpfImKoerper: document.querySelector('.container')?.parentElement?.tagName === 'BODY',
+    }));
+
+    console.log('\n=== Neue Schale ===');
+    console.log(`Merkmal am <html>         ${an.merkmal}`);
+    console.log(`Karte im Grund            ${an.karteImGrund ? 'ja' : 'NEIN'}`);
+    console.log(`Tiefe im Kopfstreifen     ${an.tiefeImStreifen ? 'ja' : 'NEIN'}`);
+    console.log(`Reiter im Streifen        ${an.reiter}`);
+    console.log(`Rumpf im Reiter „Daten"   ${an.rumpfInTafel ? 'ja' : 'NEIN'}`);
+    console.log(`Kopfleiste über allem     ${an.kopfUeberAllem ? 'ja' : 'NEIN'}`);
+    console.log(`Blatt im leeren Bestand   ${an.blattHoch} px (Einstieg: ${an.einstieg})`);
+    console.log(`Reiterwechsel             ${tafelGewechselt ? 'wechselt' : 'WECHSELT NICHT'}`);
+    console.log(`Schalter in Einstellungen ${schalterDa ? 'sichtbar' : 'FEHLT'}`);
+    console.log(`Zurück: Merkmal           ${zurueck.merkmal}`);
+    console.log(`Zurück: Karte im Fenster  ${zurueck.karteImFenster ? 'ja' : 'NEIN'}`);
+    console.log(`Zurück: Tiefe im Rumpf    ${zurueck.tiefeImRumpf ? 'ja' : 'NEIN'}`);
+    console.log(`Zurück: Kopf im Rumpf     ${zurueck.kopfImRumpf ? 'ja' : 'NEIN'}`);
+
+    pruefe(
+      an.merkmal === 'neu',
+      'Schale: der Schalter steht auf „neu", die Schale läuft aber nicht'
+    );
+    pruefe(an.karteImGrund, 'Schale: die Karte liegt nicht im Grund — der Grund ist leer');
+    pruefe(
+      an.tiefeImStreifen,
+      'Schale: die Ansichtstiefe ist nicht in den Kopfstreifen gezogen — sie fährt mit dem Blatt aus dem Bild'
+    );
+    pruefe(an.reiter === 4, `Schale: ${an.reiter} statt 4 Reiter im Kopfstreifen`);
+    pruefe(
+      an.rumpfInTafel,
+      'Schale: der bisherige Rumpf steht nicht im Reiter „Daten" — die ganze bisherige Reise wäre unerreichbar'
+    );
+    pruefe(an.kopfUeberAllem, 'Schale: die Kopfleiste sitzt noch im Blatt und fährt mit ihm weg');
+    pruefe(
+      an.einstieg && an.blattHoch > 300,
+      `Schale: das Blatt steht im leeren Bestand ${an.blattHoch} px hoch — erwartet halbhoch, sonst sagt beim ersten Start nichts, was zu tun ist`
+    );
+    pruefe(
+      tafelGewechselt,
+      'Schale: der Reiterwechsel wechselt die Tafel nicht — die Reiter tun nichts'
+    );
+    pruefe(schalterDa, 'Schale: der Schalter fehlt in den Einstellungen — es gibt keinen Rückweg');
+    pruefe(
+      zurueck.merkmal === '(aus)',
+      'Schale: zurückgeschaltet bleibt das Merkmal am <html> stehen'
+    );
+    pruefe(zurueck.grundWeg, 'Schale: zurückgeschaltet bleibt der Grund im Baum stehen');
+    pruefe(
+      zurueck.karteImFenster,
+      'Schale: zurückgeschaltet ist die Karte nicht in ihr Fenster zurückgekehrt — die Kartenzeile im Menü führt ins Leere'
+    );
+    pruefe(
+      zurueck.tiefeImRumpf,
+      'Schale: zurückgeschaltet steht die Ansichtstiefe nicht wieder im Rumpf'
+    );
+    pruefe(
+      zurueck.kopfImRumpf,
+      'Schale: zurückgeschaltet steht die Kopfleiste nicht wieder im Rumpf'
+    );
+    pruefe(
+      zurueck.rumpfImKoerper,
+      'Schale: zurückgeschaltet hängt der Rumpf nicht wieder am Körper'
+    );
+
+    await ctx.close();
+  }
 } finally {
   await browser.close();
   vorschau.kill();

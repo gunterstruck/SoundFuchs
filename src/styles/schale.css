@@ -1,0 +1,285 @@
+/**
+ * DIE SCHALE — Schnitt 2 aus docs/nutzerreise-wie-tourfuchs.md
+ *
+ * Alles hier hängt an `html[data-schale="neu"]`. Ist der Schalter aus, ist
+ * diese Datei wirkungslos, und die geprüfte Reise läuft unverändert weiter.
+ * Das ist die Bedingung des Papiers (§5): kein Zurückrollen, ein Schalter.
+ *
+ * Die Maße stammen aus TourFuchs `src/styles/responsive.css` und sind dort
+ * begründet; die Begründungen stehen hier verkürzt an der jeweiligen Stelle.
+ */
+
+html[data-schale='neu'] {
+  /* Die sichere Zone am unteren Rand. Im Edge-to-Edge-Modus liegt dort die
+     System-Navigationsleiste; ohne diesen Abstand verschwände die unterste
+     Blattzeile dahinter. Ohne Leiste ist der Wert 0 — kein Nachteil. */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* Im Ruhezustand schaut nur der Griff heraus. Ansichtstiefe und Reiter
+     hängen oben, das Blatt ist reine Inhaltsfläche auf Abruf. */
+  --blatt-peek: 46px;
+  --blatt-halb: min(68dvh, 620px);
+  --blatt-einstieg: min(52dvh, 480px);
+}
+
+html[data-schale='neu'],
+html[data-schale='neu'] body {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DIE KOPFLEISTE
+   Sie verlässt den Rumpf und steht über allem. Im Blatt würde sie mit
+   nach unten fahren, und die Suche wäre genau dann weg, wenn man sie
+   braucht.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html[data-schale='neu'] body > .topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  margin: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DER GRUND
+   Bei TourFuchs `<main id="map">`: das eine Element, das nie verschwindet.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html[data-schale='neu'] .karten-grund {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  background: var(--bg-secondary);
+}
+
+/* Die Karte füllt den Grund. Sie steht sonst als Kasten mit fester Höhe im
+   Fenster — im Grund ist sie die Fläche selbst. */
+html[data-schale='neu'] .karten-grund #customer-map {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  max-height: none;
+  border-radius: 0;
+  border: none;
+}
+
+/* Die Grundwahl schwebt unten links über der Karte statt als Zeile darüber
+   zu stehen — oben ist der Kopfstreifen, unten rechts sitzt Leaflets
+   Zoom-Bedienung. */
+html[data-schale='neu'] .karten-grund #map-basemap-row {
+  position: absolute;
+  left: 10px;
+  bottom: calc(var(--blatt-peek) + var(--safe-bottom) + 12px);
+  z-index: 500;
+  margin: 0;
+}
+
+html[data-schale='neu'] .karten-grund #map-unlocated {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 8px;
+  z-index: 500;
+  margin: 0;
+}
+
+/* Der Einstieg in die leere Karte steht im Fenster mittig. Im Grund liegt die
+   Mitte hinter dem Blatt — dort wäre er halb verdeckt, und ausgerechnet der
+   Kasten, der aus der leeren Karte herausführt, wäre der unlesbarste. Er rückt
+   deshalb in das obere Drittel, das immer frei bleibt. */
+html[data-schale='neu'] .karten-grund .map-empty {
+  top: 30%;
+}
+
+/* Das Standortblatt legt sich über die Karte, wie im Fenster auch. */
+html[data-schale='neu'] .karten-grund #customer-sheet {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: calc(var(--blatt-peek) + var(--safe-bottom) + 12px);
+  z-index: 600;
+  max-height: 52dvh;
+  overflow-y: auto;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DER KOPFSTREIFEN
+   Durchlässig: Die Lücken zwischen den Pillen lassen die Karte durch.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html[data-schale='neu'] .schale-streifen {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  right: 0;
+  z-index: 1040;
+  padding: 8px 0 2px;
+  background: transparent;
+  pointer-events: none;
+}
+
+html[data-schale='neu'] .schale-streifen > * {
+  pointer-events: auto;
+}
+
+/* Die Ansichtstiefe bringt ihre Pille schon mit — im Streifen braucht sie nur
+   den Rand, den sie vorher vom Rumpf bekam, und keinen Abstand nach unten:
+   Darunter folgt die Reiterleiste, nicht der Inhalt. */
+html[data-schale='neu'] .schale-streifen #depth-switch {
+  margin: 0 10px;
+}
+
+/* Beide Reihen tragen denselben Stil: eine schwebende, leicht durchscheinende
+   Segment-Pille. Die Ansichtstiefe bringt ihren eigenen mit (sie steht heute
+   schon so da); die Reiter bekommen ihn hier. */
+html[data-schale='neu'] .schale-reiter {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 3px;
+  margin: 5px 10px 0;
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+}
+
+html[data-schale='neu'] .schale-reiter-btn {
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  padding: 7px 5px;
+  min-height: 34px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+html[data-schale='neu'] .schale-reiter-btn.active {
+  background: var(--primary-color);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DAS BLATT
+   ══════════════════════════════════════════════════════════════════════ */
+
+html[data-schale='neu'] .schale-blatt {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--safe-bottom);
+  z-index: 1020;
+  display: flex;
+  flex-direction: column;
+  height: var(--blatt-halb);
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -12px 34px rgba(15, 23, 42, 0.18);
+  transform: translateY(calc(100% - var(--blatt-peek)));
+  transition:
+    transform 0.24s ease,
+    height 0.24s ease;
+}
+
+/* Erster Start: bewusst kompakt, damit oben die Deutschlandkarte sichtbar
+   bleibt und trotzdem etwas dasteht, das sagt, was zu tun ist. */
+html[data-schale='neu'] .schale-blatt.einstieg {
+  height: var(--blatt-einstieg);
+}
+
+html[data-schale='neu'] .schale-blatt.offen {
+  transform: translateY(0);
+}
+
+/* Während des Ziehens keine Überblendung, damit das Blatt dem Finger folgt. */
+html[data-schale='neu'] body.blatt-zieht .schale-blatt {
+  transition: none;
+}
+
+html[data-schale='neu'] .schale-griff {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 10px 0 6px;
+  border: none;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+}
+
+html[data-schale='neu'] .schale-griff span {
+  display: block;
+  width: 56px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-color);
+}
+
+html[data-schale='neu'] .schale-beispielstreifen {
+  flex: 0 0 auto;
+  margin: 0 12px 8px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DIE TAFELN
+   ══════════════════════════════════════════════════════════════════════ */
+
+html[data-schale='neu'] .schale-tafel {
+  display: none;
+  min-height: 0;
+}
+
+html[data-schale='neu'] .schale-tafel.active {
+  display: block;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Eingeklappt zeigt der Peek nur Griff und Beispieldaten-Streifen. Der Inhalt
+   würde sonst als Restzeile unter dem Rand bluten; er kommt beim Aufziehen
+   ohnehin wieder. */
+html[data-schale='neu'] .schale-blatt:not(.offen) .schale-tafel {
+  display: none !important;
+}
+
+html[data-schale='neu'] .schale-platzhalter {
+  margin: 24px 16px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Der bisherige Rumpf zieht als Ganzes in den Reiter „Daten". Er bringt seine
+   eigene Breitenrechnung mit; im Blatt braucht er sie nicht mehr. */
+html[data-schale='neu'] .schale-tafel .container {
+  max-width: none;
+  min-height: 0;
+  margin: 0;
+  padding-top: 0;
+}
+
+/* Die beiden schwebenden Pillen und der Fuß gehören zur alten Reise. Sie
+   bleiben im Baum, damit ihre Zuhörer greifen, aber sie stehen nicht doppelt
+   im Bild — der Weg hinein liegt in der neuen Schale im Blatt. */
+html[data-schale='neu'] .fab-row {
+  display: none;
+}

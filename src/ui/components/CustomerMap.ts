@@ -103,11 +103,25 @@ export class CustomerMap {
   public async oeffne(): Promise<void> {
     this.fenster = document.getElementById('customer-map-modal');
     if (!this.fenster) {
-      logger.warn('Kundenkarte: das Fenster fehlt im Markup');
+      logger.warn('Standortkarte: das Fenster fehlt im Markup');
       return;
     }
     this.fenster.style.display = 'flex';
+    await this.zeichne();
+  }
 
+  /**
+   * Dieselbe Karte, nur ohne Fenster: In der neuen Schale liegt sie als Grund
+   * (`src/ui/shell/Schale.ts`), und der Grund wird nicht geöffnet — er ist
+   * immer da. Der Behälter `#customer-map` ist in beiden Fällen derselbe; er
+   * ist nur einmal ins Fenster gehängt und einmal in den Grund.
+   */
+  public async zeigeImGrund(): Promise<void> {
+    this.fenster = null;
+    await this.zeichne();
+  }
+
+  private async zeichne(): Promise<void> {
     const behaelter = document.getElementById('customer-map');
     if (!behaelter) return;
 
@@ -118,12 +132,29 @@ export class CustomerMap {
     await this.zeichneGebiete();
 
     // Leaflet misst beim Anlegen die Größe des Behälters. Der war eben noch
-    // verborgen — ohne diesen Anstoß bliebe die Karte ein graues Viertel.
+    // verborgen oder gerade umgezogen — ohne diesen Anstoß bliebe die Karte
+    // ein graues Viertel.
     requestAnimationFrame(() => this.karte?.invalidateSize());
   }
 
   public schliesse(): void {
     if (this.fenster) this.fenster.style.display = 'none';
+  }
+
+  /**
+   * Die Karte vergisst ihren Behälter — nötig, wenn die Schale ihn umhängt.
+   * Leaflet hält eine Messung des alten Platzes fest; ein neuer Aufbau am
+   * neuen Platz ist billiger als jeder Versuch, sie nachzuziehen.
+   */
+  public vergissKarte(): void {
+    this.karte?.remove();
+    this.karte = null;
+    this.grund = null;
+    this.gebiete = null;
+    this.stapel = null;
+    this.marker = [];
+    this.gezeichneteStufe = null;
+    this.stufeInArbeit = null;
   }
 
   private async baueKarte(behaelter: HTMLElement): Promise<void> {

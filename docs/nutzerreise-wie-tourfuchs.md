@@ -450,7 +450,7 @@ Das hat drei Eigenschaften, die hier zählen:
 
 ### Was das konkret heißt
 
-Eine neue Datei `src/ui/shell/Schale.ts` (Name offen), die:
+Eine neue Datei `src/ui/shell/Schale.ts`, die:
 
 1. Grund, Kopfstreifen, Blatt und Reiterleiste aufbaut,
 2. die vorhandenen Abschnitte per `appendChild` in ihre Reiter hängt,
@@ -479,10 +479,14 @@ nützlich — und danach heißt in allen weiteren Schnitten dasselbe gleich.
 _Prüfbar:_ `check-i18n`, `attention-check`; kein „Kunde" mehr in der
 Oberfläche.
 
-**2 — Die Schale, leer.** Grund (Karte), Kopfstreifen (Tiefe + Reiter), Blatt
-mit den drei TourFuchs-Zuständen und -Maßen, Reiterleiste, Beispieldaten-
-Streifen. Noch ohne Inhalte: Die Reiter sind da, die Abschnitte liegen weiter,
-wo sie liegen. _Prüfbar:_ Die Gesten tragen, die alte Schale ist unverändert.
+**2 — Die Schale, leer.** ✅ _erledigt._ Grund (Karte), Kopfstreifen (Tiefe +
+Reiter), Blatt mit den drei TourFuchs-Zuständen und -Maßen, Reiterleiste,
+Beispieldaten-Streifen. Noch ohne Inhalte: Die Reiter sind da, die Abschnitte
+liegen weiter, wo sie liegen — der gesamte bisherige Rumpf zieht als Ganzes in
+den Reiter „Daten". Gebaut in `src/ui/shell/Schale.ts`, geschaltet über
+„Neue Oberfläche" in den Einstellungen, Voreinstellung bleibt die alte Schale.
+_Prüfbar:_ `attention-check` misst Hinweg **und** Rückweg; `durchlauf` läuft
+unverändert gegen die alte Schale.
 
 **3 — Der Maschinenknopf im Popup.** Je Maschine eine Zeile im Standort-Popup,
 und dahinter baut sich im semantischen Zoom der Prüfablauf auf (§0c, §0g).

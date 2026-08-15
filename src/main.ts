@@ -15,6 +15,7 @@ import './styles/pipeline-status.css';
 import './styles/drift-panel.css';
 import './styles/event-timeline.css';
 import './styles/spectrogram-3d.css';
+import './styles/schale.css';
 
 import { initDB, getDBStats } from '@data/db.js';
 import { toast } from '@ui/components/Toast.js';
@@ -28,6 +29,8 @@ import { logger } from '@utils/logger.js';
 import { GlobalSearch } from '@ui/GlobalSearch.js';
 import { InfoBottomSheet } from '@ui/components/InfoBottomSheet.js';
 import { CustomerMap } from '@ui/components/CustomerMap.js';
+import { Schale } from '@ui/shell/Schale.js';
+import { gemerkteSchale, setzeSchale } from '@utils/schaleSettings.js';
 import { escapeHtml } from '@utils/sanitize.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
 import { initPwaUpdate } from '@utils/pwaUpdate.js';
@@ -61,6 +64,21 @@ class ZanobotApp {
    */
   private kundenkarte = new CustomerMap({
     zeigeMaschine: (machine) => this.router?.showMachineView(machine),
+  });
+
+  /**
+   * Die neue Schale (docs/nutzerreise-wie-tourfuchs.md, Schnitt 2). Sie hängt
+   * die vorhandenen Abschnitte um, statt sie neu zu bauen — sie kostet also
+   * nichts, solange der Schalter aus ist.
+   */
+  private schale = new Schale({
+    karteInDenGrund: async () => {
+      // Leaflet hält die Messung des alten Platzes fest. Nach dem Umhängen
+      // ist ein neuer Aufbau billiger als jeder Versuch, sie nachzuziehen.
+      this.kundenkarte.vergissKarte();
+      await this.kundenkarte.zeigeImGrund();
+    },
+    hatBestand: async () => (await getDBStats()).machines > 0,
   });
 
   constructor() {
@@ -279,6 +297,7 @@ class ZanobotApp {
       this.setupFooterLinks();
       this.setupGlobalSearch();
       this.setupInfoButton();
+      this.setupSchale();
 
       // Initialize About Modal with dynamic i18n content
       new AboutModalController();
@@ -658,6 +677,33 @@ class ZanobotApp {
   }
 
   /**
+   * Der Schalter zwischen alter und neuer Schale.
+   *
+   * Beide laufen im selben Bau; umgeschaltet wird ohne Neuladen, damit man
+   * beide nebeneinander ansehen kann, ohne den Zustand zu verlieren. Genau
+   * dafür merkt sich die Schale den Weg zurück (siehe `Schale.haengeUm`).
+   */
+  private setupSchale(): void {
+    const schalter = document.getElementById('schale-toggle') as HTMLInputElement | null;
+    const gewaehlt = gemerkteSchale();
+    if (schalter) schalter.checked = gewaehlt === 'neu';
+    if (gewaehlt === 'neu') void this.schale.an();
+
+    schalter?.addEventListener('change', () => {
+      const neu = schalter.checked;
+      setzeSchale(neu ? 'neu' : 'alt');
+      if (neu) {
+        void this.schale.an();
+      } else {
+        this.schale.aus();
+        // Die Karte hat ihren Behälter verloren, als er in den Grund zog.
+        // Beim nächsten Öffnen des Fensters baut sie sich dort neu auf.
+        this.kundenkarte.vergissKarte();
+      }
+    });
+  }
+
+  /**
    * Setup view level selector (Basic / Advanced / Expert)
    *
    * This controls the UI complexity based on user preference.
@@ -890,6 +936,14 @@ class ZanobotApp {
       document.querySelectorAll<HTMLElement>('.info-sheet-row[data-karte]').forEach((zeile) => {
         zeile.addEventListener('click', () => {
           InfoBottomSheet.close();
+          // In der neuen Schale ist die Karte der Grund, nicht ein Fenster.
+          // Das Fenster zu öffnen wäre dort eine Sackgasse: Es stünde leer da,
+          // weil die Karte längst woanders hängt. Stattdessen klappt das Blatt
+          // ein und gibt den Grund frei — das ist derselbe Wunsch.
+          if (this.schale.läuft) {
+            this.schale.oeffneBlatt(false);
+            return;
+          }
           void this.kundenkarte.oeffne();
         });
       });

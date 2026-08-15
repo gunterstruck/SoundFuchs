@@ -209,7 +209,7 @@
            die Emoji tragen Farbe, sind auf einen Blick unterscheidbar und
            brauchen keine eigene Regel. Der Dialog behält seine Strichgrafiken,
            dort stehen sie groß über einer Erklärzeile. -->
-      <div class="depth-switch" role="group" aria-label="Ansichtstiefe">
+      <div class="depth-switch" id="depth-switch" role="group" aria-label="Ansichtstiefe">
         <button class="view-level-btn depth-seg active" data-level="basic" type="button">
           <span class="depth-seg-icon" aria-hidden="true">🌱</span>
           <span data-i18n="viewLevels.basicLabel">Basis</span>
@@ -3014,6 +3014,40 @@
                   <span class="view-level-label" data-i18n="viewLevels.expertLabel">Experte</span>
                   <span class="view-level-desc" data-i18n="viewLevels.expertDesc">Technisch</span>
                 </button>
+              </div>
+            </div>
+
+            <!--
+              Der Schalter zwischen alter und neuer Schale (Schnitt 2 aus
+              docs/nutzerreise-wie-tourfuchs.md).
+
+              Er steht auf jeder Stufe, nicht erst auf Profi. Wer die neue
+              Reise ansehen soll, ist gerade nicht der Profi, sondern der,
+              dem sie es leichter machen soll — und wer sie nicht mag, muss
+              den Weg zurück dort finden, wo er hergekommen ist.
+
+              Die Voreinstellung ist die geprüfte Reise. Sie dreht sich in
+              Schnitt 7, und erst dann, wenn die Zahlen stimmen.
+            -->
+            <div class="setting-category" data-thema="ansicht">
+              <h4 class="setting-category-title" data-i18n="schale.settingTitle">
+                Neue Oberfläche
+              </h4>
+              <p class="setting-category-description" data-i18n="schale.settingDescription">
+                Karte als Grund, Blatt von unten, Reiter — die Nutzerreise von TourFuchs. Sie wird
+                gerade gebaut und ist noch nicht vollständig. Der Schalter geht jederzeit zurück.
+              </p>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span data-i18n="schale.settingToggle">Neue Oberfläche verwenden</span>
+                  <small data-i18n="schale.settingHint"
+                    >Vorschau. Was bisher fehlt, sagen die leeren Reiter selbst.</small
+                  >
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="schale-toggle" />
+                  <span class="toggle-slider"></span>
+                </label>
               </div>
             </div>
 
