@@ -190,7 +190,7 @@ Zoom. Die Zeile ersetzt also nicht den Knopf, sie _ist_ er.
 die kleine Antwort auf „ich finde die Karte nicht". In der neuen Schale ist die
 Karte der Grund; ein Abschnitt, der auf sie zeigt, verschwände in Schnitt 2
 wieder. Etwas einzubauen, das kurz darauf herausgenommen wird, ist Unruhe ohne
-Gewinn. Bis die Schale steht, bleibt die Karte über ☰ → „Kundenkarte"
+Gewinn. Bis die Schale steht, bleibt die Karte über ☰ → „Standortkarte"
 erreichbar.
 
 ## 1. Was ich falsch verstanden hatte
@@ -464,36 +464,50 @@ zugeschnitten.
 
 ## 6. Schnitte
 
-Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar.
+Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die
+Reihenfolge folgt den Korrekturen aus §0c bis §0g — nicht der ersten Fassung,
+die noch einen Reiter „Prüfen" und einen Modus-Schalter vorsah.
 
-**0 — Das Messgerät schärfen.** `durchlauf` um Kamerabild, Abspielen und
-3D-Gebirge erweitern. _Vor allem anderen_ — sonst wird der größte Umbau mit
-einem Messgerät geprüft, das die Auflagen des Auftraggebers nicht ansieht.
+**0 — Das Messgerät schärfen.** ✅ _erledigt (#50)._ `durchlauf` um Kamerabild,
+Abspielen und 3D-Gebirge erweitert. _Vor allem anderen_ — sonst wird der
+größte Umbau mit einem Messgerät geprüft, das die Auflagen des Auftraggebers
+nicht ansieht.
 
-**1 — Die Schale, leer.** Grund (Karte), Kopfstreifen (Tiefe + Reiter), Blatt
-mit Peek/Halb/Voll und den TourFuchs-Maßen. Noch ohne Inhalte: Die Reiter
-sind da, die Abschnitte liegen weiter, wo sie liegen. _Prüfbar:_ Die Gesten
-tragen, die alte Schale ist unverändert.
+**1 — Standort statt Kunde.** ✅ _erledigt._ Umbenennen in Oberfläche und
+Sprachdateien, die Datenstruktur bleibt (§0d). Klein, unabhängig, sofort
+nützlich — und danach heißt in allen weiteren Schnitten dasselbe gleich.
+_Prüfbar:_ `check-i18n`, `attention-check`; kein „Kunde" mehr in der
+Oberfläche.
 
-**2 — Reiter „Prüfen".** Die drei Karten ziehen in die Schrittleiste um.
-_Der wichtigste Schnitt_ — hier entscheidet sich, ob die Reise besser oder
-schlechter wird. _Prüfbar:_ `durchlauf` muss elf Schritte bleiben, und der Weg
-von kalt bis „Prüfung starten" darf nicht länger werden.
+**2 — Die Schale, leer.** Grund (Karte), Kopfstreifen (Tiefe + Reiter), Blatt
+mit den drei TourFuchs-Zuständen und -Maßen, Reiterleiste, Beispieldaten-
+Streifen. Noch ohne Inhalte: Die Reiter sind da, die Abschnitte liegen weiter,
+wo sie liegen. _Prüfbar:_ Die Gesten tragen, die alte Schale ist unverändert.
 
-**3 — Reiter „Bestand".** Maschinenübersicht, Kunden, Import, Beispieldaten.
-_Prüfbar:_ Zeilentipp öffnet weiterhin die Maschinenansicht.
+**3 — Der Maschinenknopf im Popup.** Je Maschine eine Zeile im Standort-Popup,
+und dahinter baut sich im semantischen Zoom der Prüfablauf auf (§0c, §0g).
+_Der entscheidende Schnitt_ — hier zeigt sich, ob die Reise besser oder
+schlechter wird. _Prüfbar:_ `durchlauf` muss vierzehn Schritte tragen, und der
+Weg von kalt bis „Prüfung starten" darf nicht länger werden.
 
-**4 — Reiter „Karte".** Die Karte ist der Grund; der Reiter trägt die Nahliste
-(„In der Nähe", Kartenmitte oder Standort) wie TourFuchs' `#tab-karte`.
+**4 — Reiter „Daten".** Maschinen, Standorte, Import, Erste-Schritte-Liste.
+Die Maschinenzeile führt in denselben Ablauf wie der Knopf aus Schnitt 3,
+damit der Weg auch ohne Empfang trägt. _Prüfbar:_ Zeilentipp öffnet weiterhin
+die Maschinenansicht.
 
-**5 — Reiter „Filter".** Zustand · Kunde · Flottengruppe. Klein, neu.
+**5 — Reiter „Flotte".** Die beiden Funktionen aus §0e: Flotte aus dem
+Bestand, Flotte ohne Bestand. Sie ziehen aus der Maschinenliste dorthin, wo
+TourFuchs seinen Besuchsplaner hat.
 
-**6 — Umschalten.** Voreinstellung auf die neue Schale drehen, alte Schale als
-Rückweg behalten. Erst wenn die Zahlen aus 2 stimmen.
+**6 — Reiter „Karte" und „Filter".** Die Karte ist der Grund; der Reiter trägt
+die Nahliste wie TourFuchs' `#tab-karte`. Filter: Zustand · Standort ·
+Flottengruppe. Klein, neu.
 
-**7 — Aufräumen.** Alte Schale entfernen, wenn niemand sie mehr braucht.
+**7 — Schreibtisch, Umschalten, Aufräumen.** Breite Ansicht, Voreinstellung
+auf die neue Schale drehen, alte Schale als Rückweg behalten, sie zuletzt
+entfernen. Erst wenn die Zahlen aus Schnitt 3 stimmen.
 
-Schnitt 1 und 2 sind zusammen die Entscheidung. Wenn nach Schnitt 2 die Zahlen
+Schnitt 2 und 3 sind zusammen die Entscheidung. Wenn danach die Zahlen
 schlechter sind als heute, ist das die Antwort — und der Schalter bleibt aus.
 
 ---
@@ -554,25 +568,28 @@ Vor diesem Auftrag hatte ich begonnen, die Karte als Abschnitt auf die
 Startseite zu setzen (kleines Deutschlandbild, Tipp öffnet die Karte). Das ist
 gebaut und funktioniert, liegt aber ungeprüft in einem Stash.
 
-**Vorschlag:** verwerfen. Er löst dasselbe Problem noch einmal auf einem
-anderen Weg — in der neuen Schale ist die Karte der Grund und braucht keinen
-Abschnitt mehr, der auf sie zeigt. Ihn jetzt einzubauen hieße, eine Lösung zu
-liefern, die Schnitt 1 sofort wieder entfernt.
+**Entschieden: verworfen** (§0g). Er löst dasselbe Problem noch einmal auf
+einem anderen Weg — in der neuen Schale ist die Karte der Grund und braucht
+keinen Abschnitt mehr, der auf sie zeigt. Ihn jetzt einzubauen hieße, eine
+Lösung zu liefern, die Schnitt 2 sofort wieder entfernt.
 
 _Falls die Entscheidung gegen die neue Schale fällt_, ist er die richtige
 kleine Antwort auf „ich finde die Karte nicht" und kann in einer Stunde
-gemergt werden.
+gebaut werden.
 
 ---
 
-## 10. Was ich zur Entscheidung brauche
+## 10. Die drei offenen Punkte — geschlossen
 
-1. **Startwert des Blattes** — „Halb" wie vorgeschlagen (§3), oder doch
-   „Peek" wie TourFuchs, mit dem grauen Grund als bewusstem Preis?
-2. **Der Kartenabschnitt aus §9** — verwerfen oder als Zwischenlösung mergen?
-3. **Reiter-Beschriftungen** — „Prüfen · Bestand · Filter · Karte", oder
-   näher an TourFuchs mit „Daten" statt „Bestand"?
+Die erste Fassung ließ drei Punkte offen. Alle drei sind beantwortet, keiner
+davon durch eine Erfindung von mir:
 
-Alles andere kann ich als Produktverantwortlicher entscheiden und tue es auch.
-Diese drei Punkte ändern die Reise so grundsätzlich, dass ich sie nicht allein
-setze.
+1. **Startwert des Blattes** — die Frage war falsch gestellt. TourFuchs hat
+   drei Zustände, nicht einen; sie stehen in §0b und werden übernommen.
+2. **Der Kartenabschnitt aus §9** — verworfen (§0g).
+3. **Reiter-Beschriftungen** — „Daten · Flotte · Karte · Filter". Kein Reiter
+   „Prüfen": Das Prüfen liegt hinter dem Maschinenknopf (§0c), die Flotte ist
+   kein gleichrangiger Modus, sondern eine Funktion im Blatt (§0e).
+
+Alles Weitere entscheide ich als Produktverantwortlicher und lege jede
+Abweichung von TourFuchs im Register §4a offen.

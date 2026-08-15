@@ -21,8 +21,8 @@ export const en: TranslationDict = {
     vault: 'Vault',
     soon: 'later',
     view: 'View: basic or pro',
-    map: 'Customer map',
-    customerData: 'Customers: samples & import',
+    map: 'Site map',
+    customerData: 'Sites: samples & import',
   },
 
   search: {
@@ -108,54 +108,54 @@ export const en: TranslationDict = {
   },
 
   map: {
-    title: 'Customer map',
+    title: 'Site map',
     tileLight: 'Light',
     tileStandard: 'Standard',
     tileSatellite: 'Satellite',
     machinesLabel: 'Machines',
     accuracyPlz: 'Town centre',
-    noMachines: 'No machine at this customer yet.',
+    noMachines: 'No machine at this site yet.',
     noReference: 'No reference',
-    unlocated: '{{count}} customer(s) without a map position — their postcode is unknown.',
+    unlocated: '{{count}} site(s) without a map position — the postcode is unknown.',
     areaWithMachines: 'Postcode area {{plz}} · {{count}} machines',
     areaEmpty: 'Postcode area {{plz}} · no machine yet',
-    emptyTitle: 'No customer on the map yet',
-    emptyText: 'Customers are created together with a machine — or here, to try it out.',
+    emptyTitle: 'No site on the map yet',
+    emptyText: 'Sites are created together with a machine — or here, to try it out.',
     emptyButton: 'Load sample data',
     emptyLoading: 'Loading …',
   },
 
   customers: {
-    label: 'Customer (optional)',
-    none: '— no customer —',
-    new: '+ New customer',
-    nameLabel: 'Company name',
-    namePlaceholder: 'e.g. Müller Guss GmbH',
+    label: 'Site (optional)',
+    none: '— no site —',
+    new: '+ New site',
+    nameLabel: 'Name',
+    namePlaceholder: 'e.g. Müller Guss GmbH or Home',
     plzLabel: 'Postcode',
     plzPlaceholder: '45127',
     ortLabel: 'Town',
     hint: 'The postcode supplies town and map position — nothing else is needed.',
-    nameRequired: 'Please enter a company name for the customer.',
+    nameRequired: 'Please enter a name for the site.',
     plzInvalid: 'Please enter a five-digit German postcode.',
     plzFound: '{{ort}} — taken from the postcode.',
-    plzUnknown: 'This postcode is unknown. The customer is created, but without a map position.',
+    plzUnknown: 'This postcode is unknown. The site is created, but without a map position.',
     demoTitle: 'Sample data',
     demoDescription:
-      'About 100 invented customers, spread across Germany, each with one machine without a reference. For demos — real data stays untouched.',
+      'About 100 invented sites, spread across Germany, each with one machine without a reference. For demos — real data stays untouched.',
     demoLoad: 'Load sample data',
     demoRemove: 'Remove sample data',
-    demoCount: '{{count}} sample customers loaded',
-    demoLoaded: '{{count}} sample customers created',
-    demoRemoved: '{{count}} sample customers removed',
+    demoCount: '{{count}} sample sites loaded',
+    demoLoaded: '{{count}} sample sites created',
+    demoRemoved: '{{count}} sample sites removed',
     demoError: 'Sample data could not be processed.',
-    importTitle: 'Import a customer list',
+    importTitle: 'Import a site list',
     importDescription:
       'CSV file with the columns Name, Postcode, optionally Town and Machine. Town and map position come from the postcode.',
     importButton: 'Choose CSV',
     importSummary:
-      '{{angelegt}} customers created, {{maschinen}} machines, {{uebersprungen}} skipped, {{fehler}} invalid rows',
+      '{{angelegt}} sites created, {{maschinen}} machines, {{uebersprungen}} skipped, {{fehler}} invalid rows',
     importNoColumns: 'The file has no "Name" or "Postcode" column — nothing was imported.',
-    importError: 'The customer list could not be imported.',
+    importError: 'The site list could not be imported.',
   },
 
   // ============================================================================
@@ -1139,11 +1139,11 @@ export const en: TranslationDict = {
     requiresSecureContext: 'NFC writing requires a secure (HTTPS) connection.',
     unsupportedBrowser: 'NFC writing requires Chrome on Android.',
     // Customer ID (Variant B)
-    customerIdLabel: 'Customer ID (c)',
+    customerIdLabel: 'Reference collection (c)',
     customerIdDescription:
-      'This ID determines which reference data is loaded when scanning the NFC tag. Data is loaded automatically from GitHub Pages.',
-    customerIdPlaceholder: 'e.g. Customer_ID_1',
-    customerIdRequired: 'Please enter a customer ID.',
+      'The name of the collection the references are loaded from when the NFC tag is scanned. Your own or a shared one: whoever publishes a collection passes their normal state on to everyone who knows the name.',
+    customerIdPlaceholder: 'e.g. golf-7-tdi-idle',
+    customerIdRequired: 'Please enter a name for the reference collection.',
     dbUrlPreview: 'Data URL: {{url}}',
     closeDialog: 'Close NFC dialog',
     // Fleet option
@@ -1154,7 +1154,7 @@ export const en: TranslationDict = {
     noFleets: 'No fleets available',
     machine: 'machine',
     machines: 'machines',
-    fleetRequiresCustomerId: 'Please enter a customer ID and select a fleet.',
+    fleetRequiresCustomerId: 'Please choose a reference collection and a fleet.',
     // Quick Compare count-only option
     optionQuickCompareCount: 'Quick compare (count only)',
     optionQuickCompareCountDetailDefault:
@@ -1178,10 +1178,11 @@ export const en: TranslationDict = {
     optionSpecificDetailDefault: 'Opens the app for the currently selected machine.',
     optionSpecificDetail: 'Opens the app for "{{name}}" (ID: {{id}}).',
     optionSpecificUnavailable: 'Select a machine first to create a specific QR code.',
-    customerIdLabel: 'Customer ID (c)',
-    customerIdDescription: 'This ID determines which reference data is loaded when scanning.',
-    customerIdPlaceholder: 'e.g. Customer_ID_1',
-    customerIdRequired: 'Please enter a customer ID.',
+    customerIdLabel: 'Reference collection (c)',
+    customerIdDescription:
+      'The name of the collection the references are loaded from when scanning — your own or a shared one.',
+    customerIdPlaceholder: 'e.g. golf-7-tdi-idle',
+    customerIdRequired: 'Please enter a name for the reference collection.',
     dbUrlPreview: 'Data URL: {{url}}',
     urlPreview: 'Link preview',
     downloadPng: 'Save as image',
@@ -1434,7 +1435,7 @@ export const en: TranslationDict = {
       deep_link_detected: 'Deep link detected',
       hash_parsed: 'Hash parsed',
       machine_id_extracted: 'Machine ID extracted',
-      customer_id_extracted: 'Customer ID extracted',
+      customer_id_extracted: 'Reference collection recognised',
       db_url_derived: 'DB URL derived',
       import_url_detected: 'Import URL detected',
 
@@ -1623,7 +1624,7 @@ export const en: TranslationDict = {
 
     nfcFunctionalityTitle: 'How it works',
     nfcTagDescription:
-      '<strong>NFC tag on the machine:</strong> An NFC tag placed on the housing or access point can contain the following information:<ul><li>URL to the SoundFuchs PWA (direct app launch in browser)</li><li>Machine ID for automatic identification</li><li>Optional: Reference to customer-specific reference data (URL to a JSON file)</li></ul>',
+      '<strong>NFC tag on the machine:</strong> An NFC tag placed on the housing or access point can contain the following information:<ul><li>URL to the SoundFuchs PWA (direct app launch in browser)</li><li>Machine ID for automatic identification</li><li>Optional: Reference to your own reference data (URL to a JSON file)</li></ul>',
     nfcInstantAccess:
       '<strong>Instant access without installation:</strong><ul><li>The user holds the smartphone to the NFC tag</li><li>The SoundFuchs PWA opens directly in the browser (no app store, no registration required)</li><li>Optional: The stored machine ID is automatically loaded</li></ul>',
 
@@ -1637,7 +1638,7 @@ export const en: TranslationDict = {
 
     nfcDataPrivacyTitle: 'Data storage and privacy',
     nfcDataPrivacyImportant:
-      "<strong>Important:</strong> The reference data is <strong>not stored in a SoundFuchs cloud</strong>. It is provided:<ul><li>In the operator's <strong>local network</strong> (e.g., intranet server)</li><li>In a <strong>customer-owned environment</strong> (e.g., GitHub Pages, own web server)</li><li>As a <strong>static JSON file</strong> accessible via an HTTPS URL</li></ul>",
+      "<strong>Important:</strong> The reference data is <strong>not stored in a SoundFuchs cloud</strong>. It is provided:<ul><li>In the operator's <strong>local network</strong> (e.g., intranet server)</li><li>In a <strong>self-hosted environment</strong> (e.g., GitHub Pages, own web server)</li><li>As a <strong>static JSON file</strong> accessible via an HTTPS URL</li></ul>",
     nfcDataPrivacyStorage:
       'The reference database is downloaded on the first NFC scan and then stored <strong>locally on the device</strong> (IndexedDB). All further comparisons are performed offline.',
 

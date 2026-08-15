@@ -10600,7 +10600,7 @@ html .settings-list[data-filter='pruefen'] > .setting-category:not([data-thema~=
 html .settings-list[data-filter='raum'] > .setting-category:not([data-thema~='raum']),
 html .settings-list[data-filter='etiketten'] > .setting-category:not([data-thema~='etiketten']),
 html .settings-list[data-filter='daten'] > .setting-category:not([data-thema~='daten']),
-html .settings-list[data-filter='kunden'] > .setting-category:not([data-thema~='kunden']) {
+html .settings-list[data-filter='standorte'] > .setting-category:not([data-thema~='standorte']) {
   display: none !important;
 }
 

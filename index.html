@@ -753,27 +753,28 @@
                     >
                   </div>
                   <!--
-                    Kunde — der Ort, an dem die Maschine steht.
+                    Standort — der Ort, an dem die Maschine steht. Kundenname,
+                    Postleitzahl, Stadt; der Name darf auch „Zuhause" sein.
                     Steht bewusst vor der Maschinen-ID: Wo eine Maschine steht,
                     weiß man beim Anlegen; eine SAP-Nummer trägt man später
-                    nach. Voreinstellung ist "kein Kunde", das Feld kostet also
+                    nach. Voreinstellung ist "kein Standort", das Feld kostet also
                     niemanden etwas. Siehe docs/kunden-und-karte.md.
                   -->
                   <div class="input-group" id="machine-customer-form">
                     <label for="machine-customer-select" data-i18n="customers.label"
-                      >Kunde (optional)</label
+                      >Standort (optional)</label
                     >
                     <select id="machine-customer-select" class="machine-input">
                       <!-- Die beiden festen Einträge stehen hier und nicht im
                            Quelltext, damit sie beim Sprachwechsel mitziehen.
-                           Die Kunden selbst werden dazwischen eingefügt. -->
-                      <option value="" data-i18n="customers.none">— kein Kunde —</option>
-                      <option value="__neu__" data-i18n="customers.new">+ Neuer Kunde</option>
+                           Die Standorte selbst werden dazwischen eingefügt. -->
+                      <option value="" data-i18n="customers.none">— kein Standort —</option>
+                      <option value="__neu__" data-i18n="customers.new">+ Neuer Standort</option>
                     </select>
                     <div id="new-customer-fields" class="new-customer-fields" style="display: none">
                       <div class="input-group input-group-required">
                         <label for="customer-name-input">
-                          <span data-i18n="customers.nameLabel">Firmenname</span
+                          <span data-i18n="customers.nameLabel">Name</span
                           ><span class="required-star">*</span>
                         </label>
                         <input
@@ -782,7 +783,7 @@
                           class="machine-input"
                           maxlength="80"
                           autocomplete="off"
-                          placeholder="z.B. Müller Guss GmbH"
+                          placeholder="z.B. Müller Guss GmbH oder Zuhause"
                           data-i18n-placeholder="customers.namePlaceholder"
                         />
                       </div>
@@ -3793,24 +3794,24 @@
             <div class="settings-divider" data-view-level="expert"></div>
 
             <!--
-              Kunden: Beispieldaten und Kundenliste-Import (Schnitt 4 aus
+              Standorte: Beispieldaten und Standortliste-Import (Schnitt 4 aus
               docs/kunden-und-karte.md).
 
               Die Beispieldaten stehen auf JEDER Stufe, auch auf Basis. Sie
               lagen zunächst hinter „Profi" — bei einer Sache, die es genau
               für den Neuling gibt, der die App zum ersten Mal öffnet und
               etwas sehen will. Wer schon Profi ist, braucht keine erfundenen
-              Kunden; wer sie braucht, fand sie nicht.
+              Standorte; wer sie braucht, fand sie nicht.
 
               Ein einziger Knopf trägt beide Zustände von "laden"/"entfernen"
               — dieselbe Idee wie beim Zwei-Zustands-Knopf "Grundeinstellung
               wiederherstellen" weiter unten, nur ohne die
               Bestätigungs-Sekunden, weil hier nichts Echtes verloren geht.
             -->
-            <div class="setting-category" data-thema="kunden">
+            <div class="setting-category" data-thema="standorte">
               <h4 class="setting-category-title" data-i18n="customers.demoTitle">Beispieldaten</h4>
               <p class="setting-category-description" data-i18n="customers.demoDescription">
-                Rund 100 erfundene Kunden, deutschlandweit verteilt, je einer Maschine ohne
+                Rund 100 erfundene Standorte, deutschlandweit verteilt, je einer Maschine ohne
                 Referenz. Zum Vorführen — echte Daten bleiben unberührt.
               </p>
               <p class="setting-status-line" id="demo-status-line"></p>
@@ -3835,11 +3836,11 @@
               </button>
             </div>
 
-            <!-- Der Import bleibt Profi: Wer eine CSV-Datei mit Kundendaten
+            <!-- Der Import bleibt Profi: Wer eine CSV-Datei mit Standortdaten
                  hat, richtet ein und probiert nicht aus. -->
-            <div class="setting-category" data-thema="kunden" data-view-level="expert">
+            <div class="setting-category" data-thema="standorte" data-view-level="expert">
               <h4 class="setting-category-title" data-i18n="customers.importTitle">
-                Kundenliste einlesen
+                Standortliste einlesen
               </h4>
               <p class="setting-category-description" data-i18n="customers.importDescription">
                 CSV-Datei mit den Spalten Name, PLZ, optional Ort und Maschine. Ort und
@@ -4329,9 +4330,9 @@
     </div>
 
     <!--
-      Modal: Kundenkarte (Schnitt 2 aus docs/kunden-und-karte.md)
+      Modal: Standortkarte (Schnitt 2 aus docs/kunden-und-karte.md)
 
-      Auf die Karte kommt der Kunde, nicht die Maschine — der Kunde ist ein
+      Auf die Karte kommt der Standort, nicht die Maschine — der Standort ist ein
       Ort, an dem man ankommt, zwei Maschinen fünf Meter auseinander sind
       dasselbe Pixel. Die Karte tritt neben die Liste und ersetzt sie nicht:
       Ihre Kacheln brauchen Netz, in einer Halle ohne Empfang bliebe sie grau.
@@ -4348,7 +4349,7 @@
     >
       <div class="modal-content customer-map-content">
         <div class="modal-header">
-          <h3 id="customer-map-title" data-i18n="map.title">Kundenkarte</h3>
+          <h3 id="customer-map-title" data-i18n="map.title">Standortkarte</h3>
           <button class="close-modal-btn" id="close-customer-map" aria-label="Schließen">
             <svg
               width="24"
@@ -4370,18 +4371,20 @@
         <div class="map-basemap-row" id="map-basemap-row"></div>
         <div class="customer-map-canvas" id="customer-map">
           <!--
-            Der Einstieg, wenn noch kein Kunde da ist.
+            Der Einstieg, wenn noch kein Standort da ist.
 
             Früher war die Karte in diesem Fall eine Sackgasse — und wurde
-            deshalb im Menü versteckt, was den Weg zu Kunden gleich mit
+            deshalb im Menü versteckt, was den Weg zu Standorten gleich mit
             zumauerte. Jetzt liegt Deutschland mit seinen
             Postleitzahlgebieten darunter, und dieser Kasten bietet den
             Schritt an, der die Karte füllt.
           -->
           <div class="map-empty" id="map-empty" style="display: none">
-            <p class="map-empty-title" data-i18n="map.emptyTitle">Noch kein Kunde auf der Karte</p>
+            <p class="map-empty-title" data-i18n="map.emptyTitle">
+              Noch kein Standort auf der Karte
+            </p>
             <p class="map-empty-text" data-i18n="map.emptyText">
-              Kunden entstehen beim Anlegen einer Maschine — oder hier, zum Ausprobieren.
+              Standorte entstehen beim Anlegen einer Maschine — oder hier, zum Ausprobieren.
             </p>
             <button type="button" class="action-btn" id="map-empty-demo-btn">
               <span data-i18n="map.emptyButton">Beispieldaten laden</span>
@@ -4390,7 +4393,7 @@
         </div>
         <p class="map-unlocated" id="map-unlocated" style="display: none"></p>
 
-        <!-- Das Blatt des Kunden: Name, Ort, seine Maschinen. Ein Tipp auf
+        <!-- Das Blatt des Standorts: Name, Ort, seine Maschinen. Ein Tipp auf
              eine Maschine führt in die Ansicht, die es längst gibt. -->
         <div class="customer-sheet" id="customer-sheet" style="display: none">
           <div class="customer-sheet-head">
@@ -4455,7 +4458,7 @@
         <div class="modal-body" id="machine-detail-body">
           <div class="machine-detail-info">
             <h4 id="machine-detail-name" class="machine-detail-name">—</h4>
-            <!-- Der Kunde, bei dem die Maschine steht. Bleibt leer und
+            <!-- Der Standort, an dem die Maschine steht. Bleibt leer und
                  unsichtbar, solange keiner hinterlegt ist. -->
             <p id="machine-detail-customer" class="machine-detail-customer" style="display: none">
               —
