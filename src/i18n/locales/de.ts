@@ -122,6 +122,12 @@ export const de: TranslationDict = {
     noMachines: 'Bei diesem Kunden steht noch keine Maschine.',
     noReference: 'Referenz fehlt',
     unlocated: '{{count}} Kunde(n) ohne Kartenpunkt — ihre Postleitzahl ist unbekannt.',
+    areaWithMachines: 'PLZ-Gebiet {{plz}} · {{count}} Maschinen',
+    areaEmpty: 'PLZ-Gebiet {{plz}} · noch keine Maschine',
+    emptyTitle: 'Noch kein Kunde auf der Karte',
+    emptyText: 'Kunden entstehen beim Anlegen einer Maschine — oder hier, zum Ausprobieren.',
+    emptyButton: 'Beispieldaten laden',
+    emptyLoading: 'Wird geladen …',
   },
 
   // ============================================================================
@@ -1574,6 +1580,7 @@ export const de: TranslationDict = {
     dataTitle: 'Verwendete Daten',
     dataPlzPlaces: 'PLZ-Ortsnamen',
     dataPlzCoords: 'PLZ-Koordinaten',
+    dataPlzAreas: 'PLZ-Gebiete (Flächen)',
     dataMapTiles: 'Kartendarstellung',
     title: 'Über SoundFuchs',
     subtitle: 'Assistent für akustischen Vergleich von Maschinenzuständen',
@@ -1752,6 +1759,12 @@ export const de: TranslationDict = {
     guidingPrincipleTitle: 'Leitgedanke',
     guidingPrincipleQuestion: 'Hört sich die Maschine normal an?',
     guidingPrincipleStatement: 'Smartphones hören Maschinenklänge.',
+    buildLabel: 'Stand:',
+    checkUpdate: 'Nach Update suchen',
+    checkRunning: 'Wird geprüft …',
+    checkFound: 'Neue Fassung gefunden — der Hinweis zum Aktualisieren kommt gleich.',
+    checkCurrent: 'Diese Fassung ist die aktuelle.',
+    checkUnavailable: 'Die Prüfung ist hier nicht möglich (kein Service Worker).',
   },
 
   // ============================================================================

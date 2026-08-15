@@ -102,6 +102,12 @@ export const fr: TranslationDict = {
     noMachines: "Aucune machine chez ce client pour l'instant.",
     noReference: 'Référence manquante',
     unlocated: '{{count}} client(s) sans point sur la carte — leur code postal est inconnu.',
+    areaWithMachines: 'Zone postale {{plz}} · {{count}} machines',
+    areaEmpty: 'Zone postale {{plz}} · aucune machine',
+    emptyTitle: 'Aucun client sur la carte',
+    emptyText: 'Les clients sont créés avec une machine — ou ici, pour essayer.',
+    emptyButton: "Charger les données d'exemple",
+    emptyLoading: 'Chargement …',
   },
 
   customers: {
@@ -1261,6 +1267,7 @@ export const fr: TranslationDict = {
     dataTitle: 'Données utilisées',
     dataPlzPlaces: 'Noms de localité par code postal',
     dataPlzCoords: 'Coordonnées par code postal',
+    dataPlzAreas: 'Zones postales (polygones)',
     dataMapTiles: 'Fond de carte',
     title: 'À propos de SoundFuchs',
     subtitle: 'Assistant pour la comparaison acoustique des états de machines',
@@ -1417,6 +1424,12 @@ export const fr: TranslationDict = {
     guidingPrincipleTitle: 'Principe directeur',
     guidingPrincipleQuestion: 'La machine sonne-t-elle normale ?',
     guidingPrincipleStatement: 'Les smartphones entendent les sons des machines.',
+    buildLabel: 'Version compilée :',
+    checkUpdate: 'Rechercher une mise à jour',
+    checkRunning: 'Vérification …',
+    checkFound: 'Nouvelle version trouvée — la proposition de mise à jour arrive.',
+    checkCurrent: "C'est la version actuelle.",
+    checkUnavailable: "La vérification n'est pas possible ici (pas de service worker).",
   },
   // ============================================================================
   // CHRONOLOGIE DES ÉVÉNEMENTS (moteur temporel Tier 2, T2-a2)

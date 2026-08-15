@@ -30,8 +30,19 @@
  * Blatt), statt eine Schärfe zu behaupten, die die Daten nicht haben.
  */
 
-import type { Map as LeafletMap, TileLayer, Marker } from 'leaflet';
-import { getAllCustomers, getMachinesForCustomer, getLatestDiagnosis } from '@data/db.js';
+import type {
+  Map as LeafletMap,
+  TileLayer,
+  Marker,
+  GeoJSON as GeoJSONLayer,
+  LayerGroup,
+} from 'leaflet';
+import {
+  getAllCustomers,
+  getAllMachines,
+  getMachinesForCustomer,
+  getLatestDiagnosis,
+} from '@data/db.js';
 import { logger } from '@utils/logger.js';
 import { t } from '../../i18n/index.js';
 import {
@@ -41,6 +52,14 @@ import {
   merkeKachelgrund,
   type Kachelwahl,
 } from '../../services/mapTiles.js';
+import {
+  GEBIETE_QUELLE,
+  ladeGebiete,
+  stufeZuZoom,
+  zaehleJeGebiet,
+  fuellstaerke,
+  type Gebietsstufe,
+} from '../../services/plzGebiete.js';
 import type { Customer, Machine } from '@data/types.js';
 
 /** Was der Aufrufer bereitstellen muss. */
@@ -61,17 +80,18 @@ export class CustomerMap {
   private marker: Marker[] = [];
   private wahl: Kachelwahl = gemerkterKachelgrund();
   private fenster: HTMLElement | null = null;
+  /** Die Flächenebene der Postleitzahlgebiete. */
+  private gebiete: GeoJSONLayer | null = null;
+  /** Die Gruppe, die dicht beieinanderliegende Kunden zu Stapeln fasst. */
+  private stapel: LayerGroup | null = null;
+  /** Welcher Zuschnitt gerade liegt — verhindert unnötiges Neuzeichnen. */
+  private gezeichneteStufe: Gebietsstufe | null = null;
+  /** Welcher Zuschnitt gerade geladen wird — verhindert doppelte Ebenen. */
+  private stufeInArbeit: Gebietsstufe | null = null;
 
   constructor(private readonly deps: KundenkarteDeps) {}
 
-  /**
-   * Gibt es überhaupt etwas zu zeigen?
-   *
-   * Ein Menüeintrag, der auf eine leere Karte führt, ist genau die Sorte
-   * Knopf, die wir hier schon mehrfach ausgemerzt haben: sichtbar,
-   * beschriftet, reagiert — und führt nirgendwohin. Solange kein Kunde
-   * verortet ist, bleibt die Zeile weg.
-   */
+  /** Ist mindestens ein Kunde verortet? */
   public static async hatKunden(): Promise<boolean> {
     try {
       return (await getAllCustomers()).some((k) => k.geo === 'plz');
@@ -95,6 +115,7 @@ export class CustomerMap {
       await this.baueKarte(behaelter);
     }
     await this.zeichneKunden();
+    await this.zeichneGebiete();
 
     // Leaflet misst beim Anlegen die Größe des Behälters. Der war eben noch
     // verborgen — ohne diesen Anstoß bliebe die Karte ein graues Viertel.
@@ -124,8 +145,103 @@ export class CustomerMap {
     L.control.zoom({ position: 'bottomright' }).addTo(this.karte);
     this.karte.setMaxBounds(KARTENSICHT.grenzen);
 
+    // Die Namensnennung der Flächen gehört dauerhaft dazu, unabhängig davon,
+    // welcher Kachelgrund gerade gewählt ist.
+    this.karte.attributionControl.addAttribution(GEBIETE_QUELLE);
+
+    // Beim Zoomen wechselt der Zuschnitt: zehn grobe Gebiete in der
+    // Übersicht, 95 feinere beim Hineinzoomen.
+    this.karte.on('zoomend', () => void this.zeichneGebiete());
+
     await this.setzeGrund(this.wahl);
     this.baueGrundwahl();
+  }
+
+  /**
+   * Die Postleitzahlgebiete als Flächen — das „Deutschlandbild".
+   *
+   * Sie liegen unter den Markern und über den Kacheln. Eingefärbt wird nach
+   * der Zahl der Maschinen im Gebiet: Wo TourFuchs den Umsatz eines
+   * Vertriebsbezirks zeigt, zeigt SoundFuchs, wo die eigene Arbeit steht.
+   *
+   * Gebiete ohne eine einzige Maschine bleiben ungefüllt, aber sichtbar. Das
+   * ist Absicht: Das Bild soll ganz Deutschland zeigen und nicht nur die Ecke,
+   * in der man zufällig angefangen hat.
+   */
+  private async zeichneGebiete(): Promise<void> {
+    if (!this.karte) return;
+    const stufe = stufeZuZoom(this.karte.getZoom());
+    if (stufe === this.gezeichneteStufe || stufe === this.stufeInArbeit) return;
+
+    // Der Platz wird VOR dem ersten `await` belegt, nicht danach.
+    //
+    // Sonst entsteht ein Wettlauf, und er ist beim Bauen prompt aufgetreten:
+    // `oeffne()` ruft erst `zeichneKunden()`, das mit `fitBounds` den Zoom
+    // ändert und damit `zoomend` auslöst — und ruft danach selbst noch
+    // `zeichneGebiete()`. Beide Läufe standen dann gleichzeitig vor einem
+    // `gezeichneteStufe`, das noch `null` war, luden beide und legten beide
+    // ihre Ebene auf die Karte. Gemessen: 190 Flächen statt 95, jede Farbe
+    // doppelt so satt. Nichts stürzte ab, nichts meldete sich — nur die
+    // gezählten Flächen im attention-check verrieten es.
+    this.stufeInArbeit = stufe;
+    try {
+      await this.zeichneGebieteWirklich(stufe);
+    } finally {
+      this.stufeInArbeit = null;
+    }
+  }
+
+  private async zeichneGebieteWirklich(stufe: Gebietsstufe): Promise<void> {
+    const sammlung = await ladeGebiete(stufe);
+    if (!sammlung || !this.karte) return;
+
+    const L = (await import('leaflet')).default;
+    if (this.gebiete) this.karte.removeLayer(this.gebiete);
+
+    const kunden = await getAllCustomers();
+    const maschinen = await getAllMachines();
+    // Jede Maschine zählt an der Postleitzahl ihres Kunden. Maschinen ohne
+    // Kunde haben keinen Ort und können deshalb auch kein Gebiet färben.
+    const plzJeKunde = new Map(kunden.map((k) => [k.id, k.plz]));
+    const plzListe = maschinen
+      .map((m) => (m.customerId ? plzJeKunde.get(m.customerId) : undefined))
+      .filter((p): p is string => Boolean(p));
+
+    const zaehler = zaehleJeGebiet(plzListe, stufe);
+    const hoechstwert = Math.max(0, ...zaehler.values());
+
+    this.gebiete = L.geoJSON(sammlung as never, {
+      style: (merkmal) => {
+        const schluessel = String(
+          (merkmal as { properties?: { plz?: string } })?.properties?.plz ?? ''
+        );
+        const anzahl = zaehler.get(schluessel) ?? 0;
+        return {
+          color: '#475569',
+          weight: 1,
+          opacity: 0.55,
+          fillColor: anzahl > 0 ? '#0d9488' : '#cbd5e1',
+          fillOpacity: anzahl > 0 ? fuellstaerke(anzahl, hoechstwert) : 0.06,
+        };
+      },
+      onEachFeature: (merkmal, ebene) => {
+        const schluessel = String(
+          (merkmal as { properties?: { plz?: string } })?.properties?.plz ?? ''
+        );
+        const anzahl = zaehler.get(schluessel) ?? 0;
+        ebene.bindTooltip(
+          anzahl > 0
+            ? t('map.areaWithMachines', { plz: schluessel, count: String(anzahl) })
+            : t('map.areaEmpty', { plz: schluessel }),
+          { sticky: true }
+        );
+      },
+    }).addTo(this.karte);
+
+    // Unter die Marker, damit ein Kunde nie hinter seiner eigenen Fläche
+    // verschwindet.
+    this.gebiete.bringToBack();
+    this.gezeichneteStufe = stufe;
   }
 
   private async setzeGrund(wahl: Kachelwahl): Promise<void> {
@@ -169,6 +285,41 @@ export class CustomerMap {
     }
   }
 
+  /**
+   * Die Stapelgruppe, einmal angelegt und dann wiederverwendet.
+   *
+   * `leaflet.markercluster` hängt sich beim Laden an Leaflet an — es erweitert
+   * `L` um `markerClusterGroup`, statt etwas zurückzugeben. Deshalb der
+   * Seiteneffekt-Import und die Umtypisierung; sie ist an genau dieser Stelle
+   * eingesperrt statt über die Datei verteilt.
+   */
+  private async holeStapelgruppe(L: typeof import('leaflet')): Promise<LayerGroup> {
+    if (this.stapel) return this.stapel;
+    await import('leaflet.markercluster');
+    await import('leaflet.markercluster/dist/MarkerCluster.css');
+    await import('leaflet.markercluster/dist/MarkerCluster.Default.css');
+
+    const mitStapeln = L as unknown as {
+      markerClusterGroup: (o: Record<string, unknown>) => LayerGroup;
+    };
+    this.stapel = mitStapeln.markerClusterGroup({
+      // Erst ab fünf lohnt ein Stapel; vier Punkte liest man noch einzeln.
+      minClusterSize: 5,
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 45,
+      iconCreateFunction: (stapel: { getChildCount: () => number }) =>
+        L.divIcon({
+          className: 'customer-cluster-wrapper',
+          html: `<div class="customer-cluster"><strong>${stapel.getChildCount()}</strong></div>`,
+          iconSize: [38, 38],
+          iconAnchor: [19, 19],
+        }),
+    });
+    this.karte?.addLayer(this.stapel);
+    return this.stapel;
+  }
+
   private async zeichneKunden(): Promise<void> {
     if (!this.karte) return;
     const L = (await import('leaflet')).default;
@@ -178,6 +329,21 @@ export class CustomerMap {
 
     const kunden = await getAllCustomers();
     const verortet = kunden.filter((k) => k.geo === 'plz' && k.lat != null && k.lng != null);
+
+    // ── WARUM GESTAPELT WIRD ─────────────────────────────────────────────
+    //
+    // Beim ersten Versuch lagen 100 Marker einzeln auf der Karte. Auf
+    // Deutschland-Zoom überdeckten sie das Land vollständig — man sah einen
+    // Teppich aus Punkten und keine Karte mehr, und ausgerechnet das
+    // Deutschlandbild, um das es hier geht, verschwand darunter.
+    //
+    // Deshalb dasselbe Mittel wie bei TourFuchs (`L.markerClusterGroup` in
+    // `src/features/map.js`): Was zu dicht beieinander liegt, wird zu einem
+    // Stapel mit Zahl zusammengefasst und fällt beim Hineinzoomen wieder
+    // auseinander. Erst ab fünf Markern lohnt ein Stapel — darunter ist der
+    // einzelne Punkt die ehrlichere Auskunft.
+    const gruppe = await this.holeStapelgruppe(L);
+    gruppe.clearLayers();
 
     for (const kunde of verortet) {
       const ort = [kunde.plz, kunde.ort].filter(Boolean).join(' ');
@@ -189,13 +355,14 @@ export class CustomerMap {
             `<span class="customer-marker-symbol"></span>` +
             `<span class="customer-marker-copy"><b>${escape(kunde.name)}</b>` +
             `<small>${escape(ort)}</small></span></div>`,
-          iconSize: [34, 34],
-          iconAnchor: [17, 17],
+          iconSize: [26, 26],
+          iconAnchor: [13, 13],
         }),
         title: kunde.name,
-      }).addTo(this.karte);
+      });
 
       marker.on('click', () => void this.zeigeKundenblatt(kunde));
+      gruppe.addLayer(marker);
       this.marker.push(marker);
     }
 
@@ -214,6 +381,50 @@ export class CustomerMap {
       const punkte = verortet.map((k) => [k.lat!, k.lng!] as [number, number]);
       this.karte.fitBounds(L.latLngBounds(punkte).pad(0.25), { maxZoom: 11 });
     }
+
+    this.zeigeLeerzustand(verortet.length === 0);
+  }
+
+  /**
+   * Der Einstieg, wenn noch kein Kunde da ist.
+   *
+   * Vorher führte die Karte in diesem Fall nirgendwohin — und damit die
+   * Menüzeile auch nicht, weshalb sie versteckt wurde. Das war eine Falle:
+   * Ohne Kunden keine Karte, und der Weg zu Kunden lag hinter derselben
+   * verborgenen Tür. Die Regel „kein Knopf auf ein graues Feld" war richtig,
+   * die Anwendung falsch — man muss das graue Feld füllen, nicht die Tür
+   * zumauern.
+   *
+   * Jetzt zeigt die Karte in diesem Fall Deutschland mit seinen
+   * Postleitzahlgebieten (die stehen ohnehin) und darüber einen Satz mit dem
+   * Knopf, der Beispieldaten holt. Aus der Sackgasse wird der Eingang.
+   */
+  private zeigeLeerzustand(leer: boolean): void {
+    const kasten = document.getElementById('map-empty');
+    if (!kasten) return;
+    kasten.style.display = leer ? '' : 'none';
+    if (!leer) return;
+
+    const knopf = document.getElementById('map-empty-demo-btn');
+    if (!knopf || knopf.dataset.verdrahtet === '1') return;
+    knopf.dataset.verdrahtet = '1';
+    knopf.addEventListener('click', () => {
+      void (async () => {
+        (knopf as HTMLButtonElement).disabled = true;
+        knopf.textContent = t('map.emptyLoading');
+        try {
+          const { ladeBeispieldaten } = await import('../../services/demoCustomers.js');
+          await ladeBeispieldaten();
+          await this.zeichneKunden();
+          this.gezeichneteStufe = null; // Färbung neu berechnen
+          await this.zeichneGebiete();
+        } catch (fehler) {
+          logger.error('Beispieldaten aus der Karte heraus fehlgeschlagen', fehler);
+          knopf.textContent = t('map.emptyButton');
+          (knopf as HTMLButtonElement).disabled = false;
+        }
+      })();
+    });
   }
 
   /**

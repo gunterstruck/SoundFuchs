@@ -102,6 +102,12 @@ export const zh: TranslationDict = {
     noMachines: '该客户尚无机器。',
     noReference: '缺少参考',
     unlocated: '{{count}} 位客户没有地图位置 — 其邮政编码未知。',
+    areaWithMachines: '邮编区 {{plz}} · {{count}} 台机器',
+    areaEmpty: '邮编区 {{plz}} · 尚无机器',
+    emptyTitle: '地图上还没有客户',
+    emptyText: '客户在创建机器时一并生成 — 也可以在这里试用。',
+    emptyButton: '加载示例数据',
+    emptyLoading: '加载中 …',
   },
 
   customers: {
@@ -1182,6 +1188,7 @@ export const zh: TranslationDict = {
     dataTitle: '所用数据',
     dataPlzPlaces: '邮编地名',
     dataPlzCoords: '邮编坐标',
+    dataPlzAreas: '邮编区（面）',
     dataMapTiles: '地图底图',
     title: '关于 SoundFuchs',
     subtitle: '机器状态声学比较助手',
@@ -1316,6 +1323,12 @@ export const zh: TranslationDict = {
     guidingPrincipleTitle: '指导原则',
     guidingPrincipleQuestion: '机器听起来正常吗？',
     guidingPrincipleStatement: '智能手机聆听机器声音。',
+    buildLabel: '构建时间：',
+    checkUpdate: '检查更新',
+    checkRunning: '正在检查 …',
+    checkFound: '发现新版本 — 更新提示即将出现。',
+    checkCurrent: '当前已是最新版本。',
+    checkUnavailable: '此处无法检查（没有 service worker）。',
   },
   // ============================================================================
   // 事件时间线（Tier 2 时序引擎，T2-a2）

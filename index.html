@@ -3796,14 +3796,18 @@
               Kunden: Beispieldaten und Kundenliste-Import (Schnitt 4 aus
               docs/kunden-und-karte.md).
 
-              Expert-only wie die Datenverwaltung direkt darunter: Beide sind
-              Einrichtungs-, nicht Alltagsaufgaben. Ein einziger Knopf trägt
-              beide Zustände von "Beispieldaten laden"/"entfernen" — dieselbe
-              Idee wie beim Zwei-Zustands-Knopf "Grundeinstellung
+              Die Beispieldaten stehen auf JEDER Stufe, auch auf Basis. Sie
+              lagen zunächst hinter „Profi" — bei einer Sache, die es genau
+              für den Neuling gibt, der die App zum ersten Mal öffnet und
+              etwas sehen will. Wer schon Profi ist, braucht keine erfundenen
+              Kunden; wer sie braucht, fand sie nicht.
+
+              Ein einziger Knopf trägt beide Zustände von "laden"/"entfernen"
+              — dieselbe Idee wie beim Zwei-Zustands-Knopf "Grundeinstellung
               wiederherstellen" weiter unten, nur ohne die
               Bestätigungs-Sekunden, weil hier nichts Echtes verloren geht.
             -->
-            <div class="setting-category" data-thema="kunden" data-view-level="expert">
+            <div class="setting-category" data-thema="kunden">
               <h4 class="setting-category-title" data-i18n="customers.demoTitle">Beispieldaten</h4>
               <p class="setting-category-description" data-i18n="customers.demoDescription">
                 Rund 100 erfundene Kunden, deutschlandweit verteilt, je einer Maschine ohne
@@ -3831,6 +3835,8 @@
               </button>
             </div>
 
+            <!-- Der Import bleibt Profi: Wer eine CSV-Datei mit Kundendaten
+                 hat, richtet ein und probiert nicht aus. -->
             <div class="setting-category" data-thema="kunden" data-view-level="expert">
               <h4 class="setting-category-title" data-i18n="customers.importTitle">
                 Kundenliste einlesen
@@ -4250,75 +4256,17 @@
             >
           </p>
 
-          <div class="about-version">
-            <p><strong>Version:</strong> 2.0.0 (2026)</p>
-            <p><strong>Entwickelt von:</strong> Günter Struck</p>
-            <p><strong>Lizenz:</strong> MIT</p>
-            <p><strong>Stack:</strong> TypeScript, Vite, Web Audio API</p>
-          </div>
+          <!--
+            Version, Bauzeit, Update-Knopf und die Herkunft der Daten stehen
+            NICHT hier, sondern in AboutModalController.render().
 
-          <!-- Namensnennung ist bei CC BY 4.0 und ODbL keine Höflichkeit,
-               sondern Bedingung der Nutzung. Sie steht deshalb hier, wo sie
-               jemand findet — nicht nur in NOTICE, das kaum jemand öffnet. -->
-          <div class="about-data">
-            <p class="about-data-title" data-i18n="about.dataTitle">Verwendete Daten</p>
-            <p>
-              <span data-i18n="about.dataPlzPlaces">PLZ-Ortsnamen</span>: ©
-              <a
-                href="https://www.geonames.org/"
-                target="_blank"
-                rel="noopener"
-                style="color: var(--primary-color)"
-                >GeoNames</a
-              >,
-              <a
-                href="https://creativecommons.org/licenses/by/4.0/"
-                target="_blank"
-                rel="noopener"
-                style="color: var(--primary-color)"
-                >CC BY 4.0</a
-              >
-            </p>
-            <p>
-              <span data-i18n="about.dataPlzCoords">PLZ-Koordinaten</span>: ©
-              <a
-                href="https://www.openstreetmap.org/copyright"
-                target="_blank"
-                rel="noopener"
-                style="color: var(--primary-color)"
-                >OpenStreetMap-Mitwirkende</a
-              >, ODbL
-            </p>
-            <!-- Die Kartendarstellung der Kundenkarte. Alle drei Anbieter
-                 verlangen Namensnennung; sie steht zusätzlich unten rechts
-                 auf der Karte selbst. -->
-            <p>
-              <span data-i18n="about.dataMapTiles">Kartendarstellung</span>: ©
-              <a
-                href="https://www.openstreetmap.org/copyright"
-                target="_blank"
-                rel="noopener"
-                style="color: var(--primary-color)"
-                >OpenStreetMap-Mitwirkende</a
-              >
-              (ODbL),
-              <a
-                href="https://carto.com/attributions"
-                target="_blank"
-                rel="noopener"
-                style="color: var(--primary-color)"
-                >CARTO</a
-              >,
-              <a
-                href="https://www.esri.com/"
-                target="_blank"
-                rel="noopener"
-                style="color: var(--primary-color)"
-                >Esri</a
-              >
-              (Maxar, Earthstar Geographics)
-            </p>
-          </div>
+            Der Controller ersetzt beim Start `modalBody.innerHTML` komplett.
+            Alles, was hier im Rumpf des Dialogs steht, ist weg, bevor es
+            jemand sieht — die Quellenangabe stand hier und war deshalb nie
+            sichtbar, obwohl sie Lizenzbedingung ist (CC BY 4.0, ODbL).
+            Gemessen und behoben am 15.08.2026; `attention-check` wacht seither
+            darüber.
+          -->
         </div>
         <div class="modal-actions">
           <button class="modal-btn btn-primary" id="close-about-btn" data-i18n="buttons.close">
@@ -4420,7 +4368,26 @@
              Quellenangaben hängen an den Kacheln selbst und stehen unten
              rechts auf der Karte; sie sind Bedingung der Nutzung. -->
         <div class="map-basemap-row" id="map-basemap-row"></div>
-        <div class="customer-map-canvas" id="customer-map"></div>
+        <div class="customer-map-canvas" id="customer-map">
+          <!--
+            Der Einstieg, wenn noch kein Kunde da ist.
+
+            Früher war die Karte in diesem Fall eine Sackgasse — und wurde
+            deshalb im Menü versteckt, was den Weg zu Kunden gleich mit
+            zumauerte. Jetzt liegt Deutschland mit seinen
+            Postleitzahlgebieten darunter, und dieser Kasten bietet den
+            Schritt an, der die Karte füllt.
+          -->
+          <div class="map-empty" id="map-empty" style="display: none">
+            <p class="map-empty-title" data-i18n="map.emptyTitle">Noch kein Kunde auf der Karte</p>
+            <p class="map-empty-text" data-i18n="map.emptyText">
+              Kunden entstehen beim Anlegen einer Maschine — oder hier, zum Ausprobieren.
+            </p>
+            <button type="button" class="action-btn" id="map-empty-demo-btn">
+              <span data-i18n="map.emptyButton">Beispieldaten laden</span>
+            </button>
+          </div>
+        </div>
         <p class="map-unlocated" id="map-unlocated" style="display: none"></p>
 
         <!-- Das Blatt des Kunden: Name, Ort, seine Maschinen. Ein Tipp auf

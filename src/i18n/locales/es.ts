@@ -102,6 +102,12 @@ export const es: TranslationDict = {
     noMachines: 'Este cliente aún no tiene ninguna máquina.',
     noReference: 'Falta la referencia',
     unlocated: '{{count}} cliente(s) sin punto en el mapa: su código postal es desconocido.',
+    areaWithMachines: 'Zona postal {{plz}} · {{count}} máquinas',
+    areaEmpty: 'Zona postal {{plz}} · aún sin máquinas',
+    emptyTitle: 'Todavía no hay clientes en el mapa',
+    emptyText: 'Los clientes se crean al añadir una máquina — o aquí, para probar.',
+    emptyButton: 'Cargar datos de ejemplo',
+    emptyLoading: 'Cargando …',
   },
 
   customers: {
@@ -1252,6 +1258,7 @@ export const es: TranslationDict = {
     dataTitle: 'Datos utilizados',
     dataPlzPlaces: 'Nombres de localidad por CP',
     dataPlzCoords: 'Coordenadas por CP',
+    dataPlzAreas: 'Zonas postales (polígonos)',
     dataMapTiles: 'Representación del mapa',
     title: 'Acerca de SoundFuchs',
     subtitle: 'Asistente para comparación acústica de estados de máquinas',
@@ -1405,6 +1412,12 @@ export const es: TranslationDict = {
     guidingPrincipleTitle: 'Principio rector',
     guidingPrincipleQuestion: '¿La máquina suena normal?',
     guidingPrincipleStatement: 'Los teléfonos inteligentes escuchan los sonidos de las máquinas.',
+    buildLabel: 'Compilación:',
+    checkUpdate: 'Buscar actualización',
+    checkRunning: 'Comprobando …',
+    checkFound: 'Nueva versión encontrada: el aviso de actualización aparecerá enseguida.',
+    checkCurrent: 'Esta es la versión actual.',
+    checkUnavailable: 'Aquí no es posible comprobarlo (sin service worker).',
   },
   // ============================================================================
   // LÍNEA DE TIEMPO DE EVENTOS (motor temporal Tier 2, T2-a2)
