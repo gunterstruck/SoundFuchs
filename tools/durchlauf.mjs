@@ -188,6 +188,90 @@ try {
   await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
 
+  /**
+   * In welcher Schale läuft der Weg?
+   *
+   * Seit Schnitt 7 ist die neue die Voreinstellung. Dort liegt der Bestand im
+   * Blatt, und das Blatt ist im Ruhezustand eingeklappt — der Zeilen-Tipp aus
+   * Schritt 3 träfe auf ein `display: none`. Das Aufziehen ist kein Schritt
+   * des Prüfwegs, sondern seine Voraussetzung, und steht deshalb hier oben und
+   * nicht als zwölfte Nummer: Die Zahlen 1–11 messen die LÄNGE des Weges, und
+   * genau die soll vergleichbar bleiben.
+   *
+   * Dass es diesen Griff überhaupt braucht, ist der eine Tipp mehr, den
+   * `schalenvergleich` misst und §7a offen ausweist. Er wird hier nicht
+   * versteckt, er wird benannt.
+   */
+  const schale = await page.evaluate(() => document.documentElement.dataset.schale ?? 'alt');
+  console.log(`  Schale: ${schale === 'neu' ? 'neu (Karte als Grund)' : 'alt (scrollende Seite)'}`);
+  const zurueckInDenBestand = async () => {
+    if (schale !== 'neu') return;
+
+    // Erst zur Ruhe kommen lassen.
+    //
+    // Nach dem Speichern des Normalzustands wählt der Ablauf die Maschine noch
+    // einmal aus — asynchron, eine knappe Sekunde später. Wer in diesem Moment
+    // auf „‹ Daten" tippt, wird gleich darauf zurückgeholt. Das ist kein
+    // Fehler der Schale: Der Ablauf arbeitet gerade an dieser Maschine. Aber
+    // ein Messgerät, das mitten in einen Übergang hineingreift, misst den
+    // Übergang und nicht den Weg. Der Lauf schlug hier mal fehl und mal nicht,
+    // je nachdem, wie schnell die Maschine war — die unangenehmste Sorte
+    // Fehler, weil sie wie Zufall aussieht.
+    await page.waitForTimeout(1800);
+
+    // Erst aus der Tiefe heraus, dann aufziehen.
+    //
+    // Nach dem Anlegen — und ebenso nach dem Speichern des Normalzustands —
+    // ist die Maschine gewählt, und die Schale steht damit in der
+    // Prüf-Zoomstufe. Der Bestand liegt dann in einer anderen Tafel. Das ist
+    // richtig so (§0c: das Prüfen gehört zu EINER Maschine), macht aber den
+    // Zeilen-Tipp unerreichbar, bis man zurückgeht.
+    //
+    // Warum in einer Schleife: Der Ablauf wählt die Maschine nach dem
+    // Speichern noch einmal aus, und zwar asynchron. Ein einzelner Rückweg
+    // traf deshalb ins Leere — gemessen: „aktiveTafel: pruefen" noch nach dem
+    // Klick auf „‹ Daten". Es wird so lange zurückgegangen, bis die Tafel
+    // wirklich offen ist.
+    for (let versuch = 0; versuch < 6; versuch += 1) {
+      const stand = await page.evaluate(() => ({
+        daten: document.getElementById('schale-tafel-daten')?.classList.contains('active') ?? true,
+        offen: document.getElementById('schale-blatt')?.classList.contains('offen') ?? true,
+        fenster: [...document.querySelectorAll('.modal')].some(
+          (m) => getComputedStyle(m).display !== 'none'
+        ),
+      }));
+      if (stand.daten && stand.offen && !stand.fenster) return;
+
+      // Ein offenes Fenster fängt jeden Klick ab, auch einen erzwungenen.
+      if (stand.fenster) {
+        await page.keyboard.press('Escape').catch(() => {});
+        await page.waitForTimeout(500);
+        continue;
+      }
+      if (!stand.daten) {
+        await page
+          .locator('.schale-zoom-zurueck')
+          .click({ force: true })
+          .catch(() => {});
+        // Reichlich Zeit: Der Ablauf wählt nach dem Speichern noch einmal
+        // aus, und dieser zweite Griff kommt später als der eigene Klick.
+        // Gemessen lag der Lauf hier keine hundert Millisekunden von der
+        // Grenze entfernt — mal ging es, mal nicht. Diese Zahl ist bewusst
+        // großzügig; ein Messgerät, das mal so und mal so ausgeht, misst
+        // nichts.
+        await page.waitForTimeout(2000);
+        continue;
+      }
+      await page
+        .locator('#schale-griff')
+        .click({ force: true })
+        .catch(() => {});
+      await page.waitForTimeout(800);
+    }
+  };
+
+  await zurueckInDenBestand();
+
   await page.locator('#empty-state-cta').click();
   await page.waitForTimeout(1200);
   pruefe(
@@ -206,6 +290,9 @@ try {
     namen.some((n) => n.includes('Pumpe 17'))
   );
 
+  // Nach dem Anlegen steht die Schale in der Prüf-Zoomstufe — zurück in den
+  // Bestand, bevor der Zeilen-Tipp kommt.
+  await zurueckInDenBestand();
   await page.locator('.machine-item').first().click();
   await page.waitForTimeout(1200);
   pruefe(
@@ -253,6 +340,8 @@ try {
 
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(1000);
+  // Auch hier: Nach der Aufnahme steht die Schale wieder in der Zoomstufe.
+  await zurueckInDenBestand();
   await page.locator('.machine-item').first().click();
   await page.waitForTimeout(1500);
   const knopfNach = (await page.locator('#machine-detail-select-btn').textContent()).trim();
@@ -386,7 +475,17 @@ try {
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
 
-  await page.locator('.view-level-btn[data-level="expert"]').first().click();
+  // Nach dem Neuladen steht die Schale wieder im Ruhezustand: Blatt
+  // eingeklappt, Bestand unsichtbar. Verlauf und Ergebnis liegen darin.
+  await zurueckInDenBestand();
+
+  // Die Pille unter der Kopfleiste, nicht die Kopie im Einstellungen-Dialog.
+  //
+  // `.first()` traf früher die Pille, weil sie im Markup vorn stand. In der
+  // neuen Schale zieht sie in den Kopfstreifen um, und damit stand die
+  // verborgene Kopie aus dem Dialog vorn — der Lauf griff ins Leere. Die ID
+  // sagt eindeutig, welche gemeint ist.
+  await page.locator('#depth-switch .view-level-btn[data-level="expert"]').click();
   await page.waitForTimeout(1500);
 
   /**

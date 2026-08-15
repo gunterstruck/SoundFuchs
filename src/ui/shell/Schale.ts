@@ -38,6 +38,10 @@
  * (Zustand · Standort · Flottengruppe). Damit trägt jeder Reiter Inhalt; die
  * Platzhalterzeile, die sagte „kommt noch", wird nicht mehr gebraucht.
  *
+ * Schnitt 7 brachte den Schreibtisch (`richteNachBreite`) und drehte die
+ * Voreinstellung auf diese Schale. Der Schalter bleibt: Die alte Schale ist
+ * der Rückweg und zugleich die Vergleichsgröße.
+ *
  * DER RÜCKWEG IST EIN SCHALTER
  *
  * Jedes umgehängte Element hinterlässt an seinem alten Platz ein `<template>`
@@ -112,6 +116,15 @@ export interface Fortschritt {
   referenz: boolean;
   pruefung: boolean;
 }
+
+/**
+ * Ab hier ist es ein Schreibtisch und kein Handy mehr.
+ *
+ * Dieselbe Grenze wie bei TourFuchs (`responsive.css`: die Handy-Regeln gelten
+ * bis 768 Punkte). Eine eigene Zahl zu erfinden hieße, dass beide Apps auf
+ * demselben Tablet verschieden aussähen.
+ */
+const SCHREIBTISCH = '(min-width: 769px)';
 
 /**
  * Die Prüf-Zoomstufe. **Kein Reiter** — sie hat bewusst keinen Knopf in der
@@ -241,10 +254,73 @@ export class Schale {
     await this.setzeBlattzustand();
     this.zeigeTafel('daten');
     this.hoereAufMaschinenwahl();
+    this.richteNachBreite();
+
+    // Die Breite kann sich ändern, ohne dass jemand neu lädt — Drehen des
+    // Geräts, Ziehen des Fensters. Gemessen wird dann neu.
+    const beiBreite = () => this.richteNachBreite();
+    const wache = window.matchMedia(SCHREIBTISCH);
+    wache.addEventListener('change', beiBreite);
+    window.addEventListener('resize', beiBreite);
+    this.aufraeumer.push(() => {
+      wache.removeEventListener('change', beiBreite);
+      window.removeEventListener('resize', beiBreite);
+      delete document.documentElement.dataset.schaleBreite;
+    });
 
     // Die Karte zuletzt: Leaflet misst beim Anlegen die Größe des Behälters,
     // und der muss dafür schon an seinem endgültigen Platz stehen.
     if (document.getElementById('customer-map')) await this.deps.karteInDenGrund();
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Handy oder Schreibtisch
+  // ══════════════════════════════════════════════════════════════════════
+
+  /**
+   * Am Schreibtisch ist das Blatt keine Schublade von unten, sondern eine
+   * Spalte links — und Ansichtstiefe und Reiter ziehen aus dem schwebenden
+   * Kopfstreifen wieder in sie hinein.
+   *
+   * Das ist wörtlich die Bewegung, die TourFuchs' `syncTopnavPlacement()`
+   * macht, nur in die andere Richtung: „Auf dem Handy die Ansichtstiefe und
+   * die Tab-Leiste aus dem Bottom-Sheet in den fixen Kopf-Streifen heben […]
+   * Auf dem Desktop wandern beide an ihre ursprüngliche Stelle in der Sidebar
+   * zurück."
+   *
+   * Der Grund, warum sie am Handy überhaupt oben hängen, fällt am Schreibtisch
+   * weg: Dort bewegt sich das Blatt nicht, es steht. Was darin liegt, bleibt
+   * sichtbar, und der schwebende Streifen wäre nur ein Balken quer über der
+   * ganzen Breite — beim ersten Messen war er genau das: zwei Pillen über
+   * 1440 Punkte gezogen.
+   */
+  private richteNachBreite(): void {
+    if (!this.an_ || !this.streifen || !this.blatt) return;
+    const schreibtisch = window.matchMedia(SCHREIBTISCH).matches;
+    document.documentElement.dataset.schaleBreite = schreibtisch ? 'tisch' : 'handy';
+
+    const tiefe = document.getElementById('depth-switch');
+    const reiter = this.streifen.querySelector<HTMLElement>('.schale-reiter');
+    const zoom = this.streifen.querySelector<HTMLElement>('.schale-zoom');
+    const griff = document.getElementById('schale-griff');
+
+    // Die Reihenfolge ist an beiden Orten dieselbe: erst die Ansichtstiefe,
+    // dann die Reiter, dann die Zoomleiste. Sie muss ausdrücklich hergestellt
+    // werden — beim ersten Bauen standen am Schreibtisch die Reiter über
+    // Basis/Profi, weil jedes Stück einzeln hinter den Griff gehängt wurde
+    // und damit das jeweils vorige nach unten schob.
+    const ziel = schreibtisch ? this.blatt : this.streifen;
+    let davor: Node | null = schreibtisch ? (griff?.nextSibling ?? null) : null;
+    for (const teil of [tiefe, reiter, zoom]) {
+      if (!teil) continue;
+      ziel.insertBefore(teil, davor);
+      davor = teil.nextSibling;
+    }
+
+    // Am Schreibtisch steht das Blatt immer offen — es ist eine Spalte, keine
+    // Schublade. Ein eingeklapptes Blatt wäre dort eine leere linke Kante.
+    if (schreibtisch) this.oeffneBlatt(true);
+    this.meldeBlattmass();
   }
 
   // ══════════════════════════════════════════════════════════════════════

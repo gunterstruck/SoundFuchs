@@ -7,8 +7,13 @@
  * lassen sich am selben Bau messen, was der Auftraggeber mit „Konzept ist
  * geprüft, jede Designänderung kritisch" verlangt hat.
  *
- * Voreinstellung ist `alt`. Sie dreht sich in Schnitt 7, und erst dann, wenn
- * die Zahlen aus Schnitt 3 stimmen.
+ * Voreinstellung ist seit Schnitt 7 `neu` — nachdem `npm run schalenvergleich`
+ * beide Schalen nebeneinandergelegt hat (§7a des Papiers) und `durchlauf` den
+ * Hauptweg samt der drei Auflagen auch in der neuen Schale trägt.
+ *
+ * Der Schalter bleibt. Die alte Schale ist der Rückweg, nicht Ballast: Solange
+ * niemand die neue über längere Zeit benutzt hat, wäre ihr Entfernen eine
+ * Wette. Und `durchlauf` misst weiter beide.
  */
 
 import { logger } from './logger.js';
@@ -24,9 +29,9 @@ const gueltig = (wert: string | null): wert is Schalenart => wert === 'alt' || w
 export function gemerkteSchale(): Schalenart {
   try {
     const wert = localStorage.getItem(SPEICHER);
-    return gueltig(wert) ? wert : 'alt';
+    return gueltig(wert) ? wert : 'neu';
   } catch {
-    return 'alt';
+    return 'neu';
   }
 }
 

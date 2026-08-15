@@ -31,6 +31,20 @@
  * hebt, trifft damit eine bewusste Produktentscheidung — und genau darum geht
  * es.
  *
+ * ── WELCHE SCHALE GEMESSEN WIRD ─────────────────────────────────────────────
+ *
+ * Seit Schnitt 7 startet die App in der neuen Schale. Die Budgets hier stammen
+ * aber aus der alten und beschreiben deren Sorte Bild: eine scrollende Seite,
+ * auf der jedes Bedienelement etwas verlangt. In der neuen Schale liegt eine
+ * Karte als Grund, und zwei Drittel der gezählten Elemente sind ihre Marker —
+ * also Inhalt, kein Verlangen. Dieselbe Zahl gegen dieselbe Schwelle zu halten
+ * hieße, zwei verschiedene Dinge zu vergleichen.
+ *
+ * Die Läufe hier stellen deshalb ausdrücklich auf die alte Schale. Für die
+ * neue ist `npm run schalenvergleich` zuständig; es legt beide nebeneinander
+ * und hat eigene, dort begründete Schwellen. Die zwei Blöcke am Ende prüfen
+ * die neue Schale selbst und stellen darauf um.
+ *
  * Ausgeführt wird gegen `dist/` — also vorher `npm run build`.
  *
  *   npm run attention-check
@@ -299,6 +313,7 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
+    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
@@ -410,6 +425,7 @@ try {
   {
     const ctx = await browser.newContext({ viewport: FORMATE[0].viewport, locale: 'de-DE' });
     const page = await ctx.newPage();
+    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
@@ -488,6 +504,7 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
+    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
@@ -542,6 +559,7 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
+    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
@@ -728,6 +746,7 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
+    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
@@ -818,6 +837,7 @@ try {
   {
     const ctx = await browser.newContext({ viewport: FORMATE[0].viewport, locale: 'de-DE' });
     const page = await ctx.newPage();
+    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
@@ -890,6 +910,7 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
+    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
@@ -999,6 +1020,7 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
+    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
