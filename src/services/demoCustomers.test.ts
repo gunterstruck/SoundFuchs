@@ -70,14 +70,41 @@ describe('Beispieldaten', () => {
     expect(kunden.every((k) => k.name.startsWith('SoundFuchs Demo · '))).toBe(true);
   });
 
-  it('gibt jedem Beispielkunden genau eine unangelernte Maschine', async () => {
+  it('gibt jedem Beispielstandort unangelernte Maschinen, den meisten eine', async () => {
     await ladeBeispieldaten();
     const kunden = await getAllCustomers();
     const maschinen = await getAllMachines();
-    expect(maschinen.length).toBe(kunden.length);
+    expect(maschinen.length).toBeGreaterThan(kunden.length);
     expect(maschinen.every((m) => m.demo === true)).toBe(true);
     expect(maschinen.every((m) => (m.referenceModels ?? []).length === 0)).toBe(true);
     expect(maschinen.every((m) => Boolean(m.customerId))).toBe(true);
+  });
+
+  /**
+   * Jeder zehnte Standort trägt eine Flotte aus vier gleichartigen Maschinen.
+   *
+   * Ohne sie konnte der Reiter „Flotte" nichts zeigen als seinen eigenen
+   * leeren Zustand — Beispieldaten, die genau die Funktion nicht vorführen,
+   * für die man sie lädt. Geprüft wird beides: dass es Flotten gibt, und dass
+   * jede an EINEM Standort steht. Vier Pumpen in vier Städten wären keine.
+   */
+  it('legt Flotten an, jede an einem einzigen Standort', async () => {
+    await ladeBeispieldaten();
+    const maschinen = await getAllMachines();
+
+    const gruppen = new Map<string, string[]>();
+    for (const m of maschinen) {
+      if (!m.fleetGroup) continue;
+      gruppen.set(m.fleetGroup, [...(gruppen.get(m.fleetGroup) ?? []), m.customerId ?? '']);
+    }
+
+    expect(gruppen.size).toBeGreaterThan(0);
+    for (const [, standorte] of gruppen) {
+      expect(standorte.length).toBeGreaterThanOrEqual(2);
+      expect(new Set(standorte).size).toBe(1);
+    }
+    // Die Mehrheit bleibt bei einer Maschine — die Karte soll ihr Bild behalten.
+    expect(maschinen.filter((m) => !m.fleetGroup).length).toBeGreaterThan(gruppen.size * 4);
   });
 
   it('erkennt vorhandene Beispieldaten', async () => {

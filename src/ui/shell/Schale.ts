@@ -30,8 +30,12 @@
  * gehören. Sie liegen jetzt in einer eigenen Tafel ohne Reiter — der
  * Zoomstufe. Dazu kamen die Erste-Schritte-Liste und die Standort-Zeile.
  *
- * „Flotte", „Karte" und „Filter" sind noch leer und sagen das auch; sie
- * füllen sich in den Schnitten 5 und 6.
+ * Schnitt 5 füllte den Reiter „Flotte" mit den beiden Wegen aus §0e. Der
+ * Bestand pendelt dafür zwischen „Daten" und „Flotte" — eine Liste, nicht
+ * zwei.
+ *
+ * „Karte" und „Filter" sind noch leer und sagen das auch; sie füllen sich in
+ * Schnitt 6.
  *
  * DER RÜCKWEG IST EIN SCHALTER
  *
@@ -106,6 +110,8 @@ export interface SchaleDeps {
   ersteSchritte: () => Promise<Fortschritt>;
   /** Die Einstellungen auf ein Thema stellen (Standorte: Beispiele & Import). */
   oeffneThema: (thema: string, beschriftung: string) => void;
+  /** Die Maschinenliste nach Flotten gruppieren — oder wieder als Reihe. */
+  setzeFlottenmodus: (anzeigen: boolean) => Promise<void>;
 }
 
 /** Die drei Schritte des ersten Laufs, jeder für sich getan oder offen. */
@@ -130,7 +136,7 @@ type Tafelname = (typeof TAFELN)[number];
 /** Was umzieht, und wohin. Die Reihenfolge ist die Reihenfolge im Ziel. */
 interface Umzug {
   id: string;
-  ziel: 'grund' | 'streifen' | 'pruefen';
+  ziel: 'grund' | 'streifen' | 'pruefen' | 'flotte';
 }
 
 const UMZUEGE: Umzug[] = [
@@ -151,6 +157,11 @@ const UMZUEGE: Umzug[] = [
   // Beides zog man vorher aneinander vorbei, jedes Mal.
   { id: 'card-record', ziel: 'pruefen' },
   { id: 'card-check', ziel: 'pruefen' },
+  // Der Reiter „Flotte": die zweite der beiden Funktionen aus §0e — mehrere
+  // unbekannte Maschinen vergleichen, ohne sie anzulegen. Sie hieß
+  // „Schnellvergleich" und stand als Knopf über der Maschinenliste, also an
+  // der Stelle, an der man gerade NICHT unbekannte Maschinen vergleicht.
+  { id: 'quick-compare-cta', ziel: 'flotte' },
 ];
 
 export class Schale {
@@ -214,12 +225,24 @@ export class Schale {
         // das Blatt darunter — das Allgemeinere steht oben.
         if (this.streifen) this.haengeUm(el, this.streifen, this.streifen.firstElementChild);
       } else {
-        const ziel = this.tafel(PRUEFEN);
+        const ziel = this.tafel(umzug.ziel === 'flotte' ? 'flotte' : PRUEFEN);
         if (ziel) this.haengeUm(el, ziel);
       }
     }
 
+    // Das Zuhause des Bestands festhalten, bevor er zwischen den Reitern
+    // pendelt. Ein Merkzeichen an seiner Stelle in den Daten — dasselbe
+    // Mittel wie beim Rückweg der Schale, nur dass dieses bleibt.
+    const bestand = document.getElementById('machine-overview-section');
+    if (bestand) {
+      const heimat = document.createElement('template');
+      heimat.dataset.schaleHeimat = 'bestand';
+      bestand.parentElement?.insertBefore(heimat, bestand);
+      this.aufraeumer.push(() => heimat.remove());
+    }
+
     this.baueDatenkopf();
+    this.baueFlottenkopf();
     await this.setzeBlattzustand();
     this.zeigeTafel('daten');
     this.hoereAufMaschinenwahl();
@@ -373,12 +396,13 @@ export class Schale {
       tafel.className = 'schale-tafel';
       tafel.dataset.reiter = name;
       tafel.setAttribute('role', name === PRUEFEN ? 'region' : 'tabpanel');
-      if (name !== 'daten' && name !== PRUEFEN) {
+      if (name === 'karte' || name === 'filter') {
         // Ein leerer Reiter, der nichts sagt, wirkt kaputt. Er sagt lieber,
-        // dass er noch nichts kann.
+        // dass er noch nichts kann. „Daten", „Flotte" und die Zoomstufe
+        // haben Inhalt und brauchen die Zeile nicht mehr.
         const platzhalter = document.createElement('p');
         platzhalter.className = 'schale-platzhalter';
-        platzhalter.textContent = REITER_LEER[name as Reiter];
+        platzhalter.textContent = REITER_LEER[name];
         tafel.appendChild(platzhalter);
       }
       blatt.appendChild(tafel);
@@ -390,6 +414,80 @@ export class Schale {
 
   private tafel(name: Tafelname): HTMLElement | null {
     return this.blatt?.querySelector<HTMLElement>(`#schale-tafel-${name}`) ?? null;
+  }
+
+  /**
+   * Der Reiter „Flotte" — die beiden Wege aus §0e, jeder mit einem Satz.
+   *
+   * Beide gab es schon, beide an prominenter falscher Stelle: Der
+   * „Flottencheck" war ein Umschalter MITTEN in der Maschinenliste, und der
+   * „Schnellvergleich" ein Knopf darüber — also genau dort, wo man gerade
+   * nicht unbekannte Maschinen vergleicht. Die Flotte ist kein zweiter
+   * gleichrangiger Modus neben dem Prüfen (das war die Korrektur in §0e),
+   * sondern eine Funktion, die man aufsucht. Hier ist sie.
+   *
+   * Der Umschalter selbst entfällt: Der Reiter IST die Umschaltung. Zwei
+   * Bedienelemente für denselben Zustand wären eines zu viel — und das
+   * verbliebene stünde wieder mitten in einer Liste.
+   */
+  private baueFlottenkopf(): void {
+    const tafel = this.tafel('flotte');
+    if (!tafel) return;
+
+    const kopf = document.createElement('div');
+    kopf.className = 'schale-flottenkopf';
+
+    const ausBestand = document.createElement('p');
+    ausBestand.className = 'schale-flotten-satz';
+    ausBestand.textContent = t('schale.fleet.fromStock');
+    kopf.appendChild(ausBestand);
+
+    tafel.insertBefore(kopf, tafel.firstChild);
+
+    // Der Satz zum Schnellvergleich steht über dessen Knopf, nicht über der
+    // Liste: Er erklärt genau ihn.
+    const ohneBestand = document.createElement('p');
+    ohneBestand.className = 'schale-flotten-satz schale-flotten-satz-unten';
+    ohneBestand.textContent = t('schale.fleet.withoutStock');
+    const knopf = tafel.querySelector('#quick-compare-cta');
+    if (knopf) tafel.insertBefore(ohneBestand, knopf);
+    else tafel.appendChild(ohneBestand);
+  }
+
+  /**
+   * Den Bestand in den Reiter „Flotte" holen — oder ihn zurückgeben.
+   *
+   * Es ist dieselbe Liste, nicht eine zweite. Eine zweite wäre eine zweite
+   * Wahrheit: Wer in der einen eine Maschine anlegt und in der anderen
+   * nachsieht, hätte zwei Bestände, die auseinanderlaufen können. Die Liste
+   * zieht deshalb um und wechselt dabei ihre Gruppierung — dieselbe Bewegung
+   * wie überall sonst in dieser Schale.
+   */
+  private async verschiebeBestand(nachFlotte: boolean): Promise<void> {
+    const bestand = document.getElementById('machine-overview-section');
+    const marke = this.blatt?.querySelector<HTMLElement>('template[data-schale-heimat="bestand"]');
+    const flotte = this.tafel('flotte');
+    if (!bestand || !marke || !flotte) return;
+
+    const istInFlotte = bestand.parentElement === flotte;
+    if (istInFlotte === nachFlotte) return;
+
+    if (nachFlotte) {
+      // Unter den Satz, der ihn erklärt — und VOR den zweiten Weg. Angehängt
+      // stünde die Liste hinter dem Schnellvergleich, also unter der
+      // Überschrift des jeweils anderen Falls.
+      const zweiterWeg = flotte.querySelector('.schale-flotten-satz-unten');
+      if (zweiterWeg) flotte.insertBefore(bestand, zweiterWeg);
+      else flotte.appendChild(bestand);
+    } else {
+      marke.parentElement?.insertBefore(bestand, marke);
+    }
+
+    try {
+      await this.deps.setzeFlottenmodus(nachFlotte);
+    } catch (fehler) {
+      logger.warn('Schale: der Flottenmodus ließ sich nicht stellen', fehler);
+    }
   }
 
   /**
@@ -531,6 +629,12 @@ export class Schale {
     // Bei jeder Rückkehr in die Daten nachsehen, wie weit der rote Faden ist.
     // Genau dazwischen ist ja etwas passiert.
     if (name === 'daten') void this.frischeErsteSchritte();
+
+    // Der Bestand folgt dem Reiter: In „Flotte" steht er nach Flotten
+    // gruppiert, überall sonst wieder als Reihe in den Daten. Die Prüf-
+    // Zoomstufe zählt dabei als „nicht Flotte" — sie gehört einer einzelnen
+    // Maschine, und der Bestand soll hinter ihr an seinem Platz stehen.
+    void this.verschiebeBestand(name === 'flotte');
   }
 
   /**

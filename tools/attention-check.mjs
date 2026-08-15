@@ -1456,6 +1456,91 @@ try {
       `Daten: die Standort-Zeile stellt die Einstellungen auf „${standortThema}" statt „standorte"`
     );
 
+    // ── DER REITER „FLOTTE" (Schnitt 5) ──────────────────────────────────
+    //
+    // Die beiden Wege aus §0e. Beide gab es schon, beide an prominenter
+    // falscher Stelle: der „Flottencheck" als Umschalter MITTEN in der
+    // Maschinenliste, der „Schnellvergleich" als Knopf darüber.
+    //
+    // Gemessen wird, dass der Reiter beides wirklich trägt — und dass der
+    // Bestand dabei EINE Liste bleibt, die pendelt, statt einer zweiten,
+    // die auseinanderlaufen kann.
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.waitForTimeout(500);
+    await page.locator('.schale-reiter-btn[data-reiter="flotte"]').click({ force: true });
+    await page.waitForTimeout(2000);
+
+    const flotte = await page.evaluate(() => {
+      const tafel = document.getElementById('schale-tafel-flotte');
+      const sichtbar = (sel) => {
+        const e = document.querySelector(sel);
+        return Boolean(e) && e.getBoundingClientRect().height > 0;
+      };
+      return {
+        bestandInFlotte: Boolean(tafel?.querySelector('#machine-overview-section')),
+        schnellvergleichInFlotte: Boolean(tafel?.querySelector('#quick-compare-cta')),
+        schnellvergleichSichtbar: sichtbar('#schale-tafel-flotte #quick-compare-cta'),
+        umschalterSichtbar: sichtbar('.workflow-toggle-row'),
+        flottenzeilen: document.querySelectorAll('#machine-overview .fleet-rank-item').length,
+        reihenzeilen: document.querySelectorAll('#machine-overview .machine-item').length,
+        kopf: document.querySelector('#machine-overview .fleet-header-title')?.textContent ?? '',
+        saetze: document.querySelectorAll('#schale-tafel-flotte .schale-flotten-satz').length,
+      };
+    });
+
+    await page.locator('.schale-reiter-btn[data-reiter="daten"]').click({ force: true });
+    await page.waitForTimeout(2000);
+    const zurueckInDaten = await page.evaluate(() => ({
+      bestandInDaten: Boolean(
+        document.querySelector('#schale-tafel-daten #machine-overview-section')
+      ),
+      reihenzeilen: document.querySelectorAll('#machine-overview .machine-item').length,
+      // Eine zweite Liste wäre eine zweite Wahrheit. Es darf sie nicht geben.
+      listen: document.querySelectorAll('#machine-overview').length,
+    }));
+
+    console.log('\n=== Reiter „Flotte" ===');
+    console.log(`Bestand im Reiter         ${flotte.bestandInFlotte ? 'ja' : 'NEIN'}`);
+    console.log(`nach Flotten gruppiert    ${flotte.flottenzeilen} Zeilen · „${flotte.kopf}"`);
+    console.log(
+      `Schnellvergleich          ${flotte.schnellvergleichSichtbar ? 'sichtbar' : 'NICHT sichtbar'}`
+    );
+    console.log(`alter Umschalter          ${flotte.umschalterSichtbar ? 'STEHT NOCH' : 'weg'}`);
+    console.log(`erklärende Sätze          ${flotte.saetze}`);
+    console.log(
+      `zurück: Bestand in Daten  ${zurueckInDaten.bestandInDaten ? 'ja' : 'NEIN'} · ${zurueckInDaten.reihenzeilen} Zeilen · ${zurueckInDaten.listen} Liste(n)`
+    );
+
+    pruefe(
+      flotte.bestandInFlotte,
+      'Flotte: der Bestand zieht nicht in den Reiter — dann ist dort nichts, woraus man eine Flotte wählen könnte'
+    );
+    pruefe(
+      flotte.flottenzeilen >= 2 && flotte.reihenzeilen === 0,
+      `Flotte: ${flotte.flottenzeilen} Flottenzeilen und ${flotte.reihenzeilen} Reihenzeilen — im Reiter „Flotte" muss die Liste nach Flotten gruppiert sein, sonst tut der Reiter nichts`
+    );
+    pruefe(
+      flotte.kopf.trim().length > 0,
+      'Flotte: die Liste nennt die Flotte nicht — man sieht Maschinen und weiß nicht, welche Flotte das ist'
+    );
+    pruefe(
+      flotte.schnellvergleichSichtbar,
+      'Flotte: der Schnellvergleich fehlt — der zweite Weg aus §0e (Flotte ohne Bestand) ist nicht da'
+    );
+    pruefe(
+      !flotte.umschalterSichtbar,
+      'Flotte: der alte Umschalter „Übersicht / Flottencheck" steht noch in der Liste — zwei Bedienelemente für denselben Zustand'
+    );
+    pruefe(flotte.saetze === 2, `Flotte: ${flotte.saetze} statt 2 erklärende Sätze`);
+    pruefe(
+      zurueckInDaten.bestandInDaten && zurueckInDaten.reihenzeilen > 0,
+      'Flotte: der Bestand kommt nicht als Reihe in die Daten zurück — der Reiterwechsel lässt ihn gruppiert stehen'
+    );
+    pruefe(
+      zurueckInDaten.listen === 1,
+      `Flotte: ${zurueckInDaten.listen} Maschinenlisten im Baum — eine zweite Liste wäre eine zweite Wahrheit`
+    );
+
     await ctx.close();
   }
 } finally {

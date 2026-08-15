@@ -191,7 +191,15 @@ export class FleetRankingRenderer {
     }
 
     // Render fleet header (Maßnahme 4)
-    if (stats && ranked.length >= 2) {
+    //
+    // Bis zum 15.08.2026 hing der ganze Kopf an `stats` — und die gibt es erst
+    // ab zwei GEPRÜFTEN Maschinen (`calculateFleetStats` liefert sonst null).
+    // Eine frisch angelegte Flotte stand deshalb namenlos da: vier Zeilen
+    // „Nicht geprüft" und nichts, was sagt, welche Flotte das ist. Aufgefallen
+    // ist es erst, als die Flotte im Reiter „Flotte" der neuen Schale das
+    // Einzige war, was dort stand. Der Name ist keine Statistik — er steht
+    // jetzt immer, nur die Kennzahlenzeile wartet auf Zahlen.
+    if (ranked.length >= 2) {
       this.renderFleetHeader(overviewContainer, stats, groupName, ranked.length);
     }
 
@@ -321,7 +329,7 @@ export class FleetRankingRenderer {
    */
   private renderFleetHeader(
     container: HTMLElement,
-    stats: FleetStats,
+    stats: FleetStats | null,
     groupName: string,
     machineCount: number
   ): void {
@@ -371,6 +379,15 @@ export class FleetRankingRenderer {
     titleRow.appendChild(exportBtn);
     titleRow.appendChild(helpBtn);
 
+    header.appendChild(titleRow);
+
+    // Ohne geprüfte Maschinen gibt es keine Kennzahlen. Eine Zeile mit
+    // dreimal „0 %" wäre keine Auskunft, sondern eine falsche.
+    if (!stats) {
+      container.insertBefore(header, container.firstChild);
+      return;
+    }
+
     // Stats row
     const statsRow = document.createElement('div');
     statsRow.className = 'fleet-header-stats';
@@ -391,7 +408,6 @@ export class FleetRankingRenderer {
     statsRow.appendChild(worstStat);
     statsRow.appendChild(spreadStat);
 
-    header.appendChild(titleRow);
     header.appendChild(statsRow);
 
     // Insert at top of container
