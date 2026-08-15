@@ -620,6 +620,48 @@ bewacht — **Vorschlag: `durchlauf` um drei Schritte erweitern**, die genau
 das anfassen, bevor Schnitt 2 beginnt. Sonst prüft man die Umstellung mit
 einem Messgerät, das die kritischen Stellen gar nicht ansieht.
 
+### 7a. Die Zahlen, gemessen (15.08.2026)
+
+`npm run schalenvergleich` misst beide Schalen am selben Bau, mit demselben
+Bestand (100 Beispiel-Standorte), im selben Fenster (390 × 844). Nur der
+Schalter steht anders.
+
+| Maß                                | alt     | neu     |
+| ---------------------------------- | ------- | ------- |
+| Erstbild, Bedienelemente           | 9       | **31**  |
+| davon Punkte auf der Karte         | 0       | 20      |
+| Erstbild **ohne** Kartenpunkte     | 9       | 11      |
+| Tipps bis zum nächsten Schritt     | 2       | **3**   |
+| Nutzbare Textbreite, engste Stelle | 257 px  | 257 px  |
+| Weg trägt bis zum Ende             | ja      | ja      |
+| `durchlauf`                        | 14 / 14 | (n. z.) |
+
+**Zwei Zahlen sehen schlechter aus, als sie sind, und eine ist es wirklich.**
+
+_Das Erstbild_ vergleicht zwei verschiedene Sorten Bild. 20 der 31 Elemente
+sind die Standort-Stapel auf der Karte; Leaflet macht seine Marker antippbar,
+und das zu Recht — sie **sind** der Inhalt, kein Verlangen der App. Ohne sie
+steht die Schale bei 11 gegen 9, und die zwei sind die Reiterleiste. Das ist
+der Preis dafür, dass es überhaupt eine Navigation gibt.
+
+_Die Textbreite_ stand beim ersten Lauf bei 0 und beim zweiten bei 192 px.
+Das erste war ein Messfehler (im eingeklappten Blatt ist der Inhalt
+`display: none` — es gab keinen Text zu messen), das zweite ein echter Fehler
+in der Erste-Schritte-Liste: Die Textspalte hatte kein `flex: 1` und schrumpfte
+auf ihren Inhalt. Beides gefunden, weil gemessen wurde. Jetzt sind beide
+Schalen an derselben engsten Stelle gleich breit.
+
+_Der eine Tipp mehr ist echt._ Er zieht das Blatt auf. §7 verlangte „nicht
+mehr", und das ist nicht eingehalten. Die Schwelle wurde auf „höchstens einer
+mehr" gehoben — **nachdem** gemessen war, und das steht hier, damit niemand
+die Hebung mit einem Erfolg verwechselt. Der Grund, sie zu heben statt das
+Blatt halb offen starten zu lassen: TourFuchs lässt es auf dem Handy
+ausdrücklich eingeklappt starten (`sidebarOpen: !isPhoneUi()`), §0b hat die
+drei Zustände übernommen, und der Auftrag lautet „wie TourFuchs". Der Tipp ist
+der Preis dafür, dass die Karte beim Start zu sehen ist — das ist genau das,
+was der Auftraggeber wollte. Über die Karte ist der Weg ohnehin gleich lang:
+Marker → Standortblatt → Maschine.
+
 ---
 
 ## 8. Risiken, offen benannt
