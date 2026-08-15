@@ -563,9 +563,31 @@ keine Statistik.
 _Prüfbar:_ `attention-check` misst beide Wege im Reiter, die Gruppierung, den
 Namen der Flotte und die Rückkehr des Bestands in die Daten.
 
-**6 — Reiter „Karte" und „Filter".** Die Karte ist der Grund; der Reiter trägt
-die Nahliste wie TourFuchs' `#tab-karte`. Filter: Zustand · Standort ·
-Flottengruppe. Klein, neu.
+**6 — Reiter „Karte" und „Filter".** ✅ _erledigt._ Die Karte ist der Grund;
+der Reiter trägt die Nahliste wie TourFuchs' `#tab-karte`. Filter: Zustand ·
+Standort · Flottengruppe.
+
+- **„Karte" trägt nicht noch eine Karte.** Sie liegt darunter und verschwindet
+  nie; der Reiter trägt die Liste zu ihr — nach Entfernung zur Kartenmitte
+  oder zum eigenen Standort, mit Zustand statt Umsatz. Der Knopf „zur Tour"
+  entfällt ersatzlos (§0c); ein Tipp fliegt zum Standort und öffnet sein Blatt.
+- **Der Standort wird erst gefragt, wenn jemand ihn haben will.** Die
+  Kartenmitte beantwortet „was sehe ich gerade?" ohne jede Erlaubnis.
+- **„Filter" verkleinert, was auf dem Grund liegt** — Karte und Nahliste
+  zusammen, wie bei TourFuchs, wo alles Weitere auf `customersOnMap()`
+  arbeitet. Die Auswahlfelder füllen sich aus dem Bestand: ein Zustand, den es
+  nicht gibt, steht nicht zur Wahl.
+- **Nicht gefiltert wird die Maschinenliste im Reiter „Daten".** Das ist die
+  Trennung, die dieser Umbau überall zieht: „Daten" ist der vollständige
+  Bestand, die Karte ist die Arbeitsfläche, auf der man einengt. Wer im
+  Bestand sucht, hat oben die Suche.
+
+Damit trägt jeder Reiter Inhalt, und die Platzhalterzeile („kommt noch") ist
+ersatzlos verschwunden.
+
+_Prüfbar:_ `attention-check` misst Sortierung und Bezugspunkte der Nahliste,
+die Herkunft der Filterwerte und — der Kern — dass der Filter die Karte
+wirklich leert und die Nahliste mitzieht.
 
 **7 — Schreibtisch, Umschalten, Aufräumen.** Breite Ansicht, Voreinstellung
 auf die neue Schale drehen, alte Schale als Rückweg behalten, sie zuletzt

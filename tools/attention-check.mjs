@@ -1541,6 +1541,104 @@ try {
       `Flotte: ${zurueckInDaten.listen} Maschinenlisten im Baum — eine zweite Liste wäre eine zweite Wahrheit`
     );
 
+    // ── DIE REITER „KARTE" UND „FILTER" (Schnitt 6) ──────────────────────
+    //
+    // „Karte" trägt nicht noch eine Karte — die liegt als Grund darunter.
+    // Der Reiter trägt die Liste zu ihr, nach Entfernung sortiert. „Filter"
+    // verkleinert, was auf dem Grund liegt.
+    //
+    // Der wichtigste Punkt ist der Zusammenhang: Ein Filter, der die Karte
+    // nicht wirklich leert, ist ein Auswahlfeld ohne Wirkung — und das sähe
+    // von außen genauso aus wie einer, der arbeitet.
+    await page.locator('.schale-reiter-btn[data-reiter="karte"]').click({ force: true });
+    await page.waitForTimeout(2200);
+
+    const nahe = await page.evaluate(() => {
+      const weiten = [...document.querySelectorAll('.nahliste-weite')].map((e) =>
+        Number.parseFloat((e.textContent ?? '').replace(/[^\d,.]/g, '').replace(',', '.'))
+      );
+      return {
+        zeilen: document.querySelectorAll('.nahliste-zeile').length,
+        bezugsknoepfe: document.querySelectorAll('.nahliste-bezug-btn').length,
+        zahlen: document.querySelector('.nahliste-zahlen')?.textContent ?? '',
+        // Sortiert? Die Entfernungen müssen aufsteigen. Eine Nahliste, die
+        // nicht sortiert, ist eine Liste — und die gibt es schon.
+        sortiert: weiten.every((w, i) => i === 0 || Number.isNaN(w) || w >= weiten[i - 1]),
+      };
+    });
+
+    await page.locator('.schale-reiter-btn[data-reiter="filter"]').click({ force: true });
+    await page.waitForTimeout(1800);
+    const markerVorFilter = await page.locator('#customer-map .leaflet-marker-icon').count();
+
+    const felder = await page.evaluate(() => ({
+      anzahl: document.querySelectorAll('.filter-feld-wahl').length,
+      standorte: document.getElementById('filter-standort')?.options.length ?? 0,
+      flotten: document.getElementById('filter-flotte')?.options.length ?? 0,
+      // Nur vorhandene Zustände: „alle" plus mindestens einer.
+      zustaende: document.getElementById('filter-zustand')?.options.length ?? 0,
+      zurueckVersteckt: document.getElementById('filter-zuruecksetzen')?.hidden ?? false,
+    }));
+
+    // Auf die erste Flotte filtern — die Karte muss deutlich leerer werden.
+    await page.selectOption('#filter-flotte', { index: 1 }).catch(() => {});
+    await page.waitForTimeout(2500);
+    const nachFilter = await page.evaluate(() => ({
+      marker: document.querySelectorAll('#customer-map .leaflet-marker-icon').length,
+      zurueckSichtbar: !(document.getElementById('filter-zuruecksetzen')?.hidden ?? true),
+    }));
+
+    await page.locator('.schale-reiter-btn[data-reiter="karte"]').click({ force: true });
+    await page.waitForTimeout(2000);
+    const naheGefiltert = await page.evaluate(() => ({
+      zeilen: document.querySelectorAll('.nahliste-zeile').length,
+      zahlen: document.querySelector('.nahliste-zahlen')?.textContent ?? '',
+    }));
+
+    console.log('\n=== Reiter „Karte" und „Filter" ===');
+    console.log(`Nahliste                  ${nahe.zeilen} Zeilen · „${nahe.zahlen}"`);
+    console.log(`nach Entfernung sortiert  ${nahe.sortiert ? 'ja' : 'NEIN'}`);
+    console.log(`Bezugspunkt-Knöpfe        ${nahe.bezugsknoepfe}`);
+    console.log(
+      `Filterfelder              ${felder.anzahl} · ${felder.zustaende} Zustände · ${felder.standorte} Standorte · ${felder.flotten} Flotten`
+    );
+    console.log(`Marker vor/nach Filter    ${markerVorFilter} → ${nachFilter.marker}`);
+    console.log(`Rückweg nach dem Filtern  ${nachFilter.zurueckSichtbar ? 'sichtbar' : 'FEHLT'}`);
+    console.log(
+      `Nahliste danach           ${naheGefiltert.zeilen} Zeilen · „${naheGefiltert.zahlen}"`
+    );
+
+    pruefe(nahe.zeilen > 0, 'Karte: die Nahliste ist leer, obwohl Standorte auf der Karte liegen');
+    pruefe(
+      nahe.sortiert,
+      'Karte: die Nahliste ist nicht nach Entfernung sortiert — dann ist sie keine Nahliste, sondern eine zweite Bestandsliste'
+    );
+    pruefe(
+      nahe.bezugsknoepfe === 2,
+      `Karte: ${nahe.bezugsknoepfe} statt 2 Bezugspunkte (Kartenmitte · mein Standort)`
+    );
+    pruefe(felder.anzahl === 3, `Filter: ${felder.anzahl} statt 3 Felder`);
+    pruefe(
+      felder.standorte > 1 && felder.flotten > 1 && felder.zustaende > 1,
+      `Filter: die Felder füllen sich nicht aus dem Bestand (${felder.zustaende} Zustände, ${felder.standorte} Standorte, ${felder.flotten} Flotten) — eine Auswahl ohne Auswahl`
+    );
+    pruefe(
+      felder.zurueckVersteckt,
+      'Filter: der Rückweg steht schon da, bevor überhaupt gefiltert ist'
+    );
+    pruefe(
+      nachFilter.marker > 0 && nachFilter.marker < markerVorFilter,
+      `Filter: ${markerVorFilter} Marker vorher, ${nachFilter.marker} nachher — der Filter wirkt nicht auf die Karte, er ist ein Auswahlfeld ohne Folgen`
+    );
+    pruefe(
+      nachFilter.zurueckSichtbar,
+      'Filter: nach dem Filtern erscheint kein Rückweg auf „alles" — man käme aus dem Filter nur über die Auswahlfelder zurück'
+    );
+    pruefe(
+      naheGefiltert.zeilen > 0 && naheGefiltert.zeilen < nahe.zeilen,
+      `Filter: die Nahliste zeigt ${naheGefiltert.zeilen} statt weniger als ${nahe.zeilen} Zeilen — sie zieht mit der Karte nicht mit und schlägt Standorte vor, die gar nicht gezeichnet sind`
+    );
+
     await ctx.close();
   }
 } finally {

@@ -60,6 +60,8 @@ import {
   fuellstaerke,
   type Gebietsstufe,
 } from '../../services/plzGebiete.js';
+import { ladeBestandsuebersicht } from '../../services/bestandsuebersicht.js';
+import { passt, FILTER_EVENT } from '../shell/standortfilter.js';
 import type { Customer, Machine } from '@data/types.js';
 
 /** Was der Aufrufer bereitstellen muss. */
@@ -141,6 +143,26 @@ export class CustomerMap {
     if (this.fenster) this.fenster.style.display = 'none';
   }
 
+  /** Wohin schaut die Karte gerade? Die Nahliste rechnet von hier aus. */
+  public mitte(): { lat: number; lng: number } | null {
+    const m = this.karte?.getCenter();
+    return m ? { lat: m.lat, lng: m.lng } : null;
+  }
+
+  /**
+   * Zu einem Standort fliegen und sein Blatt öffnen — der Weg aus der
+   * Nahliste zurück auf die Karte. Ohne den Flug bliebe die Zeile ein
+   * Eintrag, der etwas nennt, das man dann selbst suchen muss.
+   */
+  public async zeigeStandort(id: string): Promise<void> {
+    const kunde = (await getAllCustomers()).find((k) => k.id === id);
+    if (!kunde || kunde.lat == null || kunde.lng == null) return;
+    this.karte?.flyTo([kunde.lat, kunde.lng], Math.max(this.karte.getZoom(), 10), {
+      duration: 0.7,
+    });
+    await this.zeigeKundenblatt(kunde);
+  }
+
   /**
    * Die Karte vergisst ihren Behälter — nötig, wenn die Schale ihn umhängt.
    * Leaflet hält eine Messung des alten Platzes fest; ein neuer Aufbau am
@@ -183,6 +205,11 @@ export class CustomerMap {
     // Beim Zoomen wechselt der Zuschnitt: zehn grobe Gebiete in der
     // Übersicht, 95 feinere beim Hineinzoomen.
     this.karte.on('zoomend', () => void this.zeichneGebiete());
+
+    // Der Filter verkleinert die Menge auf der Karte. Er wird woanders
+    // gestellt (Reiter „Filter"), und die Karte hört zu — sie muss dafür
+    // nicht wissen, wer ihn gestellt hat.
+    document.addEventListener(FILTER_EVENT, () => void this.zeichneKunden());
 
     await this.setzeGrund(this.wahl);
     this.baueGrundwahl();
@@ -421,7 +448,12 @@ export class CustomerMap {
     for (const m of this.marker) m.remove();
     this.marker = [];
 
-    const kunden = await getAllCustomers();
+    // Der Filter aus dem Reiter „Filter" (Schnitt 6) verkleinert die Menge,
+    // die überhaupt gezeichnet wird — genau wie bei TourFuchs, wo alles
+    // Weitere danach auf `customersOnMap()` arbeitet. Ohne laufende Schale ist
+    // die Übersicht ungefiltert, und diese Zeile kostet einen Durchlauf.
+    const uebersicht = await ladeBestandsuebersicht();
+    const kunden = uebersicht.filter((e) => passt(e)).map((e) => e.kunde);
     const verortet = kunden.filter((k) => k.geo === 'plz' && k.lat != null && k.lng != null);
 
     // ── WARUM GESTAPELT WIRD ─────────────────────────────────────────────
