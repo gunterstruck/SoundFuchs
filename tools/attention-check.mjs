@@ -1313,14 +1313,61 @@ try {
           ? { y: Math.round(r.top), h: Math.round(r.height) }
           : null;
       };
+      const sichtbar = (sel) => {
+        const e = document.querySelector(sel);
+        return Boolean(e) && !e.hidden && getComputedStyle(e).display !== 'none';
+      };
       return {
         blattOffen: document.getElementById('schale-blatt')?.classList.contains('offen') ?? false,
         reiter: document.querySelector('.schale-reiter-btn.active')?.dataset.reiter ?? '—',
         aufnahme: imBild('record-reference-content'),
         pruefung: imBild('run-diagnosis-content'),
+        // Die Zoomstufe: Leiste statt Reiter, mit dem Namen der Maschine.
+        zoomleiste: sichtbar('#schale-zoom'),
+        reiterleiste: sichtbar('.schale-reiter'),
+        zoomName: document.getElementById('schale-zoom-name')?.textContent?.trim() ?? '',
+        // Die Karten des Ablaufs liegen in der Zoomstufe, nicht in den Daten.
+        kartenInDerTiefe: Boolean(
+          document.querySelector('#schale-tafel-pruefen #card-record') &&
+          document.querySelector('#schale-tafel-pruefen #card-check')
+        ),
       };
     });
     const naechsterSchritt = ziel.aufnahme ?? ziel.pruefung;
+
+    // Der Weg heraus: „‹ Daten" muss zurück in die Reiter führen.
+    await page
+      .locator('.schale-zoom-zurueck')
+      .click()
+      .catch(() => {});
+    await page.waitForTimeout(800);
+    const heraus = await page.evaluate(() => {
+      const sichtbar = (sel) => {
+        const e = document.querySelector(sel);
+        return Boolean(e) && !e.hidden && getComputedStyle(e).display !== 'none';
+      };
+      const liste = document.getElementById('erste-schritte');
+      return {
+        reiterleiste: sichtbar('.schale-reiter'),
+        zoomleiste: sichtbar('#schale-zoom'),
+        reiter: document.querySelector('.schale-reiter-btn.active')?.dataset.reiter ?? '—',
+        // Erste-Schritte-Liste: drei Zeilen, davon die erledigten markiert.
+        schritte:
+          liste && !liste.hidden ? liste.querySelectorAll('.erste-schritte-zeile').length : 0,
+        getan: liste ? liste.querySelectorAll('.erste-schritte-zeile.getan').length : 0,
+        standortzeile: sichtbar('#schale-standorte-zeile'),
+      };
+    });
+
+    // Die Standort-Zeile muss die Einstellungen auf ihr Thema stellen.
+    let standortThema = '(nicht erreicht)';
+    if (heraus.standortzeile) {
+      await page.locator('#schale-standorte-zeile').click({ force: true });
+      await page.waitForTimeout(900);
+      standortThema = await page.evaluate(
+        () => document.querySelector('.settings-list')?.dataset.filter ?? '(kein Filter)'
+      );
+    }
 
     console.log('\n=== Kette: Karte → Prüfung ===');
     console.log(`Marker (einzeln/Stapel)   ${karte.einzeln} / ${karte.stapel}`);
@@ -1332,10 +1379,20 @@ try {
     console.log(`Maschinenblatt            ${fensterDa ? 'offen' : 'NICHT offen'}`);
     console.log(`Knopf darin               ${knopfText}`);
     console.log(`danach: Blatt             ${ziel.blattOffen ? 'aufgezogen' : 'EINGEKLAPPT'}`);
-    console.log(`danach: Reiter            ${ziel.reiter}`);
     console.log(
       `danach: nächster Schritt  ${naechsterSchritt ? `im Bild bei ${naechsterSchritt.y} px` : 'NICHT IM BILD'}`
     );
+    console.log(
+      `Zoomstufe                 Leiste ${ziel.zoomleiste ? 'da' : 'FEHLT'} · Reiter ${ziel.reiterleiste ? 'DA' : 'weg'} · „${ziel.zoomName}"`
+    );
+    console.log(
+      `Prüfkarten in der Tiefe   ${ziel.kartenInDerTiefe ? 'ja' : 'NEIN (liegen in den Daten)'}`
+    );
+    console.log(
+      `zurück über „‹ Daten"     Reiter ${heraus.reiterleiste ? 'wieder da' : 'FEHLEN'} · aktiv „${heraus.reiter}"`
+    );
+    console.log(`Erste-Schritte-Liste      ${heraus.schritte} Zeilen, ${heraus.getan} erledigt`);
+    console.log(`Standort-Zeile → Thema    ${standortThema}`);
 
     pruefe(
       karte.marker > 0,
@@ -1363,12 +1420,40 @@ try {
       'Kette: nach dem Knopf bleibt das Blatt eingeklappt — es sieht aus, als sei nichts passiert'
     );
     pruefe(
-      ziel.reiter === 'daten',
-      `Kette: nach dem Knopf steht Reiter „${ziel.reiter}" statt „daten"`
-    );
-    pruefe(
       Boolean(naechsterSchritt),
       'Kette: der nächste Schritt steht am Ende nicht im Bild — der rote Faden reißt an der letzten Stelle'
+    );
+
+    // ── DIE ZOOMSTUFE (Schnitt 4) ────────────────────────────────────────
+    pruefe(
+      ziel.zoomleiste && !ziel.reiterleiste,
+      `Zoomstufe: Reiterleiste ${ziel.reiterleiste ? 'steht noch' : 'weg'}, Zoomleiste ${ziel.zoomleiste ? 'da' : 'fehlt'} — in der Maschine muss die eine an die Stelle der anderen treten, sonst ist unklar, wo man ist`
+    );
+    pruefe(
+      ziel.zoomName.length > 0,
+      'Zoomstufe: die Leiste nennt die Maschine nicht — dann ist sie nur ein Zurück-Knopf ohne Auskunft'
+    );
+    pruefe(
+      ziel.kartenInDerTiefe,
+      'Zoomstufe: die beiden Karten des Ablaufs liegen nicht in der Prüf-Tafel — dann stehen sie wieder mitten in den Daten, auch ohne gewählte Maschine'
+    );
+    pruefe(
+      heraus.reiterleiste && !heraus.zoomleiste && heraus.reiter === 'daten',
+      `Zoomstufe: „‹ Daten" führt nicht zurück (Reiter „${heraus.reiter}", Leiste ${heraus.zoomleiste ? 'noch da' : 'weg'}) — man käme aus der Maschine nicht mehr heraus`
+    );
+
+    // ── DER KOPF DES REITERS „DATEN" (Schnitt 4) ─────────────────────────
+    pruefe(
+      heraus.schritte === 3,
+      `Daten: die Erste-Schritte-Liste zeigt ${heraus.schritte} statt 3 Zeilen — der rote Faden ist nicht sichtbar`
+    );
+    pruefe(
+      heraus.getan >= 1,
+      'Daten: kein Schritt ist als erledigt markiert, obwohl Maschinen im Bestand stehen — die Liste zeigt keinen Fortschritt, sondern nur eine Anleitung'
+    );
+    pruefe(
+      standortThema === 'standorte',
+      `Daten: die Standort-Zeile stellt die Einstellungen auf „${standortThema}" statt „standorte"`
     );
 
     await ctx.close();

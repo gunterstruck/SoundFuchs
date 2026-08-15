@@ -17,7 +17,7 @@ import './styles/event-timeline.css';
 import './styles/spectrogram-3d.css';
 import './styles/schale.css';
 
-import { initDB, getDBStats } from '@data/db.js';
+import { initDB, getDBStats, getAllMachines } from '@data/db.js';
 import { toast } from '@ui/components/Toast.js';
 import { AboutModalController } from '@ui/components/AboutModalController.js';
 import { nfcImportService } from '@data/NfcImportService.js';
@@ -79,6 +79,18 @@ class ZanobotApp {
       await this.kundenkarte.zeigeImGrund();
     },
     hatBestand: async () => (await getDBStats()).machines > 0,
+    ersteSchritte: async () => {
+      // Schritt 2 hängt nicht an der Zahl der Aufnahmen, sondern daran, ob
+      // eine davon als Normalzustand angelernt ist. Eine Aufnahme ohne
+      // Referenzmodell ist Rohmaterial, kein erledigter Schritt.
+      const maschinen = await getAllMachines();
+      return {
+        maschine: maschinen.length > 0,
+        referenz: maschinen.some((m) => (m.referenceModels?.length ?? 0) > 0),
+        pruefung: (await getDBStats()).diagnoses > 0,
+      };
+    },
+    oeffneThema: (thema, beschriftung) => this.oeffneEinstellungenMitThema(thema, beschriftung),
   });
 
   constructor() {
