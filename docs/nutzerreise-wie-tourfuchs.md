@@ -488,11 +488,29 @@ den Reiter „Daten". Gebaut in `src/ui/shell/Schale.ts`, geschaltet über
 _Prüfbar:_ `attention-check` misst Hinweg **und** Rückweg; `durchlauf` läuft
 unverändert gegen die alte Schale.
 
-**3 — Der Maschinenknopf im Popup.** Je Maschine eine Zeile im Standort-Popup,
-und dahinter baut sich im semantischen Zoom der Prüfablauf auf (§0c, §0g).
-_Der entscheidende Schnitt_ — hier zeigt sich, ob die Reise besser oder
-schlechter wird. _Prüfbar:_ `durchlauf` muss vierzehn Schritte tragen, und der
-Weg von kalt bis „Prüfung starten" darf nicht länger werden.
+**3 — Der Maschinenknopf im Popup.** ✅ _erledigt._ Je Maschine eine Zeile im
+Standort-Popup, und dahinter baut sich im semantischen Zoom der Prüfablauf auf
+(§0c, §0g). _Der entscheidende Schnitt_ — hier zeigt sich, ob die Reise besser
+oder schlechter wird.
+
+Die Zeile und das Maschinenblatt dahinter gab es schon (`CustomerMap`,
+`MachineDetailModal`); zu bauen war die **Kette**, und sie hing an zwei
+Stellen:
+
+- Die Karte kannte ihren freien Bereich nicht. Im Grund liegt oben der
+  Kopfstreifen und unten das Blatt darüber; ohne Polsterung rechnete sie mit
+  der vollen Höhe, und die Standorte lagen hinter dem Blatt — die Kette begann
+  nicht einmal. Die Polsterung allein reichte nicht: Der Rahmen der Karte
+  (`setMaxBounds`) war so knapp, dass er das Verschieben wieder zurückzog.
+- Das letzte Glied landete in einer eingeklappten Tafel. Der Ablauf klappt den
+  nächsten Abschnitt auf und springt ihn an — nur trägt die Tafel eingeklappt
+  `display: none`. Getippt, nichts passiert. Der Ablauf sagt jetzt an, was er
+  vorhat (`MASCHINE_GEWAEHLT`); die Schale zieht auf, bevor er springt, und
+  weiß nichts von ihr.
+
+_Prüfbar:_ `attention-check` misst die ganze Kette Marker → Standortblatt →
+Maschinenzeile → Maschinenblatt → nächster Schritt im Bild; `durchlauf` trägt
+unverändert vierzehn Schritte.
 
 **4 — Reiter „Daten".** Maschinen, Standorte, Import, Erste-Schritte-Liste.
 Die Maschinenzeile führt in denselben Ablauf wie der Knopf aus Schnitt 3,
