@@ -163,6 +163,36 @@ welche Demos sinnvoll sind, wird entschieden, wenn die Reiter stehen. Eine
 Demo, die eine Reise zeigt, die es noch nicht gibt, wäre nur eine weitere
 Sache, die man später wegwirft.
 
+---
+
+## 0g. Zwei Entscheidungen
+
+**Die Maschinen im Standort-Popup stehen als Liste, immer.** Keine Knopfreihe,
+keine Schwelle, ab der aus Knöpfen eine Liste wird, keine Suche. Begründung des
+Auftraggebers: „Es wird praktisch nie zu viele geben." Das ist zugleich die
+einfachere Sache — eine Form statt zweier, kein Umschaltpunkt, der getestet
+werden müsste. Die Form steht schon (`docs/kunden-und-karte.md` §4):
+
+```
+    Müller Guss GmbH
+    45127 Essen · Ortsmitte
+
+    MASCHINEN
+    ● Pumpe 17        94 %   vor 2 Std.      ›
+    ● Lüfter West     71 %   vor 3 Tagen     ›
+    ○ Kompressor 3    Referenz fehlt         ›
+```
+
+Jede Zeile ist der Knopf aus §0c — dahinter der Prüfablauf im semantischen
+Zoom. Die Zeile ersetzt also nicht den Knopf, sie _ist_ er.
+
+**Der angefangene Kartenabschnitt auf der Startseite ist verworfen.** Er war
+die kleine Antwort auf „ich finde die Karte nicht". In der neuen Schale ist die
+Karte der Grund; ein Abschnitt, der auf sie zeigt, verschwände in Schnitt 2
+wieder. Etwas einzubauen, das kurz darauf herausgenommen wird, ist Unruhe ohne
+Gewinn. Bis die Schale steht, bleibt die Karte über ☰ → „Kundenkarte"
+erreichbar.
+
 ## 1. Was ich falsch verstanden hatte
 
 Bis heute früh habe ich „wie TourFuchs" als **Aussehen** gelesen: dieselben
