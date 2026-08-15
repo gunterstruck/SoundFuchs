@@ -196,15 +196,39 @@ export async function ladeBeispieldaten(): Promise<number> {
       };
       await saveCustomer(kunde);
 
-      const maschine: Machine = {
-        id: `demo-m-${i}`,
-        name: `${maschinenArt} ${(i % 9) + 1}`,
-        createdAt: Date.now(),
-        referenceModels: [],
-        customerId: kundeId,
-        demo: true,
-      };
-      await saveMachine(maschine);
+      // ── WARUM JEDER ZEHNTE STANDORT EINE FLOTTE BEKOMMT ────────────────
+      //
+      // Bis zum 15.08.2026 trugen die Beispieldaten genau eine Maschine je
+      // Standort und keine Flottengruppe. Der Reiter „Flotte" (Schnitt 5 der
+      // Nutzerreise) konnte damit nichts zeigen als seinen eigenen leeren
+      // Zustand: „Mindestens 2 Maschinen für einen aussagekräftigen
+      // Flottenvergleich nötig." Beispieldaten, die genau die Funktion nicht
+      // vorführen können, für die man sie lädt, sind keine.
+      //
+      // Eine Flotte ist ein Satz vergleichbarer Maschinen an EINEM Ort —
+      // vier Pumpen in derselben Halle, nicht vier Pumpen in vier Städten.
+      // Deshalb bekommt jeder zehnte Standort vier gleichartige Maschinen
+      // mit gemeinsamer Gruppe, die übrigen bleiben bei einer. Das ergibt
+      // rund zehn echte Flotten und lässt das Bild der Karte unberührt.
+      const istFlottenstandort = i % 10 === 0;
+      // Der Name der Flotte nennt Art und Ort, nicht eine Mehrzahl: „Extruder
+      // · Zwickau" statt „Extrudern 08066". Deutsche Mehrzahlformen aus einem
+      // Wortstamm zu bilden geht bei „Pumpe" gut und bei „Extruder" schief.
+      const flotte = istFlottenstandort ? `${maschinenArt} · ${ort.ort}` : null;
+      const anzahl = istFlottenstandort ? 4 : 1;
+
+      for (let m = 0; m < anzahl; m++) {
+        const maschine: Machine = {
+          id: anzahl > 1 ? `demo-m-${i}-${m}` : `demo-m-${i}`,
+          name: istFlottenstandort ? `${maschinenArt} ${m + 1}` : `${maschinenArt} ${(i % 9) + 1}`,
+          createdAt: Date.now(),
+          referenceModels: [],
+          customerId: kundeId,
+          fleetGroup: flotte,
+          demo: true,
+        };
+        await saveMachine(maschine);
+      }
 
       erzeugt++;
       i++;

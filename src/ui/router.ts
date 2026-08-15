@@ -228,6 +228,18 @@ export class Router {
   }
 
   /**
+   * Die Maschinenliste nach Flotten gruppieren oder wieder als Reihe zeigen.
+   *
+   * Dasselbe Durchreichen wie oben: Der Reiter „Flotte" der neuen Schale
+   * braucht diesen Modus, soll sich die Identify-Phase aber nicht selbst
+   * heraussuchen. Der Modus ist derselbe, den der Umschalter über der Liste
+   * bisher stellte — die Schale bedient ihn nur von woanders.
+   */
+  public async setzeFlottenmodus(anzeigen: boolean): Promise<void> {
+    await this.identifyPhase.setWorkflowMode(anzeigen ? 'fleet' : 'series');
+  }
+
+  /**
    * Called when a machine is selected in Phase 1
    */
   private onMachineSelected(machine: Machine): void {

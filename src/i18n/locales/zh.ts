@@ -32,6 +32,10 @@ export const zh: TranslationDict = {
     zoomBack: '‹ 数据',
     stepDone: '已完成',
     stepOpen: '待完成',
+    fleet: {
+      fromStock: '来自已有机器：按车队分组。选择一个车队，逐台检查。',
+      withoutStock: '无需已有机器：直接比较多台未知机器，无需预先创建。',
+    },
     tab: {
       daten: '数据',
       flotte: '车队',

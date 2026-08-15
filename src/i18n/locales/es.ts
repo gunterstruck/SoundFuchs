@@ -32,6 +32,11 @@ export const es: TranslationDict = {
     zoomBack: '‹ Datos',
     stepDone: 'hecho',
     stepOpen: 'pendiente',
+    fleet: {
+      fromStock:
+        'Desde tus máquinas: agrupadas por flota. Elige una flota y compruébalas una tras otra.',
+      withoutStock: 'Sin tus máquinas: compara varias máquinas desconocidas sin crearlas antes.',
+    },
     tab: {
       daten: 'Datos',
       flotte: 'Flota',

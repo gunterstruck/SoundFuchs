@@ -538,9 +538,30 @@ Der Schnitt bestand aus einer Trennung und zwei Ergänzungen:
 _Prüfbar:_ `attention-check` misst Zoomstufe hinein und heraus, die Lage der
 Prüfkarten, den Fortschritt in der Liste und das Ziel der Standort-Zeile.
 
-**5 — Reiter „Flotte".** Die beiden Funktionen aus §0e: Flotte aus dem
-Bestand, Flotte ohne Bestand. Sie ziehen aus der Maschinenliste dorthin, wo
-TourFuchs seinen Besuchsplaner hat.
+**5 — Reiter „Flotte".** ✅ _erledigt._ Die beiden Funktionen aus §0e: Flotte
+aus dem Bestand, Flotte ohne Bestand. Sie ziehen aus der Maschinenliste
+dorthin, wo TourFuchs seinen Besuchsplaner hat.
+
+- **Der Umschalter entfällt.** „Übersicht / Flottencheck" stand mitten in der
+  Maschinenliste. Der Reiter _ist_ jetzt die Umschaltung; zwei Bedienelemente
+  für denselben Zustand wären eines zu viel.
+- **Eine Liste, die pendelt.** Der Bestand zieht in den Reiter und wird dort
+  nach Flotten gruppiert, danach zurück in die Daten. Eine zweite Liste wäre
+  eine zweite Wahrheit — wer in der einen anlegt und in der anderen nachsieht,
+  hätte zwei Bestände, die auseinanderlaufen können.
+- **Der Schnellvergleich ist nicht mehr „Profi".** Er war es, weil er sonst
+  das Erstbild bestimmt hätte — er stand über der Maschinenliste. Im Reiter
+  bestimmt er gar nichts mehr: Dorthin geht nur, wer eine Flotte prüfen will.
+
+Zwei Befunde nebenbei, beide erst sichtbar, als der Reiter das Einzige war,
+was dastand: Die **Beispieldaten konnten keine Flotte zeigen** (eine Maschine
+je Standort, keine Gruppe) — jeder zehnte Standort trägt jetzt vier
+gleichartige Maschinen. Und der **Flottenkopf trug seinen Namen nur mit
+Kennzahlen**; eine frisch angelegte Flotte stand namenlos da. Der Name ist
+keine Statistik.
+
+_Prüfbar:_ `attention-check` misst beide Wege im Reiter, die Gruppierung, den
+Namen der Flotte und die Rückkehr des Bestands in die Daten.
 
 **6 — Reiter „Karte" und „Filter".** Die Karte ist der Grund; der Reiter trägt
 die Nahliste wie TourFuchs' `#tab-karte`. Filter: Zustand · Standort ·

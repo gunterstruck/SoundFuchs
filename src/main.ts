@@ -91,6 +91,9 @@ class ZanobotApp {
       };
     },
     oeffneThema: (thema, beschriftung) => this.oeffneEinstellungenMitThema(thema, beschriftung),
+    setzeFlottenmodus: async (anzeigen) => {
+      await this.router?.setzeFlottenmodus(anzeigen);
+    },
   });
 
   constructor() {

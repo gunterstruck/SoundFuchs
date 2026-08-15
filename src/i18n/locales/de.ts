@@ -37,6 +37,12 @@ export const de: TranslationDict = {
     zoomBack: '‹ Daten',
     stepDone: 'erledigt',
     stepOpen: 'offen',
+    fleet: {
+      fromStock:
+        'Aus dem Bestand: Maschinen nach Flotten gruppiert. Eine Flotte auswählen und der Reihe nach prüfen.',
+      withoutStock:
+        'Ohne Bestand: mehrere unbekannte Maschinen vergleichen, ohne sie vorher anzulegen.',
+    },
     tab: {
       daten: 'Daten',
       flotte: 'Flotte',

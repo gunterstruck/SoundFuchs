@@ -432,6 +432,57 @@ html[data-schale='neu'] .schale-datenzeile-pfeil {
   color: var(--text-secondary);
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   DER REITER „FLOTTE"
+   ══════════════════════════════════════════════════════════════════════ */
+
+html[data-schale='neu'] .schale-flottenkopf,
+html[data-schale='neu'] .schale-flotten-satz {
+  margin: 0;
+  padding: 12px 14px 4px;
+}
+
+html[data-schale='neu'] .schale-flotten-satz {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+html[data-schale='neu'] .schale-flotten-satz-unten {
+  padding-top: 18px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 12px;
+}
+
+/* Der Umschalter „Übersicht / Flottencheck" entfällt: Der Reiter IST die
+   Umschaltung. Zwei Bedienelemente für denselben Zustand wären eines zu
+   viel — und das verbliebene stünde wieder mitten in einer Liste. */
+html[data-schale='neu'] .workflow-toggle-row {
+  display: none;
+}
+
+/* Im Reiter „Flotte" trägt der Flottenkopf die Überschrift („Extruder ·
+   Zwickau (4)"). Die Überschrift des Abschnitts sagte darüber weiterhin
+   „Maschinenübersicht" — über einer Flotte ist das schlicht das falsche
+   Wort, und zwei Überschriften übereinander sind ohnehin eine zu viel. */
+html[data-schale='neu'] #schale-tafel-flotte #machine-overview-section > .option-header {
+  display: none;
+}
+
+/* Der Schnellvergleich war „Profi", weil er sonst das Erstbild bestimmt
+   hätte — er stand über der Maschinenliste, also auf der ersten Seite. Im
+   Reiter „Flotte" bestimmt er gar nichts mehr: Dorthin geht nur, wer eine
+   Flotte prüfen will. Die Begründung für das Verstecken ist damit weg, und
+   das Verstecken auch.
+
+   Das `!important` ist kein Notnagel, sondern die Antwort auf eines: Die
+   allgemeine Stufenregel in style.css blendet `[data-view-level="expert"]`
+   mit `display: none !important` aus, und nur Gleiches schlägt Gleiches. */
+html[data-schale='neu'] #schale-tafel-flotte #quick-compare-cta {
+  display: block !important;
+  padding: 0 14px 16px;
+}
+
 /* Die alte 1-2-3-Anleitung im Leerzustand der Maschinenliste sagt dasselbe
    wie die Erste-Schritte-Liste darüber — im leeren Bestand stand beides
    untereinander, Wort für Wort gleich. Der Knopf darunter bleibt: Er ist die
