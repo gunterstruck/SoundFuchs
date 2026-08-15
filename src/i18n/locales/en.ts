@@ -29,6 +29,9 @@ export const en: TranslationDict = {
     navLabel: 'View and sections',
     gripLabel: 'Open sheet',
     gripClose: 'Collapse sheet',
+    zoomBack: '‹ Data',
+    stepDone: 'done',
+    stepOpen: 'open',
     tab: {
       daten: 'Data',
       flotte: 'Fleet',

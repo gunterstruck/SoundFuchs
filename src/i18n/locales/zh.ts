@@ -29,6 +29,9 @@ export const zh: TranslationDict = {
     navLabel: '视图与区域',
     gripLabel: '展开面板',
     gripClose: '收起面板',
+    zoomBack: '‹ 数据',
+    stepDone: '已完成',
+    stepOpen: '待完成',
     tab: {
       daten: '数据',
       flotte: '车队',

@@ -29,6 +29,9 @@ export const fr: TranslationDict = {
     navLabel: 'Vue et sections',
     gripLabel: 'Ouvrir le panneau',
     gripClose: 'Replier le panneau',
+    zoomBack: '‹ Données',
+    stepDone: 'fait',
+    stepOpen: 'à faire',
     tab: {
       daten: 'Données',
       flotte: 'Flotte',

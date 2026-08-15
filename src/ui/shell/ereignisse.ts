@@ -17,4 +17,14 @@ export const MASCHINE_GEWAEHLT = 'zanobot:maschine-gewaehlt';
 
 export interface MaschineGewaehltDetail {
   abschnitt: string;
+  /** Der Name der Maschine — er steht in der Zoomleiste über dem Prüfablauf. */
+  name: string;
 }
+
+/**
+ * Die Maschine ist wieder losgelassen — zurück aus dem Prüfablauf.
+ *
+ * Die Schale meldet das, nicht der Ablauf: Sie ist es, die den Weg zurück
+ * anbietet. Wer zuhört, kann seinen Zustand aufräumen.
+ */
+export const MASCHINE_LOSGELASSEN = 'zanobot:maschine-losgelassen';

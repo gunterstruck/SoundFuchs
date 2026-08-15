@@ -34,6 +34,9 @@ export const de: TranslationDict = {
     navLabel: 'Ansicht und Bereiche',
     gripLabel: 'Blatt aufziehen',
     gripClose: 'Blatt einklappen',
+    zoomBack: '‹ Daten',
+    stepDone: 'erledigt',
+    stepOpen: 'offen',
     tab: {
       daten: 'Daten',
       flotte: 'Flotte',

@@ -29,6 +29,9 @@ export const es: TranslationDict = {
     navLabel: 'Vista y secciones',
     gripLabel: 'Abrir hoja',
     gripClose: 'Plegar hoja',
+    zoomBack: '‹ Datos',
+    stepDone: 'hecho',
+    stepOpen: 'pendiente',
     tab: {
       daten: 'Datos',
       flotte: 'Flota',

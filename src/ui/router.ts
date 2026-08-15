@@ -286,7 +286,7 @@ export class Router {
         : 'record-reference-content';
     document.dispatchEvent(
       new CustomEvent<MaschineGewaehltDetail>(MASCHINE_GEWAEHLT, {
-        detail: { abschnitt: naechsterAbschnitt },
+        detail: { abschnitt: naechsterAbschnitt, name: machine.name },
       })
     );
 

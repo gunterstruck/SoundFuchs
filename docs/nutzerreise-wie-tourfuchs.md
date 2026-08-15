@@ -512,10 +512,31 @@ _Prüfbar:_ `attention-check` misst die ganze Kette Marker → Standortblatt →
 Maschinenzeile → Maschinenblatt → nächster Schritt im Bild; `durchlauf` trägt
 unverändert vierzehn Schritte.
 
-**4 — Reiter „Daten".** Maschinen, Standorte, Import, Erste-Schritte-Liste.
-Die Maschinenzeile führt in denselben Ablauf wie der Knopf aus Schnitt 3,
-damit der Weg auch ohne Empfang trägt. _Prüfbar:_ Zeilentipp öffnet weiterhin
-die Maschinenansicht.
+**4 — Reiter „Daten".** ✅ _erledigt._ Maschinen, Standorte, Import,
+Erste-Schritte-Liste. Die Maschinenzeile führt in denselben Ablauf wie der
+Knopf aus Schnitt 3, damit der Weg auch ohne Empfang trägt.
+
+Der Schnitt bestand aus einer Trennung und zwei Ergänzungen:
+
+- **Die Prüf-Zoomstufe.** Die beiden Karten des Ablaufs lagen im Rumpf
+  zwischen Bestand und Fußzeile — also mitten in den Daten, obwohl sie zu
+  einer einzelnen Maschine gehören und ohne sie gar nichts tun können. Sie
+  ziehen in eine eigene Tafel, die **keinen Reiter** hat: Man kommt hinein,
+  indem man eine Maschine wählt, und über die Zoomleiste („‹ Daten" plus
+  Maschinenname) wieder heraus. Das ist der semantische Zoom aus §0c, und der
+  Grund, warum es weiterhin keinen Reiter „Prüfen" gibt.
+- **Die Erste-Schritte-Liste** (TourFuchs `#first-steps`) steht jetzt oben im
+  Reiter und zeigt Fortschritt statt nur einer Anleitung. Bisher lag die
+  1-2-3-Erklärung im Leerzustand der Maschinenliste — sie verschwand also
+  genau in dem Moment, in dem die erste Maschine stand und die restlichen
+  zwei Schritte noch offen waren. Sie geht von selbst, wenn alle drei getan
+  sind.
+- **Die Standort-Zeile** schlägt das auf, was schon in den Einstellungen
+  liegt (Beispieldaten, Import). Kein zweiter Bestand — zwei Orte für
+  dieselbe Sache wären ein Ort zu viel.
+
+_Prüfbar:_ `attention-check` misst Zoomstufe hinein und heraus, die Lage der
+Prüfkarten, den Fortschritt in der Liste und das Ziel der Standort-Zeile.
 
 **5 — Reiter „Flotte".** Die beiden Funktionen aus §0e: Flotte aus dem
 Bestand, Flotte ohne Bestand. Sie ziehen aus der Maschinenliste dorthin, wo
