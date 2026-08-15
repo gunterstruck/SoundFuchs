@@ -117,6 +117,12 @@ export const en: TranslationDict = {
     noMachines: 'No machine at this customer yet.',
     noReference: 'No reference',
     unlocated: '{{count}} customer(s) without a map position — their postcode is unknown.',
+    areaWithMachines: 'Postcode area {{plz}} · {{count}} machines',
+    areaEmpty: 'Postcode area {{plz}} · no machine yet',
+    emptyTitle: 'No customer on the map yet',
+    emptyText: 'Customers are created together with a machine — or here, to try it out.',
+    emptyButton: 'Load sample data',
+    emptyLoading: 'Loading …',
   },
 
   customers: {
@@ -1494,6 +1500,7 @@ export const en: TranslationDict = {
     dataTitle: 'Data used',
     dataPlzPlaces: 'Postcode place names',
     dataPlzCoords: 'Postcode coordinates',
+    dataPlzAreas: 'Postcode areas (polygons)',
     dataMapTiles: 'Map tiles',
     title: 'About SoundFuchs',
     subtitle: 'Assistant for acoustic comparison of machine states',
@@ -1673,6 +1680,12 @@ export const en: TranslationDict = {
     guidingPrincipleTitle: 'Guiding Principle',
     guidingPrincipleQuestion: 'Does the machine sound normal?',
     guidingPrincipleStatement: 'Smartphones hear machine sounds.',
+    buildLabel: 'Build:',
+    checkUpdate: 'Check for update',
+    checkRunning: 'Checking …',
+    checkFound: 'New version found — the update prompt appears shortly.',
+    checkCurrent: 'This is the current version.',
+    checkUnavailable: 'Checking is not possible here (no service worker).',
   },
 
   // ============================================================================

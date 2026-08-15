@@ -11504,6 +11504,39 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   flex: 1;
   min-height: 0;
   background: var(--bg-tertiary);
+  position: relative;
+}
+
+/* Der Einstieg auf der leeren Karte. Er liegt ueber Leaflet (dessen Ebenen
+   stehen bei z-index 400-700) und laesst die Karte darunter sichtbar: Das
+   Deutschlandbild mit seinen Postleitzahlgebieten ist ja schon da, es fehlen
+   nur die eigenen Kunden. Deshalb ein Kasten in der Mitte und kein Vorhang. */
+.map-empty {
+  position: absolute;
+  z-index: 800;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(300px, calc(100% - 2 * var(--spacing-md)));
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 22%);
+  text-align: center;
+}
+
+.map-empty-title {
+  margin: 0 0 0.35rem;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.map-empty-text {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  line-height: 1.45;
 }
 
 /* Ohne Empfang bleibt die Flaeche grau. Das ist die einzige echte
@@ -11526,8 +11559,8 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: var(--primary-color);
   box-shadow: 0 2px 8px rgb(0 0 0 / 35%);
@@ -11535,6 +11568,33 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
 
 .customer-marker-card.approx {
   border: 2px dashed rgb(255 255 255 / 85%);
+}
+
+/* ── DER STAPEL ────────────────────────────────────────────────────────────
+   Was zu dicht beieinander liegt, wird zu einer Zahl zusammengefasst. Ohne
+   das deckten 100 Kunden auf Deutschland-Zoom die ganze Karte zu — und
+   ausgerechnet das Deutschlandbild, um das es geht, verschwand darunter.
+   Von TourFuchs uebernommen (`customerClusterIcon`). */
+.customer-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  border: 2px solid rgb(255 255 255 / 90%);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 35%);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Leaflets eigene Stapel-Gestaltung ausschalten: Sie bringt ein gelbes und
+   ein blaues Rund mit, die neben dem Fuchsgruen wie ein Fremdkoerper wirken. */
+.customer-cluster-wrapper {
+  background: transparent;
 }
 
 .customer-marker-symbol {

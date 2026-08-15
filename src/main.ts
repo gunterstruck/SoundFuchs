@@ -795,14 +795,19 @@ class ZanobotApp {
         document.querySelectorAll<HTMLElement>(`.setting-category[data-thema~="${thema}"]`)
       ).some((kat) => window.getComputedStyle(kat).display !== 'none');
 
-    /**
-     * Führt die Karte überhaupt irgendwohin?
-     *
-     * Dieselbe Frage wie bei den Themen, nur zu Daten statt zu Stufen: Eine
-     * Karte ohne einen einzigen verorteten Kunden ist ein leeres graues Feld.
-     * Solange keiner da ist, bleibt die Zeile weg.
-     */
-    const karteHatKunden = await CustomerMap.hatKunden();
+    // Die Karte steht immer im Menü.
+    //
+    // Bis zum 15.08.2026 erschien die Zeile nur, wenn schon ein Kunde verortet
+    // war — mit der Begründung, ein Knopf dürfe nicht auf ein leeres graues
+    // Feld führen. Die Regel stimmt, ihre Anwendung war hier falsch und
+    // ergab eine Falle: Ohne Kunden keine Karte, und der einzige bequeme Weg
+    // zu Kunden (die Beispieldaten) lag hinter derselben verborgenen Tür.
+    // Gemessen in der Lage des Auftraggebers — Basis-Stufe, eine Maschine,
+    // kein Kunde — war beides unerreichbar, auf Profi immer noch die Karte.
+    //
+    // Das graue Feld gehört gefüllt, nicht die Tür zugemauert: Die Karte
+    // zeigt jetzt auch ohne Kunden Deutschland mit seinen
+    // Postleitzahlgebieten und bietet darin den Schritt an, der sie füllt.
 
     type Zeile =
       | { art: 'thema'; thema: string; icon: string; key: string }
@@ -860,7 +865,6 @@ class ZanobotApp {
         const zeilen = g.zeilen.filter((z) => {
           if (z.art === 'thema') return themaHatInhalt(z.thema);
           if (z.art === 'knopf') return Boolean(document.getElementById(z.id));
-          if (z.art === 'karte') return karteHatKunden;
           return true;
         });
         if (zeilen.length === 0) return '';

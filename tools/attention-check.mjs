@@ -619,6 +619,7 @@ try {
     let zeileDa = false;
     let markerZahl = 0;
     let gruende = 0;
+    let gebiete = 0;
     let quelle = '';
     let blattDa = false;
     let maschineImBlatt = false;
@@ -637,6 +638,10 @@ try {
 
         markerZahl = await page.locator('#customer-map .leaflet-marker-icon').count();
         gruende = await page.locator('#map-basemap-row .map-basemap-btn').count();
+        // Die Postleitzahlgebiete als Flächen — das „Deutschlandbild". Zehn
+        // einstellige Gebiete auf der Übersichtsstufe. Ohne sie wäre die Karte
+        // wieder nur Kacheln mit Punkten darauf.
+        gebiete = await page.locator('#customer-map path.leaflet-interactive').count();
         quelle = await page
           .locator('#customer-map .leaflet-control-attribution')
           .first()
@@ -669,6 +674,7 @@ try {
     console.log(`Menüzeile „Kundenkarte"   ${zeileDa ? 'sichtbar' : 'FEHLT'}`);
     console.log(`Marker auf der Karte      ${markerZahl}`);
     console.log(`Kartengründe              ${gruende}`);
+    console.log(`PLZ-Gebiete (Flächen)     ${gebiete}`);
     console.log(
       `Quellenangabe             ${quelle.replace(/\s+/g, ' ').slice(0, 60) || '(leer)'}`
     );
@@ -677,6 +683,7 @@ try {
     console.log(`Karte schließt beim Tipp  ${karteZu ? 'ja' : 'nein'}`);
 
     pruefe(zeileDa, 'Karte: die Menüzeile fehlt, obwohl ein verorteter Kunde da ist');
+    pruefe(gebiete >= 10, `Karte: nur ${gebiete} Postleitzahlgebiete — das Deutschlandbild fehlt`);
     pruefe(markerZahl > 0, 'Karte: kein Marker — der Kunde ist ohne Koordinaten angelegt worden');
     pruefe(gruende === 3, `Karte: ${gruende} statt 3 Kartengründe (Hell · Standard · Satellit)`);
     pruefe(
@@ -686,6 +693,173 @@ try {
     pruefe(blattDa, 'Karte: der Marker öffnet kein Kundenblatt — er tut nichts');
     pruefe(maschineImBlatt, 'Karte: das Kundenblatt zeigt seine Maschinen nicht');
     pruefe(karteZu, 'Karte: der Tipp auf eine Maschine führt nicht in die Maschinenansicht');
+
+    await ctx.close();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // DER WEG HINEIN — aus dem Zustand, in dem jemand wirklich anfängt
+  //
+  // Dieser Block hat einen konkreten Anlass. Am 15.08.2026 schickte der
+  // Auftraggeber einen Screenshot: Basis-Stufe, eine Maschine, kein Kunde —
+  // und die Frage, wo denn das Deutschlandbild bleibe. Nachgemessen war die
+  // Antwort unangenehm: In genau dieser Lage war die Karte nicht erreichbar,
+  // und auch auf Profi nicht, weil sie einen Kunden voraussetzte, den nur die
+  // ebenfalls versteckten Beispieldaten geliefert hätten.
+  //
+  // Die Regel dahinter — „kein Knopf auf ein leeres graues Feld" — war
+  // richtig und ist anderswo mehrfach nützlich gewesen. Falsch war ihre
+  // Anwendung: Sie mauerte die Tür zu, statt das Feld zu füllen. Ein Weg, den
+  // es nur gibt, wenn man ihn schon gegangen ist, ist keiner.
+  //
+  // Deshalb wird hier nicht ein Knopf geprüft, sondern eine Lage: der
+  // Anfangszustand. Er ist der einzige, den JEDER durchläuft.
+  {
+    const ctx = await browser.newContext({
+      viewport: FORMATE[0].viewport,
+      hasTouch: true,
+      isMobile: true,
+      locale: 'de-DE',
+    });
+    const page = await ctx.newPage();
+    await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2000);
+
+    const stufe = await page.evaluate(() =>
+      document.documentElement.getAttribute('data-view-level')
+    );
+
+    await page.locator('#app-menu-btn').click();
+    await page.waitForTimeout(800);
+    const karteImMenue = await page
+      .locator('.info-sheet-row[data-karte]')
+      .isVisible()
+      .catch(() => false);
+    const kundenImMenue = await page
+      .locator('.info-sheet-row[data-thema="kunden"]')
+      .isVisible()
+      .catch(() => false);
+
+    let flaechen = 0;
+    let einstiegDa = false;
+    let markerNachEinstieg = 0;
+
+    if (karteImMenue) {
+      await page.locator('.info-sheet-row[data-karte]').click();
+      // Leaflet plus die Flächendatei.
+      await page.waitForTimeout(5000);
+      flaechen = await page.locator('#customer-map path.leaflet-interactive').count();
+      einstiegDa = await page
+        .locator('#map-empty')
+        .isVisible()
+        .catch(() => false);
+
+      if (einstiegDa) {
+        await page.locator('#map-empty-demo-btn').click();
+        await page.waitForTimeout(9000);
+        markerNachEinstieg = await page.locator('#customer-map .leaflet-marker-icon').count();
+      }
+    }
+
+    console.log('\n=== Weg hinein (leerer Bestand, Voreinstellung) ===');
+    console.log(`Ansichtsstufe             ${stufe}`);
+    console.log(`„Kundenkarte" im Menü     ${karteImMenue ? 'ja' : 'NEIN'}`);
+    console.log(`„Kunden" im Menü          ${kundenImMenue ? 'ja' : 'NEIN'}`);
+    console.log(`PLZ-Gebiete ohne Kunden   ${flaechen}`);
+    console.log(`Einstieg in der Karte     ${einstiegDa ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Marker nach dem Einstieg  ${markerNachEinstieg}`);
+
+    pruefe(
+      karteImMenue,
+      `Weg hinein: „Kundenkarte" fehlt im Menü auf Stufe „${stufe}" — die Karte ist aus dem Anfangszustand nicht erreichbar`
+    );
+    pruefe(
+      kundenImMenue,
+      `Weg hinein: „Kunden" fehlt im Menü auf Stufe „${stufe}" — die Beispieldaten sind ausgerechnet dem Neuling verborgen`
+    );
+    pruefe(
+      flaechen >= 10,
+      `Weg hinein: nur ${flaechen} Flächen auf der leeren Karte — ohne Kunden bliebe sie ein graues Feld statt Deutschland zu zeigen`
+    );
+    pruefe(einstiegDa, 'Weg hinein: die leere Karte bietet keinen Schritt an, der sie füllt');
+    pruefe(
+      markerNachEinstieg > 0,
+      'Weg hinein: der Knopf in der leeren Karte bringt keine Kunden auf die Karte'
+    );
+
+    await ctx.close();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // DIE QUELLENANGABE IM DIALOG
+  //
+  // Die schlimmste Entdeckung dieser Sitzung, und sie war zwei
+  // Zusammenführungen lang unbemerkt: Der Block mit der Herkunft der Daten
+  // stand seit PR #43 in `index.html` — mitten im Rumpf des Dialogs „Über
+  // SoundFuchs". Diesen Rumpf ersetzt `AboutModalController` beim Start
+  // vollständig durch eigenes Markup. Der Block war damit aus dem Dokument
+  // verschwunden, bevor ihn je jemand sehen konnte; gemessen kam er null Mal
+  // vor, nicht einmal vor dem Öffnen.
+  //
+  // Ich hatte in zwei Zusammenführungen berichtet, die Quellenangabe stehe im
+  // Dialog. Das war falsch. Bei CC BY 4.0 und ODbL ist die Nennung nicht
+  // Höflichkeit, sondern die Bedingung, unter der die Daten benutzt werden
+  // dürfen — ein stiller Ausfall ist hier kein Schönheitsfehler.
+  //
+  // Geprüft wird deshalb nicht das Markup, sondern der sichtbare Text im
+  // geöffneten Dialog. Nur das beantwortet die Frage, um die es geht: Steht
+  // die Nennung da, wo ein Mensch sie liest?
+  {
+    const ctx = await browser.newContext({ viewport: FORMATE[0].viewport, locale: 'de-DE' });
+    const page = await ctx.newPage();
+    await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2000);
+
+    await page.evaluate(() => document.getElementById('about-btn')?.click());
+    await page.waitForTimeout(1200);
+
+    const text = await page
+      .locator('#about-modal .modal-body')
+      .innerText()
+      .catch(() => '');
+    const geoNames = text.includes('GeoNames');
+    const osm = text.includes('OpenStreetMap');
+    const carto = text.includes('CARTO');
+    const esri = text.includes('Esri');
+    const standDa = /\d/.test(
+      await page
+        .locator('#about-build')
+        .innerText()
+        .catch(() => '')
+    );
+    const knopfDa = await page
+      .locator('#check-update-btn')
+      .isVisible()
+      .catch(() => false);
+
+    console.log('\n=== Quellenangabe im Dialog ===');
+    console.log(`GeoNames (CC BY 4.0)      ${geoNames ? 'genannt' : 'FEHLT'}`);
+    console.log(`OpenStreetMap (ODbL)      ${osm ? 'genannt' : 'FEHLT'}`);
+    console.log(`CARTO                     ${carto ? 'genannt' : 'FEHLT'}`);
+    console.log(`Esri                      ${esri ? 'genannt' : 'FEHLT'}`);
+    console.log(`Bauzeit                   ${standDa ? 'sichtbar' : 'FEHLT'}`);
+    console.log(`„Nach Update suchen"      ${knopfDa ? 'sichtbar' : 'FEHLT'}`);
+
+    pruefe(
+      geoNames,
+      'Quellenangabe: GeoNames wird im Dialog nicht genannt — CC BY 4.0 verlangt die Nennung'
+    );
+    pruefe(
+      osm,
+      'Quellenangabe: OpenStreetMap wird im Dialog nicht genannt — ODbL verlangt die Nennung'
+    );
+    pruefe(carto, 'Quellenangabe: CARTO wird im Dialog nicht genannt');
+    pruefe(esri, 'Quellenangabe: Esri wird im Dialog nicht genannt');
+    pruefe(
+      standDa,
+      'Version: die Bauzeit steht nicht im Dialog — dann kann niemand sehen, welche Fassung läuft'
+    );
+    pruefe(knopfDa, 'Version: der Knopf „Nach Update suchen" fehlt im Dialog');
 
     await ctx.close();
   }

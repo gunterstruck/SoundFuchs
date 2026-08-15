@@ -110,13 +110,101 @@ export class AboutModalController {
 
       <div class="about-version">
         <p><strong>${t('about.version')}</strong> ${t('about.versionNumber')}</p>
+        <p><strong>${t('about.buildLabel')}</strong> <span id="about-build">—</span></p>
         <p><strong>${t('about.developedBy')}</strong> ${t('about.developerName')}</p>
         <p><strong>${t('about.license')}</strong> ${t('about.licenseType')}</p>
         <p><strong>${t('about.stack')}</strong> ${t('about.stackTech')}</p>
+        <button type="button" class="action-btn secondary-btn" id="check-update-btn">
+          <span>${t('about.checkUpdate')}</span>
+        </button>
+        <p class="setting-status-line" id="check-update-status"></p>
       </div>
+
+      ${this.renderDatenherkunft()}
     `;
 
     this.modalBody.innerHTML = html;
+    this.zeigeStand();
+  }
+
+  /**
+   * Die Herkunft der fremden Daten — Namensnennung, nicht Höflichkeit.
+   *
+   * ── WARUM DAS HIER STEHT UND NICHT IN index.html ──────────────────────
+   *
+   * Genau dort stand es bis zum 15.08.2026, und genau dort war es wirkungslos:
+   * Dieser Controller ersetzt beim Start `modalBody.innerHTML` vollständig.
+   * Alles, was im Markup innerhalb des Dialogrumpfs steht, ist damit weg,
+   * bevor es je jemand sieht — gemessen war `.about-data` schon vor dem
+   * Öffnen null Mal im Dokument.
+   *
+   * Das ist die unangenehmste Sorte Fehler dieser Sitzung: Der Block war da,
+   * er war richtig geschrieben, er wurde in zwei Zusammenführungen als
+   * „vorhanden" gemeldet — und er erschien nie. Bei einer Lizenzbedingung ist
+   * das kein Schönheitsfehler.
+   *
+   * CC BY 4.0 (GeoNames) und ODbL (OpenStreetMap) verlangen die Nennung. Sie
+   * steht zusätzlich in NOTICE; Kacheln und Flächen nennen sich außerdem
+   * unten rechts auf der Karte selbst.
+   */
+  private renderDatenherkunft(): string {
+    const link = (url: string, text: string) =>
+      `<a href="${url}" target="_blank" rel="noopener" style="color: var(--primary-color)">${text}</a>`;
+    const osm = link('https://www.openstreetmap.org/copyright', 'OpenStreetMap-Mitwirkende');
+
+    return `
+      <div class="about-data">
+        <p class="about-data-title">${t('about.dataTitle')}</p>
+        <p>${t('about.dataPlzPlaces')}: &copy; ${link('https://www.geonames.org/', 'GeoNames')},
+          ${link('https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0')}</p>
+        <p>${t('about.dataPlzCoords')}: &copy; ${osm}, ODbL</p>
+        <p>${t('about.dataPlzAreas')}: &copy; ${osm}, ODbL, via Esri Deutschland</p>
+        <p>${t('about.dataMapTiles')}: &copy; ${osm} (ODbL),
+          ${link('https://carto.com/attributions', 'CARTO')},
+          ${link('https://www.esri.com/', 'Esri')} (Maxar, Earthstar Geographics)</p>
+      </div>
+    `;
+  }
+
+  /**
+   * Bauzeit eintragen und den Knopf verdrahten, der von Hand nachfragt.
+   *
+   * Muss nach jedem Rendern erneut geschehen: Der Rumpf wird ersetzt, und mit
+   * ihm verschwinden Element und Zuhörer.
+   */
+  private zeigeStand(): void {
+    const stand = this.modalBody?.querySelector('#about-build');
+    if (stand) {
+      try {
+        stand.textContent = new Date(__BAUZEIT__).toLocaleString(undefined, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        });
+      } catch {
+        stand.textContent = __BAUZEIT__;
+      }
+    }
+
+    const knopf = this.modalBody?.querySelector<HTMLButtonElement>('#check-update-btn');
+    const zeile = this.modalBody?.querySelector('#check-update-status');
+    knopf?.addEventListener('click', () => {
+      void (async () => {
+        knopf.disabled = true;
+        if (zeile) zeile.textContent = t('about.checkRunning');
+        const { pruefeAufUpdate } = await import('@utils/pwaUpdate.js');
+        const ergebnis = await pruefeAufUpdate();
+        if (zeile) {
+          zeile.textContent = t(
+            ergebnis === 'update-bereit'
+              ? 'about.checkFound'
+              : ergebnis === 'aktuell'
+                ? 'about.checkCurrent'
+                : 'about.checkUnavailable'
+          );
+        }
+        knopf.disabled = false;
+      })();
+    });
   }
 
   /**

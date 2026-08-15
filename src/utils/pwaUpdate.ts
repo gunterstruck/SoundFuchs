@@ -24,6 +24,37 @@ const PROMPT_COOLDOWN_MS = 24 * 60 * 60 * 1000; // nur nach ausdrücklichem „S
 const CHECK_INTERVAL_MS = 60 * 60 * 1000; // stündlich, solange die App offen ist
 const FOCUS_CHECK_THROTTLE_MS = 5 * 60 * 1000; // beim Zurückkommen, aber nicht ständig
 
+/**
+ * Die Anmeldung des Service Workers, sobald sie vorliegt.
+ *
+ * Sie wird für die Prüfung von Hand gebraucht (Knopf im Dialog „Über
+ * SoundFuchs"). Ohne diesen Weg bleibt einem nur warten und hoffen — und
+ * genau das war die Klage: „Sonst hab ich immer Probleme, die aktuelle
+ * Version zu haben." Eine Frage, die man selbst stellen kann, ist die halbe
+ * Antwort; die andere Hälfte ist die Bauzeit, die im selben Dialog steht.
+ */
+let anmeldung: ServiceWorkerRegistration | null = null;
+
+/** Ergebnis einer Prüfung von Hand. */
+export type Updateergebnis = 'update-bereit' | 'aktuell' | 'nicht-verfuegbar';
+
+/**
+ * Von Hand nachsehen, ob eine neue Fassung bereitliegt.
+ *
+ * Antwortet immer — auch mit „aktuell". Ein Knopf, der bei Erfolg schweigt,
+ * ist von einem kaputten nicht zu unterscheiden.
+ */
+export async function pruefeAufUpdate(): Promise<Updateergebnis> {
+  if (!anmeldung) return 'nicht-verfuegbar';
+  try {
+    await anmeldung.update();
+  } catch (fehler) {
+    logger.warn('Update-Prüfung fehlgeschlagen', fehler);
+    return 'nicht-verfuegbar';
+  }
+  return anmeldung.waiting || anmeldung.installing ? 'update-bereit' : 'aktuell';
+}
+
 export function initPwaUpdate(): void {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 
@@ -40,6 +71,7 @@ export function initPwaUpdate(): void {
     },
     onRegisteredSW(_swUrl, registration) {
       if (!registration) return;
+      anmeldung = registration; // für die Prüfung von Hand
       const check = () => void registration.update().catch(() => {});
 
       // Gleich beim Start einmal nachsehen. Ohne das erfährt eine App, die

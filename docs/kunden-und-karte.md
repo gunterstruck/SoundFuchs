@@ -250,3 +250,81 @@ einzeln auf statt sie generisch zu behandeln; „kunden" fehlte zunächst in
 dieser Liste, der Dialog zeigte beim Test klaglos _alles_ statt nur der
 eigenen Kategorie, und kein einzelner Sichtbarkeits-Check hätte das bemerkt,
 weil der eigene Knopf ja trotzdem da war.
+
+## 8. Was am 15.08.2026 nachgezogen wurde
+
+Der Auftraggeber schickte einen Screenshot — Basis-Stufe, eine Maschine, kein
+Kunde — mit zwei Fragen: Wo bleibt der Update-Hinweis, und wo das
+Deutschlandbild mit den Postleitzahlengebieten? Nachgemessen brachte das drei
+Befunde, zwei davon eigene Fehler.
+
+### Die Karte war aus dem Anfangszustand nicht erreichbar
+
+Gemessen in genau der Lage des Screenshots: Weder „Kundenkarte" noch „Kunden"
+standen im Menü. Auf Profi erschienen die Beispieldaten — die Karte blieb
+trotzdem verborgen, weil sie einen verorteten Kunden voraussetzte.
+
+Eine Falle mit eigener Handschrift: Die Zeile war absichtlich versteckt, nach
+der Regel „kein Knopf auf ein leeres graues Feld", die hier schon fünf echte
+Fehler gefunden hatte. Die Regel stimmt. Ihre Anwendung war falsch — sie
+mauerte die Tür zu, statt das Feld zu füllen. Ein Weg, den es nur gibt, wenn
+man ihn schon gegangen ist, ist keiner.
+
+Jetzt steht die Karte immer im Menü, zeigt auch ohne Kunden Deutschland mit
+seinen Gebieten und bietet darin den Schritt an, der sie füllt. Die
+Beispieldaten stehen auf jeder Stufe, auch auf Basis — sie sind für den
+Neuling da, und der ist per Voreinstellung auf Basis. Der Import bleibt Profi.
+
+### Das Deutschlandbild fehlte
+
+Die Karte zeigte Kacheln mit Punkten darauf, aber keine Gebiete. Übernommen
+sind jetzt `plz1.geojson` (10 Flächen, 298 KB) und `plz2.geojson` (95 Flächen,
+803 KB) aus TourFuchs, zoomabhängig gestaffelt wie dort. Die feineren
+Zuschnitte (2,4 MB und 5,1 MB) bleiben draußen: Auf drei- oder fünfstelliger
+Ebene sucht man einen einzelnen Kunden, und dafür ist die Liste da.
+
+Eingefärbt wird nach der Zahl der Maschinen im Gebiet — dort, wo TourFuchs den
+Umsatz eines Vertriebsbezirks zeigt. Über die Wurzel, nicht linear: Sonst
+bliebe bei einem Gebiet mit 40 Maschinen jedes andere fast unsichtbar. Leere
+Gebiete bleiben ungefüllt, aber sichtbar; das Bild soll ganz Deutschland
+zeigen, nicht nur die Ecke, in der man angefangen hat.
+
+Dazu kam **Clustering** (`leaflet.markercluster`, wie TourFuchs): Beim ersten
+Versuch deckten 100 einzelne Marker das Land vollständig zu — ausgerechnet das
+Deutschlandbild, um das es ging, verschwand unter einem Teppich aus Punkten.
+
+### Die Quellenangabe war nie sichtbar
+
+Der unangenehmste Befund. Der Block mit der Herkunft der Daten stand seit
+Schnitt 1 in `index.html`, mitten im Rumpf des Dialogs „Über SoundFuchs" —
+und `AboutModalController` ersetzt genau diesen Rumpf beim Start vollständig
+durch eigenes Markup. Gemessen kam `.about-data` null Mal im Dokument vor,
+nicht einmal vor dem Öffnen.
+
+Ich hatte in zwei Zusammenführungen berichtet, die Nennung stehe im Dialog.
+Das war falsch. Bei CC BY 4.0 und ODbL ist sie die Bedingung der Nutzung. Sie
+steht jetzt im Controller, wo sie das Rendern überlebt, und `attention-check`
+liest den **sichtbaren Text** des geöffneten Dialogs statt das Markup.
+
+### Zur Update-Frage
+
+Der Mechanismus aus Schnitt „Update-Hinweis" ist unverändert richtig, aber er
+kann erst wirken, sobald das Gerät eine Fassung installiert hat, die ihn
+enthält — bis dahin gilt die alte Logik auf dem Telefon. Diese
+Bootstrap-Lücke lässt sich nicht schließen, wohl aber die dahinterliegende
+Frage beantworten: „Läuft hier das Neueste?"
+
+Dafür steht jetzt die **Bauzeit** im Dialog (eine feste „2.0.0" mit „2.0.0" zu
+vergleichen hilft niemandem, zwei Zeitpunkte zu vergleichen schon) und
+daneben ein Knopf, der von Hand nachfragt. Er antwortet immer, auch mit
+„Diese Fassung ist die aktuelle" — ein Knopf, der bei Erfolg schweigt, ist von
+einem kaputten nicht zu unterscheiden.
+
+### Ein Wettlauf, den erst die Messung zeigte
+
+Beim Prüfen zählte `attention-check` 190 Flächen statt 95. Ursache: `oeffne()`
+ruft `zeichneKunden()`, das per `fitBounds` den Zoom ändert und damit
+`zoomend` auslöst — und ruft danach selbst `zeichneGebiete()`. Beide Läufe
+standen vor einem noch leeren Merker, luden beide und legten beide ihre Ebene
+auf die Karte. Nichts stürzte ab, nichts meldete sich; nur die gezählten
+Flächen verrieten es. Der Platz wird jetzt vor dem ersten `await` belegt.

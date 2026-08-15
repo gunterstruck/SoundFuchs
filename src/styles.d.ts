@@ -8,3 +8,11 @@
  * damit genau das aufheben, weswegen die Karte nachgeladen wird.
  */
 declare module '*.css';
+
+/**
+ * Zeitpunkt des Baus, von Vite eingesetzt (`define` in vite.config.ts).
+ *
+ * Er beantwortet im Dialog „Über SoundFuchs" die Frage, die eine feste
+ * Versionsnummer nicht beantworten kann: Läuft hier wirklich das Neueste?
+ */
+declare const __BAUZEIT__: string;

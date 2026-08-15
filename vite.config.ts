@@ -10,8 +10,21 @@ import path from 'path';
 // dieselbe App bedeuten zwei Staende, die auseinanderlaufen.
 const base = '/';
 
+/**
+ * Der Zeitpunkt dieses Baus, als Kennzeichen der laufenden Fassung.
+ *
+ * „Version 2.0.0" steht seit Monaten in package.json und beantwortet die
+ * Frage nicht, die jemand vor dem Gerät wirklich hat: Läuft hier das Neueste?
+ * Zwei Ziffernfolgen zu vergleichen geht; „2.0.0" mit „2.0.0" zu vergleichen
+ * geht nicht. Deshalb kommt eine Angabe dazu, die sich bei jedem Bau ändert.
+ */
+const bauzeit = new Date().toISOString();
+
 export default defineConfig({
   base,
+  define: {
+    __BAUZEIT__: JSON.stringify(bauzeit),
+  },
   resolve: {
     alias: {
       '@core': path.resolve(__dirname, './src/core'),
@@ -118,12 +131,22 @@ export default defineConfig({
             },
           },
           {
-            // PLZ-Daten (~400 KB) genauso: nicht im Vorrat, aber nach dem
-            // ersten Gebrauch dauerhaft da. Wer nie einen Kunden anlegt, lädt
-            // sie nie; wer einen anlegt, kann danach auch ohne Empfang
-            // verorten. Die Dateien ändern sich praktisch nie — deshalb
-            // CacheFirst statt StaleWhileRevalidate.
-            urlPattern: /\/geodata\/.*\.json$/i,
+            // PLZ-Daten genauso: nicht im Vorrat, aber nach dem ersten
+            // Gebrauch dauerhaft da. Wer nie einen Kunden anlegt, lädt sie
+            // nie; wer einen anlegt, kann danach auch ohne Empfang verorten.
+            // Die Dateien ändern sich praktisch nie — deshalb CacheFirst
+            // statt StaleWhileRevalidate.
+            //
+            // Das `geo` im Muster ist nicht kosmetisch: Die Flächendateien
+            // heißen `plz1.geojson`, und `\.json$` trifft davon kein Zeichen
+            // — die Endung ist „geojson", nicht „.json". Ohne diesen Zusatz
+            // liefe die Karte ohne Empfang ohne ihre Gebiete, und zwar
+            // stillschweigend.
+            //
+            // Umfang: plz-centroids 226 KB, plz-places 175 KB, plz1 298 KB,
+            // plz2 803 KB — zusammen gut 1,5 MB, aber nur für den, der die
+            // Karte wirklich öffnet.
+            urlPattern: /\/geodata\/.*\.(json|geojson)$/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'geodata-cache',
@@ -165,6 +188,9 @@ export default defineConfig({
           // oben (globIgnores + runtimeCaching) daran greifen können. Ohne den
           // festen Namen hinge das Auslassen aus dem Vorrat daran, wie Rollup
           // die Datei zufällig benennt.
+          //
+          // Das Muster fasst `leaflet` und `leaflet.markercluster` zusammen —
+          // die Stapel gehören zur Karte und werden nie ohne sie gebraucht.
           if (id.includes('node_modules/leaflet')) {
             return 'leaflet';
           }

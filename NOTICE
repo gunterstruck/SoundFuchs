@@ -74,6 +74,7 @@ Diese Lizenzen gelten unabhaengig von der MIT-Lizenz dieses Projekts fort.
 - qrcode ............................. MIT ........... (c) Ryan Day
 - Leaflet ............................ BSD-2-Clause .. (c) Volodymyr Agafonkin,
                                                       CloudMade
+- Leaflet.markercluster .............. MIT ........... (c) Dave Leaver
 
 Die Werkzeuge der Entwicklungsumgebung (Vite, TypeScript, ESLint, Prettier,
 Vitest, vite-plugin-pwa/Workbox) sind nicht Bestandteil der ausgelieferten
@@ -99,6 +100,10 @@ MIT-Lizenz dieses Projekts fort:
 
 - PLZ-Koordinaten (public/geodata/plz-centroids.json)
   (c) OpenStreetMap-Mitwirkende, ODbL
+  https://www.openstreetmap.org/copyright
+
+- PLZ-Gebiete als Flaechen (public/geodata/plz1.geojson, plz2.geojson)
+  (c) OpenStreetMap-Mitwirkende, ODbL, via Esri Deutschland Open Data
   https://www.openstreetmap.org/copyright
 
 Fuer die Kundenkarte werden Kacheln aus dem Netz geladen. Sie liegen nicht
