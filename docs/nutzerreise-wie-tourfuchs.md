@@ -71,6 +71,98 @@ Für SoundFuchs heißt „beim Arbeiten": eine Maschine ist gewählt, eine Prüf
 beginnt. Keine eigene Erfindung nötig — und der Einwand mit der grauen Fläche
 ist damit auch erledigt.
 
+---
+
+## 0c. Fassung 3: die wichtigste Korrektur
+
+Fassung 2 bildete TourFuchs' Reiter _Tour_ auf einen Reiter _Prüfen_ ab —
+derselbe Dreischritt, andere Sache. Formal richtig, inhaltlich falsch.
+
+**SoundFuchs entspricht nicht dem Tour-Reiter, sondern dem Briefing-Knopf.**
+
+In TourFuchs trägt jedes Kunden-Popup unten eine Knopfreihe
+(`customerPopupHtml`, `src/features/map.js`):
+
+```
+🚩 Als Start   🏁 Als Ziel   ➕ Zur Tour   📋 Briefing
+```
+
+Die ersten drei planen die Route. Der vierte öffnet die eigentliche Tiefe:
+einen Dialog, dessen Umfang die Ansichtstiefe steuert
+(`customerBriefingFlow(depth)` → `manual` oder `choice`).
+
+Genau dort sitzt SoundFuchs. Nur nicht mit _einem_ Knopf je Kunde, sondern mit
+**einem Knopf je Maschine** — und dahinter entfaltet sich per semantischem
+Zoom der ganze Prüfablauf.
+
+| TourFuchs · Kunden-Popup    | SoundFuchs · Standort-Popup          |
+| --------------------------- | ------------------------------------ |
+| Müller Guss GmbH            | Müller Guss GmbH                     |
+| 45127 Essen · ca. PLZ-Mitte | 45127 Essen · ca. PLZ-Mitte          |
+| ~~🚩 Als Start~~            | 🎧 Pumpe 17 · 94 %                   |
+| ~~🏁 Als Ziel~~             | 🎧 Lüfter West · 71 %                |
+| ~~➕ Zur Tour~~             | 🎧 Kompressor 3 · Referenz fehlt     |
+| **📋 Briefing**             | _je Maschine ein Knopf in die Tiefe_ |
+
+Damit steht auch, warum der Reiter _Tour_ ersatzlos entfällt und nicht
+umgedeutet wird: Er plant Wege, SoundFuchs hat keine. Und das Prüfen einer
+einzelnen Maschine ist **kein Reiter** — es liegt hinter dem Maschinenknopf im
+Popup und ebenso hinter der Maschinenzeile im Reiter „Daten", damit der Weg
+auch ohne Empfang trägt.
+
+---
+
+## 0d. Standort statt Kunde
+
+Ein Ort trägt **Name, Postleitzahl, Stadt** und die Maschinen, die dort
+stehen. Der Name muss keine Firma sein; _zu Hause_ ist ein zulässiger
+Standort.
+
+Deshalb heißt die Sache künftig **Standort**, nicht Kunde. Das ist keine
+Kosmetik: „Kunde" verspricht Handel — Umsatz, Vertrag, Ansprechpartner —, und
+genau das trägt SoundFuchs ausdrücklich nicht. „Standort" verspricht einen
+Ort, und mehr ist es auch nicht. Der schmale Datensatz ist dann kein
+beschnittener Kunde, sondern ein vollständiger Standort.
+
+Kosten: Umbenennen in Oberfläche und Sprachdateien, die Datenstruktur bleibt.
+Die Brücke zu TourFuchs trägt weiter — ein TourFuchs-Kunde _ist_ ein Standort,
+nur einer mit mehr daran.
+
+---
+
+## 0e. Die Flotte ist nicht gleichrangig
+
+Fassung 2 füllte TourFuchs' Modus-Schalter mit „Prüfen · Flotte". **Falsch.**
+Die Flotte steht nicht neben dem Prüfen einer Maschine, sie ist ein Sonderfall
+davon. Der Modus-Schalter bekommt damit keinen Inhalt und entfällt — wie in
+Fassung 1, diesmal aus dem richtigen Grund.
+
+Stattdessen zwei Funktionen im Blatt. Beide gibt es heute schon, nur an
+prominenter falscher Stelle:
+
+| Funktion                   | Was sie tut                                                                                       | Heute                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| **Flotte aus dem Bestand** | Aus den bekannten Maschinen eine Flotte zusammenstellen und prüfen                                | „Flottencheck", Umschalter mitten in der Maschinenliste |
+| **Flotte ohne Bestand**    | Mehrere unbekannte Maschinen vergleichen, ohne sie anzulegen — der Standort darf schon feststehen | „Schnellvergleich — Maschinen vergleichen ohne Setup"   |
+
+Beide ziehen ins Blatt, dorthin, wo TourFuchs seinen Besuchsplaner hat. Damit
+ist der Tour-Platz doch besetzt — aber mit dem, was der Auftrag dorthin
+stellt, nicht mit einer Umdeutung: Beide sammeln erst eine Menge zusammen und
+arbeiten sie dann ab, dieselbe Form wie „Vorschläge → meine Tour".
+
+---
+
+## 0f. Die Live-Demos
+
+TourFuchs' Schaufenster führt echte Klicks durch die laufende App. Für
+SoundFuchs passt davon inhaltlich noch nichts — die Reise, die sie zeigen
+müssten, entsteht ja gerade erst.
+
+**Beschluss: Platzhalter.** Die Stelle im Blatt bleibt vorgesehen und leer;
+welche Demos sinnvoll sind, wird entschieden, wenn die Reiter stehen. Eine
+Demo, die eine Reise zeigt, die es noch nicht gibt, wäre nur eine weitere
+Sache, die man später wegwirft.
+
 ## 1. Was ich falsch verstanden hatte
 
 Bis heute früh habe ich „wie TourFuchs" als **Aussehen** gelesen: dieselben
