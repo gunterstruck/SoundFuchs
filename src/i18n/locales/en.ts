@@ -171,6 +171,18 @@ export const en: TranslationDict = {
   },
 
   map: {
+    stackTitle: '{{count}} machine sites – tap to zoom in',
+    stackUnit: 'sites',
+    openDetails: 'Open details',
+    openSite: 'Open machine site',
+    demoBadge: 'Demo',
+    noMachinesShort: 'no machine yet',
+    machineCount: '{{count}} machines',
+    machineCountOne: '1 machine',
+    stateHealthy: 'Normal',
+    stateWarning: 'Noticeable',
+    stateCritical: 'Critical',
+    stateUnchecked: 'Unchecked',
     basemapLabel: 'Map style',
     title: 'Site map',
     tileLight: 'Light',

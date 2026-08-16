@@ -702,6 +702,8 @@ try {
     let blattDa = false;
     let maschineImBlatt = false;
     let karteZu = false;
+    let scharnierIstKnopf = false;
+    let scharnierOeffnet = false;
 
     if (inListe) {
       await page.locator('#btn-info').click();
@@ -728,21 +730,51 @@ try {
 
         if (markerZahl > 0) {
           await page.locator('#map .leaflet-marker-icon').first().click();
-          await page.waitForTimeout(800);
+          await page.waitForTimeout(900);
           blattDa = await page
-            .locator('#customer-sheet')
+            .locator('.leaflet-popup-content .popup-customer')
             .isVisible()
             .catch(() => false);
-          const reihe = page.locator('.customer-machine-row', { hasText: 'Pumpe 17' }).first();
+
+          // DAS SCHARNIER
+          //
+          // Der Auftraggeber hat den Übergang an genau einem Element
+          // festgemacht: dem klickbaren Namen. Deshalb wird hier nicht
+          // geprüft, dass irgendwo der Name steht, sondern dass er ein KNOPF
+          // ist — eine Überschrift mit `onclick` sähe gleich aus, wäre für
+          // Tastatur und Vorlesewerkzeuge aber keine Tür.
+          scharnierIstKnopf =
+            (await page.evaluate(
+              () => document.querySelector('.popup-customer .popup-scharnier')?.tagName ?? ''
+            )) === 'BUTTON';
+
+          const reihe = page.locator('.popup-customer .rl-row', { hasText: 'Pumpe 17' }).first();
           maschineImBlatt = await reihe.isVisible().catch(() => false);
 
+          if (scharnierIstKnopf) {
+            await page.locator('.popup-customer .popup-scharnier').first().click();
+            await page.waitForTimeout(900);
+            scharnierOeffnet = await page.evaluate(() =>
+              document.body.classList.contains('tiefe-offen')
+            );
+            // Wieder heraus, damit der nächste Griff die Karte vorfindet.
+            await page
+              .locator('.tiefe-zurueck')
+              .click({ force: true })
+              .catch(() => {});
+            await page.waitForTimeout(700);
+          }
+
           if (maschineImBlatt) {
-            await reihe.click();
+            await page.locator('#map .leaflet-marker-icon').first().click();
+            await page.waitForTimeout(900);
+            await page
+              .locator('.popup-customer .rl-row', { hasText: 'Pumpe 17' })
+              .first()
+              .click({ force: true })
+              .catch(() => {});
             await page.waitForTimeout(1200);
-            karteZu = !(await page
-              .locator('#customer-map-modal')
-              .isVisible()
-              .catch(() => true));
+            karteZu = await page.evaluate(() => document.body.classList.contains('tiefe-offen'));
           }
         }
       }
@@ -756,9 +788,11 @@ try {
     console.log(
       `Quellenangabe             ${quelle.replace(/\s+/g, ' ').slice(0, 60) || '(leer)'}`
     );
-    console.log(`Standortblatt             ${blattDa ? 'sichtbar' : 'NICHT sichtbar'}`);
-    console.log(`Maschine im Blatt         ${maschineImBlatt ? 'sichtbar' : 'NICHT sichtbar'}`);
-    console.log(`Karte schließt beim Tipp  ${karteZu ? 'ja' : 'nein'}`);
+    console.log(`Standort-Popup            ${blattDa ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Name ist ein Knopf        ${scharnierIstKnopf ? 'ja' : 'NEIN'}`);
+    console.log(`Name öffnet die Tiefe     ${scharnierOeffnet ? 'ja' : 'NEIN'}`);
+    console.log(`Maschine im Popup         ${maschineImBlatt ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Maschinenzeile führt rein ${karteZu ? 'ja' : 'nein'}`);
 
     pruefe(zeileDa, 'Karte: die Menüzeile fehlt, obwohl ein verorteter Standort da ist');
     pruefe(gebiete >= 10, `Karte: nur ${gebiete} Postleitzahlgebiete — das Deutschlandbild fehlt`);
@@ -771,8 +805,16 @@ try {
       quelle.includes('OpenStreetMap'),
       'Karte: die Quellenangabe der Kacheln fehlt — sie ist Bedingung der Nutzung, kein Schmuck'
     );
-    pruefe(blattDa, 'Karte: der Marker öffnet kein Standortblatt — er tut nichts');
-    pruefe(maschineImBlatt, 'Karte: das Standortblatt zeigt seine Maschinen nicht');
+    pruefe(blattDa, 'Karte: der Marker öffnet kein Standort-Popup — er tut nichts');
+    pruefe(
+      scharnierIstKnopf,
+      'Scharnier: der Maschinenstandortname ist kein Knopf — der Übergang hängt genau an ihm'
+    );
+    pruefe(
+      scharnierOeffnet,
+      'Scharnier: der Name lässt sich drücken, führt aber nirgendwohin'
+    );
+    pruefe(maschineImBlatt, 'Karte: das Standort-Popup zeigt seine Maschinen nicht');
     pruefe(karteZu, 'Karte: der Tipp auf eine Maschine führt nicht in die Maschinenansicht');
 
     await ctx.close();

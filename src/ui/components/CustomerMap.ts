@@ -37,12 +37,7 @@ import type {
   GeoJSON as GeoJSONLayer,
   LayerGroup,
 } from 'leaflet';
-import {
-  getAllCustomers,
-  getAllMachines,
-  getMachinesForCustomer,
-  getLatestDiagnosis,
-} from '@data/db.js';
+import { getAllCustomers, getAllMachines } from '@data/db.js';
 import { logger } from '@utils/logger.js';
 import { t } from '../../i18n/index.js';
 import {
@@ -60,14 +55,59 @@ import {
   fuellstaerke,
   type Gebietsstufe,
 } from '../../services/plzGebiete.js';
-import { ladeBestandsuebersicht } from '../../services/bestandsuebersicht.js';
+import {
+  ladeBestandsuebersicht,
+  zustandZuWert,
+  type Zustand,
+  type StandortStand,
+} from '../../services/bestandsuebersicht.js';
+import {
+  markerstufe,
+  markerstufeKlasse,
+  standortname,
+  stapelradius,
+  stapelbefund,
+  farbeFuerZustand,
+  MARKERSTUFEN,
+} from '../../stamm/features/standortmarker.js';
+import { istBlatt } from '../../stamm/ui/schale.js';
 import { passt, FILTER_EVENT } from '../shell/standortfilter.js';
-import type { Customer, Machine } from '@data/types.js';
+import type { Machine } from '@data/types.js';
 
 /** Was der Aufrufer bereitstellen muss. */
 export interface KundenkarteDeps {
   /** Eine Maschine öffnen — führt in die Ansicht, die es längst gibt. */
   zeigeMaschine: (machine: Machine) => void;
+  /**
+   * Das Scharnier: den Maschinenstandort öffnen.
+   *
+   * Die Karte weiß nicht, was dahinter liegt, und soll es nicht wissen. Sie
+   * kennt den Namen, den man angetippt hat, und gibt ihn weiter.
+   */
+  zeigeStandort: (standortId: string) => void;
+}
+
+/**
+ * Der Zustand als Wort.
+ *
+ * Ausgeschrieben und nicht als `t(`map.state.${zustand}`)`: `check-i18n`
+ * sammelt die benutzten Schlüssel über ein Textmuster auf `t('…')`. Ein
+ * Schlüssel, der erst zur Laufzeit entsteht, ist für die Prüfung unsichtbar —
+ * er fehlt dann irgendwann in einer Sprache, und in der Oberfläche steht
+ * wörtlich „map.state.warnung". Vier Zeilen sind der Preis dafür, dass das
+ * Werkzeug seine Arbeit tun kann.
+ */
+function zustandswort(zustand: Zustand): string {
+  switch (zustand) {
+    case 'gesund':
+      return t('map.stateHealthy');
+    case 'warnung':
+      return t('map.stateWarning');
+    case 'kritisch':
+      return t('map.stateCritical');
+    default:
+      return t('map.stateUnchecked');
+  }
 }
 
 function escape(text: string): string {
@@ -172,7 +212,23 @@ export class CustomerMap {
     this.karte?.flyTo([kunde.lat, kunde.lng], Math.max(this.karte.getZoom(), 10), {
       duration: 0.7,
     });
-    await this.zeigeKundenblatt(kunde);
+
+    // Das Popup hängt am Marker, nicht an der Karte — also den Marker suchen
+    // und ihn selbst aufmachen. Er kann in einem Stapel stecken; dann holt
+    // `zoomToShowLayer` ihn erst heraus, sonst öffnete sich ein Popup an einer
+    // Stelle, an der kein Punkt zu sehen ist.
+    const marker = this.marker.find(
+      (m) => m.options.title === standortname(kunde.name, { demo: Boolean(kunde.demo) })
+    );
+    if (!marker) return;
+    const gruppe = this.stapel as unknown as {
+      zoomToShowLayer?: (m: unknown, cb: () => void) => void;
+    } | null;
+    if (typeof gruppe?.zoomToShowLayer === 'function') {
+      gruppe.zoomToShowLayer(marker, () => marker.openPopup());
+    } else {
+      marker.openPopup();
+    }
   }
 
   /**
@@ -216,7 +272,11 @@ export class CustomerMap {
 
     // Beim Zoomen wechselt der Zuschnitt: zehn grobe Gebiete in der
     // Übersicht, 95 feinere beim Hineinzoomen.
-    this.karte.on('zoomend', () => void this.zeichneGebiete());
+    this.karte.on('zoomend', () => {
+      void this.zeichneGebiete();
+      this.markerstufeAnwenden();
+    });
+    this.markerstufeAnwenden();
 
     // Der Filter verkleinert die Menge auf der Karte. Er wird woanders
     // gestellt (Reiter „Filter"), und die Karte hört zu — sie muss dafür
@@ -356,6 +416,27 @@ export class CustomerMap {
   }
 
   /**
+   * Progressive Offenlegung: Wie viel zeigt ein Marker bei diesem Zoom?
+   *
+   * Aus dem Stamm (`syncCustomerMarkerMode`). Erst Orientierung — ein
+   * anonymer Punkt —, dann ein anklickbares Kärtchen, dann der Name, zuletzt
+   * der Zusatz. Entschieden wird das **nicht** im Marker, sondern mit einer
+   * Klasse am Kartenbehälter: Sonst müsste jeder Marker bei jeder Zoomstufe
+   * neu gebaut werden, und bei hundert Standorten sieht man das.
+   *
+   * Deshalb trägt jeder Marker immer alle vier Teile, und das Stamm-CSS
+   * blendet ein, was gerade dran ist.
+   */
+  private markerstufeAnwenden(): void {
+    if (!this.karte) return;
+    const behaelter = this.karte.getContainer();
+    for (const stufe of MARKERSTUFEN) behaelter.classList.remove(markerstufeKlasse(stufe));
+    behaelter.classList.add(
+      markerstufeKlasse(markerstufe(this.karte.getZoom(), { mobil: istBlatt() }))
+    );
+  }
+
+  /**
    * Die Stapelgruppe, einmal angelegt und dann wiederverwendet.
    *
    * `leaflet.markercluster` hängt sich beim Laden an Leaflet an — es erweitert
@@ -377,14 +458,37 @@ export class CustomerMap {
       minClusterSize: 5,
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
-      maxClusterRadius: 45,
-      iconCreateFunction: (stapel: { getChildCount: () => number }) =>
-        L.divIcon({
-          className: 'customer-cluster-wrapper',
-          html: `<div class="customer-cluster"><strong>${stapel.getChildCount()}</strong></div>`,
-          iconSize: [38, 38],
-          iconAnchor: [19, 19],
-        }),
+      spiderfyDistanceMultiplier: istBlatt() ? 1.85 : 1.2,
+      spiderLegPolylineOptions: { weight: 2, color: '#0f766e', opacity: 0.65 },
+      // Aus dem Stamm: der Radius hängt an der Zoomstufe. Vorher stand hier
+      // eine feste 45 — dieselbe Zahl für Deutschland und für eine Straße, und
+      // damit überall ein bisschen falsch.
+      maxClusterRadius: (zoom: number) => stapelradius(zoom, { mobil: istBlatt() }),
+      iconCreateFunction: (stapel: {
+        getChildCount: () => number;
+        getAllChildMarkers: () => { options?: { zanoboZustand?: Zustand } }[];
+      }) => {
+        // Die Farbe des Stapels kommt vom schlechtesten Standort darin. Der
+        // Zustand hängt am Marker selbst, damit der Stapel ihn nicht erneut
+        // aus der Datenbank holen muss — er wird beim Zeichnen mitgegeben.
+        const zustaende = stapel
+          .getAllChildMarkers()
+          .map((m) => m.options?.zanoboZustand ?? 'ungeprueft');
+        const befund = stapelbefund(zustaende);
+        const titel = t('map.stackTitle', { count: String(befund.anzahl) });
+        return L.divIcon({
+          className: 'cluster-wrapper',
+          html:
+            `<div class="customer-stack-card" style="--stack-color:${befund.farbe};` +
+            `--stack-accent:${befund.farbe}" role="button" aria-label="${escape(titel)}" ` +
+            `title="${escape(titel)}">` +
+            `<span class="customer-stack-accent"></span>` +
+            `<strong>${befund.anzahl}</strong><small>${escape(t('map.stackUnit'))}</small>` +
+            `</div>`,
+          iconSize: [48, 46],
+          iconAnchor: [24, 23],
+        });
+      },
     });
     this.karte?.addLayer(this.stapel);
     return this.stapel;
@@ -465,8 +569,11 @@ export class CustomerMap {
     // Weitere danach auf `customersOnMap()` arbeitet. Ohne laufende Schale ist
     // die Übersicht ungefiltert, und diese Zeile kostet einen Durchlauf.
     const uebersicht = await ladeBestandsuebersicht();
-    const kunden = uebersicht.filter((e) => passt(e)).map((e) => e.kunde);
-    const verortet = kunden.filter((k) => k.geo === 'plz' && k.lat != null && k.lng != null);
+    const sichtbar = uebersicht.filter((e) => passt(e));
+    const kunden = sichtbar.map((e) => e.kunde);
+    const verortet = sichtbar.filter(
+      (e) => e.kunde.geo === 'plz' && e.kunde.lat != null && e.kunde.lng != null
+    );
 
     // ── WARUM GESTAPELT WIRD ─────────────────────────────────────────────
     //
@@ -483,23 +590,46 @@ export class CustomerMap {
     const gruppe = await this.holeStapelgruppe(L);
     gruppe.clearLayers();
 
-    for (const kunde of verortet) {
+    for (const stand of verortet) {
+      const kunde = stand.kunde;
       const ort = [kunde.plz, kunde.ort].filter(Boolean).join(' ');
+
+      // Der Zusatz unter dem Namen sagt, was hier steht — und wie es darum
+      // bestellt ist. Im Stamm steht an dieser Stelle der Besuchsrhythmus;
+      // die Form (Ort · Kontext) ist dieselbe.
+      const zusatz = [ort, this.maschinenzeile(stand.maschinen.length, stand.zustand)]
+        .filter(Boolean)
+        .join(' · ');
+
+      const anzeigename = standortname(kunde.name, { demo: Boolean(kunde.demo) });
       const marker = L.marker([kunde.lat!, kunde.lng!], {
         icon: L.divIcon({
           className: 'customer-marker-wrapper',
+          // Aufbau eins zu eins aus dem Stamm (`customerMarkerIcon`): Karte,
+          // Akzent, Symbol, Beschriftung. Welcher Teil davon zu sehen ist,
+          // entscheidet allein die Klasse am Kartenbehälter — deshalb steht
+          // hier immer alles, auch auf der Punktstufe.
           html:
-            `<div class="customer-marker-card approx" aria-hidden="true">` +
+            `<div class="customer-marker-card${kunde.geo === 'plz' ? ' approx' : ''}" ` +
+            `style="--marker-color:${farbeFuerZustand(stand.zustand)}" aria-hidden="true">` +
+            `<span class="customer-marker-accent"></span>` +
             `<span class="customer-marker-symbol"></span>` +
-            `<span class="customer-marker-copy"><b>${escape(kunde.name)}</b>` +
-            `<small>${escape(ort)}</small></span></div>`,
-          iconSize: [26, 26],
-          iconAnchor: [13, 13],
+            `<span class="customer-marker-copy"><b>${escape(anzeigename)}</b>` +
+            `<small>${escape(zusatz || t('map.openDetails'))}</small></span></div>`,
+          iconSize: istBlatt() ? [44, 44] : [28, 28],
+          iconAnchor: istBlatt() ? [22, 22] : [14, 14],
         }),
-        title: kunde.name,
-      });
+        title: anzeigename,
+        // Reist mit dem Marker, damit der Stapel seine Farbe bestimmen kann,
+        // ohne die Datenbank ein zweites Mal zu fragen.
+        zanoboZustand: stand.zustand,
+      } as L.MarkerOptions & { zanoboZustand: Zustand });
 
-      marker.on('click', () => void this.zeigeKundenblatt(kunde));
+      marker.bindPopup(this.standortPopup(stand), {
+        maxWidth: 300,
+        className: 'customer-detail-popup',
+        autoPanPadding: [16, 16],
+      });
       gruppe.addLayer(marker);
       this.marker.push(marker);
     }
@@ -517,7 +647,7 @@ export class CustomerMap {
     // klebt man bei einem einzigen Standort auf Straßenebene. Die Polsterung
     // hält Kopfstreifen und Blatt frei, siehe `freieFlaeche()`.
     if (verortet.length > 0) {
-      const punkte = verortet.map((k) => [k.lat!, k.lng!] as [number, number]);
+      const punkte = verortet.map((e) => [e.kunde.lat!, e.kunde.lng!] as [number, number]);
       const rand = this.freieFlaeche();
       this.karte.fitBounds(L.latLngBounds(punkte).pad(0.25), {
         maxZoom: 11,
@@ -572,86 +702,162 @@ export class CustomerMap {
   }
 
   /**
-   * Das Blatt des Kunden: Name, Ort, seine Maschinen.
+   * Ein Wort zu den Maschinen: wie viele, und wie es ihnen geht.
    *
-   * Statt Umsatz und Kanal — das führt TourFuchs, dort gehört es hin — steht
-   * hier, was in dieser App zählt: welche Maschinen bei ihm stehen und wie es
-   * ihnen geht. Ein Tipp auf eine Zeile führt in die Maschinenansicht, die es
-   * längst gibt. Kein neues Blatt, kein zweiter Weg.
+   * Im Stamm steht an dieser Stelle der Besuchsrhythmus („alle 4 Wochen"). Die
+   * Form ist dieselbe — ein kurzer Zusatz, der die Zeile fertig macht —, nur
+   * beantwortet er hier die Frage, die diese Anwendung stellt.
    */
-  private async zeigeKundenblatt(kunde: Customer): Promise<void> {
-    const blatt = document.getElementById('customer-sheet');
-    const titel = document.getElementById('customer-sheet-title');
-    const ortZeile = document.getElementById('customer-sheet-place');
-    const liste = document.getElementById('customer-sheet-machines');
-    if (!blatt || !titel || !ortZeile || !liste) return;
-
-    titel.textContent = kunde.name;
-    const ort = [kunde.plz, kunde.ort].filter(Boolean).join(' ');
-    ortZeile.textContent = [ort, t('map.accuracyPlz')].filter(Boolean).join(' · ');
-
-    liste.textContent = '';
-    const maschinen = await getMachinesForCustomer(kunde.id);
-
-    if (maschinen.length === 0) {
-      const leer = document.createElement('p');
-      leer.className = 'customer-sheet-empty';
-      leer.textContent = t('map.noMachines');
-      liste.appendChild(leer);
-    }
-
-    for (const maschine of maschinen) {
-      const befund = await getLatestDiagnosis(maschine.id);
-      const zeile = document.createElement('button');
-      zeile.type = 'button';
-      zeile.className = 'customer-machine-row';
-
-      const punkt = document.createElement('span');
-      punkt.className = 'machine-status-dot';
-      if (befund) {
-        punkt.classList.add(
-          befund.healthScore >= 75
-            ? 'status-dot-healthy'
-            : befund.healthScore >= 50
-              ? 'status-dot-warning'
-              : 'status-dot-critical'
-        );
-      } else {
-        punkt.classList.add('status-dot-unknown');
-      }
-
-      const name = document.createElement('span');
-      name.className = 'customer-machine-name';
-      name.textContent = maschine.name;
-
-      const wert = document.createElement('span');
-      wert.className = 'customer-machine-score';
-      if (befund) {
-        wert.textContent = `${Math.round(befund.healthScore)} %`;
-      } else if (maschine.referenceModels?.length) {
-        wert.textContent = t('status.ready');
-      } else {
-        wert.textContent = t('map.noReference');
-      }
-
-      const pfeil = document.createElement('span');
-      pfeil.className = 'customer-machine-arrow';
-      pfeil.textContent = '›';
-
-      zeile.append(punkt, name, wert, pfeil);
-      zeile.addEventListener('click', () => {
-        this.schliesseBlatt();
-        this.schliesse();
-        this.deps.zeigeMaschine(maschine);
-      });
-      liste.appendChild(zeile);
-    }
-
-    blatt.style.display = 'flex';
+  private maschinenzeile(anzahl: number, zustand: Zustand): string {
+    if (anzahl === 0) return t('map.noMachinesShort');
+    const zahl = t(anzahl === 1 ? 'map.machineCountOne' : 'map.machineCount', {
+      count: String(anzahl),
+    });
+    return zustand === 'ungeprueft' ? zahl : `${zahl} · ${zustandswort(zustand)}`;
   }
 
-  public schliesseBlatt(): void {
-    const blatt = document.getElementById('customer-sheet');
-    if (blatt) blatt.style.display = 'none';
+  /**
+   * DAS SCHARNIER
+   *
+   * Der Übergang von der Karte in die Tiefe — und der Auftraggeber hat ihn an
+   * genau einem Element festgemacht: **dem klickbaren Namen**.
+   *
+   *     Karte → Maschinenstandortname → Standortansicht → Maschinenliste
+   *           → Maschinenansicht → Zanobo-Funktionen
+   *
+   * Deshalb ist die Überschrift hier ein `<button>` und keine Zeile Text. Sie
+   * sieht aus wie eine Überschrift, weil sie eine ist; sie ist ein Knopf, weil
+   * sie die Tür ist. Beides zugleich geht nur, wenn man es so schreibt — ein
+   * `<h3>` mit `onclick` wäre für die Tastatur und für Vorlesewerkzeuge keine
+   * Tür, sondern eine Überschrift, die sich seltsam verhält.
+   *
+   * ## Warum ein Popup und kein Blatt mehr
+   *
+   * Bis zum 16.08.2026 öffnete ein Marker ein Blatt am unteren Bildschirmrand
+   * (`#customer-sheet`). Das war SoundFuchs' eigene Erfindung. Der Stamm hängt
+   * die Auskunft an den Marker, den man angetippt hat
+   * (`customerPopupHtml` + `bindPopup`), und das ist der Unterschied zwischen
+   * „hier ist etwas über einen Standort" und „hier ist etwas über DIESEN
+   * Standort": Das Blatt verlor den Bezug zum Punkt, sobald es aufging.
+   *
+   * ## Warum als DOM und nicht als Zeichenkette
+   *
+   * Der Stamm baut seine Popups aus Zeichenketten und hängt die Zuhörer
+   * nachträglich über `data-action` an. Das ist dort gewachsen und trägt; hier
+   * kämen Standort- und Maschinennamen aus der Datenbank in eine Zeichenkette,
+   * die als HTML gelesen wird. Ein Standort namens `<img onerror=…>` wäre dann
+   * ein Einfallstor. Gebaute Knoten mit `textContent` haben das Problem nicht.
+   */
+  private standortPopup(stand: StandortStand): HTMLElement {
+    const kunde = stand.kunde;
+    const wurzel = document.createElement('div');
+    wurzel.className = 'popup popup-customer';
+
+    // ── Der Name: die Tür ──────────────────────────────────────────────────
+    const ueberschrift = document.createElement('h3');
+    const tuer = document.createElement('button');
+    tuer.type = 'button';
+    tuer.className = 'popup-scharnier';
+    tuer.textContent = standortname(kunde.name, { demo: Boolean(kunde.demo) });
+    tuer.title = t('map.openSite');
+    tuer.addEventListener('click', () => this.deps.zeigeStandort(kunde.id));
+    ueberschrift.appendChild(tuer);
+
+    if (kunde.demo) {
+      const abzeichen = document.createElement('span');
+      abzeichen.className = 'popup-demo-badge';
+      abzeichen.textContent = t('map.demoBadge');
+      ueberschrift.appendChild(abzeichen);
+    }
+    wurzel.appendChild(ueberschrift);
+
+    // ── Adresse, mit der Angabe, wie genau sie ist ─────────────────────────
+    const ort = [kunde.plz, kunde.ort].filter(Boolean).join(' ');
+    if (ort) {
+      const zeile = document.createElement('p');
+      zeile.className = 'popup-addr';
+      zeile.textContent = ort;
+      if (kunde.geo === 'plz') {
+        // Aus dem Stamm, wörtlich in der Sache: Ein Punkt, der die Ortsmitte
+        // meint, darf nicht wie eine Hausnummer aussehen.
+        const ungefaehr = document.createElement('span');
+        ungefaehr.className = 'muted small';
+        ungefaehr.textContent = ` · 📍 ${t('map.accuracyPlz')}`;
+        zeile.appendChild(ungefaehr);
+      }
+      wurzel.appendChild(zeile);
+    }
+
+    const meta = document.createElement('p');
+    meta.className = 'muted small popup-meta';
+    meta.textContent = this.maschinenzeile(stand.maschinen.length, stand.zustand);
+    wurzel.appendChild(meta);
+
+    // ── Die Maschinen, immer als Liste ─────────────────────────────────────
+    //
+    // Keine Knopfreihe, keine Schwelle, ab der aus Knöpfen eine Liste wird,
+    // keine Suche. Begründung des Auftraggebers: „Es wird praktisch nie zu
+    // viele geben." Das ist zugleich die einfachere Sache — eine Form statt
+    // zweier, kein Umschaltpunkt, der geprüft werden müsste (§0g).
+    const liste = document.createElement('ul');
+    liste.className = 'rep-list';
+    for (const maschine of stand.maschinen) {
+      liste.appendChild(this.maschinenzeileBauen(maschine, stand));
+    }
+    if (stand.maschinen.length > 0) wurzel.appendChild(liste);
+
+    return wurzel;
+  }
+
+  /**
+   * Eine Maschinenzeile im Standort-Popup.
+   *
+   * Vier Spalten, wie `.popup .rep-list li` im Stamm sie vorgibt: Punkt, Name,
+   * Wert, Pfeil. Dort sind es Farbpunkt, Bezirk, Kundenzahl und Umsatz — die
+   * Form passt, weil die Frage dieselbe Gestalt hat: ein Merkmal, ein Name,
+   * eine Zahl, ein Weg weiter.
+   *
+   * Die Zeile IST der Knopf und nicht bloß ein Träger für einen (§0g).
+   */
+  private maschinenzeileBauen(maschine: Machine, stand: StandortStand): HTMLLIElement {
+    const zeile = document.createElement('li');
+
+    const wert = stand.befunde.get(maschine.id) ?? null;
+    const zustand = zustandZuWert(wert);
+
+    const punkt = document.createElement('span');
+    punkt.className = 'rl-dot';
+    punkt.style.background = farbeFuerZustand(zustand);
+    punkt.setAttribute('aria-hidden', 'true');
+
+    const name = document.createElement('span');
+    name.className = 'rl-name';
+    name.textContent = maschine.name;
+
+    const zahl = document.createElement('span');
+    zahl.className = 'rl-count';
+    zahl.textContent =
+      wert !== null
+        ? `${Math.round(wert)} %`
+        : maschine.referenceModels?.length
+          ? t('status.ready')
+          : t('map.noReference');
+
+    const pfeil = document.createElement('span');
+    pfeil.className = 'rl-arrow';
+    pfeil.textContent = '›';
+    pfeil.setAttribute('aria-hidden', 'true');
+
+    const knopf = document.createElement('button');
+    knopf.type = 'button';
+    knopf.className = 'rl-row';
+    knopf.append(punkt, name, zahl, pfeil);
+    knopf.addEventListener('click', () => {
+      this.karte?.closePopup();
+      this.deps.zeigeMaschine(maschine);
+    });
+
+    zeile.appendChild(knopf);
+    return zeile;
   }
 }

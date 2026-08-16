@@ -179,6 +179,18 @@ export const de: TranslationDict = {
   // STANDORTKARTE (Schnitt 2 — docs/kunden-und-karte.md)
   // ============================================================================
   map: {
+    stackTitle: '{{count}} Maschinenstandorte – antippen zum Hineinzoomen',
+    stackUnit: 'Standorte',
+    openDetails: 'Details öffnen',
+    openSite: 'Maschinenstandort öffnen',
+    demoBadge: 'Demo',
+    noMachinesShort: 'noch keine Maschine',
+    machineCount: '{{count}} Maschinen',
+    machineCountOne: '1 Maschine',
+    stateHealthy: 'Unauffällig',
+    stateWarning: 'Auffällig',
+    stateCritical: 'Kritisch',
+    stateUnchecked: 'Ungeprüft',
     basemapLabel: 'Kartenstil',
     title: 'Standortkarte',
     tileLight: 'Hell',
