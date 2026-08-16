@@ -31,6 +31,15 @@ export interface StandortStand {
   zustand: Zustand;
   /** Alle Flottengruppen, die an diesem Standort vorkommen. */
   flotten: string[];
+  /**
+   * Der letzte Wert je Maschine, oder `null` für „noch nie geprüft".
+   *
+   * Er fällt beim Berechnen von `schlechtester` ohnehin an. Ihn wegzuwerfen
+   * und später erneut zu holen wäre genau das, was diese Datei vermeiden
+   * soll — das Standort-Popup zeigt jede Maschine mit ihrem Wert, und das
+   * wären bei hundert Standorten hundert zusätzliche Lesevorgänge.
+   */
+  befunde: Map<string, number | null>;
 }
 
 export function zustandZuWert(wert: number | null): Zustand {
@@ -61,6 +70,7 @@ export async function ladeBestandsuebersicht(): Promise<StandortStand[]> {
         schlechtester,
         zustand: zustandZuWert(schlechtester),
         flotten,
+        befunde: new Map(maschinen.map((m, i) => [m.id, werte[i] ?? null])),
       };
     })
   );

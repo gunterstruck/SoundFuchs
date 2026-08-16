@@ -33,6 +33,9 @@ import './styles/stamm/map.css';
 import './styles/stamm/responsive.css';
 import './styles/stamm/tiefe.css';
 
+// Kein Stamm: das Scharnier im Standort-Popup, in seiner Formensprache.
+import './styles/scharnier.css';
+
 import { initDB, getDBStats } from '@data/db.js';
 import { toast } from '@ui/components/Toast.js';
 import { AboutModalController } from '@ui/components/AboutModalController.js';
@@ -94,6 +97,16 @@ class ZanobotApp {
     zeigeMaschine: (machine) => {
       oeffneTiefe(machine.customerId ?? null);
       this.router?.showMachineView(machine);
+    },
+    /**
+     * Das Scharnier: der angetippte Maschinenstandortname.
+     *
+     * Dahinter liegt noch die bisherige Oberfläche — die Standortansicht wird
+     * im nächsten Schnitt gebaut. Die Tür steht aber schon an ihrem Platz,
+     * und was hinter ihr steht, kann getauscht werden, ohne sie anzufassen.
+     */
+    zeigeStandort: (standortId) => {
+      oeffneTiefe(standortId);
     },
   });
 
@@ -1061,9 +1074,6 @@ class ZanobotApp {
     document
       .getElementById('close-customer-map')
       ?.addEventListener('click', () => this.kundenkarte.schliesse());
-    document
-      .getElementById('close-customer-sheet')
-      ?.addEventListener('click', () => this.kundenkarte.schliesseBlatt());
   }
 
   /**

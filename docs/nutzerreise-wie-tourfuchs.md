@@ -664,8 +664,78 @@ Keiner der drei ist ein Fehler der Anwendung. Alle drei hätte ein Wächter, der
 einmal tippt und dann urteilt, als „Knopf fehlt" gemeldet — die unangenehmste
 Sorte Befund, weil sie auf die falsche Stelle zeigt.
 
-**S2 — Die Karte.** _offen._ Standortmarker, Cluster und Popup aus dem Stamm
-(`features/map.js`), mit dem Maschinenstandortnamen als Scharnier.
+**S2 — Die Karte, bis zum Scharnier.** ✅ _erledigt._ Marker, Stapel und Popup
+aus dem Stamm — und der Maschinenstandortname als Tür.
+
+- `stamm/features/standortmarker.ts` — übernommen aus `customerMarkers.js`.
+  Vier Markerstufen (`dot` → `card` → `label` → `detail`), Stapelradius je
+  Zoomstufe, Namensregel. Rein und deshalb geprüft: 18 Tests.
+- **Progressive Offenlegung.** Erst ein anonymer Punkt zur Orientierung, ab
+  Zoom 8 ein anklickbares Kärtchen, ab 14 (unterwegs 15) der Name, ab 15,5
+  (16,5) der Zusatz. Entschieden wird das mit **einer Klasse am
+  Kartenbehälter**, nicht im Marker — sonst müsste bei jeder Zoomstufe jeder
+  Marker neu gebaut werden.
+- **Der Stapelradius hängt jetzt am Zoom** (104 px auf Deutschland, 28 px auf
+  Straßenebene). Vorher stand dort eine feste 45 — dieselbe Zahl für
+  Deutschland und für eine Straße, und damit überall ein bisschen falsch.
+- **Farbe statt Umsatz.** TourFuchs färbt Marker und Stapel nach
+  Vertriebsgebiet. Hier tritt der Zustand der Maschinen an diese Stelle:
+  grün · gelb · rot · **grau für ungeprüft**. Grau ist Absicht — ein Standort
+  ohne Referenzaufnahme ist nicht gesund, er ist unbekannt.
+  Der Stapel nimmt den **schlechtesten** Standort darin, so wie ein Standort
+  die schlechteste Maschine nimmt. Ein Stapel, der nach dem Durchschnitt grün
+  wäre, verdeckte genau das, wofür man auf die Karte schaut.
+- **Aus dem Blatt wird ein Popup.** `#customer-sheet` am unteren Bildschirmrand
+  war SoundFuchs' eigene Erfindung und ist entfernt. Der Stamm hängt die
+  Auskunft an den Marker, den man angetippt hat. Das ist der Unterschied
+  zwischen „hier ist etwas über einen Standort" und „hier ist etwas über
+  **diesen** Standort".
+
+### Das Scharnier steht
+
+```
+    Maschinenstandortname          ← <button class="popup-scharnier">
+    45127 Essen · 📍 Ortsmitte
+    4 Maschinen
+
+    ● Kompressor 1   Referenz fehlt   ›
+    ● Kompressor 2   Referenz fehlt   ›
+```
+
+Die Überschrift ist ein `<button>` und keine Zeile Text. Sie sieht aus wie
+eine Überschrift, weil sie eine ist; sie ist ein Knopf, weil sie die Tür ist.
+Ein `<h3>` mit `onclick` wäre für Tastatur und Vorlesewerkzeuge keine Tür,
+sondern eine Überschrift, die sich seltsam verhält — deshalb prüft der
+Wächter nicht, _dass_ der Name dasteht, sondern dass er ein `BUTTON` ist.
+
+Falsifiziert: Als `<span>` gebaut meldet `attention-check` drei Befunde
+(„der Name ist kein Knopf", „führt nirgendwohin", „die Maschinenzeile führt
+nicht hinein").
+
+Die Maschinen stehen als Liste, immer (§0g). Jede Zeile _ist_ der Knopf und
+trägt ihn nicht bloß — sonst gäbe es eine antippbare Fläche und eine sichtbare
+Zeile, und die beiden liefen früher oder später auseinander.
+
+Gebaut wird das Popup als DOM und nicht als Zeichenkette. Der Stamm setzt dort
+HTML zusammen; hier kämen Standort- und Maschinennamen aus der Datenbank in
+eine Zeichenkette, die als HTML gelesen wird — ein Standort namens
+`<img onerror=…>` wäre ein Einfallstor.
+
+**Zwei Werkzeuge waren blind.** `token-check` und `css-check` lasen nur die
+oberste Ebene von `src/styles/`. Seit der Stamm in einem Unterordner liegt,
+sind das die meisten Regeln und Token — `--color-primary` galt als unbekannt,
+obwohl `stamm/variables.css` ihn definiert. `token-check` steigt jetzt hinab
+(119 statt 93 Token). Ein Werkzeug, das eine richtige Datei für falsch
+erklärt, ist schlimmer als keines: Man lernt, seine Meldungen zu überblättern.
+
+Dabei fiel ein geerbter Fehler auf: `--color-surface-muted` ist auch in
+TourFuchs nirgends definiert, an derselben Zeile. Er wirkt trotzdem, weil ein
+Ausweichwert danebensteht. Er ist als geerbt vermerkt und **nicht** in der
+Stamm-Datei behoben — sonst wäre der Vergleich mit TourFuchs dahin.
+
+**Hinter dem Scharnier steht noch die alte Oberfläche.** Das ist Absicht: Die
+Tür steht an ihrem Platz, und was hinter ihr liegt, kann getauscht werden,
+ohne sie anzufassen.
 
 **S3 — Die Standortansicht.** _offen._ Name, Adresse, alle Maschinen,
 „Neue Maschine anlegen" — in der Formensprache des Stamms.

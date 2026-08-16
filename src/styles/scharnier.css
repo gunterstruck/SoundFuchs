@@ -1,0 +1,114 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DAS SCHARNIER IM STANDORT-POPUP
+
+   Kein Stamm. Diese Datei ergänzt das Standort-Popup um das, was TourFuchs
+   nicht braucht und SoundFuchs schon: einen anklickbaren Namen und eine
+   Maschinenliste mit Zustandspunkt.
+
+   Sie liegt bewusst außerhalb von `src/styles/stamm/`. Alles dort ist Datei
+   für Datei aus TourFuchs kopiert; sobald man eine dieser Dateien ergänzt,
+   kann niemand mehr durch einen Vergleich feststellen, ob der Stamm noch der
+   Stamm ist (§0h).
+
+   Geliehen wird trotzdem alles: Abstände, Radien, Farben und Schriftgrößen
+   kommen aus den Token des Stamms, und die Zeilen sitzen im Raster, das
+   `.popup .rep-list li` vorgibt — vier Spalten, Punkt · Name · Wert · Pfeil.
+   Dort sind es Farbpunkt, Bezirk, Kundenzahl und Umsatz. Die Frage hat
+   dieselbe Gestalt, also darf sie dieselbe Form haben.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Der klickbare Maschinenstandortname ────────────────────────────────────
+
+   Er sieht aus wie eine Überschrift, weil er eine ist, und er ist ein Knopf,
+   weil er die Tür ist. Deshalb erbt er die Schrift von `.popup h3` und legt
+   nur die Knopf-Eigenschaften ab, die im Weg wären.
+
+   Die Unterstreichung ist nicht Schmuck: Ein Name, der wie ein Name aussieht,
+   wird nicht angetippt. Sie ist gepunktet und nicht durchgezogen, damit die
+   Überschrift eine Überschrift bleibt und nicht wie ein Verweis mitten im
+   Fließtext wirkt. */
+.popup-scharnier {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--color-primary-dark);
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.popup-scharnier:hover {
+  color: var(--color-primary);
+  text-decoration-style: solid;
+}
+
+/* Sichtbar für die Tastatur. Der Stamm setzt sonst nirgends einen eigenen
+   Fokusring; hier ist er nötig, weil das Element wie Text aussieht und der
+   Standardring des Browsers am Rand der Überschrift kaum zu sehen wäre. */
+.popup-scharnier:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ── Die Maschinenzeilen ────────────────────────────────────────────────────
+
+   Jede Zeile IST der Knopf und trägt ihn nicht bloß (§0g). Deshalb ist das
+   `<button>` selbst das Raster — läge es in einem Behälter darin, gäbe es eine
+   antippbare Fläche und eine sichtbare Zeile, und die beiden liefen früher
+   oder später auseinander. */
+.popup .rep-list li {
+  padding: 0;
+}
+
+.popup .rep-list .rl-row {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 4px 8px;
+  border: none;
+  background: none;
+  padding: 5px 4px;
+  margin: 0;
+  border-radius: var(--radius-s);
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.popup .rep-list .rl-row:hover {
+  background: var(--color-surface-2);
+}
+
+.popup .rep-list .rl-row:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* Der Zustandspunkt. Dieselbe Farbe wie der Marker auf der Karte — wer einen
+   roten Punkt angetippt hat, soll im Popup sehen, welche Maschine ihn rot
+   gemacht hat. Die Farbe kommt aus `standortmarker.ts`, nicht von hier: Zwei
+   Orte für dieselbe Farbskala wären zwei Orte, an denen sie auseinandergeht. */
+.popup .rep-list .rl-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9);
+}
+
+.popup .rep-list .rl-arrow {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1;
+}

@@ -16,22 +16,76 @@
  * Ausgenommen sind Variablen, die JavaScript zur Laufzeit inline setzt; sie
  * stehen unten namentlich.
  */
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const VERZEICHNIS = 'src/styles';
 // Diese setzt der Quelltext zur Laufzeit am Element selbst (style="--x: ...").
-const ZUR_LAUFZEIT = new Set(['--bar-width', '--animation-delay']);
+const ZUR_LAUFZEIT = new Set([
+  '--bar-width',
+  '--animation-delay',
+  // Am Marker und am Stapel gesetzt, aus `standortmarker.ts` heraus.
+  '--marker-color',
+  '--stack-color',
+  '--stack-accent',
+  // Die Schale rechnet sie beim Ziehen und beim Messen aus und schreibt sie
+  // an <html> (`setSheetHeight`, `topnavMasse` in stamm/ui/schale.ts). Im CSS
+  // stehen sie deshalb nirgends — sie sind der Ort, an dem JavaScript und
+  // Gestaltung sich treffen.
+  '--sheet-height',
+  '--mobile-topnav-bottom',
+  // Aus dem Stamm, gesetzt von Funktionen, die hier fachlich entfallen sind
+  // (Routenanimation, Wischgeste). Ihre Regeln stehen mit Ausweichwert im
+  // übernommenen CSS und fallen damit auf den Ruhezustand zurück.
+  '--route-step',
+  '--swipe-x',
+]);
 
-const dateien = readdirSync(VERZEICHNIS).filter((f) => f.endsWith('.css'));
-const quelle = dateien.map((f) => readFileSync(join(VERZEICHNIS, f), 'utf8')).join('\n');
+/**
+ * Unverändert aus dem Stamm geerbt.
+ *
+ * `--color-surface-muted` ist auch in TourFuchs nirgends definiert — dort
+ * genauso, an derselben Zeile (`components.css:2470`). Es wirkt trotzdem,
+ * weil ein Ausweichwert danebensteht.
+ *
+ * Es gehört hierher und nicht in die Datei: Sobald man eine Stamm-Datei
+ * anfasst, kann niemand mehr durch einen Vergleich feststellen, ob der Stamm
+ * noch der Stamm ist (§0h). Ein geerbter Schönheitsfehler mit Ausweichwert ist
+ * der geringere Preis. Sollte TourFuchs ihn eines Tages beheben, kommt die
+ * Behebung beim nächsten Abgleich von selbst mit — und diese Zeile hier fällt
+ * dann als überflüssig auf.
+ */
+const AUS_DEM_STAMM = new Set(['--color-surface-muted']);
+
+/**
+ * Auch in Unterordner schauen.
+ *
+ * Bis zum 16.08.2026 las diese Prüfung nur die oberste Ebene. Das ging gut,
+ * solange dort alles lag. Seit der Stamm in `src/styles/stamm/` steht, liegen
+ * dort aber die meisten Token — und die Prüfung meldete `--color-primary` als
+ * unbekannt, obwohl `stamm/variables.css` ihn zwei Ordner tiefer definiert.
+ *
+ * Ein Werkzeug, das eine richtige Datei für falsch erklärt, ist schlimmer als
+ * keines: Man lernt, seine Meldungen zu überblättern, und übersieht dann die
+ * echte.
+ */
+function alleCss(ort) {
+  return readdirSync(ort).flatMap((eintrag) => {
+    const pfad = join(ort, eintrag);
+    if (statSync(pfad).isDirectory()) return alleCss(pfad);
+    return pfad.endsWith('.css') ? [pfad] : [];
+  });
+}
+
+const dateien = alleCss(VERZEICHNIS);
+const quelle = dateien.map((f) => readFileSync(f, 'utf8')).join('\n');
 
 const definiert = new Set([...quelle.matchAll(/^\s*(--[a-z0-9-]+)\s*:/gim)].map((m) => m[1]));
 
 const fehlend = new Map();
 for (const m of quelle.matchAll(/var\(\s*(--[a-z0-9-]+)\s*(,)?/g)) {
   const [, name, ausweich] = m;
-  if (definiert.has(name) || ZUR_LAUFZEIT.has(name)) continue;
+  if (definiert.has(name) || ZUR_LAUFZEIT.has(name) || AUS_DEM_STAMM.has(name)) continue;
   const e = fehlend.get(name) ?? { mitAusweich: 0, ohne: 0 };
   e[ausweich ? 'mitAusweich' : 'ohne'] += 1;
   fehlend.set(name, e);
