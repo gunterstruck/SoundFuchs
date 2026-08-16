@@ -340,7 +340,15 @@ async function inDieTiefe(page, { profi = false } = {}) {
     const tiefe = document.getElementById('zanobo-tiefe');
     if (!tiefe) return;
     tiefe.hidden = false;
-    document.body.classList.add('tiefe-offen');
+    // Auf der Maschinenebene, nicht auf der Standortebene.
+    //
+    // Seit Stamm-Schnitt 3 liegen hinter der Tür zwei Ebenen, und die
+    // Standortebene verdeckt den bisherigen Rumpf mit Absicht. Wer nur
+    // `tiefe-offen` setzt, landet dort — und misst dann eine Oberfläche, die
+    // gerade nicht im Bild sein soll. Gemessen: jeder Block meldete „fehlt".
+    //
+    // Der Prüfweg gehört zur Maschinenebene; deshalb wird sie hier genannt.
+    document.body.classList.add('tiefe-offen', 'tiefe-maschine');
   });
   await page.waitForTimeout(600);
 }
@@ -704,6 +712,9 @@ try {
     let karteZu = false;
     let scharnierIstKnopf = false;
     let scharnierOeffnet = false;
+    let standort = null;
+    let inMaschine = false;
+    let zurueckImStandort = false;
 
     if (inListe) {
       await page.locator('#btn-info').click();
@@ -753,20 +764,82 @@ try {
 
           if (scharnierIstKnopf) {
             await page.locator('.popup-customer .popup-scharnier').first().click();
-            await page.waitForTimeout(900);
+            await page.waitForTimeout(1200);
             scharnierOeffnet = await page.evaluate(() =>
               document.body.classList.contains('tiefe-offen')
             );
+
+            // DIE STANDORTANSICHT
+            //
+            // Der Auftraggeber hat aufgezählt, was sie enthalten muss: Name und
+            // Adresse, alle Maschinen, „Neue Maschine anlegen". Geprüft wird
+            // die Aufzählung und nicht das Aussehen — ein Kasten, der schön ist
+            // und die Maschinen nicht zeigt, ist keine Standortansicht.
+            standort = await page.evaluate(() => {
+              const a = document.getElementById('standort-ansicht');
+              if (!a || getComputedStyle(a).display === 'none') return null;
+              return {
+                titel: a.querySelector('h2')?.textContent?.trim() ?? '',
+                adresse: a.querySelector('.standort-adresse')?.textContent?.trim() ?? '',
+                maschinen: a.querySelectorAll('.standort-maschine').length,
+                anlegen: Boolean(a.querySelector('.standort-neue-maschine')),
+                // Der alte Rumpf gehört auf diese Ebene nicht ins Bild.
+                rumpfWeg:
+                  getComputedStyle(document.querySelector('.zanobo-tiefe > .container')).display ===
+                  'none',
+              };
+            });
+
+            // Eine Ebene tiefer und auf demselben Weg zurück.
+            if (standort?.maschinen) {
+              await page
+                .locator('.standort-maschine')
+                .first()
+                .click({ force: true })
+                .catch(() => {});
+              await page.waitForTimeout(1400);
+              inMaschine = await page.evaluate(() =>
+                document.body.classList.contains('tiefe-maschine')
+              );
+              await page
+                .locator('#close-machine-detail-modal')
+                .click({ force: true })
+                .catch(() => {});
+              await page.waitForTimeout(1000);
+              // Zurück muss im Standort landen, nicht auf der bisherigen
+              // Maschinenliste: Der Weg herein führte über den Standort.
+              zurueckImStandort = await page.evaluate(
+                () =>
+                  !document.body.classList.contains('tiefe-maschine') &&
+                  getComputedStyle(document.getElementById('standort-ansicht')).display !== 'none'
+              );
+            }
+
             // Wieder heraus, damit der nächste Griff die Karte vorfindet.
             await page
               .locator('.tiefe-zurueck')
               .click({ force: true })
               .catch(() => {});
-            await page.waitForTimeout(700);
+            await page.waitForTimeout(900);
           }
 
-          if (maschineImBlatt) {
-            await page.locator('#map .leaflet-marker-icon').first().click();
+          // Nur weitermessen, wenn wir wirklich wieder auf der Karte stehen.
+          //
+          // Ohne diese Zeile stirbt der Lauf mit einem Stapelabzug, sobald der
+          // Rückweg klemmt: Der Marker ist dann von der Tiefe verdeckt, und
+          // Playwright wartet 30 Sekunden auf ihn. Beim Falsifizieren des
+          // Rückwegs ist genau das passiert — statt dreier Befunde kam ein
+          // „TimeoutError", und der zeigt auf die falsche Stelle.
+          const wiederAufDerKarte = await page.evaluate(
+            () => !document.body.classList.contains('tiefe-offen')
+          );
+
+          if (maschineImBlatt && wiederAufDerKarte) {
+            await page
+              .locator('#map .leaflet-marker-icon')
+              .first()
+              .click({ force: true })
+              .catch(() => {});
             await page.waitForTimeout(900);
             await page
               .locator('.popup-customer .rl-row', { hasText: 'Pumpe 17' })
@@ -791,6 +864,13 @@ try {
     console.log(`Standort-Popup            ${blattDa ? 'sichtbar' : 'NICHT sichtbar'}`);
     console.log(`Name ist ein Knopf        ${scharnierIstKnopf ? 'ja' : 'NEIN'}`);
     console.log(`Name öffnet die Tiefe     ${scharnierOeffnet ? 'ja' : 'NEIN'}`);
+    console.log(`Standortansicht           ${standort ? standort.titel : 'FEHLT'}`);
+    console.log(`  Adresse                 ${standort?.adresse || '(leer)'}`);
+    console.log(`  Maschinen darin         ${standort?.maschinen ?? 0}`);
+    console.log(`  „Neue Maschine anlegen" ${standort?.anlegen ? 'ja' : 'NEIN'}`);
+    console.log(`  alter Rumpf verdeckt    ${standort?.rumpfWeg ? 'ja' : 'NEIN'}`);
+    console.log(`Maschinenebene erreicht   ${inMaschine ? 'ja' : 'NEIN'}`);
+    console.log(`Zurück landet im Standort ${zurueckImStandort ? 'ja' : 'NEIN'}`);
     console.log(`Maschine im Popup         ${maschineImBlatt ? 'sichtbar' : 'NICHT sichtbar'}`);
     console.log(`Maschinenzeile führt rein ${karteZu ? 'ja' : 'nein'}`);
 
@@ -813,6 +893,31 @@ try {
     pruefe(
       scharnierOeffnet,
       'Scharnier: der Name lässt sich drücken, führt aber nirgendwohin'
+    );
+    pruefe(
+      Boolean(standort?.titel),
+      'Standortansicht: hinter dem Scharnier steht kein Maschinenstandortname'
+    );
+    pruefe(
+      Boolean(standort?.adresse),
+      'Standortansicht: die Adresse fehlt — sie gehört laut Vorgabe dazu'
+    );
+    pruefe(
+      (standort?.maschinen ?? 0) > 0,
+      'Standortansicht: sie zeigt keine Maschinen, obwohl an diesem Standort eine steht'
+    );
+    pruefe(
+      Boolean(standort?.anlegen),
+      'Standortansicht: „Neue Maschine anlegen" fehlt — die Handlung dieser Ebene'
+    );
+    pruefe(
+      Boolean(standort?.rumpfWeg),
+      'Standortansicht: die bisherige Oberfläche steht daneben — zwei Ebenen zugleich im Bild'
+    );
+    pruefe(inMaschine, 'Standortansicht: eine Maschinenzeile führt nicht eine Ebene tiefer');
+    pruefe(
+      zurueckImStandort,
+      'Scharnier: aus der Maschine führt der Weg zurück nicht in den Standort, aus dem man kam'
     );
     pruefe(maschineImBlatt, 'Karte: das Standort-Popup zeigt seine Maschinen nicht');
     pruefe(karteZu, 'Karte: der Tipp auf eine Maschine führt nicht in die Maschinenansicht');

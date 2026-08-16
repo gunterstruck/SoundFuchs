@@ -47,6 +47,9 @@ export interface MachineDetailDeps {
   formatRelativeTime: (timestamp: number) => string;
 }
 
+/** Das Maschinenfenster wurde zugemacht, ohne weiterzugehen. */
+export const MASCHINENFENSTER_ABGEBROCHEN = 'zanobot:maschinenfenster-abgebrochen';
+
 export class MachineDetailModal {
   constructor(private readonly deps: MachineDetailDeps) {}
 
@@ -56,14 +59,14 @@ export class MachineDetailModal {
     const closeBtn = document.getElementById('close-machine-detail-modal');
 
     if (closeBtn) {
-      closeBtn.addEventListener('click', () => this.close());
+      closeBtn.addEventListener('click', () => this.abbrechen());
     }
 
     // Close on backdrop click
     if (modal) {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
-          this.close();
+          this.abbrechen();
         }
       });
     }
@@ -522,5 +525,23 @@ export class MachineDetailModal {
     if (modal) {
       modal.style.display = 'none';
     }
+  }
+
+  /**
+   * Zumachen, ohne weiterzugehen — das X und der Klick daneben.
+   *
+   * `close()` allein sagt nicht, warum zugemacht wurde. Es steht an vier
+   * Stellen, und zwei davon führen weiter (Maschine wählen, Verlauf öffnen).
+   * Wer auf „schließen" horcht, um zurückzuspringen, springt dann auch dann
+   * zurück, wenn der Nutzer gerade vorwärts wollte.
+   *
+   * Das Ereignis meldet deshalb nur den Abbruch. Es geht ans Dokument statt
+   * über einen weiteren Eintrag in `MachineDetailDeps`: Zuhörer ist das
+   * Scharnier, und das kennt dieses Fenster nicht — es soll es auch nicht
+   * kennenlernen müssen.
+   */
+  private abbrechen(): void {
+    this.close();
+    document.dispatchEvent(new CustomEvent(MASCHINENFENSTER_ABGEBROCHEN));
   }
 }
