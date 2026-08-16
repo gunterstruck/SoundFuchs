@@ -53,9 +53,13 @@ import {
   scharnierAufbauen,
   schliesseTiefe,
   oeffneTiefe,
+  eineStufeZurueck,
+  offeneEbene,
   TIEFE_GESCHLOSSEN,
 } from './stamm/ui/scharnier.js';
+import { MASCHINENFENSTER_ABGEBROCHEN } from '@ui/phases/MachineDetailModal.js';
 import { beispieldatenAnbieten } from './stamm/ui/beispieldaten.js';
+import { standortansichtAufbauen } from './stamm/ui/standortansicht.js';
 import { escapeHtml } from '@utils/sanitize.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
 import { initPwaUpdate } from '@utils/pwaUpdate.js';
@@ -95,7 +99,7 @@ class ZanobotApp {
      * erste Anblick wäre ein Sprung.
      */
     zeigeMaschine: (machine) => {
-      oeffneTiefe(machine.customerId ?? null);
+      oeffneTiefe(machine.customerId ?? null, 'maschine');
       this.router?.showMachineView(machine);
     },
     /**
@@ -717,6 +721,13 @@ class ZanobotApp {
   private setupStamm(): void {
     schaleAufbauen();
     scharnierAufbauen();
+    standortansichtAufbauen({
+      zeigeMaschine: (machine) => {
+        oeffneTiefe(machine.customerId ?? null, 'maschine');
+        this.router?.showMachineView(machine);
+      },
+      neueMaschine: (standortId) => this.neueMaschineAmStandort(standortId),
+    });
 
     /**
      * Beim Zurückkommen die Karte auffrischen.
@@ -731,6 +742,17 @@ class ZanobotApp {
     document.addEventListener(TIEFE_GESCHLOSSEN, () => {
       void this.kundenkarte.zeigeImGrund();
     });
+
+    /**
+     * Das Maschinenfenster abgebrochen — also eine Stufe zurück.
+     *
+     * Ohne das landete man auf der bisherigen Maschinenliste: der Ebene, aus
+     * der man gar nicht gekommen ist. Der Weg herein führte über den Standort,
+     * und der Weg hinaus soll derselbe sein.
+     */
+    document.addEventListener(MASCHINENFENSTER_ABGEBROCHEN, () => {
+      if (offeneEbene() === 'maschine') eineStufeZurueck();
+    });
     void (async () => {
       await this.kundenkarte.zeigeImGrund();
       // Erst die Karte, dann die Punkte. Andersherum stünde beim ersten
@@ -739,6 +761,45 @@ class ZanobotApp {
         zeichneNeu: () => this.kundenkarte.zeigeImGrund(),
       });
     })();
+  }
+
+  /**
+   * „Neue Maschine anlegen" aus einem Standort heraus.
+   *
+   * Der Weg führt in das Anlegen-Formular der bisherigen Oberfläche — es steht,
+   * es ist geprüft, und es gehört zur Maschinenebene. Neu ist nur, dass der
+   * Standort dort schon eingetragen ist: Wer aus einem Standort heraus anlegt,
+   * hat gerade gesagt, welcher gemeint ist. Ihn danach aus einer Liste zu
+   * wählen wäre eine Frage nach etwas Bekanntem.
+   *
+   * Das Auswahlfeld wird von `CustomerField` gefüllt, und das geschieht beim
+   * Aufklappen des Formulars — also asynchron. Deshalb wird nach dem Klick
+   * gewartet, bis der Eintrag da ist, statt sofort zu setzen und zu hoffen.
+   */
+  private neueMaschineAmStandort(standortId: string): void {
+    oeffneTiefe(standortId, 'maschine');
+    document.getElementById('add-new-machine-btn')?.click();
+
+    const frist = Date.now() + 3000;
+    const versuche = (): void => {
+      const feld = document.getElementById('machine-customer-select') as HTMLSelectElement | null;
+      const treffer = feld && [...feld.options].some((o) => o.value === standortId);
+      if (treffer && feld) {
+        feld.value = standortId;
+        feld.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+      if (Date.now() < frist) {
+        window.setTimeout(versuche, 120);
+        return;
+      }
+      // Kein Grund zum Abbrechen: Das Formular steht, nur die Vorbelegung
+      // fehlt. Der Nutzer wählt den Standort dann selbst — unschön, nicht
+      // kaputt. Gemeldet wird es trotzdem, sonst sucht man den Fehler später
+      // an der falschen Stelle.
+      logger.warn(`Standort ${standortId} war im Auswahlfeld nicht zu finden`);
+    };
+    versuche();
   }
 
   /**

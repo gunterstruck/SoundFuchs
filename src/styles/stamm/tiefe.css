@@ -100,3 +100,100 @@ body.tiefe-offen #app > *:not(.topbar) {
 .tiefe-zurueck:hover {
   background: var(--color-surface-2);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ZWEI EBENEN HINTER DER TÜR
+
+   `standort` — Name, Adresse, alle Maschinen.
+   `maschine` — die bisherige Oberfläche mit den akustischen Funktionen.
+
+   Immer nur eine davon steht im Bild. Umgeschaltet wird über eine Klasse am
+   Körper, nicht über zwei Aufrufe an zwei Stellen: So kann es keinen Zustand
+   geben, in dem beide oder keine sichtbar sind.
+
+   Der alte Rumpf wird verdeckt und nicht entfernt. Er trägt die
+   Maschinenansicht und mit ihr die drei Auflagen (Kamerabild, Abspielen,
+   3D-Spektrum); solange er das tut, bleibt er unversehrt stehen.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Standortebene: die Ansicht steht, der alte Rumpf ruht. */
+body.tiefe-offen:not(.tiefe-maschine) .zanobo-tiefe > .container,
+body.tiefe-offen:not(.tiefe-maschine) .zanobo-tiefe > .fab-row,
+body.tiefe-offen:not(.tiefe-maschine) .zanobo-tiefe > .tiefe-grip {
+  display: none;
+}
+
+/* Maschinenebene: umgekehrt. */
+body.tiefe-maschine .standort-ansicht {
+  display: none;
+}
+
+.standort-ansicht {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 4px 14px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+.standort-kopf h2 {
+  margin: 8px 0 2px;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.standort-adresse,
+.standort-betreiber {
+  margin: 2px 0;
+}
+
+.standort-zahlen {
+  margin: 14px 0 4px;
+  /* Drei Zahlen, drei Spalten. `.stat-grid` steht im Stamm auf vier und fällt
+     unterwegs auf zwei — bei drei Kacheln bleibt dann eine allein in der
+     zweiten Zeile stehen und sieht aus wie ein Rest. */
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Die Maschinenliste liegt im Raster von `.near-row` (Punkt · Name · Wert ·
+   Zeit · Pfeil). Ergänzt wird nur, was dort fehlt: Die Zeile ist hier ein
+   Knopf und muss sich deshalb die Knopf-Vorgaben abgewöhnen. */
+.standort-maschinen {
+  margin: 4px 0 18px;
+}
+
+.near-row.standort-maschine {
+  width: 100%;
+  border: none;
+  font: inherit;
+  color: var(--color-text);
+  text-align: left;
+  grid-template-columns: auto 1fr auto auto auto;
+}
+
+.near-row.standort-maschine:hover {
+  background: var(--color-primary-light);
+}
+
+.near-row.standort-maschine:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* „Referenz fehlt" ist keine gute Nachricht, sondern eine fehlende.
+   `.near-rev` färbt den Wert teal und macht ihn fett — im Stamm steht dort
+   der Umsatz, und da ist beides richtig. Hier stand „Referenz fehlt" damit in
+   derselben Auszeichnung wie „94 %": Der Blick über die Liste las Grün und
+   Fettdruck als Erfolg, und genau das Gegenteil war gemeint. */
+.near-row.standort-maschine .near-rev.muted {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.standort-pfeil {
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.standort-neue-maschine {
+  width: 100%;
+}

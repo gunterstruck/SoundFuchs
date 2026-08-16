@@ -242,7 +242,13 @@ try {
         const tiefe = document.getElementById('zanobo-tiefe');
         if (!tiefe) return;
         tiefe.hidden = false;
-        document.body.classList.add('tiefe-offen');
+        // Auf der Maschinenebene, nicht auf der Standortebene.
+        //
+        // Seit Stamm-Schnitt 3 liegen hinter der Tür zwei Ebenen, und die
+        // Standortebene verdeckt den bisherigen Rumpf mit Absicht. Wer nur
+        // `tiefe-offen` setzt, landet dort — und der Prüfweg fände eine
+        // Oberfläche vor, die gerade nicht im Bild sein soll.
+        document.body.classList.add('tiefe-offen', 'tiefe-maschine');
       });
       await page.waitForTimeout(800);
     }

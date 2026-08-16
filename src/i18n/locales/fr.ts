@@ -27,6 +27,22 @@ export const fr: TranslationDict = {
 
   // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
   // Scharnier (docs/nutzerreise-wie-tourfuchs.md §0h).
+  // Das Scharnier und die Standortansicht (§0h, Stamm-Schnitt 3).
+  hinge: {
+    backToMap: 'Vers la carte',
+    backToSite: 'Vers le site',
+  },
+  site: {
+    machines: 'machines',
+    conspicuous: 'à surveiller',
+    unchecked: 'non contrôlées',
+    newMachine: 'Ajouter une machine',
+    operator: 'Exploitant',
+    justNow: 'à l’instant',
+    agoMinutes: 'il y a {{count}} min',
+    agoHours: 'il y a {{count}} h',
+    agoDays: 'il y a {{count}} jours',
+  },
   stamm: {
     depthBasic: '🌱 Base',
     depthExpert: '🛠️ Pro',

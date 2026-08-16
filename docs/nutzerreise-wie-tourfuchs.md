@@ -737,8 +737,75 @@ Stamm-Datei behoben — sonst wäre der Vergleich mit TourFuchs dahin.
 Tür steht an ihrem Platz, und was hinter ihr liegt, kann getauscht werden,
 ohne sie anzufassen.
 
-**S3 — Die Standortansicht.** _offen._ Name, Adresse, alle Maschinen,
-„Neue Maschine anlegen" — in der Formensprache des Stamms.
+**S3 — Die Standortansicht.** ✅ _erledigt._ Die erste Ebene hinter der Tür.
+
+Der Auftraggeber hat aufgezählt, was sie enthalten muss. Sie enthält es, und
+sonst nichts:
+
+```
+    ‹ Zur Karte
+
+    Gießerei 0081
+    79199 Kirchzarten · 📍 Ortsmitte
+
+    ┌──────┬──────┬──────┐
+    │  4   │  0   │  4   │
+    │Masch.│auff. │ungep.│
+    └──────┴──────┴──────┘
+
+    MASCHINEN
+    ● Kompressor 1   Referenz fehlt   —   ›
+    ● Kompressor 2   Referenz fehlt   —   ›
+
+    [ ➕ Neue Maschine anlegen ]
+```
+
+**Sie ist kein Stamm — und sieht trotzdem so aus.** TourFuchs hat keine Ebene
+unter dem Kunden; diese Ansicht ist Neubau. Gebaut ist sie aber aus den
+Teilen, die dastehen: `.near-row` für die Zeilen (dasselbe Raster wie der
+Nähe-Begleiter), `.stat-grid` für die Kopfzahlen, `button.primary` für die
+Handlung. Kein eigenes Formenvokabular — das wäre der Anfang der zwei
+Programme, die es nicht geben soll.
+
+### Zwei Ebenen hinter der Tür
+
+`standort` und `maschine`, umgeschaltet über **eine** Klasse am Körper. Nicht
+über zwei Aufrufe an zwei Stellen: So kann es keinen Zustand geben, in dem
+beide oder keine sichtbar sind.
+
+Der Rückweg hat drei Stationen statt zwei — wer aus einer Maschine kommt, will
+meistens zur Nachbarmaschine, nicht auf die Karte. Er sagt auch, wohin er
+führt („‹ Zum Standort" bzw. „‹ Zur Karte"): „Zurück" allein wäre auf zwei
+Ebenen zweimal dasselbe Wort für zwei verschiedene Ziele.
+
+### Was das Messen gefunden hat
+
+**Der Rückweg aus der Maschine führte ins Leere.** Eine Maschine öffnet das
+bisherige Maschinenfenster — ein Dialog über der Tiefe. Sein Schließen landete
+auf der bisherigen Maschinenliste, also auf einer Ebene, aus der man gar nicht
+gekommen war. `close()` steht an vier Stellen, und zwei davon führen _weiter_
+(Maschine wählen, Verlauf öffnen); ein blindes „beim Schließen zurückspringen"
+hätte den Nutzer auch dann zurückgeworfen, wenn er vorwärts wollte. Deshalb
+meldet jetzt nur der **Abbruch** ein Ereignis.
+
+**Beide Messwerkzeuge maßen die falsche Ebene.** Sie machen die Tiefe direkt
+auf (`classList.add('tiefe-offen')`) und landeten damit auf der Standortebene
+— die den bisherigen Rumpf mit Absicht verdeckt. Jeder Block meldete „fehlt",
+und zwar alle auf einmal. Sie nennen die Ebene jetzt ausdrücklich.
+
+**„Referenz fehlt" sah aus wie eine gute Nachricht.** `.near-rev` färbt den
+Wert teal und macht ihn fett — im Stamm steht dort der Umsatz, und da ist
+beides richtig. Hier stand „Referenz fehlt" in derselben Auszeichnung wie
+„94 %": Der Blick über die Liste las Grün und Fettdruck als Erfolg, und genau
+das Gegenteil war gemeint.
+
+**Der Wächter starb, statt zu melden.** Beim Falsifizieren des Rückwegs kam
+ein `TimeoutError` statt dreier Befunde: Der Marker war von der Tiefe
+verdeckt, und Playwright wartete 30 Sekunden auf ihn. Ein Stapelabzug zeigt
+auf die falsche Stelle. Jetzt prüft der Lauf erst, ob er wieder auf der Karte
+steht — und meldet sonst sauber.
+
+Falsifiziert: mit stillgelegtem Rückweg meldet `attention-check` zwei Befunde.
 
 **S4 — Die Maschinenansicht.** _offen._ Referenz, Vergleich, Ähnlichkeitswert,
 Spektrogramm, Verlauf, NFC/QR — aus der alten Oberfläche überführt.
