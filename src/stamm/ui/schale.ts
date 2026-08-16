@@ -1,0 +1,531 @@
+/**
+ * Die Schale: Blatt, Reiter, Kopf-Streifen.
+ *
+ * **Stamm.** Übernommen aus TourFuchs `src/ui/sidebar.js` — dort stehen diese
+ * Mechaniken zwischen Tourplanung, Gebietseditor und Servicevertrags-Radar
+ * verteilt über 1 998 Zeilen. Hier steht nur die Schale: die Teile, die das
+ * Blatt tragen, die Reiter schalten und den Kopf-Streifen befüllen. Alles
+ * andere ist fachlich entfallen (§0h).
+ *
+ * Übernommen sind namentlich:
+ *   - `SIDEBAR_MIN` / `SIDEBAR_MAX` / `SHEET_MIN_HEIGHT` / `DOCK_THRESHOLD`
+ *   - `sheetMaxHeight()` · `peekPx()` · `clampSheetHeight()` · `setSheetHeight()`
+ *   - `initSheetGrip()` — ein Griff für Höhe, Verschieben, Tippen, Doppelklick
+ *   - `applySidebar()` · `activateTab()` · `syncTopnavPlacement()`
+ *
+ * Die Zahlen sind nicht neu gewählt, sondern mitgebracht. Wer sie ändert,
+ * ändert das Vorbild — und muss das begründen, nicht nur messen.
+ *
+ * ## Der Zustand
+ *
+ * TourFuchs hält `state.ui.sidebarOpen` und `state.ui.activeTab` in einem
+ * globalen Zustandsobjekt, das auch Kunden, Touren und Gebiete trägt. Davon
+ * braucht die Schale zwei Felder. Sie stehen deshalb hier, im Modul, das sie
+ * benutzt — nicht in einem geteilten Behälter, der sie mit Fachdaten mischt.
+ */
+
+import { isPhoneUi, onFaceChange } from '../core/viewport.js';
+import { tiefeIstOffen, schliesseTiefe } from './scharnier.js';
+
+/** Schmalste Breite der Seitenleiste am Schreibtisch. Aus dem Stamm. */
+const SIDEBAR_MIN = 340;
+/** Breiteste. Aus dem Stamm. */
+const SIDEBAR_MAX = 400;
+/** Reicht für Griff + Reiter. Aus dem Stamm. */
+const SHEET_MIN_HEIGHT = 140;
+/** So nah am linken Rand dockt die schwebende Leiste wieder an. Aus dem Stamm. */
+const DOCK_THRESHOLD = 34;
+/** Ab hier ist es ein Ziehen und kein Tippen. Aus dem Stamm. */
+const ZIEH_SCHWELLE = 4;
+
+const SHEET_HEIGHT_KEY = 'sf_sheet_height';
+const SIDEBAR_WIDTH_KEY = 'sf_sidebar_width';
+const SIDEBAR_POS_KEY = 'sf_sidebar_position';
+
+/** Die Reiter, die es gibt. Im Stamm sind es sieben, hier drei. */
+export const REITER = ['karte', 'daten', 'filter'] as const;
+export type Reiter = (typeof REITER)[number];
+
+function istReiter(wert: string | undefined): wert is Reiter {
+  return !!wert && (REITER as readonly string[]).includes(wert);
+}
+
+/**
+ * Der Zustand der Schale — zwei Felder, mehr braucht sie nicht.
+ *
+ * `blattOffen` startet abhängig vom Gesicht: Am Schreibtisch steht die
+ * Seitenleiste, unterwegs liegt das Blatt auf Guckhöhe und die Karte ist frei.
+ * Im Stamm steht das als `sidebarOpen: !isPhoneUi()` (core/state.js). Ohne
+ * diese Zeile stand die Leiste am Schreibtisch bei x = −400 — also draußen.
+ */
+const zustand: { blattOffen: boolean; reiter: Reiter } = {
+  blattOffen: !isPhoneUi(),
+  reiter: 'daten',
+};
+
+/** Liegt das Panel als Blatt unten statt seitlich? Gleichbedeutend mit „unterwegs". */
+export function istBlatt(): boolean {
+  return isPhoneUi();
+}
+
+export function offenerReiter(): Reiter {
+  return zustand.reiter;
+}
+
+export function blattIstOffen(): boolean {
+  return zustand.blattOffen;
+}
+
+// ─── Ereignisse ────────────────────────────────────────────────────────────
+// Der Stamm hat einen eigenen kleinen Verteiler (`emit`/`on` in core/state.js).
+// Hier tut es das Dokument: Wer zuhören will, hört ohnehin schon auf
+// DOM-Ereignisse, und ein zweiter Verteiler daneben wäre ein zweiter Ort, an
+// dem man nach Zuhörern sucht.
+
+export const BLATT_GEAENDERT = 'stamm:blatt-geaendert';
+export const REITER_GEWECHSELT = 'stamm:reiter-gewechselt';
+
+function melde(name: string, detail: unknown): void {
+  document.dispatchEvent(new CustomEvent(name, { detail }));
+}
+
+// ─── Maße ──────────────────────────────────────────────────────────────────
+
+function topbarPx(): number {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--topbar-height');
+  return parseInt(v, 10) || 52;
+}
+
+function sheetMaxHeight(): number {
+  return Math.max(SHEET_MIN_HEIGHT, Math.round(window.innerHeight - topbarPx() - 8));
+}
+
+/** Sichtbare „Guckhöhe" des geschlossenen Blatts (nur der Griff schaut heraus). */
+function peekPx(): number {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--mobile-sheet-peek');
+  return parseInt(v, 10) || 46;
+}
+
+function clampSheetHeight(h: number): number {
+  return Math.max(SHEET_MIN_HEIGHT, Math.min(sheetMaxHeight(), Math.round(h)));
+}
+
+function setSheetHeight(h: number, merken = false): number {
+  const next = clampSheetHeight(h);
+  document.documentElement.style.setProperty('--sheet-height', `${next}px`);
+  document.getElementById('sidebar')?.classList.add('sheet-sized');
+  if (merken) {
+    try {
+      localStorage.setItem(SHEET_HEIGHT_KEY, String(next));
+    } catch {
+      /* Speicher voll oder gesperrt — die Höhe gilt trotzdem für diese Sitzung. */
+    }
+  }
+  return next;
+}
+
+function restoreSheetHeight(): void {
+  let gemerkt: string | null = null;
+  try {
+    gemerkt = localStorage.getItem(SHEET_HEIGHT_KEY);
+  } catch {
+    /* egal */
+  }
+  if (gemerkt) setSheetHeight(Number(gemerkt));
+}
+
+/**
+ * Die Unterkante des schwebenden Kopf-Streifens als CSS-Größe veröffentlichen.
+ *
+ * Aus dem Stamm, samt Anlass: Dort lag der Lasso-Knopf unter der Basis/Profi-
+ * Pille und war nicht antippbar, weil zwei für sich richtige Entscheidungen
+ * unabhängig voneinander an denselben Platz gezogen hatten. Der Streifen ist
+ * mal ein-, mal zweizeilig; eine feste Zahl im CSS wäre nur so lange richtig,
+ * bis jemand eine Zeile ergänzt. Gemessen wird deshalb, was dasteht.
+ */
+function topnavMasse(): void {
+  const nav = document.getElementById('mobile-topnav');
+  const sichtbar = !!nav && nav.offsetParent !== null && nav.getBoundingClientRect().height > 0;
+  const unterkante = sichtbar ? Math.round(nav.getBoundingClientRect().bottom) : topbarPx();
+  document.documentElement.style.setProperty('--mobile-topnav-bottom', `${unterkante}px`);
+}
+
+// ─── Kopf-Streifen ─────────────────────────────────────────────────────────
+
+/**
+ * Auf dem Handy die Ansichtstiefe (Basis/Profi) und die Reiterleiste aus dem
+ * Blatt in den festen Kopf-Streifen heben – so bleiben sie immer sichtbar
+ * „oben aufgehängt". Am Schreibtisch wandern beide an ihre ursprüngliche
+ * Stelle in der Seitenleiste zurück. Die Elemente behalten ihre Bezeichner und
+ * Klassen, daher greifen alle bestehenden Zuhörer unverändert.
+ */
+function reiterUmhaengen(): void {
+  const topnav = document.getElementById('mobile-topnav');
+  const sidebar = document.getElementById('sidebar');
+  const tiefe = document.getElementById('depth-switch');
+  const reiter = document.querySelector('.tabs');
+  if (!topnav || !sidebar || !tiefe || !reiter) return;
+
+  if (istBlatt()) {
+    // Reihenfolge im Streifen: erst Basis/Profi, dann die Reiter.
+    if (tiefe.parentElement !== topnav) topnav.appendChild(tiefe);
+    if (reiter.parentElement !== topnav) topnav.appendChild(reiter);
+  } else {
+    // Zurück in die Seitenleiste an die ursprünglichen Ankerpunkte.
+    const kartenstil = sidebar.querySelector('.basemap-control');
+    const erstesBlatt = sidebar.querySelector('.tab-panel');
+    if (tiefe.parentElement !== sidebar && kartenstil) sidebar.insertBefore(tiefe, kartenstil);
+    if (reiter.parentElement !== sidebar && erstesBlatt) sidebar.insertBefore(reiter, erstesBlatt);
+  }
+}
+
+// ─── Anwenden ──────────────────────────────────────────────────────────────
+
+export function schaleAnwenden(): void {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  sidebar.classList.toggle('open', zustand.blattOffen);
+  document
+    .getElementById('sidebar-toggle')
+    ?.setAttribute('aria-expanded', String(zustand.blattOffen));
+
+  const griff = document.getElementById('sheet-grip');
+  if (griff) {
+    if (istBlatt()) {
+      griff.setAttribute('aria-label', 'Panelgröße ändern');
+      griff.title = 'Ziehen: Größe · Tippen: ein-/ausklappen';
+    } else {
+      griff.setAttribute('aria-label', 'Panel: Größe ändern oder verschieben');
+      griff.title = 'Ziehen: ↕ Größe, ↔ verschieben · Doppelklick: zurück';
+    }
+  }
+
+  // Ob das Blatt offen ist, entscheidet, ob von der Karte etwas zu sehen ist.
+  // Als Klasse am Körper, damit schwebende Kartenelemente per CSS ausweichen
+  // können, ohne den Zustand selbst nachzuhalten. Aus dem Stamm.
+  document.body.classList.toggle('sheet-open', istBlatt() && zustand.blattOffen);
+  topnavMasse();
+  melde(BLATT_GEAENDERT, zustand.blattOffen);
+}
+
+export function reiterOeffnen(reiter: Reiter): void {
+  zustand.reiter = reiter;
+  document.querySelectorAll<HTMLElement>('.tab-button').forEach((b) => {
+    b.classList.toggle('active', b.dataset.tab === reiter);
+  });
+  document.querySelectorAll<HTMLElement>('.tab-panel').forEach((p) => {
+    p.classList.toggle('active', p.id === `tab-${reiter}`);
+  });
+  melde(REITER_GEWECHSELT, reiter);
+
+  if (istBlatt()) {
+    // Der Karten-Reiter ist der einzige, der das Blatt schließt: Er zeigt die
+    // Karte, und die liegt darunter. Aus dem Stamm.
+    zustand.blattOffen = reiter !== 'karte';
+    schaleAnwenden();
+  }
+}
+
+/** Das Blatt ganz auf die Guckhöhe zurückziehen (kein Rest). Aus dem Stamm. */
+function blattEinklappen(): void {
+  const sidebar = document.getElementById('sidebar');
+  sidebar?.classList.remove('sheet-sized');
+  document.documentElement.style.removeProperty('--sheet-height');
+  try {
+    localStorage.removeItem(SHEET_HEIGHT_KEY);
+  } catch {
+    /* egal */
+  }
+  zustand.blattOffen = false;
+  schaleAnwenden();
+}
+
+function blattUmschalten(): void {
+  const sidebar = document.getElementById('sidebar');
+  if (istBlatt()) {
+    // Auf „karte" gibt es nichts einzuklappen — dort ist das Blatt schon unten.
+    if (zustand.reiter === 'karte') {
+      reiterOeffnen('daten');
+      return;
+    }
+    zustand.blattOffen = !zustand.blattOffen;
+    schaleAnwenden();
+  } else if (sidebar?.classList.contains('sheet-sized')) {
+    // Schreibtisch: Klick setzt auf volle Höhe zurück.
+    sidebar.classList.remove('sheet-sized');
+    document.documentElement.style.removeProperty('--sheet-height');
+    try {
+      localStorage.removeItem(SHEET_HEIGHT_KEY);
+    } catch {
+      /* egal */
+    }
+  }
+}
+
+// ─── Die schwebende Leiste am Schreibtisch ─────────────────────────────────
+
+function sidebarPositionSetzen(pos: { left: number; top: number } | null): void {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  if (!pos) {
+    sidebar.classList.remove('floating');
+    sidebar.style.left = '';
+    sidebar.style.top = '';
+    return;
+  }
+  sidebar.classList.add('floating');
+  sidebar.style.left = `${Math.round(pos.left)}px`;
+  sidebar.style.top = `${Math.round(pos.top)}px`;
+}
+
+function sidebarPositionZuruecksetzen(): void {
+  sidebarPositionSetzen(null);
+  try {
+    localStorage.removeItem(SIDEBAR_POS_KEY);
+  } catch {
+    /* egal */
+  }
+}
+
+/** Eine gemerkte Schwebe-Position gilt ausschließlich am Schreibtisch. */
+function sidebarPositionFuersGesicht(): void {
+  if (istBlatt()) {
+    sidebarPositionSetzen(null);
+    return;
+  }
+  try {
+    const roh = localStorage.getItem(SIDEBAR_POS_KEY);
+    if (!roh) return;
+    const pos = JSON.parse(roh) as { left?: unknown; top?: unknown };
+    if (typeof pos.left === 'number' && typeof pos.top === 'number') {
+      sidebarPositionSetzen({ left: pos.left, top: pos.top });
+    }
+  } catch {
+    /* Unlesbar gemerkt ist so gut wie nicht gemerkt. */
+  }
+}
+
+function breiteKlemmen(breite: number): number {
+  return Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, Math.round(breite)));
+}
+
+function breiteSetzen(breite: number, merken = false): void {
+  const next = breiteKlemmen(breite);
+  document.documentElement.style.setProperty('--sidebar-width', `${next}px`);
+  if (merken) {
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(next));
+    } catch {
+      /* egal */
+    }
+  }
+}
+
+function breiteWiederherstellen(): void {
+  try {
+    const gemerkt = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+    if (gemerkt) breiteSetzen(Number(gemerkt));
+  } catch {
+    /* egal */
+  }
+}
+
+function ziehgriffBreite(): void {
+  const griff = document.getElementById('sidebar-resize');
+  const sidebar = document.getElementById('sidebar');
+  if (!griff || !sidebar) return;
+
+  let zieht = false;
+  griff.addEventListener('pointerdown', (ev) => {
+    if (istBlatt()) return;
+    zieht = true;
+    griff.setPointerCapture?.(ev.pointerId);
+    document.body.classList.add('sidebar-dragging');
+    ev.preventDefault();
+  });
+  griff.addEventListener('pointermove', (ev) => {
+    if (!zieht) return;
+    const links = sidebar.getBoundingClientRect().left;
+    breiteSetzen(ev.clientX - links);
+  });
+  const fertig = (): void => {
+    if (!zieht) return;
+    zieht = false;
+    document.body.classList.remove('sidebar-dragging');
+    breiteSetzen(sidebar.getBoundingClientRect().width, true);
+  };
+  griff.addEventListener('pointerup', fertig);
+  griff.addEventListener('pointercancel', fertig);
+}
+
+// ─── Der Griff ─────────────────────────────────────────────────────────────
+
+/**
+ * Ein Griff für alles: senkrecht ziehen = Höhe ändern, waagerecht ziehen =
+ * Panel verschieben (nur Schreibtisch), kurzer Klick = ein-/ausklappen bzw.
+ * volle Höhe, Doppelklick = Position zurücksetzen. Die Richtung entscheidet zu
+ * Beginn der Bewegung, was gemeint ist (unterwegs immer Höhe). Aus dem Stamm.
+ */
+function griffVerdrahten(): void {
+  const griff = document.getElementById('sheet-grip');
+  const sidebar = document.getElementById('sidebar');
+  if (!griff || !sidebar) return;
+
+  sidebarPositionFuersGesicht();
+
+  let art: 'pending' | 'resize' | 'move' | null = null;
+  let startX = 0;
+  let startY = 0;
+  let startH = 0;
+  let versatzX = 0;
+  let versatzY = 0;
+  let bewegt = false;
+  /** Vom Finger gewünschte Höhe, ungeklammert — entscheidet über „ganz zu". */
+  let roheHoehe = 0;
+
+  griff.addEventListener('pointerdown', (ev) => {
+    const rect = sidebar.getBoundingClientRect();
+    startX = ev.clientX;
+    startY = ev.clientY;
+    startH = rect.height;
+    versatzX = ev.clientX - rect.left;
+    versatzY = ev.clientY - rect.top;
+    art = 'pending';
+    bewegt = false;
+    griff.setPointerCapture?.(ev.pointerId);
+    ev.preventDefault();
+  });
+
+  griff.addEventListener('pointermove', (ev) => {
+    if (!art) return;
+    const dx = ev.clientX - startX;
+    const dy = ev.clientY - startY;
+    if (art === 'pending') {
+      if (Math.abs(dx) < ZIEH_SCHWELLE && Math.abs(dy) < ZIEH_SCHWELLE) return;
+      bewegt = true;
+      // Schreibtisch: überwiegend waagerecht → verschieben, sonst Größe.
+      // Unterwegs: immer Größe.
+      art = !istBlatt() && Math.abs(dx) > Math.abs(dy) ? 'move' : 'resize';
+      document.body.classList.add(art === 'move' ? 'sidebar-dragging' : 'sheet-resizing');
+      // Unterwegs aus dem geschlossenen Zustand kontinuierlich aufziehen: das
+      // Blatt zunächst auf die sichtbare Guckhöhe fixieren, damit es NICHT auf
+      // die volle Höhe springt, sondern von dort dem Finger folgt.
+      if (art === 'resize' && istBlatt() && !zustand.blattOffen) {
+        startH = setSheetHeight(peekPx());
+        zustand.blattOffen = true;
+        schaleAnwenden();
+      }
+    }
+    if (art === 'resize') {
+      roheHoehe = startH - dy;
+      setSheetHeight(roheHoehe);
+    } else if (art === 'move') {
+      sidebarPositionSetzen({ left: ev.clientX - versatzX, top: ev.clientY - versatzY });
+    }
+  });
+
+  const fertig = (): void => {
+    if (!art) return;
+    const getan = art;
+    art = null;
+    document.body.classList.remove('sheet-resizing', 'sidebar-dragging');
+    if (!bewegt) {
+      blattUmschalten();
+      return;
+    }
+    if (getan === 'resize') {
+      // Bis zum Boden gezogen = ganz einklappen (nicht bei der Mindesthöhe
+      // hängenbleiben). Das Blatt kehrt sauber zur Guckhöhe zurück.
+      if (istBlatt() && roheHoehe <= SHEET_MIN_HEIGHT) {
+        blattEinklappen();
+        return;
+      }
+      try {
+        localStorage.setItem(
+          SHEET_HEIGHT_KEY,
+          String(Math.round(sidebar.getBoundingClientRect().height))
+        );
+      } catch {
+        /* egal */
+      }
+    } else {
+      const rect = sidebar.getBoundingClientRect();
+      if (rect.left <= DOCK_THRESHOLD) {
+        sidebarPositionZuruecksetzen();
+      } else {
+        try {
+          localStorage.setItem(SIDEBAR_POS_KEY, JSON.stringify({ left: rect.left, top: rect.top }));
+        } catch {
+          /* egal */
+        }
+      }
+    }
+  };
+
+  griff.addEventListener('pointerup', fertig);
+  griff.addEventListener('pointercancel', fertig);
+  griff.addEventListener('dblclick', () => {
+    if (!istBlatt()) sidebarPositionZuruecksetzen();
+  });
+}
+
+// ─── Aufbau ────────────────────────────────────────────────────────────────
+
+/**
+ * Die Schale in Betrieb nehmen. Einmal beim Start.
+ *
+ * Der Unterschied zwischen „unterwegs" und „Schreibtisch" wird hier **einmal**
+ * gezogen und danach nur noch beim Wechsel des Gesichts nachgeführt — nicht
+ * bei jeder Größenänderung. Ein Fenster, das breiter gezogen wird, ohne die
+ * Grenze zu überschreiten, darf nichts zurücksetzen.
+ */
+export function schaleAufbauen(): void {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+
+  breiteWiederherstellen();
+  restoreSheetHeight();
+  reiterUmhaengen();
+  griffVerdrahten();
+  ziehgriffBreite();
+
+  document.querySelectorAll<HTMLElement>('.tab-button').forEach((knopf) => {
+    knopf.addEventListener('click', () => {
+      const ziel = knopf.dataset.tab;
+      if (istReiter(ziel)) reiterOeffnen(ziel);
+    });
+  });
+
+  document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
+    // Aus der Tiefe heraus bedeutet „☰" zuerst: zeig mir die Navigation. Die
+    // liegt auf der Kartenebene. Ohne diesen Fall schaltete der Knopf eine
+    // Leiste um, die gerade gar nicht zu sehen ist — ein Knopf, der scheinbar
+    // nichts tut.
+    if (tiefeIstOffen()) {
+      schliesseTiefe();
+      return;
+    }
+    zustand.blattOffen = !zustand.blattOffen;
+    schaleAnwenden();
+  });
+
+  // Unterwegs startet die Karte frei: das Blatt liegt auf Guckhöhe, und der
+  // Karten-Reiter ist der offene. Am Schreibtisch steht die Seitenleiste
+  // ohnehin, dort ist „Standorte" der sinnvolle Einstieg.
+  reiterOeffnen(istBlatt() ? 'karte' : 'daten');
+
+  onFaceChange(() => {
+    reiterUmhaengen();
+    sidebarPositionFuersGesicht();
+    // Der Karten-Reiter existiert nur unterwegs. Wer am Schreibtisch landet,
+    // während er offen war, stünde sonst vor einem leeren Blatt.
+    if (!istBlatt() && zustand.reiter === 'karte') {
+      reiterOeffnen('daten');
+    } else {
+      schaleAnwenden();
+    }
+  });
+
+  window.addEventListener('resize', topnavMasse, { passive: true });
+  schaleAnwenden();
+}

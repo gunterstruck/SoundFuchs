@@ -292,6 +292,59 @@ const port = await freierPort();
 const vorschau = await starteVorschau(port);
 
 let chromium;
+/**
+ * Hinter das Scharnier.
+ *
+ * Die meisten Blöcke hier messen die bisherige SoundFuchs-Oberfläche —
+ * Leerzustand, Standort anlegen, Beispieldaten, Import. Sie liegt seit dem
+ * 16.08.2026 hinter dem Scharnier (§0h) und ist beim Start verborgen; ohne
+ * diesen Griff misst jeder von ihnen ein `display: none` und meldet, dass
+ * alles fehlt.
+ *
+ * Der Block „Stamm und Scharnier" ist die Ausnahme: Er misst die Kartenebene
+ * selbst und muss draußen bleiben.
+ */
+/**
+ * Die Beispieldaten draußen lassen.
+ *
+ * Der Stamm füllt eine leere Karte beim ersten Besuch selbst
+ * (`stamm/ui/beispieldaten.ts`) — genau das macht sein erstes Bild aus. Für
+ * ein Messgerät ist es Gift: Die Blöcke hier legen ihren eigenen Bestand an
+ * und zählen ihn, und ein Ladevorgang, der 1,2 Sekunden nach dem Kartenaufbau
+ * dazwischenfährt, verfälscht jede dieser Zahlen — mal so, mal so, je nachdem
+ * wie schnell die Maschine ist.
+ *
+ * Abgesagt wird über denselben Merkposten, den auch der „Entfernen"-Knopf
+ * setzt. Kein Sonderweg fürs Messen, sondern der Zustand eines Nutzers, der
+ * die Beispieldaten schon einmal weggeräumt hat.
+ */
+async function ohneBeispieldaten(page) {
+  await page.addInitScript(() => localStorage.setItem('sf_beispieldaten_abgelehnt', 'ja'));
+}
+
+async function inDieTiefe(page, { profi = false } = {}) {
+  await page.waitForTimeout(2500);
+  // Basis/Profi gilt für die ganze Anwendung und wird auf der Kartenebene
+  // gestellt — also hier, bevor die Tür aufgeht. Vorher traf ein
+  // `.view-level-btn[data-level="expert"]` per `.first()` immer die Pille in
+  // der Kopfzeile; die liegt jetzt im Stamm und ruht, solange die Tiefe offen
+  // ist. Umgekehrt herum ist es kein Behelf, sondern der Weg selbst.
+  if (profi) {
+    await page
+      .locator('#depth-switch .view-level-btn[data-level="expert"]')
+      .click({ force: true })
+      .catch(() => {});
+    await page.waitForTimeout(700);
+  }
+  await page.evaluate(() => {
+    const tiefe = document.getElementById('zanobo-tiefe');
+    if (!tiefe) return;
+    tiefe.hidden = false;
+    document.body.classList.add('tiefe-offen');
+  });
+  await page.waitForTimeout(600);
+}
+
 try {
   ({ chromium } = require('playwright'));
 } catch {
@@ -313,8 +366,9 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
-    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
+    await ohneBeispieldaten(page);
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await inDieTiefe(page);
     await page.waitForTimeout(2000);
 
     console.log(`\n=== ${format.name} (${format.viewport.width}×${format.viewport.height}) ===`);
@@ -425,8 +479,9 @@ try {
   {
     const ctx = await browser.newContext({ viewport: FORMATE[0].viewport, locale: 'de-DE' });
     const page = await ctx.newPage();
-    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
+    await ohneBeispieldaten(page);
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await inDieTiefe(page);
     await page.waitForTimeout(2000);
 
     /** Knopf → Stelle, zu der er springt. */
@@ -504,8 +559,9 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
-    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
+    await ohneBeispieldaten(page);
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await inDieTiefe(page);
     await page.waitForTimeout(2000);
 
     const knopf = page.locator('#empty-state-cta');
@@ -559,8 +615,9 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
-    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
+    await ohneBeispieldaten(page);
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await inDieTiefe(page);
     await page.waitForTimeout(2000);
 
     const cta = page.locator('#empty-state-cta');
@@ -647,7 +704,7 @@ try {
     let karteZu = false;
 
     if (inListe) {
-      await page.locator('#app-menu-btn').click();
+      await page.locator('#btn-info').click();
       await page.waitForTimeout(700);
       const zeile = page.locator('.info-sheet-row[data-karte]');
       zeileDa = await zeile.isVisible().catch(() => false);
@@ -657,20 +714,20 @@ try {
         // Leaflet wird erst jetzt geholt.
         await page.waitForTimeout(2500);
 
-        markerZahl = await page.locator('#customer-map .leaflet-marker-icon').count();
+        markerZahl = await page.locator('#map .leaflet-marker-icon').count();
         gruende = await page.locator('#map-basemap-row .map-basemap-btn').count();
         // Die Postleitzahlgebiete als Flächen — das „Deutschlandbild". Zehn
         // einstellige Gebiete auf der Übersichtsstufe. Ohne sie wäre die Karte
         // wieder nur Kacheln mit Punkten darauf.
-        gebiete = await page.locator('#customer-map path.leaflet-interactive').count();
+        gebiete = await page.locator('#map path.leaflet-interactive').count();
         quelle = await page
-          .locator('#customer-map .leaflet-control-attribution')
+          .locator('#map .leaflet-control-attribution')
           .first()
           .innerText()
           .catch(() => '');
 
         if (markerZahl > 0) {
-          await page.locator('#customer-map .leaflet-marker-icon').first().click();
+          await page.locator('#map .leaflet-marker-icon').first().click();
           await page.waitForTimeout(800);
           blattDa = await page
             .locator('#customer-sheet')
@@ -746,15 +803,16 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
-    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
+    await ohneBeispieldaten(page);
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await inDieTiefe(page);
     await page.waitForTimeout(2000);
 
     const stufe = await page.evaluate(() =>
       document.documentElement.getAttribute('data-view-level')
     );
 
-    await page.locator('#app-menu-btn').click();
+    await page.locator('#btn-info').click();
     await page.waitForTimeout(800);
     const karteImMenue = await page
       .locator('.info-sheet-row[data-karte]')
@@ -773,7 +831,7 @@ try {
       await page.locator('.info-sheet-row[data-karte]').click();
       // Leaflet plus die Flächendatei.
       await page.waitForTimeout(5000);
-      flaechen = await page.locator('#customer-map path.leaflet-interactive').count();
+      flaechen = await page.locator('#map path.leaflet-interactive').count();
       einstiegDa = await page
         .locator('#map-empty')
         .isVisible()
@@ -782,7 +840,7 @@ try {
       if (einstiegDa) {
         await page.locator('#map-empty-demo-btn').click();
         await page.waitForTimeout(9000);
-        markerNachEinstieg = await page.locator('#customer-map .leaflet-marker-icon').count();
+        markerNachEinstieg = await page.locator('#map .leaflet-marker-icon').count();
       }
     }
 
@@ -837,8 +895,9 @@ try {
   {
     const ctx = await browser.newContext({ viewport: FORMATE[0].viewport, locale: 'de-DE' });
     const page = await ctx.newPage();
-    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
+    await ohneBeispieldaten(page);
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await inDieTiefe(page);
     await page.waitForTimeout(2000);
 
     await page.evaluate(() => document.getElementById('about-btn')?.click());
@@ -910,17 +969,15 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
-    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
+    await ohneBeispieldaten(page);
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(2000);
-
     // Die Kategorie liegt hinter der Experten-Stufe (wie die Datenverwaltung
     // direkt daneben) — ohne den Wechsel bliebe die Menüzeile unsichtbar und
     // der Test träfe die falsche Ursache.
-    await page.locator('.view-level-btn[data-level="expert"]').first().click();
-    await page.waitForTimeout(500);
+    await inDieTiefe(page, { profi: true });
+    await page.waitForTimeout(2000);
 
-    await page.locator('#app-menu-btn').click();
+    await page.locator('#btn-info').click();
     await page.waitForTimeout(700);
     const kundenZeile = page.locator('.info-sheet-row[data-thema="standorte"]');
     const zeileDa = await kundenZeile.isVisible().catch(() => false);
@@ -954,9 +1011,9 @@ try {
       await page.waitForTimeout(6000);
       maschinenNachLaden = await page.locator('.machine-item').count();
 
-      await page.locator('.view-level-btn[data-level="expert"]').first().click();
-      await page.waitForTimeout(300);
-      await page.locator('#app-menu-btn').click();
+      // Nach dem Neuladen steht die Tiefe wieder zu und die Stufe auf Basis.
+      await inDieTiefe(page, { profi: true });
+      await page.locator('#btn-info').click();
       await page.waitForTimeout(700);
       await page.locator('.info-sheet-row[data-thema="standorte"]').click();
       await page.waitForTimeout(500);
@@ -1020,13 +1077,12 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
-    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'alt'));
+    await ohneBeispieldaten(page);
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    await inDieTiefe(page, { profi: true });
     await page.waitForTimeout(2000);
 
-    await page.locator('.view-level-btn[data-level="expert"]').first().click();
-    await page.waitForTimeout(500);
-    await page.locator('#app-menu-btn').click();
+    await page.locator('#btn-info').click();
     await page.waitForTimeout(700);
     const kundenZeileDa = await page
       .locator('.info-sheet-row[data-thema="standorte"]')
@@ -1045,8 +1101,10 @@ try {
         importKnopf.click(),
       ]);
       await dateiwahl.setFiles(csvPfad);
-      // Import plus Neuladen der Seite.
+      // Import plus Neuladen der Seite. Danach steht die Tiefe wieder zu — der
+      // Bestand liegt darin, und „nicht sichtbar" hieße sonst „gibt es nicht".
       await page.waitForTimeout(3500);
+      await inDieTiefe(page);
       maschineDa = await page
         .locator('.machine-item', { hasText: 'Import-Pumpe 1' })
         .first()
@@ -1068,23 +1126,25 @@ try {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // DIE NEUE SCHALE (Schnitt 2 — docs/nutzerreise-wie-tourfuchs.md)
+  // DER STAMM UND DAS SCHARNIER (docs/nutzerreise-wie-tourfuchs.md §0h)
   //
-  // Die Schale hängt vorhandene Abschnitte um, statt sie neu zu bauen. Das
-  // ist ihre ganze Sicherheit — und zugleich die Stelle, an der sie still
-  // brechen kann: Ein Element, das nach dem Umhängen nicht ankommt, ist
-  // einfach weg. Nichts stürzt ab, nichts meldet sich.
+  // Hier stand bis zum 16.08.2026 die Prüfung der „neuen Schale": Grund,
+  // Kopfstreifen, vier Reiter, Hin- und Rückweg des Schalters. Diese Schale
+  // gibt es nicht mehr — sie war der Nachbau, den §0h zurücknimmt, und mit
+  // ihr sind Schalter, Umzugsliste und Rückweg entfallen.
   //
-  // Gemessen wird deshalb beides, Hinweg und Rückweg:
+  // Was an ihre Stelle tritt, prüft die zwei Dinge, an denen der Stamm still
+  // brechen kann:
   //
-  //   1. Der Grund trägt die Karte, nicht mehr das Fenster.
-  //   2. Der Kopfstreifen trägt Ansichtstiefe UND vier Reiter.
-  //   3. Das Blatt steht im leeren Bestand halbhoch, nicht als 46-px-Streifen.
-  //   4. Ein Reiterwechsel wechselt wirklich die Tafel.
-  //   5. Zurückgeschaltet steht alles wieder da, wo es herkam.
+  //   1. Steht er überhaupt? Kopfleiste, Karte als Grund, Blatt, Knopfzeile,
+  //      Ansichtstiefe und Reiter am jeweils richtigen Ort — auf dem Handy im
+  //      Kopfstreifen, am Schreibtisch in der Seitenleiste.
+  //   2. Trägt das Scharnier in beide Richtungen? Eine Tür, die aufgeht und
+  //      nicht wieder zu, ist keine.
   //
-  // Punkt 5 ist der wichtigste. Solange die alte Reise die geprüfte ist, darf
-  // der Ausflug in die neue sie nicht beschädigen.
+  // Punkt 2 ist der wichtigere. Der Prüfweg liegt vollständig dahinter; wer
+  // nicht zurückkommt, sitzt in der Tiefe fest, und die Karte — die ganze
+  // erste Ebene — wäre unerreichbar.
   {
     const ctx = await browser.newContext({
       viewport: FORMATE[0].viewport,
@@ -1093,576 +1153,121 @@ try {
       locale: 'de-DE',
     });
     const page = await ctx.newPage();
-    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'neu'));
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(3500);
 
-    const an = await page.evaluate(() => ({
-      merkmal: document.documentElement.dataset.schale ?? '(aus)',
-      grundDa: Boolean(document.getElementById('karten-grund')),
-      karteImGrund: Boolean(document.querySelector('#karten-grund #customer-map')),
-      tiefeImStreifen: Boolean(document.querySelector('#schale-streifen #depth-switch')),
-      reiter: document.querySelectorAll('#schale-streifen .schale-reiter-btn').length,
-      rumpfInTafel: Boolean(document.querySelector('#schale-tafel-daten .container')),
-      kopfUeberAllem: document.querySelector('.topbar')?.parentElement?.tagName === 'BODY',
-      blattHoch: Math.round(
-        document.getElementById('schale-blatt')?.getBoundingClientRect().height ?? 0
-      ),
-      einstieg: document.getElementById('schale-blatt')?.classList.contains('einstieg') ?? false,
-    }));
+    const steht = await page.evaluate(() => {
+      const da = (sel) => {
+        const e = document.querySelector(sel);
+        if (!e) return false;
+        const cs = getComputedStyle(e);
+        return cs.display !== 'none' && cs.visibility !== 'hidden' &&
+          e.getBoundingClientRect().height > 0;
+      };
+      return {
+        kopfleiste: da('#app > .topbar'),
+        karteImGrund: da('#app > main#map'),
+        blatt: Boolean(document.getElementById('sidebar')),
+        knopfzeile: da('#map-fab-row'),
+        tiefeImStreifen: Boolean(document.querySelector('#mobile-topnav #depth-switch')),
+        reiterImStreifen: document.querySelectorAll('#mobile-topnav .tab-button').length,
+        tiefeZu: document.getElementById('zanobo-tiefe')?.hidden ?? false,
+      };
+    });
 
-    // Ein Reiterwechsel muss die Tafel wirklich wechseln — sonst sind die
-    // Reiter vier Knöpfe, die nichts tun.
-    let tafelGewechselt = false;
-    if (an.reiter > 0) {
-      await page.locator('.schale-reiter-btn[data-reiter="filter"]').click();
-      await page.waitForTimeout(400);
-      tafelGewechselt = await page.evaluate(
-        () =>
-          (document.getElementById('schale-tafel-filter')?.classList.contains('active') ?? false) &&
-          !(document.getElementById('schale-tafel-daten')?.classList.contains('active') ?? true)
-      );
-    }
-
-    // Zurückschalten über den Schalter in den Einstellungen — den Weg, den
-    // auch ein Mensch geht.
-    await page
-      .locator('.schale-reiter-btn[data-reiter="daten"]')
-      .click()
-      .catch(() => {});
-    await page.waitForTimeout(300);
-    await page.locator('#app-info-btn').click();
+    // Die Tür in beide Richtungen. Der Weg des Nutzers führt über einen
+    // Standort auf der Karte; der hängt an den Beispieldaten und daran, wo
+    // gerade ein Punkt liegt. Geprüft wird deshalb die Mechanik selbst — sie
+    // ist es, die tragen muss.
+    await page.evaluate(() => {
+      document.getElementById('zanobo-tiefe').hidden = false;
+      document.body.classList.add('tiefe-offen');
+    });
     await page.waitForTimeout(700);
-    await page.locator('.info-sheet-row[data-thema="ansicht"]').click();
-    await page.waitForTimeout(800);
-    const schalterDa = await page
-      .locator('#schale-toggle')
-      .isVisible()
-      .catch(() => false);
-    if (schalterDa) await page.locator('#schale-toggle').click({ force: true });
-    await page.waitForTimeout(1200);
-
-    const zurueck = await page.evaluate(() => ({
-      merkmal: document.documentElement.dataset.schale ?? '(aus)',
-      grundWeg: !document.getElementById('karten-grund'),
-      karteImFenster: Boolean(document.querySelector('#customer-map-modal #customer-map')),
-      tiefeImRumpf: Boolean(document.querySelector('.container > #depth-switch')),
-      kopfImRumpf: Boolean(document.querySelector('.container > .topbar')),
-      rumpfImKoerper: document.querySelector('.container')?.parentElement?.tagName === 'BODY',
+    const drin = await page.evaluate(() => ({
+      tiefeOffen: document.body.classList.contains('tiefe-offen'),
+      // Gemessen an der Karte, nicht an `#app`: Die Kopfleiste bleibt mit
+      // Absicht stehen (sie trägt ⓘ, Suche und Basis/Profi), also ist `#app`
+      // selbst sichtbar. Ruhen muss, was die Tiefe verdecken würde.
+      stammRuht: getComputedStyle(document.getElementById('map')).visibility === 'hidden',
+      rueckwegDa: Boolean(document.querySelector('.tiefe-zurueck')),
+      bestandDa: Boolean(document.querySelector('#zanobo-tiefe .container')),
     }));
 
-    console.log('\n=== Neue Schale ===');
-    console.log(`Merkmal am <html>         ${an.merkmal}`);
-    console.log(`Karte im Grund            ${an.karteImGrund ? 'ja' : 'NEIN'}`);
-    console.log(`Tiefe im Kopfstreifen     ${an.tiefeImStreifen ? 'ja' : 'NEIN'}`);
-    console.log(`Reiter im Streifen        ${an.reiter}`);
-    console.log(`Rumpf im Reiter „Daten"   ${an.rumpfInTafel ? 'ja' : 'NEIN'}`);
-    console.log(`Kopfleiste über allem     ${an.kopfUeberAllem ? 'ja' : 'NEIN'}`);
-    console.log(`Blatt im leeren Bestand   ${an.blattHoch} px (Einstieg: ${an.einstieg})`);
-    console.log(`Reiterwechsel             ${tafelGewechselt ? 'wechselt' : 'WECHSELT NICHT'}`);
-    console.log(`Schalter in Einstellungen ${schalterDa ? 'sichtbar' : 'FEHLT'}`);
-    console.log(`Zurück: Merkmal           ${zurueck.merkmal}`);
-    console.log(`Zurück: Karte im Fenster  ${zurueck.karteImFenster ? 'ja' : 'NEIN'}`);
-    console.log(`Zurück: Tiefe im Rumpf    ${zurueck.tiefeImRumpf ? 'ja' : 'NEIN'}`);
-    console.log(`Zurück: Kopf im Rumpf     ${zurueck.kopfImRumpf ? 'ja' : 'NEIN'}`);
+    await page.locator('.tiefe-zurueck').click({ force: true }).catch(() => {});
+    await page.waitForTimeout(700);
+    const zurueck = await page.evaluate(() => ({
+      tiefeZu: document.getElementById('zanobo-tiefe')?.hidden ?? false,
+      stammDa: getComputedStyle(document.getElementById('map')).visibility !== 'hidden',
+      karteDa: (document.getElementById('map')?.getBoundingClientRect().height ?? 0) > 0,
+    }));
 
+    console.log('\n=== Stamm und Scharnier ===');
+    console.log(`Kopfleiste                ${steht.kopfleiste ? 'ja' : 'NEIN'}`);
+    console.log(`Karte als Grund           ${steht.karteImGrund ? 'ja' : 'NEIN'}`);
+    console.log(`Knopfzeile über der Karte ${steht.knopfzeile ? 'ja' : 'NEIN'}`);
+    console.log(`Tiefe im Kopfstreifen     ${steht.tiefeImStreifen ? 'ja' : 'NEIN'}`);
+    console.log(`Reiter im Streifen        ${steht.reiterImStreifen}`);
+    console.log(`Tiefe beim Start zu       ${steht.tiefeZu ? 'ja' : 'NEIN'}`);
+    console.log(`Auf: Stamm ruht           ${drin.stammRuht ? 'ja' : 'NEIN'}`);
+    console.log(`Auf: Bestand da           ${drin.bestandDa ? 'ja' : 'NEIN'}`);
+    console.log(`Zu:  Karte wieder da      ${zurueck.karteDa ? 'ja' : 'NEIN'}`);
+
+    pruefe(steht.kopfleiste, 'Stamm: die Kopfleiste steht nicht — das Gerüst ist nicht aufgebaut');
     pruefe(
-      an.merkmal === 'neu',
-      'Schale: der Schalter steht auf „neu", die Schale läuft aber nicht'
+      steht.karteImGrund,
+      'Stamm: die Karte liegt nicht als Grund unter der Schale — die erste Ebene fehlt'
     );
-    pruefe(an.karteImGrund, 'Schale: die Karte liegt nicht im Grund — der Grund ist leer');
+    pruefe(steht.blatt, 'Stamm: das Blatt fehlt im Baum');
     pruefe(
-      an.tiefeImStreifen,
-      'Schale: die Ansichtstiefe ist nicht in den Kopfstreifen gezogen — sie fährt mit dem Blatt aus dem Bild'
-    );
-    pruefe(an.reiter === 4, `Schale: ${an.reiter} statt 4 Reiter im Kopfstreifen`);
-    pruefe(
-      an.rumpfInTafel,
-      'Schale: der bisherige Rumpf steht nicht im Reiter „Daten" — die ganze bisherige Reise wäre unerreichbar'
-    );
-    pruefe(an.kopfUeberAllem, 'Schale: die Kopfleiste sitzt noch im Blatt und fährt mit ihm weg');
-    pruefe(
-      an.einstieg && an.blattHoch > 300,
-      `Schale: das Blatt steht im leeren Bestand ${an.blattHoch} px hoch — erwartet halbhoch, sonst sagt beim ersten Start nichts, was zu tun ist`
-    );
-    pruefe(
-      tafelGewechselt,
-      'Schale: der Reiterwechsel wechselt die Tafel nicht — die Reiter tun nichts'
-    );
-    pruefe(schalterDa, 'Schale: der Schalter fehlt in den Einstellungen — es gibt keinen Rückweg');
-    pruefe(
-      zurueck.merkmal === '(aus)',
-      'Schale: zurückgeschaltet bleibt das Merkmal am <html> stehen'
-    );
-    pruefe(zurueck.grundWeg, 'Schale: zurückgeschaltet bleibt der Grund im Baum stehen');
-    pruefe(
-      zurueck.karteImFenster,
-      'Schale: zurückgeschaltet ist die Karte nicht in ihr Fenster zurückgekehrt — die Kartenzeile im Menü führt ins Leere'
+      steht.knopfzeile,
+      'Stamm: die Knopfzeile über der Karte fehlt — „In der Nähe" ist unerreichbar'
     );
     pruefe(
-      zurueck.tiefeImRumpf,
-      'Schale: zurückgeschaltet steht die Ansichtstiefe nicht wieder im Rumpf'
+      steht.tiefeImStreifen,
+      'Stamm: die Ansichtstiefe ist nicht in den Kopfstreifen gezogen — sie fährt mit dem Blatt aus dem Bild'
     );
     pruefe(
-      zurueck.kopfImRumpf,
-      'Schale: zurückgeschaltet steht die Kopfleiste nicht wieder im Rumpf'
+      steht.reiterImStreifen === 3,
+      `Stamm: ${steht.reiterImStreifen} statt 3 Reiter im Kopfstreifen`
     );
     pruefe(
-      zurueck.rumpfImKoerper,
-      'Schale: zurückgeschaltet hängt der Rumpf nicht wieder am Körper'
+      steht.tiefeZu,
+      'Scharnier: die Tiefe steht beim Start offen — die Karte wäre nie das erste Bild'
+    );
+    pruefe(drin.tiefeOffen && drin.bestandDa, 'Scharnier: die Tür geht auf, aber dahinter steht nichts');
+    pruefe(
+      drin.stammRuht,
+      'Scharnier: der Stamm bleibt sichtbar, während die Tiefe offen ist — zwei Oberflächen übereinander'
+    );
+    pruefe(drin.rueckwegDa, 'Scharnier: es gibt keinen Rückweg aus der Tiefe');
+    pruefe(zurueck.tiefeZu, 'Scharnier: die Tür geht nicht wieder zu');
+    pruefe(
+      zurueck.stammDa && zurueck.karteDa,
+      'Scharnier: nach dem Zurückgehen ist die Karte nicht wieder da — der Rückweg führt ins Leere'
     );
 
     await ctx.close();
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // DIE KETTE VON DER KARTE IN DIE PRÜFUNG (Schnitt 3)
+  // WAS HIER STAND
   //
-  //   Marker → Standortblatt → Maschinenzeile → Maschinenblatt → Prüfung
+  // Bis zum 16.08.2026 folgten hier drei weitere Blöcke: die Kette von der
+  // Karte in die Prüfung (Schnitt 3), der Reiter „Flotte" (Schnitt 5) und die
+  // Nahliste mit dem Standortfilter (Schnitt 6). Alle drei maßen Elemente der
+  // alten Schale — `#schale-blatt`, `#schale-griff`, `.schale-reiter-btn`,
+  // `#customer-map` im Fenster. Keines davon gibt es noch.
   //
-  // Das ist die Reise, um die es in der neuen Schale geht: Der Maschinenknopf
-  // im Standort-Popup entspricht TourFuchs' Briefing-Knopf, und dahinter baut
-  // sich im semantischen Zoom der Prüfablauf auf (§0c des Papiers).
+  // Sie sind nicht ersatzlos gestrichen, sondern noch nicht neu geschrieben:
+  // Was sie prüften, gehört hinter das Scharnier und wird dort gebaut. Bis
+  // dahin wären es Wächter, die eine Behauptung über etwas Verschwundenes
+  // aufrechterhalten — und ein Wächter, der immer grün ist, weil er nichts
+  // mehr findet, ist schlimmer als keiner.
   //
-  // Jedes Glied kann still reißen, und zwei sind es beim Bauen auch:
-  //
-  //   1. Die Karte kannte ihren freien Bereich nicht. Deutschland lag unter
-  //      dem Blatt, die Marker waren nicht anzutippen — die Kette begann
-  //      nicht einmal. Gemessen wird deshalb, wo das erste Marker-Symbol
-  //      wirklich liegt, nicht ob es existiert.
-  //   2. Der letzte Sprung landete in einer eingeklappten Tafel. Getippt,
-  //      nichts passiert, die Karte steht unverändert da. Gemessen wird
-  //      deshalb, ob der nächste Abschnitt am Ende IM BILD steht.
-  {
-    const ctx = await browser.newContext({
-      viewport: FORMATE[0].viewport,
-      hasTouch: true,
-      isMobile: true,
-      locale: 'de-DE',
-    });
-    const page = await ctx.newPage();
-    await page.addInitScript(() => localStorage.setItem('zanobot.schale', 'neu'));
-    await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(2500);
-
-    // Beispieldaten über den Knopf in der leeren Karte — derselbe Weg, den
-    // ein Neuling nimmt.
-    const einstieg = page.locator('#map-empty-demo-btn');
-    if (await einstieg.isVisible().catch(() => false)) {
-      await einstieg.click();
-      await page.waitForTimeout(8000);
-    }
-
-    // JETZT messen, mit noch aufgezogenem Blatt. Genau das ist die Lage, in
-    // der es brach: Das Blatt verdeckt 439 von 792 Punkten, und die Karte muss
-    // ihren Inhalt in den Rest darüber schieben. Erst danach einklappen —
-    // eingeklappt hätte die Messung nichts zu sagen, weil dann ohnehin fast
-    // die ganze Fläche frei ist.
-    const messeMarker = () =>
-      page.evaluate(() => {
-        const blatt = document.getElementById('schale-blatt')?.getBoundingClientRect();
-        const alle = [...document.querySelectorAll('#customer-map .leaflet-marker-icon')];
-        const oberstes = alle.length
-          ? Math.min(...alle.map((e) => Math.round(e.getBoundingClientRect().top)))
-          : null;
-        const grenze = blatt ? blatt.top : window.innerHeight;
-        return {
-          marker: alle.length,
-          einzeln: document.querySelectorAll('#customer-map .customer-marker-wrapper').length,
-          stapel: document.querySelectorAll('#customer-map .customer-cluster-wrapper').length,
-          oberstesMarkerY: oberstes,
-          blattOben: blatt ? Math.round(blatt.top) : null,
-          // Nicht das oberste Symbol zählt, sondern das unterste: Rutscht die
-          // Karte nach unten, verschwinden zuerst die südlichen Standorte, und
-          // das oberste steht weiter unschuldig im Bild.
-          hinterDemBlatt: alle.filter((e) => e.getBoundingClientRect().top >= grenze).length,
-        };
-      });
-    const karte = await messeMarker();
-
-    // Das Blatt einklappen: Die Karte ist der Grund, und man sieht sie an.
-    await page
-      .locator('#schale-griff')
-      .click()
-      .catch(() => {});
-    await page.waitForTimeout(1400);
-
-    // In Stapel hineinzoomen, bis ein einzelner Standort dasteht.
-    for (let i = 0; i < 8; i += 1) {
-      const einzeln = page.locator('#customer-map .customer-marker-wrapper');
-      if ((await einzeln.count()) > 0) {
-        await einzeln.first().click({ force: true });
-        await page.waitForTimeout(1300);
-        break;
-      }
-      const stapel = page.locator('#customer-map .customer-cluster-wrapper');
-      if ((await stapel.count()) === 0) break;
-      await stapel.first().click({ force: true });
-      await page.waitForTimeout(1400);
-    }
-
-    const blattDa = await page
-      .locator('#customer-sheet')
-      .isVisible()
-      .catch(() => false);
-    const zeilen = await page.locator('#customer-sheet .customer-machine-row').count();
-
-    let fensterDa = false;
-    let knopfText = '(nicht erreicht)';
-    if (zeilen > 0) {
-      await page.locator('#customer-sheet .customer-machine-row').first().click({ force: true });
-      await page.waitForTimeout(1600);
-      fensterDa = await page
-        .locator('#machine-detail-modal')
-        .isVisible()
-        .catch(() => false);
-      const knopf = page.locator('#machine-detail-select-btn');
-      if (await knopf.isVisible().catch(() => false)) {
-        knopfText = (await knopf.innerText()).trim();
-        await knopf.click({ force: true });
-        await page.waitForTimeout(2500);
-      }
-    }
-
-    const ziel = await page.evaluate(() => {
-      const imBild = (id) => {
-        const e = document.getElementById(id);
-        if (!e) return null;
-        const cs = getComputedStyle(e);
-        if (cs.display === 'none') return null;
-        const r = e.getBoundingClientRect();
-        return r.height > 0 && r.top < window.innerHeight && r.bottom > 0
-          ? { y: Math.round(r.top), h: Math.round(r.height) }
-          : null;
-      };
-      const sichtbar = (sel) => {
-        const e = document.querySelector(sel);
-        return Boolean(e) && !e.hidden && getComputedStyle(e).display !== 'none';
-      };
-      return {
-        blattOffen: document.getElementById('schale-blatt')?.classList.contains('offen') ?? false,
-        reiter: document.querySelector('.schale-reiter-btn.active')?.dataset.reiter ?? '—',
-        aufnahme: imBild('record-reference-content'),
-        pruefung: imBild('run-diagnosis-content'),
-        // Die Zoomstufe: Leiste statt Reiter, mit dem Namen der Maschine.
-        zoomleiste: sichtbar('#schale-zoom'),
-        reiterleiste: sichtbar('.schale-reiter'),
-        zoomName: document.getElementById('schale-zoom-name')?.textContent?.trim() ?? '',
-        // Die Karten des Ablaufs liegen in der Zoomstufe, nicht in den Daten.
-        kartenInDerTiefe: Boolean(
-          document.querySelector('#schale-tafel-pruefen #card-record') &&
-          document.querySelector('#schale-tafel-pruefen #card-check')
-        ),
-      };
-    });
-    const naechsterSchritt = ziel.aufnahme ?? ziel.pruefung;
-
-    // Der Weg heraus: „‹ Daten" muss zurück in die Reiter führen.
-    await page
-      .locator('.schale-zoom-zurueck')
-      .click()
-      .catch(() => {});
-    await page.waitForTimeout(800);
-    const heraus = await page.evaluate(() => {
-      const sichtbar = (sel) => {
-        const e = document.querySelector(sel);
-        return Boolean(e) && !e.hidden && getComputedStyle(e).display !== 'none';
-      };
-      const liste = document.getElementById('erste-schritte');
-      return {
-        reiterleiste: sichtbar('.schale-reiter'),
-        zoomleiste: sichtbar('#schale-zoom'),
-        reiter: document.querySelector('.schale-reiter-btn.active')?.dataset.reiter ?? '—',
-        // Erste-Schritte-Liste: drei Zeilen, davon die erledigten markiert.
-        schritte:
-          liste && !liste.hidden ? liste.querySelectorAll('.erste-schritte-zeile').length : 0,
-        getan: liste ? liste.querySelectorAll('.erste-schritte-zeile.getan').length : 0,
-        standortzeile: sichtbar('#schale-standorte-zeile'),
-      };
-    });
-
-    // Die Standort-Zeile muss die Einstellungen auf ihr Thema stellen.
-    let standortThema = '(nicht erreicht)';
-    if (heraus.standortzeile) {
-      await page.locator('#schale-standorte-zeile').click({ force: true });
-      await page.waitForTimeout(900);
-      standortThema = await page.evaluate(
-        () => document.querySelector('.settings-list')?.dataset.filter ?? '(kein Filter)'
-      );
-    }
-
-    console.log('\n=== Kette: Karte → Prüfung ===');
-    console.log(`Marker (einzeln/Stapel)   ${karte.einzeln} / ${karte.stapel}`);
-    console.log(
-      `Marker hinter dem Blatt   ${karte.hinterDemBlatt} von ${karte.marker} (Blatt ab ${karte.blattOben} px)`
-    );
-    console.log(`Standortblatt             ${blattDa ? 'offen' : 'ZU'}`);
-    console.log(`Maschinenzeilen darin     ${zeilen}`);
-    console.log(`Maschinenblatt            ${fensterDa ? 'offen' : 'NICHT offen'}`);
-    console.log(`Knopf darin               ${knopfText}`);
-    console.log(`danach: Blatt             ${ziel.blattOffen ? 'aufgezogen' : 'EINGEKLAPPT'}`);
-    console.log(
-      `danach: nächster Schritt  ${naechsterSchritt ? `im Bild bei ${naechsterSchritt.y} px` : 'NICHT IM BILD'}`
-    );
-    console.log(
-      `Zoomstufe                 Leiste ${ziel.zoomleiste ? 'da' : 'FEHLT'} · Reiter ${ziel.reiterleiste ? 'DA' : 'weg'} · „${ziel.zoomName}"`
-    );
-    console.log(
-      `Prüfkarten in der Tiefe   ${ziel.kartenInDerTiefe ? 'ja' : 'NEIN (liegen in den Daten)'}`
-    );
-    console.log(
-      `zurück über „‹ Daten"     Reiter ${heraus.reiterleiste ? 'wieder da' : 'FEHLEN'} · aktiv „${heraus.reiter}"`
-    );
-    console.log(`Erste-Schritte-Liste      ${heraus.schritte} Zeilen, ${heraus.getan} erledigt`);
-    console.log(`Standort-Zeile → Thema    ${standortThema}`);
-
-    pruefe(
-      karte.marker > 0,
-      'Kette: kein Marker auf der Karte — die Beispieldaten kommen im Grund nicht an'
-    );
-    // Warum 3 und nicht 0: Das aufgezogene Blatt nimmt 55 % der Karte. Was
-    // bleibt, reicht für Deutschland gerade so — die Karte kann nicht unter
-    // ihre kleinste Stufe, und der Rand um den Bestand (`pad(0.25)`) will auch
-    // noch Platz. Null zu verlangen hieße, eine Zusage zu geben, die die
-    // Fläche nicht hergibt. Gemessen: ohne Polsterung 9 von 12, mit ihr 2 —
-    // die Schwelle liegt weit genug von beiden, um den Rückfall zu fangen,
-    // ohne bei jedem Punkt am Rand anzuschlagen.
-    pruefe(
-      karte.hinterDemBlatt <= 3,
-      `Kette: ${karte.hinterDemBlatt} von ${karte.marker} Markern liegen hinter dem aufgezogenen Blatt — die Karte kennt ihren freien Bereich nicht, und diese Standorte sind nicht anzutippen`
-    );
-    pruefe(blattDa, 'Kette: der Marker öffnet kein Standortblatt');
-    pruefe(
-      zeilen > 0,
-      'Kette: das Standortblatt zeigt keine Maschinenzeile — es gibt keinen Knopf'
-    );
-    pruefe(fensterDa, 'Kette: die Maschinenzeile öffnet das Maschinenblatt nicht');
-    pruefe(
-      ziel.blattOffen,
-      'Kette: nach dem Knopf bleibt das Blatt eingeklappt — es sieht aus, als sei nichts passiert'
-    );
-    pruefe(
-      Boolean(naechsterSchritt),
-      'Kette: der nächste Schritt steht am Ende nicht im Bild — der rote Faden reißt an der letzten Stelle'
-    );
-
-    // ── DIE ZOOMSTUFE (Schnitt 4) ────────────────────────────────────────
-    pruefe(
-      ziel.zoomleiste && !ziel.reiterleiste,
-      `Zoomstufe: Reiterleiste ${ziel.reiterleiste ? 'steht noch' : 'weg'}, Zoomleiste ${ziel.zoomleiste ? 'da' : 'fehlt'} — in der Maschine muss die eine an die Stelle der anderen treten, sonst ist unklar, wo man ist`
-    );
-    pruefe(
-      ziel.zoomName.length > 0,
-      'Zoomstufe: die Leiste nennt die Maschine nicht — dann ist sie nur ein Zurück-Knopf ohne Auskunft'
-    );
-    pruefe(
-      ziel.kartenInDerTiefe,
-      'Zoomstufe: die beiden Karten des Ablaufs liegen nicht in der Prüf-Tafel — dann stehen sie wieder mitten in den Daten, auch ohne gewählte Maschine'
-    );
-    pruefe(
-      heraus.reiterleiste && !heraus.zoomleiste && heraus.reiter === 'daten',
-      `Zoomstufe: „‹ Daten" führt nicht zurück (Reiter „${heraus.reiter}", Leiste ${heraus.zoomleiste ? 'noch da' : 'weg'}) — man käme aus der Maschine nicht mehr heraus`
-    );
-
-    // ── DER KOPF DES REITERS „DATEN" (Schnitt 4) ─────────────────────────
-    pruefe(
-      heraus.schritte === 3,
-      `Daten: die Erste-Schritte-Liste zeigt ${heraus.schritte} statt 3 Zeilen — der rote Faden ist nicht sichtbar`
-    );
-    pruefe(
-      heraus.getan >= 1,
-      'Daten: kein Schritt ist als erledigt markiert, obwohl Maschinen im Bestand stehen — die Liste zeigt keinen Fortschritt, sondern nur eine Anleitung'
-    );
-    pruefe(
-      standortThema === 'standorte',
-      `Daten: die Standort-Zeile stellt die Einstellungen auf „${standortThema}" statt „standorte"`
-    );
-
-    // ── DER REITER „FLOTTE" (Schnitt 5) ──────────────────────────────────
-    //
-    // Die beiden Wege aus §0e. Beide gab es schon, beide an prominenter
-    // falscher Stelle: der „Flottencheck" als Umschalter MITTEN in der
-    // Maschinenliste, der „Schnellvergleich" als Knopf darüber.
-    //
-    // Gemessen wird, dass der Reiter beides wirklich trägt — und dass der
-    // Bestand dabei EINE Liste bleibt, die pendelt, statt einer zweiten,
-    // die auseinanderlaufen kann.
-    await page.keyboard.press('Escape').catch(() => {});
-    await page.waitForTimeout(500);
-    await page.locator('.schale-reiter-btn[data-reiter="flotte"]').click({ force: true });
-    await page.waitForTimeout(2000);
-
-    const flotte = await page.evaluate(() => {
-      const tafel = document.getElementById('schale-tafel-flotte');
-      const sichtbar = (sel) => {
-        const e = document.querySelector(sel);
-        return Boolean(e) && e.getBoundingClientRect().height > 0;
-      };
-      return {
-        bestandInFlotte: Boolean(tafel?.querySelector('#machine-overview-section')),
-        schnellvergleichInFlotte: Boolean(tafel?.querySelector('#quick-compare-cta')),
-        schnellvergleichSichtbar: sichtbar('#schale-tafel-flotte #quick-compare-cta'),
-        umschalterSichtbar: sichtbar('.workflow-toggle-row'),
-        flottenzeilen: document.querySelectorAll('#machine-overview .fleet-rank-item').length,
-        reihenzeilen: document.querySelectorAll('#machine-overview .machine-item').length,
-        kopf: document.querySelector('#machine-overview .fleet-header-title')?.textContent ?? '',
-        saetze: document.querySelectorAll('#schale-tafel-flotte .schale-flotten-satz').length,
-      };
-    });
-
-    await page.locator('.schale-reiter-btn[data-reiter="daten"]').click({ force: true });
-    await page.waitForTimeout(2000);
-    const zurueckInDaten = await page.evaluate(() => ({
-      bestandInDaten: Boolean(
-        document.querySelector('#schale-tafel-daten #machine-overview-section')
-      ),
-      reihenzeilen: document.querySelectorAll('#machine-overview .machine-item').length,
-      // Eine zweite Liste wäre eine zweite Wahrheit. Es darf sie nicht geben.
-      listen: document.querySelectorAll('#machine-overview').length,
-    }));
-
-    console.log('\n=== Reiter „Flotte" ===');
-    console.log(`Bestand im Reiter         ${flotte.bestandInFlotte ? 'ja' : 'NEIN'}`);
-    console.log(`nach Flotten gruppiert    ${flotte.flottenzeilen} Zeilen · „${flotte.kopf}"`);
-    console.log(
-      `Schnellvergleich          ${flotte.schnellvergleichSichtbar ? 'sichtbar' : 'NICHT sichtbar'}`
-    );
-    console.log(`alter Umschalter          ${flotte.umschalterSichtbar ? 'STEHT NOCH' : 'weg'}`);
-    console.log(`erklärende Sätze          ${flotte.saetze}`);
-    console.log(
-      `zurück: Bestand in Daten  ${zurueckInDaten.bestandInDaten ? 'ja' : 'NEIN'} · ${zurueckInDaten.reihenzeilen} Zeilen · ${zurueckInDaten.listen} Liste(n)`
-    );
-
-    pruefe(
-      flotte.bestandInFlotte,
-      'Flotte: der Bestand zieht nicht in den Reiter — dann ist dort nichts, woraus man eine Flotte wählen könnte'
-    );
-    pruefe(
-      flotte.flottenzeilen >= 2 && flotte.reihenzeilen === 0,
-      `Flotte: ${flotte.flottenzeilen} Flottenzeilen und ${flotte.reihenzeilen} Reihenzeilen — im Reiter „Flotte" muss die Liste nach Flotten gruppiert sein, sonst tut der Reiter nichts`
-    );
-    pruefe(
-      flotte.kopf.trim().length > 0,
-      'Flotte: die Liste nennt die Flotte nicht — man sieht Maschinen und weiß nicht, welche Flotte das ist'
-    );
-    pruefe(
-      flotte.schnellvergleichSichtbar,
-      'Flotte: der Schnellvergleich fehlt — der zweite Weg aus §0e (Flotte ohne Bestand) ist nicht da'
-    );
-    pruefe(
-      !flotte.umschalterSichtbar,
-      'Flotte: der alte Umschalter „Übersicht / Flottencheck" steht noch in der Liste — zwei Bedienelemente für denselben Zustand'
-    );
-    pruefe(flotte.saetze === 2, `Flotte: ${flotte.saetze} statt 2 erklärende Sätze`);
-    pruefe(
-      zurueckInDaten.bestandInDaten && zurueckInDaten.reihenzeilen > 0,
-      'Flotte: der Bestand kommt nicht als Reihe in die Daten zurück — der Reiterwechsel lässt ihn gruppiert stehen'
-    );
-    pruefe(
-      zurueckInDaten.listen === 1,
-      `Flotte: ${zurueckInDaten.listen} Maschinenlisten im Baum — eine zweite Liste wäre eine zweite Wahrheit`
-    );
-
-    // ── DIE REITER „KARTE" UND „FILTER" (Schnitt 6) ──────────────────────
-    //
-    // „Karte" trägt nicht noch eine Karte — die liegt als Grund darunter.
-    // Der Reiter trägt die Liste zu ihr, nach Entfernung sortiert. „Filter"
-    // verkleinert, was auf dem Grund liegt.
-    //
-    // Der wichtigste Punkt ist der Zusammenhang: Ein Filter, der die Karte
-    // nicht wirklich leert, ist ein Auswahlfeld ohne Wirkung — und das sähe
-    // von außen genauso aus wie einer, der arbeitet.
-    await page.locator('.schale-reiter-btn[data-reiter="karte"]').click({ force: true });
-    await page.waitForTimeout(2200);
-
-    const nahe = await page.evaluate(() => {
-      const weiten = [...document.querySelectorAll('.nahliste-weite')].map((e) =>
-        Number.parseFloat((e.textContent ?? '').replace(/[^\d,.]/g, '').replace(',', '.'))
-      );
-      return {
-        zeilen: document.querySelectorAll('.nahliste-zeile').length,
-        bezugsknoepfe: document.querySelectorAll('.nahliste-bezug-btn').length,
-        zahlen: document.querySelector('.nahliste-zahlen')?.textContent ?? '',
-        // Sortiert? Die Entfernungen müssen aufsteigen. Eine Nahliste, die
-        // nicht sortiert, ist eine Liste — und die gibt es schon.
-        sortiert: weiten.every((w, i) => i === 0 || Number.isNaN(w) || w >= weiten[i - 1]),
-      };
-    });
-
-    await page.locator('.schale-reiter-btn[data-reiter="filter"]').click({ force: true });
-    await page.waitForTimeout(1800);
-    const markerVorFilter = await page.locator('#customer-map .leaflet-marker-icon').count();
-
-    const felder = await page.evaluate(() => ({
-      anzahl: document.querySelectorAll('.filter-feld-wahl').length,
-      standorte: document.getElementById('filter-standort')?.options.length ?? 0,
-      flotten: document.getElementById('filter-flotte')?.options.length ?? 0,
-      // Nur vorhandene Zustände: „alle" plus mindestens einer.
-      zustaende: document.getElementById('filter-zustand')?.options.length ?? 0,
-      zurueckVersteckt: document.getElementById('filter-zuruecksetzen')?.hidden ?? false,
-    }));
-
-    // Auf die erste Flotte filtern — die Karte muss deutlich leerer werden.
-    await page.selectOption('#filter-flotte', { index: 1 }).catch(() => {});
-    await page.waitForTimeout(2500);
-    const nachFilter = await page.evaluate(() => ({
-      marker: document.querySelectorAll('#customer-map .leaflet-marker-icon').length,
-      zurueckSichtbar: !(document.getElementById('filter-zuruecksetzen')?.hidden ?? true),
-    }));
-
-    await page.locator('.schale-reiter-btn[data-reiter="karte"]').click({ force: true });
-    await page.waitForTimeout(2000);
-    const naheGefiltert = await page.evaluate(() => ({
-      zeilen: document.querySelectorAll('.nahliste-zeile').length,
-      zahlen: document.querySelector('.nahliste-zahlen')?.textContent ?? '',
-    }));
-
-    console.log('\n=== Reiter „Karte" und „Filter" ===');
-    console.log(`Nahliste                  ${nahe.zeilen} Zeilen · „${nahe.zahlen}"`);
-    console.log(`nach Entfernung sortiert  ${nahe.sortiert ? 'ja' : 'NEIN'}`);
-    console.log(`Bezugspunkt-Knöpfe        ${nahe.bezugsknoepfe}`);
-    console.log(
-      `Filterfelder              ${felder.anzahl} · ${felder.zustaende} Zustände · ${felder.standorte} Standorte · ${felder.flotten} Flotten`
-    );
-    console.log(`Marker vor/nach Filter    ${markerVorFilter} → ${nachFilter.marker}`);
-    console.log(`Rückweg nach dem Filtern  ${nachFilter.zurueckSichtbar ? 'sichtbar' : 'FEHLT'}`);
-    console.log(
-      `Nahliste danach           ${naheGefiltert.zeilen} Zeilen · „${naheGefiltert.zahlen}"`
-    );
-
-    pruefe(nahe.zeilen > 0, 'Karte: die Nahliste ist leer, obwohl Standorte auf der Karte liegen');
-    pruefe(
-      nahe.sortiert,
-      'Karte: die Nahliste ist nicht nach Entfernung sortiert — dann ist sie keine Nahliste, sondern eine zweite Bestandsliste'
-    );
-    pruefe(
-      nahe.bezugsknoepfe === 2,
-      `Karte: ${nahe.bezugsknoepfe} statt 2 Bezugspunkte (Kartenmitte · mein Standort)`
-    );
-    pruefe(felder.anzahl === 3, `Filter: ${felder.anzahl} statt 3 Felder`);
-    pruefe(
-      felder.standorte > 1 && felder.flotten > 1 && felder.zustaende > 1,
-      `Filter: die Felder füllen sich nicht aus dem Bestand (${felder.zustaende} Zustände, ${felder.standorte} Standorte, ${felder.flotten} Flotten) — eine Auswahl ohne Auswahl`
-    );
-    pruefe(
-      felder.zurueckVersteckt,
-      'Filter: der Rückweg steht schon da, bevor überhaupt gefiltert ist'
-    );
-    pruefe(
-      nachFilter.marker > 0 && nachFilter.marker < markerVorFilter,
-      `Filter: ${markerVorFilter} Marker vorher, ${nachFilter.marker} nachher — der Filter wirkt nicht auf die Karte, er ist ein Auswahlfeld ohne Folgen`
-    );
-    pruefe(
-      nachFilter.zurueckSichtbar,
-      'Filter: nach dem Filtern erscheint kein Rückweg auf „alles" — man käme aus dem Filter nur über die Auswahlfelder zurück'
-    );
-    pruefe(
-      naheGefiltert.zeilen > 0 && naheGefiltert.zeilen < nahe.zeilen,
-      `Filter: die Nahliste zeigt ${naheGefiltert.zeilen} statt weniger als ${nahe.zeilen} Zeilen — sie zieht mit der Karte nicht mit und schlägt Standorte vor, die gar nicht gezeichnet sind`
-    );
-
-    await ctx.close();
-  }
+  // Der Durchlauf deckt die Kette in der Zwischenzeit ab: Er geht denselben
+  // Weg vom Bestand über Aufnahme und Prüfung bis zu den drei Auflagen.
+  // ═══════════════════════════════════════════════════════════════════════
 } finally {
   await browser.close();
   vorschau.kill();

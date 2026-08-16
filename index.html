@@ -118,115 +118,281 @@
     </div>
 
     <!-- Main Container -->
-    <div class="container">
-      <!-- Hero Header Image -->
-      <!-- Kopfleiste, 52 px hoch.
-           Aufbau von TourFuchs übernommen (dort .topbar in src/styles/layout.css):
-           Zeichen links, Suche in der Mitte, runde Symbolknöpfe rechts.
+    <!-- ══════════════════════════════════════════════════════════════════
+         DER STAMM
 
-           Der Schriftzug fehlt mit Absicht. TourFuchs blendet ihn am Handy aus
-           (`.brand-name { display: none }`), weil Zeichen, Schriftzug, Suchfeld
-           und zwei Knöpfe bei 390 px nicht nebeneinanderpassen — das Suchfeld
-           wird sonst auf „Maschine, Ort o…" gequetscht. Das Maskottchen trägt
-           die Marke allein; genau dafür ist es da. -->
+         Was hier steht, ist TourFuchs' Oberfläche — nicht ihr Nachbau. Aufbau,
+         Klassennamen, Reihenfolge und Proportionen kommen unverändert aus
+         `tourfuchs/index.html`; entfernt wurde nur, was fachlich nicht
+         hierhergehört (Tourplanung, Umsatz, Tresor, Lasso, Gebietseditor,
+         Mobilvorschau, Servicevertrags-Radar). Hinzugefügt wurde nichts.
+
+         Die Begründung steht in `docs/nutzerreise-wie-tourfuchs.md` §0h. Kurz:
+         Bis Schnitt 7 habe ich die SoundFuchs-Schale schrittweise
+         „tourfuchsiger" gemacht. Das ergibt Ähnlichkeit, nicht
+         Deckungsgleichheit — am deutlichsten an der Kopfleiste, die vorher an
+         genau dieser Stelle stand und die den Aufbau des Vorbilds mit eigenen
+         Klassennamen nacherzählte. Sie ist ersetzt, nicht angepasst.
+
+         Was vorher hier war und jetzt aus dem Stamm kommt:
+           .topbar-icon-btn   → .icon-button
+           .topbar-mark       → .brand > .brand-icon + .brand-name
+           .topbar-search     → .search-wrap
+         `#global-search`, `#search-results` und `#depth-switch` behalten ihre
+         Bezeichner — sie sind bereits verdrahtet und heißen im Stamm gleich.
+         ══════════════════════════════════════════════════════════════════ -->
+    <div id="app">
       <header class="topbar">
-        <!-- Die drei Striche ganz links, wie bei TourFuchs (`#sidebar-toggle`).
-             Sie öffnen dasselbe Schiebefenster wie der Griff am unteren Rand —
-             der dritte Auslöser, und der einzige, den man auf einem Handy mit
-             der linken Hand erreicht. `aria-expanded` sagt Vorlesewerkzeugen,
-             ob offen oder zu. -->
         <button
+          id="sidebar-toggle"
+          class="icon-button"
           type="button"
-          id="app-menu-btn"
-          class="topbar-icon-btn topbar-menu-btn"
-          aria-label="Menü öffnen"
-          aria-expanded="false"
-          title="Einstellungen &amp; mehr"
+          aria-label="Menü umschalten"
+          aria-expanded="true"
         >
           ☰
         </button>
-
-        <img
-          class="topbar-mark"
-          src="./icons/favicon.svg"
-          alt="SoundFuchs"
-          width="30"
-          height="30"
-        />
-
-        <div class="topbar-search">
+        <div class="brand">
+          <span class="brand-icon">🦊</span>
+          <span class="brand-name">SoundFuchs <em>Akustik</em></span>
+        </div>
+        <div class="search-wrap">
           <input
-            type="search"
             id="global-search"
-            class="topbar-search-input"
+            type="search"
             autocomplete="off"
             data-i18n-placeholder="search.placeholder"
-            placeholder="Maschine, Ort oder ID…"
-            aria-label="Maschine suchen"
+            placeholder="Standort, Maschine, PLZ suchen…"
+            aria-label="Standort oder Maschine suchen"
           />
-          <div id="search-results" class="search-results" role="listbox" hidden></div>
+          <div id="search-results" class="search-results"></div>
         </div>
-
         <button
+          id="btn-info"
+          class="icon-button"
           type="button"
-          id="app-info-btn"
-          class="topbar-icon-btn"
           aria-label="Einstellungen und Informationen"
           title="Einstellungen &amp; mehr"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          >
-            <circle cx="12" cy="12" r="9" />
-            <line x1="12" y1="11" x2="12" y2="16" />
-            <line x1="12" y1="8" x2="12.01" y2="8" />
-          </svg>
+          ⓘ
         </button>
       </header>
 
-      <!-- Ansichtstiefe, schwebend unter der Kopfleiste.
+      <!-- Mobiler Kopf-Streifen: nimmt auf dem Handy die Ansichtstiefe
+           (Basis/Profi) und die Reiter auf, damit sie immer sichtbar oben
+           „hängen" (statt im Blatt). Auf dem Schreibtisch leer & ausgeblendet.
+           Befüllt wird er von `stamm/ui/schale.ts` (`reiterUmhaengen`), genau
+           wie im Vorbild von `syncTopnavPlacement()`. -->
+      <div
+        id="mobile-topnav"
+        class="mobile-topnav"
+        role="navigation"
+        aria-label="Ansicht &amp; Bereiche"
+      ></div>
 
-           Aufbau von TourFuchs (dort .mobile-topnav .depth-switch): eine
-           durchscheinende Pille, aktives Segment teal gefüllt. Der Kommentar
-           dort nennt auch den Grund für die Stelle — Ansichtstiefe und
-           Navigation wurden bewusst aus dem Bottom-Sheet nach oben geholt,
-           „damit sie immer sichtbar oben hängen".
-
-           Die Knöpfe tragen dieselbe Klasse und dasselbe data-level wie die im
-           Einstellungsdialog. main.ts verdrahtet alle
-           `.view-level-btn[data-level]` gemeinsam, deshalb bleiben beide Orte
-           ohne Zusatzarbeit im Gleichklang: ein Zustand, zwei Anzeigen. -->
-      <!-- Zeichen als Emoji, nicht als Strichgrafik.
-           TourFuchs schreibt sie direkt in die Beschriftung („🌱 Basis",
-           „🛠️ Profi"). Am 14.08.2026 standen hier zuerst die SVGs aus dem
-           Einstellungen-Dialog; das war konsequent, aber nicht das Vorbild —
-           die Emoji tragen Farbe, sind auf einen Blick unterscheidbar und
-           brauchen keine eigene Regel. Der Dialog behält seine Strichgrafiken,
-           dort stehen sie groß über einer Erklärzeile. -->
-      <div class="depth-switch" id="depth-switch" role="group" aria-label="Ansichtstiefe">
-        <button class="view-level-btn depth-seg active" data-level="basic" type="button">
-          <span class="depth-seg-icon" aria-hidden="true">🌱</span>
-          <span data-i18n="viewLevels.basicLabel">Basis</span>
+      <aside id="sidebar" class="sidebar">
+        <button
+          id="sheet-grip"
+          class="sheet-grip"
+          type="button"
+          aria-label="Panelgröße ändern"
+          title="Panelgröße ändern"
+        >
+          <span></span>
         </button>
-        <button class="view-level-btn depth-seg" data-level="expert" type="button">
-          <span class="depth-seg-icon" aria-hidden="true">🛠️</span>
-          <span data-i18n="viewLevels.expertLabel">Profi</span>
+        <div
+          id="sidebar-resize"
+          class="sidebar-resize"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Bedienpanel-Breite ändern"
+          title="Panelbreite ziehen"
+        ></div>
+
+        <!-- Ständiger, ruhiger Hinweis, solange Beispieldaten laufen: jederzeit
+             sichtbar in allen Bereichen, ein Tipp führt zum eigenen Bestand.
+             Aus dem Stamm — dort ist er die ehrliche Kehrseite davon, dass die
+             Karte sich beim ersten Besuch selbst füllt. -->
+        <div id="demo-banner" class="demo-banner" role="note" hidden>
+          <!-- Das fette Wort steht als eigenes Element, nicht als `<b>` im
+               Übersetzungstext: `translateDOM` setzt `textContent`, und Markup
+               im Wert erschiene wörtlich — im ersten Aufmaß stand hier
+               tatsächlich „<b>Beispieldaten</b>" als sichtbarer Text. -->
+          <span class="demo-banner-text">
+            🧪 <b data-i18n="stamm.demoBannerWord">Beispieldaten</b>
+            <span data-i18n="stamm.demoBannerText">– das sind erfundene Standorte.</span>
+          </span>
+          <button type="button" id="btn-demo-clear" class="demo-banner-cta" data-i18n="stamm.demoBannerCta">
+            Entfernen
+          </button>
+        </div>
+
+        <!-- Ansichtstiefe. Die Knöpfe tragen dieselbe Klasse und dasselbe
+             data-level wie die im Einstellungsdialog; main.ts verdrahtet alle
+             `.view-level-btn[data-level]` gemeinsam, deshalb bleiben beide
+             Orte ohne Zusatzarbeit im Gleichklang: ein Zustand, zwei Anzeigen. -->
+        <div
+          class="depth-switch seg-toggle"
+          id="depth-switch"
+          role="group"
+          aria-label="Ansichtstiefe wählen"
+          title="Basis zeigt nur das Wesentliche · Profi blendet alle Werkzeuge ein"
+        >
+          <!-- Beschriftung als ein Textknoten, Emoji eingeschlossen — so hält es
+               der Stamm („🌱 Basis"). Vorher stand das Zeichen in einem eigenen
+               `<span>`; das sah gleich aus, war es aber nicht: `.view-level-btn`
+               setzt für den großen Umschalter im Dialog `flex-direction: column`,
+               und die Pille wurde dadurch zweizeilig — gemessene 50 px statt der
+               40 px des Vorbilds. Ein Textknoten hat nichts zu stapeln. -->
+          <button
+            class="seg view-level-btn active"
+            data-level="basic"
+            type="button"
+            data-i18n="stamm.depthBasic"
+          >
+            🌱 Basis
+          </button>
+          <button
+            class="seg view-level-btn"
+            data-level="expert"
+            type="button"
+            data-i18n="stamm.depthExpert"
+          >
+            🛠️ Profi
+          </button>
+        </div>
+
+        <!-- Kartenstil. Der Stamm hat hier ein Auswahlfeld
+             (`.basemap-control > select`); SoundFuchs hat die drei Gründe
+             schon als Knopfreihe, ebenfalls von TourFuchs übernommen
+             (`#map-basemap-row`, Hell · Standard · Satellit). Zwei Formen für
+             dieselbe Sache wären eine zu viel — die vorhandene bleibt, weil
+             sie bereits verdrahtet ist und dieselben drei Gründe zeigt. -->
+        <label class="basemap-control">
+          <span data-i18n="map.basemapLabel">Kartenstil</span>
+        </label>
+        <div class="map-basemap-row" id="map-basemap-row"></div>
+        <p class="map-unlocated" id="map-unlocated" style="display: none"></p>
+
+        <nav class="tabs" role="tablist">
+          <button
+            class="tab-button mobile-map-tab"
+            data-tab="karte"
+            data-mobile-only="true"
+            role="tab"
+            data-i18n="stamm.tabMap"
+          >
+            Karte
+          </button>
+          <button
+            class="tab-button active"
+            data-tab="daten"
+            role="tab"
+            data-i18n="stamm.tabData"
+          >
+            📄 Standorte
+          </button>
+          <button class="tab-button" data-tab="filter" role="tab" data-i18n="stamm.tabFilter">
+            Filter
+          </button>
+        </nav>
+
+        <!-- Reiter: Standorte -->
+        <section id="tab-daten" class="tab-panel active"></section>
+
+        <!-- Reiter: Filter -->
+        <section id="tab-filter" class="tab-panel"></section>
+
+        <!-- Reiter: Karte – „In der Nähe"-Begleiter, wenn das Blatt aufgezogen ist -->
+        <section id="tab-karte" class="tab-panel karte-companion"></section>
+      </aside>
+
+      <!-- Knopfzeile über der Karte. Im Vorbild stehen hier „Kunden in meiner
+           Nähe" und „Lasso ziehen" nebeneinander; das Lasso entfällt fachlich,
+           die Nähe-Suche bleibt. -->
+      <div id="map-fab-row" class="map-fab-row">
+        <button id="btn-nearby" class="map-fab" type="button">
+          <span class="mns-icon" aria-hidden="true">📍</span>
+          <span class="mns-label" data-i18n="stamm.nearby">In der Nähe</span>
+          <span class="mns-fox" aria-hidden="true">🦊</span>
         </button>
       </div>
 
-      <!-- Hier stand bis zum 14.08.2026 der Satz „Hört sich die Anlage normal
-           an?" — der Rest des Hero-Banners. Er beanspruchte ein Band über dem
-           Bestand, um zu erklären, wozu die App da ist. Genau da ist die
-           Erklärung aber überflüssig: Wer Maschinen in der Liste stehen hat,
-           weiß es längst; und wer keine hat, bekommt im Leerzustand die
-           Anleitung 1-2-3, die es besser erklärt als ein Satz. -->
+      <main id="map" role="application" aria-label="Standortkarte">
+        <!--
+          Der Einstieg, wenn noch kein Standort da ist.
 
+          Früher war die Karte in diesem Fall eine Sackgasse — und wurde
+          deshalb im Menü versteckt, was den Weg zu Standorten gleich mit
+          zumauerte. Jetzt liegt Deutschland mit seinen Postleitzahlgebieten
+          darunter, und dieser Kasten bietet den Schritt an, der sie füllt.
+        -->
+        <div class="map-empty" id="map-empty" style="display: none">
+          <p class="map-empty-title" data-i18n="map.emptyTitle">
+            Noch kein Standort auf der Karte
+          </p>
+          <p class="map-empty-text" data-i18n="map.emptyText">
+            Standorte entstehen beim Anlegen einer Maschine — oder hier, zum Ausprobieren.
+          </p>
+          <button type="button" class="action-btn" id="map-empty-demo-btn">
+            <span data-i18n="map.emptyButton">Beispieldaten laden</span>
+          </button>
+        </div>
+        <!-- Das Blatt des Standorts: Name, Ort, seine Maschinen. Ein Tipp auf
+             eine Maschine führt in die Ansicht, die es längst gibt. -->
+        <div class="customer-sheet" id="customer-sheet" style="display: none">
+          <div class="customer-sheet-head">
+            <div>
+              <h4 id="customer-sheet-title">—</h4>
+              <p class="customer-sheet-place" id="customer-sheet-place">—</p>
+            </div>
+            <button
+              type="button"
+              class="close-modal-btn"
+              id="close-customer-sheet"
+              aria-label="Schließen"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+          <p class="customer-sheet-label" data-i18n="map.machinesLabel">Maschinen</p>
+          <div class="customer-sheet-machines" id="customer-sheet-machines"></div>
+        </div>
+      </main>
+
+      <div id="dropzone" class="dropzone">
+        <div data-i18n="stamm.dropzone">📥 Excel- oder CSV-Datei hier ablegen</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         HINTER DEM SCHARNIER
+
+         Alles ab hier ist SoundFuchs' eigener Teil: Standortansicht,
+         Maschinenliste, Maschinenansicht und die akustischen Funktionen. Er
+         ist erreichbar über den klickbaren Maschinenstandortnamen — das
+         Scharnier aus §0h — und bleibt geschlossen, solange man auf der Karte
+         steht.
+
+         Der Inhalt ist derzeit noch die alte SoundFuchs-Oberfläche. Sie wird
+         Schnitt für Schnitt in die Formensprache des Stamms überführt; bis
+         dahin steht sie hier vollständig und unversehrt, damit die drei
+         Auflagen (Kamerabild, Abspielen, 3D-Spektrum) durchgehend messbar
+         bleiben.
+         ══════════════════════════════════════════════════════════════════ -->
+    <div id="zanobo-tiefe" class="zanobo-tiefe" hidden>
+      <div class="container">
       <!-- Welle 2: Status Dashboard -->
       <section class="status-dashboard" id="status-dashboard" style="display: none">
         <!-- Summary Row: Counts by status -->
@@ -1483,10 +1649,18 @@
          das Fenster selbst bringt seine Griffleiste und das Wischen zum
          Schließen schon mit. Eine eigene Zieh-Erkennung wäre eine zweite
          Mechanik für dieselbe Geste. -->
-    <button type="button" class="sheet-grip" id="sheet-grip">
-      <span class="sheet-grip-line" aria-hidden="true"></span>
-      <span class="sheet-grip-label" data-i18n="search.sheetTitle">Einstellungen &amp; mehr</span>
+    <!-- Umbenannt am 16.08.2026 von `sheet-grip` auf `tiefe-grip`.
+         Der Stamm bringt seinen eigenen `#sheet-grip` mit — den Griff des
+         Blatts, das die Karte trägt. Zwei Elemente desselben Namens im selben
+         Dokument sind kein Stilfehler, sondern ein Fehler: `getElementById`
+         liefert das erste, und welches das ist, entscheidet die Reihenfolge im
+         HTML. Der Name gehört dem Stamm; dieser Griff hier bekommt den seinen. -->
+    <button type="button" class="tiefe-grip" id="tiefe-grip">
+      <span class="tiefe-grip-line" aria-hidden="true"></span>
+      <span class="tiefe-grip-label" data-i18n="search.sheetTitle">Einstellungen &amp; mehr</span>
     </button>
+    </div>
+    <!-- Ende „hinter dem Scharnier" -->
 
     <!-- Modal for Recording (Reference Phase) -->
     <div id="recording-modal" class="modal" style="display: none">
@@ -3017,40 +3191,6 @@
               </div>
             </div>
 
-            <!--
-              Der Schalter zwischen alter und neuer Schale (Schnitt 2 aus
-              docs/nutzerreise-wie-tourfuchs.md).
-
-              Er steht auf jeder Stufe, nicht erst auf Profi. Wer die neue
-              Reise ansehen soll, ist gerade nicht der Profi, sondern der,
-              dem sie es leichter machen soll — und wer sie nicht mag, muss
-              den Weg zurück dort finden, wo er hergekommen ist.
-
-              Die Voreinstellung ist die geprüfte Reise. Sie dreht sich in
-              Schnitt 7, und erst dann, wenn die Zahlen stimmen.
-            -->
-            <div class="setting-category" data-thema="ansicht">
-              <h4 class="setting-category-title" data-i18n="schale.settingTitle">
-                Neue Oberfläche
-              </h4>
-              <p class="setting-category-description" data-i18n="schale.settingDescription">
-                Karte als Grund, Blatt von unten, Reiter — die Nutzerreise von TourFuchs. Sie wird
-                gerade gebaut und ist noch nicht vollständig. Der Schalter geht jederzeit zurück.
-              </p>
-              <div class="setting-item">
-                <div class="setting-label">
-                  <span data-i18n="schale.settingToggle">Neue Oberfläche verwenden</span>
-                  <small data-i18n="schale.settingHint"
-                    >Vorschau. Was bisher fehlt, sagen die leeren Reiter selbst.</small
-                  >
-                </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="schale-toggle" />
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-            </div>
-
             <!-- Divider -->
             <div class="settings-divider"></div>
 
@@ -4399,65 +4539,13 @@
             </svg>
           </button>
         </div>
-        <!-- Hell · Standard · Satellit — eins zu eins von TourFuchs. Die
-             Quellenangaben hängen an den Kacheln selbst und stehen unten
-             rechts auf der Karte; sie sind Bedingung der Nutzung. -->
-        <div class="map-basemap-row" id="map-basemap-row"></div>
-        <div class="customer-map-canvas" id="customer-map">
-          <!--
-            Der Einstieg, wenn noch kein Standort da ist.
+        <!-- Kartenstil, Leerzustand und der Hinweis auf Standorte ohne
+             Koordinaten sind am 16.08.2026 in den Stamm gezogen (§0h). Sie
+             gehören zur Kartenebene, und die ist dort. Dieses Fenster ist nur
+             noch eine Hülle; es verschwindet, sobald der letzte Weg hinein
+             umgehängt ist. -->
+        <div class="customer-map-canvas" id="customer-map"></div>
 
-            Früher war die Karte in diesem Fall eine Sackgasse — und wurde
-            deshalb im Menü versteckt, was den Weg zu Standorten gleich mit
-            zumauerte. Jetzt liegt Deutschland mit seinen
-            Postleitzahlgebieten darunter, und dieser Kasten bietet den
-            Schritt an, der die Karte füllt.
-          -->
-          <div class="map-empty" id="map-empty" style="display: none">
-            <p class="map-empty-title" data-i18n="map.emptyTitle">
-              Noch kein Standort auf der Karte
-            </p>
-            <p class="map-empty-text" data-i18n="map.emptyText">
-              Standorte entstehen beim Anlegen einer Maschine — oder hier, zum Ausprobieren.
-            </p>
-            <button type="button" class="action-btn" id="map-empty-demo-btn">
-              <span data-i18n="map.emptyButton">Beispieldaten laden</span>
-            </button>
-          </div>
-        </div>
-        <p class="map-unlocated" id="map-unlocated" style="display: none"></p>
-
-        <!-- Das Blatt des Standorts: Name, Ort, seine Maschinen. Ein Tipp auf
-             eine Maschine führt in die Ansicht, die es längst gibt. -->
-        <div class="customer-sheet" id="customer-sheet" style="display: none">
-          <div class="customer-sheet-head">
-            <div>
-              <h4 id="customer-sheet-title">—</h4>
-              <p class="customer-sheet-place" id="customer-sheet-place">—</p>
-            </div>
-            <button
-              type="button"
-              class="close-modal-btn"
-              id="close-customer-sheet"
-              aria-label="Schließen"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-          <p class="customer-sheet-label" data-i18n="map.machinesLabel">Maschinen</p>
-          <div class="customer-sheet-machines" id="customer-sheet-machines"></div>
-        </div>
       </div>
     </div>
 

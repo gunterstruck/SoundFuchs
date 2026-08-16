@@ -15,9 +15,25 @@ import './styles/pipeline-status.css';
 import './styles/drift-panel.css';
 import './styles/event-timeline.css';
 import './styles/spectrogram-3d.css';
-import './styles/schale.css';
 
-import { initDB, getDBStats, getAllMachines } from '@data/db.js';
+// Der Stamm. Datei für Datei unverändert aus TourFuchs übernommen — nicht
+// abgeschrieben, kopiert (siehe docs/nutzerreise-wie-tourfuchs.md §0h).
+//
+// Er steht bewusst NACH `style.css`. Acht Klassennamen kommen in beiden vor:
+// topbar, depth-switch, search-results, sheet-grip, status-badge und die drei
+// customer-marker-*. Das ist kein Zufall und kein Versehen — es sind genau die
+// Stellen, an denen ich den Stamm vorher nachgebaut habe. Wo beide dasselbe
+// meinen, soll der Stamm gelten, nicht meine Kopie davon. Die Kopien
+// verschwinden, sobald ihre Besitzer hinter das Scharnier gezogen sind.
+import './styles/stamm/variables.css';
+import './styles/stamm/base.css';
+import './styles/stamm/layout.css';
+import './styles/stamm/components.css';
+import './styles/stamm/map.css';
+import './styles/stamm/responsive.css';
+import './styles/stamm/tiefe.css';
+
+import { initDB, getDBStats } from '@data/db.js';
 import { toast } from '@ui/components/Toast.js';
 import { AboutModalController } from '@ui/components/AboutModalController.js';
 import { nfcImportService } from '@data/NfcImportService.js';
@@ -29,8 +45,14 @@ import { logger } from '@utils/logger.js';
 import { GlobalSearch } from '@ui/GlobalSearch.js';
 import { InfoBottomSheet } from '@ui/components/InfoBottomSheet.js';
 import { CustomerMap } from '@ui/components/CustomerMap.js';
-import { Schale } from '@ui/shell/Schale.js';
-import { gemerkteSchale, setzeSchale } from '@utils/schaleSettings.js';
+import { schaleAufbauen, reiterOeffnen, istBlatt } from './stamm/ui/schale.js';
+import {
+  scharnierAufbauen,
+  schliesseTiefe,
+  oeffneTiefe,
+  TIEFE_GESCHLOSSEN,
+} from './stamm/ui/scharnier.js';
+import { beispieldatenAnbieten } from './stamm/ui/beispieldaten.js';
 import { escapeHtml } from '@utils/sanitize.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
 import { initPwaUpdate } from '@utils/pwaUpdate.js';
@@ -63,40 +85,18 @@ class ZanobotApp {
    * wird erst beim ersten Öffnen geholt — das Feld hier kostet nichts.
    */
   private kundenkarte = new CustomerMap({
-    zeigeMaschine: (machine) => this.router?.showMachineView(machine),
+    /**
+     * Das Scharnier in Betrieb: Ein Tipp auf eine Maschine im Standortblatt
+     * führt hinter die Tür. Erst aufmachen, dann zeigen — andersherum würde
+     * der Router in eine Ansicht schreiben, die noch verborgen ist, und der
+     * erste Anblick wäre ein Sprung.
+     */
+    zeigeMaschine: (machine) => {
+      oeffneTiefe(machine.customerId ?? null);
+      this.router?.showMachineView(machine);
+    },
   });
 
-  /**
-   * Die neue Schale (docs/nutzerreise-wie-tourfuchs.md, Schnitt 2). Sie hängt
-   * die vorhandenen Abschnitte um, statt sie neu zu bauen — sie kostet also
-   * nichts, solange der Schalter aus ist.
-   */
-  private schale = new Schale({
-    karteInDenGrund: async () => {
-      // Leaflet hält die Messung des alten Platzes fest. Nach dem Umhängen
-      // ist ein neuer Aufbau billiger als jeder Versuch, sie nachzuziehen.
-      this.kundenkarte.vergissKarte();
-      await this.kundenkarte.zeigeImGrund();
-    },
-    hatBestand: async () => (await getDBStats()).machines > 0,
-    ersteSchritte: async () => {
-      // Schritt 2 hängt nicht an der Zahl der Aufnahmen, sondern daran, ob
-      // eine davon als Normalzustand angelernt ist. Eine Aufnahme ohne
-      // Referenzmodell ist Rohmaterial, kein erledigter Schritt.
-      const maschinen = await getAllMachines();
-      return {
-        maschine: maschinen.length > 0,
-        referenz: maschinen.some((m) => (m.referenceModels?.length ?? 0) > 0),
-        pruefung: (await getDBStats()).diagnoses > 0,
-      };
-    },
-    oeffneThema: (thema, beschriftung) => this.oeffneEinstellungenMitThema(thema, beschriftung),
-    setzeFlottenmodus: async (anzeigen) => {
-      await this.router?.setzeFlottenmodus(anzeigen);
-    },
-    kartenmitte: () => this.kundenkarte.mitte(),
-    zeigeStandort: (id) => void this.kundenkarte.zeigeStandort(id),
-  });
 
   constructor() {
     this.init();
@@ -314,7 +314,7 @@ class ZanobotApp {
       this.setupFooterLinks();
       this.setupGlobalSearch();
       this.setupInfoButton();
-      this.setupSchale();
+      this.setupStamm();
 
       // Initialize About Modal with dynamic i18n content
       new AboutModalController();
@@ -694,30 +694,38 @@ class ZanobotApp {
   }
 
   /**
-   * Der Schalter zwischen alter und neuer Schale.
+   * Den Stamm in Betrieb nehmen.
    *
-   * Beide laufen im selben Bau; umgeschaltet wird ohne Neuladen, damit man
-   * beide nebeneinander ansehen kann, ohne den Zustand zu verlieren. Genau
-   * dafür merkt sich die Schale den Weg zurück (siehe `Schale.haengeUm`).
+   * Bis zum 16.08.2026 stand hier ein Schalter zwischen alter und neuer
+   * Schale. Er ist ersatzlos entfernt: Es gibt keine zwei Schalen mehr, an
+   * denen man sich entscheiden könnte. Der Stamm ist die Oberfläche
+   * (docs/nutzerreise-wie-tourfuchs.md §0h).
    */
-  private setupSchale(): void {
-    const schalter = document.getElementById('schale-toggle') as HTMLInputElement | null;
-    const gewaehlt = gemerkteSchale();
-    if (schalter) schalter.checked = gewaehlt === 'neu';
-    if (gewaehlt === 'neu') void this.schale.an();
+  private setupStamm(): void {
+    schaleAufbauen();
+    scharnierAufbauen();
 
-    schalter?.addEventListener('change', () => {
-      const neu = schalter.checked;
-      setzeSchale(neu ? 'neu' : 'alt');
-      if (neu) {
-        void this.schale.an();
-      } else {
-        this.schale.aus();
-        // Die Karte hat ihren Behälter verloren, als er in den Grund zog.
-        // Beim nächsten Öffnen des Fensters baut sie sich dort neu auf.
-        this.kundenkarte.vergissKarte();
-      }
+    /**
+     * Beim Zurückkommen die Karte auffrischen.
+     *
+     * Hinter dem Scharnier wird angelegt, geprüft und gelöscht — die Karte
+     * weiß davon nichts. Solange sie ein Fenster war, zeichnete sie bei jedem
+     * Öffnen neu; als Grund wird sie nie geöffnet, also auch nie neu
+     * gezeichnet. Gemessen im Aufmerksamkeitstest: ein frisch angelegter
+     * Standort mit gültigen Koordinaten stand nicht auf der Karte, und nichts
+     * meldete das — die Karte war einfach von vorhin.
+     */
+    document.addEventListener(TIEFE_GESCHLOSSEN, () => {
+      void this.kundenkarte.zeigeImGrund();
     });
+    void (async () => {
+      await this.kundenkarte.zeigeImGrund();
+      // Erst die Karte, dann die Punkte. Andersherum stünde beim ersten
+      // Besuch kurz ein leerer Umriss, in den dann etwas hineinspringt.
+      await beispieldatenAnbieten({
+        zeichneNeu: () => this.kundenkarte.zeigeImGrund(),
+      });
+    })();
   }
 
   /**
@@ -953,15 +961,14 @@ class ZanobotApp {
       document.querySelectorAll<HTMLElement>('.info-sheet-row[data-karte]').forEach((zeile) => {
         zeile.addEventListener('click', () => {
           InfoBottomSheet.close();
-          // In der neuen Schale ist die Karte der Grund, nicht ein Fenster.
-          // Das Fenster zu öffnen wäre dort eine Sackgasse: Es stünde leer da,
-          // weil die Karte längst woanders hängt. Stattdessen klappt das Blatt
-          // ein und gibt den Grund frei — das ist derselbe Wunsch.
-          if (this.schale.läuft) {
-            this.schale.oeffneBlatt(false);
-            return;
-          }
-          void this.kundenkarte.oeffne();
+          // Die Karte ist der Grund, kein Fenster. Ein Fenster zu öffnen wäre
+          // eine Sackgasse: Es stünde leer da, weil die Karte längst darunter
+          // liegt. Stattdessen zurück aus der Tiefe und auf den Karten-Reiter —
+          // das ist derselbe Wunsch.
+          schliesseTiefe();
+          // Den Karten-Reiter gibt es nur unterwegs; am Schreibtisch liegt die
+          // Karte ohnehin frei neben der Seitenleiste.
+          if (istBlatt()) reiterOeffnen('karte');
         });
       });
 
@@ -1020,11 +1027,18 @@ class ZanobotApp {
    * das Gerät hält und mit der freien Hand an einer Maschine steht, erreicht
    * oben rechts nichts. Unten schon. Beide Punkte stehen so im Entwurf der
    * Startseite (docs/startseite-entwurf.md, Bild A).
+   *
+   * `#btn-info` ist der ⓘ-Knopf des Stamms — er hieß bis zum 16.08.2026
+   * `#app-info-btn` und sitzt in der Kopfleiste, die über der Tiefe stehen
+   * bleibt. Genau deshalb steht sie dort: Ohne sie wären die Einstellungen
+   * hinter dem Scharnier unerreichbar, und „Einstellungen" in der Fußzeile
+   * steht nur auf Profi — also auf der Stufe, die man dort erst einschalten
+   * wollte.
    */
   private setupInfoButton(): void {
     const ausloeser = [
-      document.getElementById('app-menu-btn'),
-      document.getElementById('app-info-btn'),
+      document.getElementById('btn-info'),
+      document.getElementById('tiefe-grip'),
     ].filter((el): el is HTMLElement => el !== null);
 
     for (const knopf of ausloeser) {
@@ -1103,7 +1117,7 @@ class ZanobotApp {
    * geht: ziehen für die, die es kennen, tippen für alle anderen.
    */
   private griffZiehbarMachen(): void {
-    const griff = document.getElementById('sheet-grip');
+    const griff = document.getElementById('tiefe-grip');
     if (!griff) return;
 
     /** Ab hier ist es ein Ziehen und kein Tipp mehr. */

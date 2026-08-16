@@ -25,6 +25,20 @@ export const fr: TranslationDict = {
     customerData: 'Sites : exemples et import',
   },
 
+  // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
+  // Scharnier (docs/nutzerreise-wie-tourfuchs.md §0h).
+  stamm: {
+    depthBasic: '🌱 Base',
+    depthExpert: '🛠️ Pro',
+    demoBannerWord: 'Données d’exemple',
+    demoBannerText: '– ces sites sont fictifs.',
+    demoBannerCta: 'Retirer',
+    tabMap: 'Carte',
+    tabData: '📄 Sites',
+    tabFilter: 'Filtre',
+    nearby: 'À proximité',
+    dropzone: '📥 Déposez ici un fichier Excel ou CSV',
+  },
   schale: {
     navLabel: 'Vue et sections',
     gripLabel: 'Ouvrir le panneau',
@@ -75,7 +89,7 @@ export const fr: TranslationDict = {
   },
 
   search: {
-    placeholder: 'Machine, lieu ou ID…',
+    placeholder: 'Rechercher site, machine, code postal…',
     noHits: 'Aucun résultat.',
     sheetTitle: 'Réglages et plus',
   },
@@ -142,6 +156,7 @@ export const fr: TranslationDict = {
     closeDialog: 'Fermer le dialogue',
   },
   map: {
+    basemapLabel: 'Style de carte',
     title: 'Carte des sites',
     tileLight: 'Clair',
     tileStandard: 'Standard',

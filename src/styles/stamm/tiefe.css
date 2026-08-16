@@ -1,0 +1,102 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DIE GRENZSCHICHT
+
+   Diese Datei gehört NICHT zum Stamm. Alle anderen Dateien in diesem Ordner
+   sind Datei für Datei unverändert aus TourFuchs kopiert; diese hier ist neu
+   und regelt nur das Verhältnis der beiden Welten zueinander.
+
+   Der Anlass: `base.css` setzt `body { overflow: hidden }` und `html, body {
+   height: 100% }`. Das ist für den Stamm richtig — er ist eine Karte, die den
+   Bildschirm füllt, und nichts daran scrollt. Für die alte
+   SoundFuchs-Oberfläche ist es falsch: Sie ist eine lange, scrollende Seite.
+
+   Die naheliegende Lösung wäre gewesen, `base.css` zu ändern. Sie ist
+   verworfen: Sobald eine Stamm-Datei bearbeitet ist, kann niemand mehr durch
+   einen Vergleich mit TourFuchs feststellen, ob der Stamm noch der Stamm ist.
+   Der Preis dafür ist diese Datei — eine Grenze, die man sieht, statt einer
+   Änderung, die man sucht.
+
+   Sie verschwindet, wenn hinter dem Scharnier nichts Altes mehr steht.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Hinter dem Scharnier: ein eigener Bildschirm über dem Stamm.
+
+   Als feste Auflage und nicht im Fluss, damit `body { overflow: hidden }` aus
+   dem Stamm stehen bleiben kann. Was scrollt, scrollt hier drin — genau wie
+   die großen Blätter des Stamms es auch tun. */
+.zanobo-tiefe {
+  position: fixed;
+  /* Unter der Kopfleiste, nicht über ihr.
+     Zuerst nahm die Tiefe den ganzen Bildschirm und blendete `#app`
+     vollständig aus. Das las sich sauber und war der Kern des Problems, das
+     der Auftraggeber benannt hat: „Die Anwendung darf nicht wie zwei
+     zusammengesetzte Programme wirken." Genau so wirkte sie — zwei Bildschirme
+     ohne gemeinsames Dach.
+     Praktisch fiel es zuerst als Sackgasse auf: ⓘ, Suche und Basis/Profi
+     liegen in der Kopfleiste. Wer hinter dem Scharnier stand, kam an keines
+     davon heran, und „Einstellungen" in der Fußzeile steht nur auf Profi —
+     also auf der Stufe, die man dort erst hätte einschalten wollen.
+     Die Kopfleiste bleibt deshalb stehen. Sie ist das Dach über beiden. */
+  inset: var(--topbar-height) 0 0;
+  /* Zwischen den festen Elementen der alten Oberfläche (--z-fixed: 500) und
+     ihren Dialogen (--z-modal-backdrop: 1000, --z-modal: 1100).
+     Hier stand zuerst 3700 — „über der Kopfleiste des Stamms (3600)". Das war
+     die falsche Frage. Die Dialoge liegen NICHT in dieser Fläche, sie sind
+     Geschwister davon; mit 3700 legte sich die Tiefe über jeden von ihnen.
+     Gemessen im Durchlauf: Schritt 5 fand „Normalzustand aufnehmen" sichtbar
+     und anklickbar vor, und der Klick landete trotzdem auf einer
+     Maschinenzeile, die 900 px darüber im Hintergrund stand.
+     Gegen den Stamm muss sich die Tiefe gar nicht behaupten — `#app` steht
+     auf `visibility: hidden`, solange sie offen ist. */
+  z-index: 900;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg-primary, #fff);
+}
+
+/* `hidden` allein reicht nicht: Die alte `style.css` gibt `.container` und
+   einigen Kindern `display`-Werte, und ein `display` schlägt das
+   Vorgabeverhalten von `[hidden]`. Ohne diese Zeile stünde die alte
+   Oberfläche über der Karte, ohne dass irgendwo „offen" steht. */
+.zanobo-tiefe[hidden] {
+  display: none;
+}
+
+/* Der Stamm ruht, solange die Tiefe offen ist — bis auf die Kopfleiste.
+
+   Nicht `display: none` — Leaflet verliert dann seine Maße und käme beim
+   Zurückgehen als graues Viertel wieder. `visibility` behält die Geometrie und
+   nimmt nur das Bild; nebenbei nimmt sie auch die Klickbarkeit, sodass nichts
+   Verborgenes unter der Tiefe Tipps abfängt. */
+body.tiefe-offen #app > *:not(.topbar) {
+  visibility: hidden;
+}
+
+/* Die Rückkehr. Der Stamm hat für so etwas keine eigene Form — er kennt
+   Blätter, die man am Griff zuzieht, keine Bildschirme, die man verlässt.
+   Deshalb hier die schlichteste Form, die zu ihm passt: dieselbe Pille wie
+   `.map-fab`, an derselben Stelle wie dessen Zeile, mit demselben Schatten. */
+.tiefe-zurueck {
+  position: sticky;
+  top: 8px;
+  z-index: 2;
+  margin: 8px 0 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.55em 1em;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font);
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-2);
+  cursor: pointer;
+}
+
+.tiefe-zurueck:hover {
+  background: var(--color-surface-2);
+}

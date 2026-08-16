@@ -113,18 +113,30 @@ export class CustomerMap {
   }
 
   /**
-   * Dieselbe Karte, nur ohne Fenster: In der neuen Schale liegt sie als Grund
-   * (`src/ui/shell/Schale.ts`), und der Grund wird nicht geöffnet — er ist
-   * immer da. Der Behälter `#customer-map` ist in beiden Fällen derselbe; er
-   * ist nur einmal ins Fenster gehängt und einmal in den Grund.
+   * Dieselbe Karte, nur ohne Fenster: Im Stamm liegt sie als Grund und wird
+   * nicht geöffnet — sie ist immer da. Der Behälter heißt dort `#map`, so wie
+   * in TourFuchs (`<main id="map">`).
    */
   public async zeigeImGrund(): Promise<void> {
     this.fenster = null;
     await this.zeichne();
   }
 
+  /**
+   * Wo die Karte hängt.
+   *
+   * Zwei Plätze, in dieser Reihenfolge: `#map` ist der Grund des Stamms und
+   * gewinnt, solange es ihn gibt. `#customer-map` ist der alte Behälter im
+   * Kartenfenster; er bleibt, bis das Fenster hinter dem Scharnier
+   * verschwindet. Die Reihenfolge ist die Aussage — der Stamm ist der
+   * Normalfall, das Fenster der Rest.
+   */
+  private static behaelter(): HTMLElement | null {
+    return document.getElementById('map') ?? document.getElementById('customer-map');
+  }
+
   private async zeichne(): Promise<void> {
-    const behaelter = document.getElementById('customer-map');
+    const behaelter = CustomerMap.behaelter();
     if (!behaelter) return;
 
     if (!this.karte) {

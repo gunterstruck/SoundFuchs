@@ -193,6 +193,118 @@ wieder. Etwas einzubauen, das kurz darauf herausgenommen wird, ist Unruhe ohne
 Gewinn. Bis die Schale steht, bleibt die Karte über ☰ → „Standortkarte"
 erreichbar.
 
+## 0h. Der Stamm wird übernommen, nicht nachgebaut
+
+**Alles vor diesem Abschnitt beschreibt den falschen Weg.** Die Schnitte 0–7
+sind gebaut, gemessen und verschmolzen — und sie beantworten die Frage, die
+nicht gestellt war. Der Auftraggeber hat es nach dem Blick auf das Ergebnis in
+einem Satz gesagt:
+
+> „Du willst keine SoundFuchs-Oberfläche, die TourFuchs lediglich ähnlich
+> sieht. Du willst die bereits geprüfte TourFuchs-Oberfläche tatsächlich als
+> Ausgangsbasis übernehmen."
+
+### Was ich stattdessen gebaut hatte
+
+TourFuchs' **Skelett** mit SoundFuchs' **altem Körper** darin. Ich habe
+Reiter angelegt, die TourFuchs' Reitern ähneln, und die vorhandenen
+SoundFuchs-Karten hineingehängt — mit `haengeUm()`, einer Umzugsliste und
+Platzhaltern, die beim Verlassen der Schale alles zurückräumen. Das Ergebnis
+ist ehrlich benannt eine **Verkleidung**: dieselbe Silhouette, fremde Substanz.
+
+Am deutlichsten wird es an einer Zeile, die ich selbst geschrieben habe:
+
+```css
+html[data-schale='neu'] .fab-row { display: none }
+```
+
+Ich habe SoundFuchs' schwebende Pillen **ausgeblendet** — also genau das
+Element entfernt, das TourFuchs' erstes Bild ausmacht, während ich behauptete,
+TourFuchs nachzubilden. Eine Ähnlichkeit, die man durch Wegnehmen erreicht, ist
+keine.
+
+### Der Beschluss
+
+**TourFuchs ist der unveränderte gestalterische Stamm.** Nicht Vorbild, nicht
+Inspiration, nicht Messlatte — Ausgangspunkt. Die Richtung dreht sich um:
+
+| | bisher | ab jetzt |
+|---|---|---|
+| Ausgangspunkt | SoundFuchs' Schale | TourFuchs' Schale |
+| Bewegung | SoundFuchs wird „tourfuchsiger" | TourFuchs wird fachlich reduziert |
+| Ergebnis | Ähnlichkeit | Deckungsgleichheit vor dem Scharnier |
+| Prüffrage | „sieht es aus wie …?" | „ist es dasselbe?" |
+
+Vor dem Scharnier wird **nur weggenommen und umbenannt**, nichts hinzuerfunden.
+Hinter dem Scharnier entsteht Neues — aber vollständig in der Formensprache des
+Stamms, aus seinen Karten, Blättern, Knöpfen und Abständen.
+
+### Das Scharnier
+
+Der klickbare **Name** ist der Übergang. Fünf Ebenen, eine Kette:
+
+```
+  TourFuchs-Oberfläche mit Karte    ← unverändert, nur reduziert
+        │
+        └─ Maschinenstandortname    ← das Scharnier: ein Klick
+              │
+              └─ Standortansicht    ← Name, Adresse, alle Maschinen
+                    │
+                    └─ Maschinenliste
+                          │
+                          └─ Maschinenansicht
+                                │
+                                └─ Zanobo: Referenz, Vergleich, Spektrum
+```
+
+### Die Zuordnung der Daten
+
+| TourFuchs | SoundFuchs |
+|---|---|
+| Kunde | Maschinenstandort |
+| Kundenname | Maschinenstandortname |
+| Kundenmarker | Standortmarker |
+| Kundenliste | Maschinenstandortliste |
+| „Neuer Kunde" | „Neuen Maschinenstandort anlegen" |
+| — | ein Standort enthält **mehrere** Maschinen |
+| Kundendatenimport | Standort- und Maschinenimport |
+| Tourplanung | entfällt |
+| Umsatz-/Vertriebsdaten | entfallen |
+| Vertriebsgebiete | nur, falls für Standorte sinnvoll |
+
+### Was das kostet
+
+Gemessen, nicht geschätzt:
+
+| | Zeilen |
+|---|---|
+| TourFuchs-Schale, zu übernehmen | ~1 100 HTML · 4 551 CSS · ~5 260 JS |
+| TourFuchs-Teile, die entfallen | ~6 000 (Tourplaner, Showcase, Lasso, Tresor, Besuchsplaner, Gebietseditor, SafeTransfer, Mobilvorschau) |
+| SoundFuchs-Motor, unberührt | ~17 200 (DSP, ML, Datenbank, Typen) |
+| Meine Schale aus Schnitt 2–7 | ~1 500 — **wird ersetzt, nicht behalten** |
+
+Die letzte Zeile ist der Punkt. Zwei Schalen nebeneinander stehen zu lassen
+wäre die bequeme Wahl und die falsche: „Die Anwendung darf nicht wie zwei
+zusammengesetzte Programme wirken." Das gilt auch für den Quelltext.
+
+### Was beim Übernehmen verändert wird — und was nicht
+
+**Verändert:** der Stamm ist JavaScript, SoundFuchs ist TypeScript mit
+strengen Prüfungen. Der übernommene Quelltext wird beim Herüberholen nach
+TypeScript geschrieben. Das ist keine Kosmetik: `tsc`, `eslint`, `css-check`,
+`token-check` und `check-i18n` haben in diesem Vorhaben nahezu jeden echten
+Fehler gefunden. Eine JavaScript-Insel liefe an allen fünf vorbei.
+
+**Nicht verändert:** Aufbau, Proportionen, Navigation, Farben, Komponenten,
+Abstände, Interaktionen. Das CSS kommt Datei für Datei unverändert herüber
+(`src/styles/stamm/`), nicht abgeschrieben.
+
+### Die drei Auflagen gelten weiter
+
+Kamerabild während der Prüfung, Abspielen der Aufnahmen, 3D-Spektrum. Sie
+liegen hinter dem Scharnier, also im neu gebauten Teil — der Durchlauf
+(Schritte 12–14) bleibt ihr Wächter und muss nach jedem Schnitt grün sein.
+
 ## 1. Was ich falsch verstanden hatte
 
 Bis heute früh habe ich „wie TourFuchs" als **Aussehen** gelesen: dieselben
@@ -463,6 +575,108 @@ zugeschnitten.
 ---
 
 ## 6. Schnitte
+
+> **Achtung.** Die Schnitte 0–7 unten sind gebaut und verschmolzen — und
+> gehören zum Weg, den §0h zurücknimmt. Sie stehen als Aufzeichnung da, nicht
+> als Plan. Was jetzt gilt, sind die Stamm-Schnitte darunter.
+
+### Stamm-Schnitte
+
+**S1 — Das Gerüst steht.** ✅ _erledigt._ Der Stamm ist eingebunden und
+trägt das erste Bild.
+
+- CSS Datei für Datei aus TourFuchs übernommen (`src/styles/stamm/`,
+  4 551 Zeilen, unverändert). Sie steht **nach** `style.css`: Acht Klassennamen
+  kommen in beiden vor, und es sind genau die, die ich vorher nachgebaut habe.
+- `stamm/core/viewport.ts` — die eine Definition von „mobil". Zwei Gesichter,
+  Orientierung entscheidet, Zahlen mitgebracht statt neu gewählt.
+- `stamm/ui/schale.ts` — Blatt, Griff, Reiter, Kopfstreifen. Aus
+  `sidebar.js` herausgelöst, ohne Tourplaner, Gebietseditor und Vertragsradar.
+- `stamm/ui/scharnier.ts` — die Tür. Auf, zu, Escape, Rückweg.
+- `stamm/ui/beispieldaten.ts` — die Karte füllt sich beim ersten Besuch
+  selbst, wie im Stamm. Ohne das war das erste Bild ein leerer Umriss.
+- Das HTML-Gerüst ersetzt die nachgebaute Kopfleiste. Kartenstil,
+  Leerzustand, Standortblatt und der Hinweis auf Standorte ohne Koordinaten
+  sind aus dem alten Kartenfenster auf die Kartenebene gezogen.
+- **Entfernt:** `Schale.ts`, `schale.css`, `schaleSettings.ts`, `Nahliste.ts`,
+  `Filterleiste.ts`, der Schalter in den Einstellungen und der Nachbau von
+  `.topbar` / `.depth-switch` in `style.css`. Zwei Schalen nebeneinander wären
+  die bequeme Wahl gewesen und die falsche.
+
+Gemessen (`npm run stammvergleich`, neu — es ersetzt `schalenvergleich`):
+
+| | TourFuchs | SoundFuchs |
+|---|---|---|
+| Kopfleiste | 0,0 390×52 | 0,0 390×52 |
+| Kopfstreifen | 0,52 390×100 | 0,52 390×100 |
+| Blatt (sichtbar) | 0,744 390×100 | 0,744 390×100 |
+| Karte | 0,52 390×792 | 0,52 390×792 |
+| Knopfzeile | 0,676 390×38 | 0,676 390×38 |
+| Ansichtstiefe | im Kopfstreifen | im Kopfstreifen |
+
+Am Schreibtisch ebenso, auf den Pixel. Was abweicht, weicht mit Auftrag ab:
+Reiter (kein „Tour"), Pillen (kein Lasso), Zahl der Beispielpunkte.
+
+Vier Befunde kamen erst durch das Messen ans Licht, keiner davon durch
+Hinsehen: die Seitenleiste stand am Schreibtisch bei x = −400 (der Stamm setzt
+`sidebarOpen: !isPhoneUi()`, ich hatte `false`); die Karte war leer, weil
+SoundFuchs seine Beispieldaten nur auf Zuruf lädt; die Ansichtstiefe war
+zweizeilig, weil ein `<span>` im Knopf auf `flex-direction: column` traf; und
+das Blatt saß 54 px zu tief, weil `body.demo-data-active` fehlte — der Stamm
+hängt die Guckhöhe daran.
+
+Falsifiziert: Mit stillgelegter `demo-data-active`-Zeile meldet
+`stammvergleich` zwei Befunde (Blatt 798 statt 744, Knopfzeile 730 statt 676).
+
+Zwei Fehler fand erst der Durchlauf. Die Tiefe lag mit `z-index: 3700` über
+den Dialogen der alten Oberfläche — „Normalzustand aufnehmen" war sichtbar,
+anklickbar und traf trotzdem eine Maschinenzeile 900 px darüber. Und die Karte
+frischte nach dem Zurückkommen nicht auf: Als Fenster zeichnete sie bei jedem
+Öffnen neu, als Grund wird sie nie geöffnet.
+
+Ein Entwurfsfehler fiel als Sackgasse auf: Die Tiefe nahm zuerst den ganzen
+Bildschirm. Damit lagen ⓘ, Suche und Basis/Profi hinter ihr — und
+„Einstellungen" in der Fußzeile steht nur auf Profi, also auf der Stufe, die
+man dort erst hätte einschalten wollen. Die Kopfleiste bleibt jetzt stehen.
+Sie ist das Dach über beiden Welten; ohne sie wirkte es wie zwei Programme.
+
+**Und ein grüner Haken, der nichts wert war.** Der Durchlauf lud bis dahin
+stillschweigend die Beispieldaten mit — der Stamm füllt die leere Karte ja von
+selbst. Schritt 13 griff daraufhin mit `.first()` den Verlauf einer
+_Demo-Maschine_ ab und meldete „4 Knöpfe · 2 Aufnahmen mit Ton". Der Schritt
+war grün, und er maß den falschen Weg: nicht den, den der Lauf eben selbst
+gegangen war.
+
+Seit der Lauf die Beispieldaten absagt, misst er seine eigene Maschine — und
+fand dabei drei Dinge nacheinander, die von außen alle gleich aussahen
+(„Anhören fehlt"):
+
+1. Der Verlauf ist zweistufig. Erst die Liste der Maschinen mit Prüfungen,
+   dann deren Prüfungen. Die Zwischenstufe fehlte im Lauf.
+2. Ein erzwungener Tipp landete auf dem festen Streifen „Einstellungen &
+   mehr" am unteren Rand — Playwright scrollt so wenig wie möglich, und das
+   Ziel parkte darunter. Es öffneten sich die Einstellungen.
+3. Zeile und Kopfzeile hören beide auf Klicks. Ein Tipp klappte auf und
+   sofort wieder zu; danach stand `display: none` an der Detailzeile, mit dem
+   Knopf ordentlich darin.
+
+Keiner der drei ist ein Fehler der Anwendung. Alle drei hätte ein Wächter, der
+einmal tippt und dann urteilt, als „Knopf fehlt" gemeldet — die unangenehmste
+Sorte Befund, weil sie auf die falsche Stelle zeigt.
+
+**S2 — Die Karte.** _offen._ Standortmarker, Cluster und Popup aus dem Stamm
+(`features/map.js`), mit dem Maschinenstandortnamen als Scharnier.
+
+**S3 — Die Standortansicht.** _offen._ Name, Adresse, alle Maschinen,
+„Neue Maschine anlegen" — in der Formensprache des Stamms.
+
+**S4 — Die Maschinenansicht.** _offen._ Referenz, Vergleich, Ähnlichkeitswert,
+Spektrogramm, Verlauf, NFC/QR — aus der alten Oberfläche überführt.
+
+**S5 — Die Reiter füllen.** _offen._ „Standorte", „Filter" und der
+Nähe-Begleiter im Karten-Reiter; Standort- und Maschinenimport.
+
+### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die
 Reihenfolge folgt den Korrekturen aus §0c bis §0g — nicht der ersten Fassung,

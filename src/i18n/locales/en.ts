@@ -25,6 +25,20 @@ export const en: TranslationDict = {
     customerData: 'Sites: samples & import',
   },
 
+  // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
+  // Scharnier (docs/nutzerreise-wie-tourfuchs.md §0h).
+  stamm: {
+    depthBasic: '🌱 Basic',
+    depthExpert: '🛠️ Pro',
+    demoBannerWord: 'Sample data',
+    demoBannerText: '– these sites are made up.',
+    demoBannerCta: 'Remove',
+    tabMap: 'Map',
+    tabData: '📄 Sites',
+    tabFilter: 'Filter',
+    nearby: 'Nearby',
+    dropzone: '📥 Drop an Excel or CSV file here',
+  },
   schale: {
     navLabel: 'View and sections',
     gripLabel: 'Open sheet',
@@ -75,7 +89,7 @@ export const en: TranslationDict = {
   },
 
   search: {
-    placeholder: 'Machine, location or ID…',
+    placeholder: 'Search site, machine, postcode…',
     noHits: 'Nothing found.',
     sheetTitle: 'Settings & more',
   }, // ============================================================================
@@ -157,6 +171,7 @@ export const en: TranslationDict = {
   },
 
   map: {
+    basemapLabel: 'Map style',
     title: 'Site map',
     tileLight: 'Light',
     tileStandard: 'Standard',
