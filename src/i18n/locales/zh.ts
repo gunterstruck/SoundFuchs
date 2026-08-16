@@ -25,6 +25,20 @@ export const zh: TranslationDict = {
     customerData: '地点：示例与导入',
   },
 
+  // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
+  // Scharnier (docs/nutzerreise-wie-tourfuchs.md §0h).
+  stamm: {
+    depthBasic: '🌱 基础',
+    depthExpert: '🛠️ 专业',
+    demoBannerWord: '示例数据',
+    demoBannerText: '– 这些地点是虚构的。',
+    demoBannerCta: '移除',
+    tabMap: '地图',
+    tabData: '📄 机器地点',
+    tabFilter: '筛选',
+    nearby: '附近',
+    dropzone: '📥 将 Excel 或 CSV 文件拖放到此处',
+  },
   schale: {
     navLabel: '视图与区域',
     gripLabel: '展开面板',
@@ -73,7 +87,7 @@ export const zh: TranslationDict = {
   },
 
   search: {
-    placeholder: '设备、位置或编号…',
+    placeholder: '搜索地点、机器、邮编…',
     noHits: '未找到结果。',
     sheetTitle: '设置及更多',
   },
@@ -140,6 +154,7 @@ export const zh: TranslationDict = {
     closeDialog: '关闭对话框',
   },
   map: {
+    basemapLabel: '地图样式',
     title: '地点地图',
     tileLight: '浅色',
     tileStandard: '标准',

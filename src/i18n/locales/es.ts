@@ -25,6 +25,20 @@ export const es: TranslationDict = {
     customerData: 'Ubicaciones: ejemplos e importación',
   },
 
+  // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
+  // Scharnier (docs/nutzerreise-wie-tourfuchs.md §0h).
+  stamm: {
+    depthBasic: '🌱 Básico',
+    depthExpert: '🛠️ Pro',
+    demoBannerWord: 'Datos de ejemplo',
+    demoBannerText: '– estas ubicaciones son ficticias.',
+    demoBannerCta: 'Quitar',
+    tabMap: 'Mapa',
+    tabData: '📄 Ubicaciones',
+    tabFilter: 'Filtro',
+    nearby: 'Cerca de mí',
+    dropzone: '📥 Suelta aquí un archivo Excel o CSV',
+  },
   schale: {
     navLabel: 'Vista y secciones',
     gripLabel: 'Abrir hoja',
@@ -74,7 +88,7 @@ export const es: TranslationDict = {
   },
 
   search: {
-    placeholder: 'Máquina, ubicación o ID…',
+    placeholder: 'Buscar ubicación, máquina, código postal…',
     noHits: 'No se encontró nada.',
     sheetTitle: 'Ajustes y más',
   },
@@ -141,6 +155,7 @@ export const es: TranslationDict = {
     closeDialog: 'Cerrar diálogo',
   },
   map: {
+    basemapLabel: 'Estilo de mapa',
     title: 'Mapa de ubicaciones',
     tileLight: 'Claro',
     tileStandard: 'Estándar',

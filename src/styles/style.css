@@ -41,10 +41,10 @@
   --space-section-gap: 3rem; /* 48px - after cards, before footer */
   --space-footer-bottom: 1.5rem; /* 24px - below footer to viewport edge */
 
-  /* Höhe des Griffs am unteren Rand (.sheet-grip). Er liegt fest über dem
+  /* Höhe des Griffs am unteren Rand (.tiefe-grip). Er liegt fest über dem
      Inhalt, deshalb muss der Inhalt so viel Platz unter sich frei lassen —
      sonst verdeckt der Streifen die letzte Zeile. */
-  --sheet-grip-height: 46px;
+  --tiefe-grip-height: 46px;
 
   /* ── Radien ──────────────────────────────────────────────────────────────
      Die Leiter der Schwester-App TourFuchs (dort src/styles/variables.css):
@@ -486,7 +486,7 @@ body {
   /* Der Griff am unteren Rand liegt fest über dem Inhalt; ohne diesen Zuschlag
      verschwände die letzte Zeile darunter. */
   padding-bottom: calc(
-    var(--space-footer-bottom) + var(--sheet-grip-height) + env(safe-area-inset-bottom, 0px)
+    var(--space-footer-bottom) + var(--tiefe-grip-height) + env(safe-area-inset-bottom, 0px)
   );
   display: flex;
   flex-direction: column;
@@ -10752,70 +10752,16 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
    und was hier an Höhe frei wird, bekommt die erste Entscheidung.
    ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Kopfleiste ──────────────────────────────────────────────────────────────
-   Nach dem Vorbild von TourFuchs (.topbar): feste Höhe, weißer Grund, untere
-   Kante, flacher Schatten. Zeichen links, Suche dazwischen, runde Knöpfe rechts.
+   Hier stand bis zum 16.08.2026 ein Nachbau von TourFuchs' `.topbar`: eigene
+   Klassennamen (`.topbar-mark`, `.topbar-search`, `.topbar-icon-btn`), aber
+   Zeile für Zeile der Aufbau des Vorbilds. Er ist entfernt, weil der Stamm
+   jetzt selbst dasteht (`src/styles/stamm/layout.css`) — siehe
+   docs/nutzerreise-wie-tourfuchs.md §0h.
 
-   Die Leiste liegt bewusst außerhalb der Seitenränder des Inhalts — sie soll
-   die volle Breite tragen, während der Inhalt darunter seinen Rand behält. */
-.topbar {
-  height: var(--topbar-height);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 12px;
-  margin: 0 calc(-1 * var(--space-shell-x)) 0.5rem;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-}
-
-.topbar-mark {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
-  flex: 0 0 auto;
-}
-
-.topbar-search {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-}
-
-.topbar-search-input {
-  width: 100%;
-  font-family: inherit;
-  font-size: var(--font-sm);
-  padding: 0.5em 0.7em;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--bg-card);
-  color: var(--text-primary);
-}
-
-.topbar-search-input:focus {
-  outline: 2px solid rgba(var(--primary-rgb), 0.25);
-  border-color: var(--primary-color);
-}
-
-/* Runder Symbolknopf, 38 px — TourFuchs .icon-button. */
-.topbar-icon-btn {
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-.topbar-icon-btn:hover {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
+   Der Nachbau war nicht falsch gebaut, er war der falsche Weg. Genau daran
+   hat `npm run css-check` ihn auch gemeldet: Nachdem das Markup auf die
+   Klassen des Stamms umgestellt war, zeigten sechs Selektoren ins Leere.
+   ────────────────────────────────────────────────────────────────────────── */
 
 /* Trefferliste — schwebend, daher der stärkere der beiden Schatten. */
 .search-results {
@@ -10892,7 +10838,7 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
    der sich vom Blatt abhebt, wirft seinen Schatten auf das, was hinter ihm
    verschwindet.
    ═══════════════════════════════════════════════════════════════════════════ */
-.sheet-grip {
+.tiefe-grip {
   position: fixed;
   left: 0;
   right: 0;
@@ -10916,7 +10862,7 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   font-weight: 600;
 }
 
-.sheet-grip:hover {
+.tiefe-grip:hover {
   color: var(--text-primary);
 }
 
@@ -10956,7 +10902,7 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(var(--sheet-grip-height) + env(safe-area-inset-bottom, 0px) + 12px);
+  bottom: calc(var(--tiefe-grip-height) + env(safe-area-inset-bottom, 0px) + 12px);
   z-index: var(--z-fixed);
   display: flex;
   align-items: center;
@@ -11078,17 +11024,17 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
 
 /* `touch-action: none` ist die Bedingung fürs Ziehen: Ohne sie fängt der
    Browser die senkrechte Geste als Scrollen ab, und pointermove kommt gar
-   nicht erst an. Genauso im Vorbild (TourFuchs, .sheet-grip). */
-.sheet-grip {
+   nicht erst an. Genauso im Vorbild (TourFuchs, .tiefe-grip). */
+.tiefe-grip {
   touch-action: none;
   cursor: grab;
 }
 
-.sheet-grip:active {
+.tiefe-grip:active {
   cursor: grabbing;
 }
 
-.sheet-grip-line {
+.tiefe-grip-line {
   display: block;
   width: 36px;
   height: 4px;
@@ -11101,8 +11047,8 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
 
 /* Wie im Vorbild: Der Balken wächst und färbt sich, sobald man ihn anfasst —
    das ist der Hinweis, dass hier gezogen werden kann. */
-.sheet-grip:hover .sheet-grip-line,
-.sheet-grip:active .sheet-grip-line {
+.tiefe-grip:hover .tiefe-grip-line,
+.tiefe-grip:active .tiefe-grip-line {
   width: 52px;
   background: var(--primary-color);
 }
@@ -11191,70 +11137,12 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ANSICHTSTIEFE — schwebende Pille unter der Kopfleiste
+   ANSICHTSTIEFE
 
-   Aufbau von TourFuchs (.mobile-topnav .depth-switch): durchscheinender Grund
-   mit Weichzeichner, Pillenform, aktives Segment teal gefüllt. Sie schwebt
-   über dem Inhalt, statt eine eigene Zeile zu beanspruchen — deshalb der
-   leichte Grund und der flache Schatten.
+   Auch hier stand ein Nachbau (`.depth-switch`, `.depth-seg`, `.depth-seg-icon`).
+   Der Stamm bringt die Pille als `.depth-switch.seg-toggle` mit `.seg` mit;
+   das Markup ist darauf umgestellt, die Kopie ist entfernt. §0h.
    ═══════════════════════════════════════════════════════════════════════════ */
-.depth-switch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 3px;
-  margin: 0 0 0.75rem;
-  padding: 2px;
-  background: rgba(var(--overlay-rgb), 0.04);
-  backdrop-filter: blur(9px);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-sm);
-}
-
-.depth-seg {
-  border: none;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  padding: 7px 5px;
-  min-height: 34px;
-  font-size: var(--font-xs);
-  font-weight: 700;
-  color: var(--text-muted);
-  display: flex;
-  /* `.view-level-btn` stellt für den großen Umschalter im Dialog auf Spalte —
-     dort steht das Zeichen über der Beschriftung und darunter noch eine
-     Erklärzeile. Oben in der Kopfleiste ist dafür kein Platz und auch kein
-     Grund: Zeichen und Wort nebeneinander halten die Pille flach. Diese Regel
-     steht weiter unten in der Datei und gewinnt daher bei gleicher Stärke. */
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-/* Emoji, kein Strich-Symbol: TourFuchs schreibt sie direkt in die
-   Beschriftung. Sie bringen ihre Farbe mit und bleiben deshalb auf dem
-   aktiven wie auf dem ruhenden Segment gleich gut lesbar — anders als eine
-   Strichgrafik, die `currentColor` folgt und auf Teal fast verschwindet.
-   `flex-shrink: 0`, damit sie auf schmalen Geräten nicht gequetscht werden. */
-.depth-seg-icon {
-  flex-shrink: 0;
-  font-size: 1rem;
-  line-height: 1;
-}
-
-/* Die drei Striche ganz links. Größer als die Strichstärke der übrigen
-   Symbolknöpfe, weil ☰ als Schriftzeichen kommt und sonst zierlich wirkt. */
-.topbar-menu-btn {
-  font-size: 1.35rem;
-  line-height: 1;
-}
-
-.depth-seg.active {
-  background: var(--primary-color);
-  color: var(--on-primary);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
-}
 
 /* Der Bestand steht vorn und braucht keinen Kartenrahmen — er ist der Inhalt,
    nicht ein Element darin. */

@@ -30,6 +30,20 @@ export const de: TranslationDict = {
   // ============================================================================
   // DIE SCHALE (Schnitt 2 — docs/nutzerreise-wie-tourfuchs.md)
   // ============================================================================
+  // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
+  // Scharnier (docs/nutzerreise-wie-tourfuchs.md §0h).
+  stamm: {
+    depthBasic: '🌱 Basis',
+    depthExpert: '🛠️ Profi',
+    demoBannerWord: 'Beispieldaten',
+    demoBannerText: '– das sind erfundene Standorte.',
+    demoBannerCta: 'Entfernen',
+    tabMap: 'Karte',
+    tabData: '📄 Standorte',
+    tabFilter: 'Filter',
+    nearby: 'In der Nähe',
+    dropzone: '📥 Excel- oder CSV-Datei hier ablegen',
+  },
   schale: {
     navLabel: 'Ansicht und Bereiche',
     gripLabel: 'Blatt aufziehen',
@@ -80,7 +94,7 @@ export const de: TranslationDict = {
   },
 
   search: {
-    placeholder: 'Maschine, Ort oder ID…',
+    placeholder: 'Standort, Maschine, PLZ suchen…',
     noHits: 'Nichts gefunden.',
     sheetTitle: 'Einstellungen & mehr',
   }, // ============================================================================
@@ -165,6 +179,7 @@ export const de: TranslationDict = {
   // STANDORTKARTE (Schnitt 2 — docs/kunden-und-karte.md)
   // ============================================================================
   map: {
+    basemapLabel: 'Kartenstil',
     title: 'Standortkarte',
     tileLight: 'Hell',
     tileStandard: 'Standard',
