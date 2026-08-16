@@ -65,8 +65,11 @@ describe('Kartengründe', () => {
 describe('gemerkter Kartengrund', () => {
   beforeEach(() => speicherStellen());
 
-  it('beginnt bei Hell', () => {
-    expect(gemerkterKachelgrund()).toBe('light');
+  it('beginnt bei Standard — wie der Stamm', () => {
+    // TourFuchs stellt `basemap: 'standard'` voreinstellt (core/state.js).
+    // Die Voreinstellung ist keine Kleinigkeit: Sie ist das, was die meisten
+    // Nutzer je zu sehen bekommen.
+    expect(gemerkterKachelgrund()).toBe('standard');
   });
 
   it('merkt sich die Wahl', () => {
@@ -74,8 +77,8 @@ describe('gemerkter Kartengrund', () => {
     expect(gemerkterKachelgrund()).toBe('satellite');
   });
 
-  it('fällt bei einem unbekannten Eintrag auf Hell zurück', () => {
+  it('fällt bei einem unbekannten Eintrag auf Standard zurück', () => {
     localStorage.setItem('soundfuchs.kartengrund', 'mondkarte');
-    expect(gemerkterKachelgrund()).toBe('light');
+    expect(gemerkterKachelgrund()).toBe('standard');
   });
 });

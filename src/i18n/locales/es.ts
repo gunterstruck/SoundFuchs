@@ -47,7 +47,7 @@ export const es: TranslationDict = {
     depthBasic: '🌱 Básico',
     depthExpert: '🛠️ Pro',
     demoBannerWord: 'Datos de ejemplo',
-    demoBannerText: '– estas ubicaciones son ficticias.',
+    demoBannerText: '– ubicaciones de demostración.',
     demoBannerCta: 'Quitar',
     tabMap: 'Mapa',
     tabData: '📄 Ubicaciones',

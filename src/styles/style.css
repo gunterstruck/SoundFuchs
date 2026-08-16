@@ -296,24 +296,32 @@ button {
   }
 }
 
-/* ─── Globales Downscaling für kleine Bildschirme ────────────────────────────
-   Der Nutzer hat sich für ein kleines Gerät entschieden – die App respektiert das.
-   Da die gesamte App rem + CSS-Variablen nutzt, zieht eine kleinere root-font-size
-   automatisch durch alle Komponenten durch.
-   Normale und große Smartphones (≥ 700px Höhe) bleiben vollständig unverändert.
-   ───────────────────────────────────────────────────────────────────────────── */
+/* ─── Das globale Downscaling ist entfallen ──────────────────────────────────
 
-@media screen and (max-height: 700px) {
-  :root {
-    font-size: 13px; /* Standard ist 16px → ca. 80% */
-  }
-}
+   Hier standen zwei Regeln, die auf kurzen Bildschirmen die Wurzelschrift
+   verkleinerten (≤700 px Höhe → 13 px, ≤570 px → 11.5 px). Sie stammen aus
+   der Zeit, als SoundFuchs eine lange, scrollende Seite war: Wer wenig Höhe
+   hat, bekommt mehr Zeilen ins Bild.
 
-@media screen and (max-height: 570px) {
-  :root {
-    font-size: 11.5px; /* Ca. 72% – für iPhone SE 1st gen */
-  }
-}
+   Für die Stamm-Schale ist das falsch. Sie ist kein Text, sondern ein festes
+   Layout mit einer Karte darin — sie gewinnt nichts durch kleinere Schrift und
+   verliert dabei Antippgröße, ausgerechnet auf einem quer gehaltenen Handy.
+
+   Scopen ließ es sich nicht: `rem` ist immer wurzelbezogen, also trifft eine
+   Wurzelregel beide Welten. Und die Kopfleiste steht in beiden — sie hätte
+   beim Betreten der Tiefe ihre Größe gewechselt.
+
+   Gemessen war der Unterschied klein und die Ursache groß: Bei 900×520 waren
+   die Kartenknöpfe 35 px hoch statt der 39 px von TourFuchs, weil `:root`
+   (0,1,0) das `html, body` des Stamms (0,0,1) schlägt — unabhängig von der
+   Reihenfolge der Dateien. Vier Pixel als sichtbarer Rest einer Regel, die
+   die ganze Anwendung um ein Viertel verkleinerte.
+
+   Folge, offen benannt: Auf Geräten unter 700 px Höhe ist die Schrift der
+   bisherigen Oberfläche hinter dem Scharnier jetzt größer als vorher, und man
+   scrollt dort mehr. Das ist der Preis für eine Anwendung mit einer
+   Schriftgröße statt dreien.
+   ───────────────────────────────────────────────────────────────────────── */
 
 /* ===================================
    RESPONSIVE SPACING SYSTEM
@@ -390,9 +398,6 @@ button {
 /* Focus Theme: Primary card hover - confident, dominant feedback */
 
 /* Focus Theme: Mobile adjustments - maintain hierarchy on small screens */
-@media (max-width: 480px) {
-}
-
 /* ===================================
    SECONDARY CARD EXPANDED STATE
    Full-width expansion for secondary cards when opened
@@ -425,9 +430,6 @@ button {
 /* Focus Theme: Restore secondary icon when expanded */
 
 /* Mobile: Expanded cards always full width */
-@media (max-width: 480px) {
-}
-
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .main-actions > .main-container.collapsible.expanded {
@@ -468,9 +470,21 @@ body {
   font-family: var(--font-primary);
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   color: var(--text-primary);
-  line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+/* Die Zeilenhöhe der bisherigen Oberfläche — an ihr, nicht am Körper.
+
+   Am Körper vererbte sie sich in die Stamm-Schale hinein: `.topbar` kam auf
+   `line-height: 24px`, wo TourFuchs `normal` hat. Das ist kein Schönheitsfehler
+   — die Kopfleiste ist 52 px hoch und rechnet mit dem, was hineinpasst.
+
+   Sie steht hier statt bei den anderen Regeln der Tiefe, weil sie zu diesem
+   `body`-Block gehört und mit ihm verschwinden wird: Sobald hinter dem
+   Scharnier nichts Altes mehr steht, ist auch diese Zeile überflüssig. */
+.zanobo-tiefe {
+  line-height: 1.6;
 }
 
 /* ===================================
@@ -548,9 +562,6 @@ body {
    HERO HEADER IMAGE
    =================================== */
 
-@media (max-width: 768px) {
-}
-
 /* ===================================
    HERO BANNER TEXT OVERLAY
    =================================== */
@@ -575,9 +586,6 @@ body {
 /* Focus Theme (Steve Jobs): Very restrained, minimalist */
 
 /* Responsive: Mobile adjustments */
-@media (max-width: 768px) {
-}
-
 /* ===================================
    MAIN ACTIONS LAYOUT (Fixed Centered Column)
    =================================== */
@@ -4383,12 +4391,6 @@ button.is-busy {
    =================================== */
 
 /* Mobile responsive */
-@media (max-width: 768px) {
-}
-
-@media (max-width: 480px) {
-}
-
 /* ===================================
    ANIMATIONS
    =================================== */
@@ -4884,9 +4886,6 @@ select:focus-visible {
 }
 
 /* Responsive Theme Cards */
-@media (min-width: 768px) {
-}
-
 /* ===================================
    REVIEW MODAL (Phase 2)
    =================================== */
@@ -5947,9 +5946,6 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 }
 
 /* Responsive adjustments */
-@media (max-width: 380px) {
-}
-
 /* ===================================
    MACHINE SETUP FORM (NFC/Service)
    =================================== */
@@ -11362,31 +11358,12 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   margin: 0;
 }
 
-/* Hell - Standard - Satellit. Drei Pillen, wie bei TourFuchs: Die Wahl ist
-   Geschmack und Lichtverhaeltnis, keine Einstellung, die man suchen soll. */
-.map-basemap-row {
-  display: flex;
-  gap: var(--spacing-xs);
-  padding: 0 var(--spacing-sm) var(--spacing-xs);
-}
-
-.map-basemap-btn {
-  flex: 1;
-  padding: 0.45rem 0.5rem;
-  border: 1px solid rgba(var(--primary-rgb), 0.25);
-  border-radius: var(--radius-pill);
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  font-size: var(--font-xs);
-  font-weight: 600;
-  font-family: var(--font-primary);
-}
-
-.map-basemap-btn.is-active {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: #fff;
-}
+/* Hier standen drei Pillen für Hell · Standard · Satellit. Sie waren einmal
+   selbst von TourFuchs abgeschaut, stammten aber aus einer älteren Fassung;
+   der Stamm hat heute ein Auswahlfeld in der Seitenleiste
+   (`.basemap-control > select`, stamm/components.css). Vor dem Scharnier gilt
+   das Vorbild, nicht der eigene Geschmack — und drei Pillen kosten in der
+   400-px-Leiste eine ganze Zeile, das Auswahlfeld eine halbe. */
 
 .customer-map-canvas {
   flex: 1;

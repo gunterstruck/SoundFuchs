@@ -642,7 +642,13 @@ button.contact-link {
     border-radius: var(--radius-m) !important;
 }
 
-@media (max-width: 768px) {
+/* Karte in der Touransicht: Fingerbedienung, große Marker, Blatt-taugliche
+   Popups. Die Schwelle stand bei 768px – ein Tablet hochkant bekam damit die
+   mobile Geometrie mit **Desktop-Kartenpopups** darin. Jetzt gilt hier dieselbe
+   Grenze wie überall sonst. */
+@media (max-width: 768px),
+       (max-width: 1200px) and (orientation: portrait),
+       (max-width: 900px) and (max-height: 520px) {
     /* Mobil wird per Zwei-Finger-Geste gezoomt. Die redundanten Tasten nehmen
        dort nur Kartenfläche ein; auf Desktop bleiben sie erhalten. */
     #map .leaflet-control-zoom {

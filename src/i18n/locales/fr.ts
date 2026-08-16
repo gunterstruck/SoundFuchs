@@ -47,7 +47,7 @@ export const fr: TranslationDict = {
     depthBasic: '🌱 Base',
     depthExpert: '🛠️ Pro',
     demoBannerWord: 'Données d’exemple',
-    demoBannerText: '– ces sites sont fictifs.',
+    demoBannerText: '– sites de démonstration.',
     demoBannerCta: 'Retirer',
     tabMap: 'Carte',
     tabData: '📄 Sites',

@@ -48,7 +48,8 @@ import { logger } from '@utils/logger.js';
 import { GlobalSearch } from '@ui/GlobalSearch.js';
 import { InfoBottomSheet } from '@ui/components/InfoBottomSheet.js';
 import { CustomerMap } from '@ui/components/CustomerMap.js';
-import { schaleAufbauen, reiterOeffnen, istBlatt } from './stamm/ui/schale.js';
+import { schaleAufbauen, zeigeKarte } from './stamm/ui/schale.js';
+import { releaseInheritedOrientationLock } from './stamm/core/viewport.js';
 import {
   scharnierAufbauen,
   schliesseTiefe,
@@ -719,6 +720,21 @@ class ZanobotApp {
    * (docs/nutzerreise-wie-tourfuchs.md §0h).
    */
   private setupStamm(): void {
+    /**
+     * Eine geerbte Hochformatsperre lösen — einmal, beim Start.
+     *
+     * Eine **installierte** PWA behält das Manifest ihres
+     * Installationszeitpunkts. Stand darin einmal `orientation: 'portrait'`,
+     * hängt das Gerät bis heute im Hochformat fest, auch wenn im Quelltext
+     * längst nichts mehr davon steht — und im Manifest steht nichts, geprüft.
+     *
+     * Auf einem Tablet ist das der Unterschied zwischen „Schreibtisch per
+     * Drehung" und „geht gar nicht": Ohne diese Zeile bekäme das Gerät nie das
+     * zweite Gesicht zu sehen, und die ganze Arbeit an der Gesichtsgrenze wäre
+     * dort unsichtbar. Eine Neuinstallation räumt die Sperre endgültig weg;
+     * das hier hilft allen, die nicht neu installieren.
+     */
+    releaseInheritedOrientationLock();
     schaleAufbauen();
     scharnierAufbauen();
     standortansichtAufbauen({
@@ -1040,9 +1056,11 @@ class ZanobotApp {
           // liegt. Stattdessen zurück aus der Tiefe und auf den Karten-Reiter —
           // das ist derselbe Wunsch.
           schliesseTiefe();
-          // Den Karten-Reiter gibt es nur unterwegs; am Schreibtisch liegt die
-          // Karte ohnehin frei neben der Seitenleiste.
-          if (istBlatt()) reiterOeffnen('karte');
+          // Einen Karten-Reiter gibt es nicht mehr (siehe `REITER` in
+          // stamm/ui/schale.ts). Die Karte wird frei, indem das Blatt zugeht —
+          // am Schreibtisch ist dafür nichts zu tun, dort steht sie neben der
+          // Seitenleiste.
+          zeigeKarte();
         });
       });
 

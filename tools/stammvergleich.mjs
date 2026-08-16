@@ -42,9 +42,18 @@ const { chromium } = require('playwright');
 const STAMM_ORT = process.env.TOURFUCHS_ORT ?? '/workspace/gunterstruck/tourfuchs';
 
 /** Diese Maße müssen übereinstimmen — sie sind der Aufbau. */
-const GEOMETRIE = ['kopfleiste', 'streifen', 'blatt', 'karte', 'knopfzeile', 'tiefeIm', 'reiterIm'];
+const GEOMETRIE = [
+  'kopfleiste',
+  'streifen',
+  'blatt',
+  'karte',
+  'knopfzeile',
+  'tiefeIm',
+  'reiterIm',
+  'gesicht',
+];
 /** Diese werden nur berichtet — hier ist Abweichung der Auftrag. */
-const INHALT = ['reiter', 'pillen', 'marker', 'tiefePille'];
+const INHALT = ['reiter', 'pillen', 'marker', 'tiefePille', 'nurMobil', 'nurTisch'];
 
 async function freierPort() {
   return new Promise((r) => {
@@ -123,6 +132,20 @@ const AUFMASS = () => {
     tiefePille: kasten('#depth-switch'),
     reiter: text('.tab-button'),
     pillen: text('.map-fab'),
+    // Welches Gesicht steht im Bild? Nicht gefragt, sondern abgelesen: Der
+    // Kopfstreifen gibt es unterwegs und am Schreibtisch nicht.
+    gesicht: (() => {
+      const nav = document.getElementById('mobile-topnav');
+      const da = nav && getComputedStyle(nav).display !== 'none';
+      return da ? 'phone' : 'desktop';
+    })(),
+    // Wer sichtbar ist, der oder der. Beide zugleich wäre der Zwitter.
+    nurMobil: [...document.querySelectorAll('.only-mobile')].filter(
+      (e) => getComputedStyle(e).display !== 'none'
+    ).length,
+    nurTisch: [...document.querySelectorAll('.only-desktop')].filter(
+      (e) => getComputedStyle(e).display !== 'none'
+    ).length,
     marker:
       document.querySelectorAll('#map .leaflet-marker-icon').length,
     // Sitzen Ansichtstiefe und Reiter im Kopfstreifen oder im Blatt? Das ist
@@ -134,9 +157,24 @@ const AUFMASS = () => {
   };
 };
 
+/**
+ * Sechs Fenster, zwei Gesichter.
+ *
+ * Vier davon sind Geräte, die es gibt; zwei sind die Grenze selbst. Ein
+ * Vergleich, der nur Handy und Schreibtisch misst, sieht genau das nicht, was
+ * beim Umbau schiefgeht — der Zwitter entsteht dazwischen.
+ *
+ * `soll` ist das erwartete Gesicht. Es steht hier und nicht im Test, weil
+ * dieses Werkzeug beide Anwendungen misst: Weicht TourFuchs selbst davon ab,
+ * ist die Erwartung falsch und nicht die Anwendung.
+ */
 const FORMATE = [
-  ['handy', { width: 390, height: 844 }, true],
-  ['tisch', { width: 1440, height: 900 }, false],
+  ['handy', { width: 390, height: 844 }, true, 'phone'],
+  ['tablet-hoch', { width: 820, height: 1180 }, true, 'phone'],
+  ['tablet-quer', { width: 1180, height: 820 }, true, 'desktop'],
+  ['tisch', { width: 1440, height: 900 }, false, 'desktop'],
+  ['flach-quer', { width: 900, height: 520 }, true, 'phone'],
+  ['grenzfall', { width: 901, height: 521 }, true, 'desktop'],
 ];
 
 const browser = await chromium.launch({
@@ -186,10 +224,27 @@ const zeige = (v) =>
 
 const befunde = [];
 
-for (const [gesicht] of FORMATE) {
+for (const [gesicht, viewport, , soll] of FORMATE) {
   const t = ergebnis.tourfuchs[gesicht];
   const s = ergebnis.soundfuchs[gesicht];
-  console.log(`\n════ ${gesicht.toUpperCase()} ${'═'.repeat(46)}`);
+  console.log(
+    `\n════ ${gesicht.toUpperCase()} (${viewport.width}×${viewport.height}, erwartet: ${soll}) ` +
+      '═'.repeat(14)
+  );
+  for (const [wer, mass] of [
+    ['TourFuchs', t],
+    ['SoundFuchs', s],
+  ]) {
+    if (mass.gesicht !== soll) {
+      befunde.push(`${gesicht}: ${wer} zeigt „${mass.gesicht}" statt „${soll}"`);
+    }
+    if (mass.nurMobil > 0 && mass.nurTisch > 0) {
+      befunde.push(
+        `${gesicht}: ${wer} zeigt Mobile- UND Desktop-Elemente zugleich ` +
+          `(${mass.nurMobil} / ${mass.nurTisch}) — ein Zwitter`
+      );
+    }
+  }
   console.log('  — Geometrie (muss übereinstimmen) —');
   for (const feld of GEOMETRIE) {
     const a = zeige(t[feld]);
