@@ -67,6 +67,26 @@ export const PHONE_FACE_MEDIA = [
   `(max-width: ${SHORT_LANDSCAPE_MAX_WIDTH}px) and (max-height: ${SHORT_LANDSCAPE_MAX_HEIGHT}px)`,
 ].join(', ');
 
+/**
+ * Die Gegenprobe – **exakt** die Verneinung von `PHONE_FACE_MEDIA`.
+ *
+ * Zwei Gesichter heißt: Jedes Fenster gehört zu genau einem. Solange die
+ * Schreibtisch-Abfrage nur „ab 769 quer" lautete, war das nicht wahr – ein
+ * Handy quer (880×500) traf beide Listen und bekam Blatt-Geometrie **und**
+ * Desktop-Regeln übereinander. Ein Zwitter entsteht nicht nur durch eine
+ * dritte Abfrage, sondern genauso durch zwei, die sich überlappen.
+ *
+ * Ausgerechnet aus der Verneinung der drei Handy-Teile:
+ *   nicht(w ≤ 768) und nicht(w ≤ 1200 und hochkant) und nicht(w ≤ 900 und h ≤ 520)
+ * = w ≥ 769 und (w ≥ 1201 oder quer) und (w ≥ 901 oder h ≥ 521)
+ * und als Vereinigung geschrieben:
+ */
+export const DESKTOP_FACE_MEDIA = [
+  `(min-width: ${TABLET_MAX_WIDTH + 1}px)`,
+  `(min-width: ${SHORT_LANDSCAPE_MAX_WIDTH + 1}px) and (orientation: landscape)`,
+  `(min-width: ${PHONE_MAX_WIDTH + 1}px) and (orientation: landscape) and (min-height: ${SHORT_LANDSCAPE_MAX_HEIGHT + 1}px)`,
+].join(', ');
+
 /** Was dieses Modul von einer Medienabfrage braucht — nicht mehr. */
 interface Abfrage {
   readonly matches: boolean;

@@ -389,30 +389,35 @@ export class CustomerMap {
     merkeKachelgrund(wahl);
   }
 
-  /** Die drei Pillen Hell · Standard · Satellit. */
+  /**
+   * Die Wahl des Kartengrunds — ein Auswahlfeld, wie im Stamm.
+   *
+   * Hier standen bis zum 16.08.2026 drei Pillen (`#map-basemap-row`). Sie
+   * waren einmal selbst von TourFuchs abgeschaut, stammten aber aus einer
+   * älteren Fassung; der Stamm füllt heute ein `<select>` in der Seitenleiste
+   * (`sidebar.js`, `basemap-select`).
+   *
+   * Die Beschriftungen kommen weiter aus der Übersetzung und nicht aus
+   * `CONFIG.tileLayers.label` wie im Stamm — SoundFuchs spricht fünf Sprachen,
+   * TourFuchs eine.
+   */
   private baueGrundwahl(): void {
-    const leiste = document.getElementById('map-basemap-row');
-    if (!leiste) return;
-    leiste.textContent = '';
+    const feld = document.getElementById('basemap-select') as HTMLSelectElement | null;
+    if (!feld) return;
+    feld.textContent = '';
     for (const grund of Object.values(KACHELGRUENDE)) {
-      const knopf = document.createElement('button');
-      knopf.type = 'button';
-      knopf.className = 'map-basemap-btn';
-      knopf.textContent = t(grund.key);
-      knopf.dataset.grund = grund.schluessel;
-      knopf.setAttribute('aria-pressed', String(grund.schluessel === this.wahl));
-      knopf.classList.toggle('is-active', grund.schluessel === this.wahl);
-      knopf.addEventListener('click', () => {
-        void this.setzeGrund(grund.schluessel).then(() => {
-          leiste.querySelectorAll<HTMLElement>('.map-basemap-btn').forEach((b) => {
-            const aktiv = b.dataset.grund === this.wahl;
-            b.classList.toggle('is-active', aktiv);
-            b.setAttribute('aria-pressed', String(aktiv));
-          });
-        });
-      });
-      leiste.appendChild(knopf);
+      const eintrag = document.createElement('option');
+      eintrag.value = grund.schluessel;
+      eintrag.textContent = t(grund.key);
+      eintrag.selected = grund.schluessel === this.wahl;
+      feld.appendChild(eintrag);
     }
+    if (feld.dataset.verdrahtet === '1') return;
+    feld.dataset.verdrahtet = '1';
+    feld.addEventListener('change', () => {
+      const wahl = feld.value as Kachelwahl;
+      if (wahl in KACHELGRUENDE) void this.setzeGrund(wahl);
+    });
   }
 
   /**

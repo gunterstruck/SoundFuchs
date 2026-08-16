@@ -47,7 +47,7 @@ export const zh: TranslationDict = {
     depthBasic: '🌱 基础',
     depthExpert: '🛠️ 专业',
     demoBannerWord: '示例数据',
-    demoBannerText: '– 这些地点是虚构的。',
+    demoBannerText: '– 演示地点。',
     demoBannerCta: '移除',
     tabMap: '地图',
     tabData: '📄 机器地点',

@@ -52,7 +52,7 @@ export const de: TranslationDict = {
     depthBasic: '🌱 Basis',
     depthExpert: '🛠️ Profi',
     demoBannerWord: 'Beispieldaten',
-    demoBannerText: '– das sind erfundene Standorte.',
+    demoBannerText: '– Demo-Standorte.',
     demoBannerCta: 'Entfernen',
     tabMap: 'Karte',
     tabData: '📄 Standorte',

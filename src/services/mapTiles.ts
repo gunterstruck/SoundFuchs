@@ -104,8 +104,15 @@ const SPEICHER = 'soundfuchs.kartengrund';
  * Die zuletzt gewählte Kartendarstellung.
  *
  * Wer einmal auf Satellit gestellt hat, will beim nächsten Öffnen nicht wieder
- * umstellen. Ein unbekannter oder fehlender Wert fällt auf „Hell" zurück —
- * das ist der ruhigste Grund, auf dem die Marker am besten lesbar sind.
+ * umstellen. Ein unbekannter oder fehlender Wert fällt auf **„Standard"**
+ * zurück — den Grund, den auch der Stamm voreinstellt
+ * (`state.ui.basemap: 'standard'`, TourFuchs core/state.js).
+ *
+ * Hier stand bis zum 16.08.2026 „Hell", mit der Begründung, das sei der
+ * ruhigste Grund. Das mag stimmen und ist trotzdem der falsche Maßstab: Vor
+ * dem Scharnier soll SoundFuchs sein wie TourFuchs, und eine Voreinstellung
+ * ist keine Kleinigkeit — sie ist das, was 95 % der Nutzer je zu sehen
+ * bekommen. „Hell" kommt von CARTO, „Standard" von OpenStreetMap selbst.
  */
 export function gemerkterKachelgrund(): Kachelwahl {
   try {
@@ -114,7 +121,7 @@ export function gemerkterKachelgrund(): Kachelwahl {
   } catch {
     // Kein Speicher (privates Fenster) — dann eben die Voreinstellung.
   }
-  return 'light';
+  return 'standard';
 }
 
 export function merkeKachelgrund(wahl: Kachelwahl): void {

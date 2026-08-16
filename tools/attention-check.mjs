@@ -705,6 +705,7 @@ try {
     let zeileDa = false;
     let markerZahl = 0;
     let gruende = 0;
+    let grundVorgabe = '';
     let gebiete = 0;
     let quelle = '';
     let blattDa = false;
@@ -728,7 +729,14 @@ try {
         await page.waitForTimeout(2500);
 
         markerZahl = await page.locator('#map .leaflet-marker-icon').count();
-        gruende = await page.locator('#map-basemap-row .map-basemap-btn').count();
+        // Der Kartenstil steht als Auswahlfeld in der Seitenleiste, wie im
+        // Stamm — bis zum 16.08.2026 waren es drei Pillen aus einer älteren
+        // TourFuchs-Fassung.
+        gruende = await page.locator('#basemap-select option').count();
+        grundVorgabe = await page
+          .locator('#basemap-select')
+          .inputValue()
+          .catch(() => '');
         // Die Postleitzahlgebiete als Flächen — das „Deutschlandbild". Zehn
         // einstellige Gebiete auf der Übersichtsstufe. Ohne sie wäre die Karte
         // wieder nur Kacheln mit Punkten darauf.
@@ -857,6 +865,7 @@ try {
     console.log(`Menüzeile „Standortkarte" ${zeileDa ? 'sichtbar' : 'FEHLT'}`);
     console.log(`Marker auf der Karte      ${markerZahl}`);
     console.log(`Kartengründe              ${gruende}`);
+    console.log(`Voreingestellter Grund    ${grundVorgabe || '(leer)'}`);
     console.log(`PLZ-Gebiete (Flächen)     ${gebiete}`);
     console.log(
       `Quellenangabe             ${quelle.replace(/\s+/g, ' ').slice(0, 60) || '(leer)'}`
@@ -881,6 +890,10 @@ try {
       'Karte: kein Marker — der Standort ist ohne Koordinaten angelegt worden'
     );
     pruefe(gruende === 3, `Karte: ${gruende} statt 3 Kartengründe (Hell · Standard · Satellit)`);
+    pruefe(
+      grundVorgabe === 'standard',
+      `Karte: der Grund steht auf „${grundVorgabe}" statt auf „standard" — der Stamm stellt OSM voreinstellt, nicht CARTO`
+    );
     pruefe(
       quelle.includes('OpenStreetMap'),
       'Karte: die Quellenangabe der Kacheln fehlt — sie ist Bedingung der Nutzung, kein Schmuck'
@@ -1318,6 +1331,10 @@ try {
         knopfzeile: da('#map-fab-row'),
         tiefeImStreifen: Boolean(document.querySelector('#mobile-topnav #depth-switch')),
         reiterImStreifen: document.querySelectorAll('#mobile-topnav .tab-button').length,
+        reiterImBlatt: document.querySelectorAll('#sidebar .tab-button').length,
+        streifenHoch: Math.round(
+          document.getElementById('mobile-topnav')?.getBoundingClientRect().height ?? 0
+        ),
         tiefeZu: document.getElementById('zanobo-tiefe')?.hidden ?? false,
       };
     });
@@ -1354,7 +1371,9 @@ try {
     console.log(`Karte als Grund           ${steht.karteImGrund ? 'ja' : 'NEIN'}`);
     console.log(`Knopfzeile über der Karte ${steht.knopfzeile ? 'ja' : 'NEIN'}`);
     console.log(`Tiefe im Kopfstreifen     ${steht.tiefeImStreifen ? 'ja' : 'NEIN'}`);
-    console.log(`Reiter im Streifen        ${steht.reiterImStreifen}`);
+    console.log(`Reiter im Streifen        ${steht.reiterImStreifen} (erwartet 0)`);
+    console.log(`Reiter im Blatt           ${steht.reiterImBlatt}`);
+    console.log(`Streifenhöhe              ${steht.streifenHoch} px (erwartet 55)`);
     console.log(`Tiefe beim Start zu       ${steht.tiefeZu ? 'ja' : 'NEIN'}`);
     console.log(`Auf: Stamm ruht           ${drin.stammRuht ? 'ja' : 'NEIN'}`);
     console.log(`Auf: Bestand da           ${drin.bestandDa ? 'ja' : 'NEIN'}`);
@@ -1374,9 +1393,23 @@ try {
       steht.tiefeImStreifen,
       'Stamm: die Ansichtstiefe ist nicht in den Kopfstreifen gezogen — sie fährt mit dem Blatt aus dem Bild'
     );
+    // Der Kopfstreifen trägt NUR die Ansichtstiefe.
+    //
+    // Bis zum 16.08.2026 stand hier „3 Reiter erwartet" — und der Streifen war
+    // dadurch zweizeilig, 100 px statt der 55 des Stamms. Der Wächter hat den
+    // Fehler nicht nur übersehen, er hat ihn festgeschrieben: Wer ihn
+    // behoben hätte, wäre rot geworden.
     pruefe(
-      steht.reiterImStreifen === 3,
-      `Stamm: ${steht.reiterImStreifen} statt 3 Reiter im Kopfstreifen`
+      steht.reiterImStreifen === 0,
+      `Stamm: ${steht.reiterImStreifen} Reiter im Kopfstreifen — dort gehört nur Basis/Profi hin`
+    );
+    pruefe(
+      steht.reiterImBlatt > 0,
+      'Stamm: die Reiter sind weder im Streifen noch im Blatt — sie sind verschwunden'
+    );
+    pruefe(
+      Math.abs(steht.streifenHoch - 55) <= 2,
+      `Stamm: der Kopfstreifen ist ${steht.streifenHoch} px hoch statt 55 — er nimmt der Karte den Platz oben`
     );
     pruefe(
       steht.tiefeZu,

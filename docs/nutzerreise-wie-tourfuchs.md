@@ -807,6 +807,110 @@ steht — und meldet sonst sauber.
 
 Falsifiziert: mit stillgelegtem Rückweg meldet `attention-check` zwei Befunde.
 
+**S3a — Zwei Gesichter, kein drittes.** ✅ _erledigt._ Der Stamm wird auf
+`19b3951` nachgezogen: „Zwei Oberflächen, kein drittes Gesicht für Tablets".
+
+Der Anlass war ein Auftrag mit Zahlen darin, und die Zahlen stimmten: Ein
+hochkantes Tablet bekam bei SoundFuchs die Kartenknöpfe bei y = 164 statt
+unten, der Kopfstreifen war 100 px hoch statt 55, und ein flaches Querformat
+traf beide Gesichter zugleich.
+
+### Die Wurzel: das Stamm-CSS war alt
+
+`src/styles/stamm/` stammte vom Stand **vor** dieser Korrektur. Drei der sechs
+Dateien wichen ab (components 124, map 8, responsive 302 Zeilen). Sie sind neu
+kopiert — und damit waren der Tablet-Aufsatz
+`(min-width: 769px) and (max-width: 1200px) and (orientation: portrait)`,
+seine Sondermaße und `--mobile-topnav-bottom` in einem Schritt weg.
+
+Das ist der Beleg dafür, dass §0h trägt: Weil der Stamm kopiert und nicht
+nachgebaut ist, kostete die halbe Aufgabe einen `cp`-Befehl.
+
+### `DESKTOP_FACE_MEDIA` — die exakte Verneinung
+
+```
+  nicht(w ≤ 768) und nicht(w ≤ 1200 und hochkant) und nicht(w ≤ 900 und h ≤ 520)
+= w ≥ 769 und (w ≥ 1201 oder quer) und (w ≥ 901 oder h ≥ 521)
+```
+
+Kein Fenster trifft beide Listen, keines fällt zwischen ihnen durch. Geprüft
+über ein Raster von 56 × 45 Fenstern.
+
+### Die Reiter bleiben unten
+
+Sie zogen bisher mit in den Kopfstreifen; der war dadurch zweizeilig und nahm
+der Karte 45 px an ihrer wichtigsten Stelle. Die Begründung des Stamms trägt
+auch hier: Die Ansichtstiefe gilt für die ganze Anwendung und muss immer
+erreichbar sein. Die Reiter schalten den Inhalt **des Blatts** um — oben
+angeheftet wären sie eine Navigation, die auf etwas zeigt, das eingeklappt ist.
+
+Mit ihnen entfällt der Reiter „Karte": Ein Reiter, den man im Blatt antippt,
+um das Blatt zuzumachen, ist ein Knopf, der sich selbst wegräumt. Zur Karte
+führen der Griff und ☰.
+
+### Zwei Lecks aus der alten `style.css`
+
+Beide waren unsichtbar und beide veränderten die ganze Schale:
+
+1. **`body { line-height: 1.6 }`** vererbte sich in `.topbar` — TourFuchs hat
+   dort `normal`. Die Zeilenhöhe steht jetzt an `.zanobo-tiefe`, wo sie
+   hingehört, und verschwindet mit ihr.
+2. **Zwei Wurzelregeln** verkleinerten auf kurzen Fenstern die Schriftgröße
+   (≤700 px → 13 px, ≤570 px → 11.5 px). `rem` ist wurzelbezogen, also traf
+   das beide Welten; scopen ließ es sich nicht, und die Kopfleiste steht in
+   beiden. Sichtbarer Rest: 35 px hohe Kartenknöpfe statt 39. Die Regeln sind
+   entfernt. **Folge, offen benannt:** Hinter dem Scharnier ist die Schrift auf
+   Geräten unter 700 px Höhe jetzt größer, und man scrollt dort mehr.
+
+### Der Kartengrund
+
+Voreinstellung ist **„Standard"/OSM** statt „Hell"/CARTO — wie im Stamm
+(`state.ui.basemap: 'standard'`). Und die drei Pillen sind durch das
+Auswahlfeld des Stamms ersetzt: Sie waren selbst einmal von TourFuchs
+abgeschaut, stammten aber aus einer älteren Fassung. Eine Genehmigung, sie zu
+behalten, lag nicht vor — also gilt das Vorbild.
+
+### Was die Prüfungen jetzt können
+
+`viewport.test.ts` und `gesichter.test.ts` sind aus dem Stamm übernommen
+(79 Prüfungen im Stamm-Ordner). Sie werten **jede Medienabfrage aller
+Stilblätter** aus und melden: eine Abfrage, die nur ein Tablet trifft; eine,
+die über die Gesichtsgrenze greift; eine zweite Pixelentscheidung in einem
+UI-Modul; eine wiedergekehrte Hochformatsperre.
+
+`style.css` ist davon ausgenommen — sie ist die noch nicht überführte
+Oberfläche hinter dem Scharnier, und ihre 768er-Schwellen sind Fragen nach der
+Breite einer scrollenden Seite. Ungeprüft bleibt sie trotzdem nicht: Ein
+eigener Block stellt ihr die Frage, die hier zählt — ob eine ihrer Regeln
+eines der neun Stamm-Elemente anfasst.
+
+Falsifiziert: Zwei eingebaute Lecks (`.topbar`, `#mobile-topnav`) — und der
+Wächter fing zunächst nur eines. Sein Muster für Klassen war falsch
+zusammengesetzt (`\.topbar` suchte einen echten Rückstrich) und ließ
+ausgerechnet die Klassen durch. Behoben; jetzt fallen beide.
+
+`stammvergleich` misst sechs Fenster statt zwei — vier Geräte und zwei
+Grenzfälle — und meldet zusätzlich, wenn eines beide Gesichter zeigt.
+`attention-check` erwartet im Kopfstreifen **0** Reiter; vorher schrieb er die
+drei fest und wäre rot geworden, sobald jemand den Fehler behebt.
+
+### Abnahme, gemessen
+
+| Fenster | Gesicht | Streifen | Karte | Knopfzeile | Reiter oben |
+|---|---|---|---|---|---|
+| 390×844 | phone | 0,52 390×55 | 0,52 390×792 | 0,676 | 0 |
+| 820×1180 | phone | 0,52 820×55 | 0,52 820×1128 | 0,**1011** | 0 |
+| 1180×820 | desktop | — | 0,52 1180×768 | **400**,759 | 0 |
+| 1440×900 | desktop | — | 0,52 1440×848 | 400,839 | 0 |
+
+Die Kartenknöpfe des hochkanten Tablets stehen unten (1011) statt oben (164).
+Am Schreibtisch sind sie 41 px hoch wie am 1440er — keine Touch-Vergrößerung.
+
+**Das Drehen:** Tablet hochkant → quer → hochkant im selben Browser. Das
+Gesicht wechselt, der Tiefenschalter zieht zwischen Streifen und Seitenleiste
+um, und der Arbeitszustand bleibt: derselbe Standort, dieselben vier
+Maschinen, keine Seitenfehler.
+
 **S4 — Die Maschinenansicht.** _offen._ Referenz, Vergleich, Ähnlichkeitswert,
 Spektrogramm, Verlauf, NFC/QR — aus der alten Oberfläche überführt.
 

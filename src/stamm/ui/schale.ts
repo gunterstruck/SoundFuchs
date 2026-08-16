@@ -42,8 +42,19 @@ const SHEET_HEIGHT_KEY = 'sf_sheet_height';
 const SIDEBAR_WIDTH_KEY = 'sf_sidebar_width';
 const SIDEBAR_POS_KEY = 'sf_sidebar_position';
 
-/** Die Reiter, die es gibt. Im Stamm sind es sieben, hier drei. */
-export const REITER = ['karte', 'daten', 'filter'] as const;
+/**
+ * Die Reiter, die es gibt. Im Stamm sind es sechs, hier zwei.
+ *
+ * Einen Reiter „Karte" gibt es nicht mehr — im Stamm seit `19b3951` nicht und
+ * hier seitdem auch nicht. Er ergab Sinn, solange die Reiter oben im
+ * Kopfstreifen hingen: Dort war er der Weg, das Blatt loszuwerden. Jetzt
+ * stehen sie **im** Blatt, und ein Reiter, den man im Blatt antippt, um das
+ * Blatt zuzumachen, ist ein Knopf, der sich selbst wegräumt.
+ *
+ * Zur Karte kommt man über den Griff oder über ☰ — beides Wege, die das Blatt
+ * zuziehen, statt einen Inhalt zu wechseln.
+ */
+export const REITER = ['daten', 'filter'] as const;
 export type Reiter = (typeof REITER)[number];
 
 function istReiter(wert: string | undefined): wert is Reiter {
@@ -134,48 +145,55 @@ function restoreSheetHeight(): void {
   if (gemerkt) setSheetHeight(Number(gemerkt));
 }
 
-/**
- * Die Unterkante des schwebenden Kopf-Streifens als CSS-Größe veröffentlichen.
+/*
+ * Hier stand `topnavMasse()`: Es maß die Unterkante des Kopf-Streifens und
+ * veröffentlichte sie als `--mobile-topnav-bottom`. Gebraucht hat das genau
+ * eine Regel — die Karten-Knopfzeile, die **nur auf dem hochkanten Tablet** an
+ * den oberen Kartenrand wanderte und dort hinter der Basis/Profi-Pille landete.
  *
- * Aus dem Stamm, samt Anlass: Dort lag der Lasso-Knopf unter der Basis/Profi-
- * Pille und war nicht antippbar, weil zwei für sich richtige Entscheidungen
- * unabhängig voneinander an denselben Platz gezogen hatten. Der Streifen ist
- * mal ein-, mal zweizeilig; eine feste Zahl im CSS wäre nur so lange richtig,
- * bis jemand eine Zeile ergänzt. Gemessen wird deshalb, was dasteht.
+ * Diese Sonderplatzierung war die letzte Stelle, an der ein Tablet etwas tat,
+ * was weder das Handy noch der Schreibtisch tut. Sie ist weg: Die Knopfzeile
+ * liegt unterwegs überall unten über dem eingeklappten Blatt und verschwindet,
+ * sobald das Blatt aufgezogen wird (`body.sheet-open`). Damit hat das Maß
+ * keinen Leser mehr — und ein Messwert ohne Leser ist kein Vorrat, sondern
+ * eine Einladung, die Sonderregel zurückzuholen.
+ *
+ * Übernommen aus dem Stamm, Stand 19b3951.
  */
-function topnavMasse(): void {
-  const nav = document.getElementById('mobile-topnav');
-  const sichtbar = !!nav && nav.offsetParent !== null && nav.getBoundingClientRect().height > 0;
-  const unterkante = sichtbar ? Math.round(nav.getBoundingClientRect().bottom) : topbarPx();
-  document.documentElement.style.setProperty('--mobile-topnav-bottom', `${unterkante}px`);
-}
 
 // ─── Kopf-Streifen ─────────────────────────────────────────────────────────
 
 /**
- * Auf dem Handy die Ansichtstiefe (Basis/Profi) und die Reiterleiste aus dem
- * Blatt in den festen Kopf-Streifen heben – so bleiben sie immer sichtbar
- * „oben aufgehängt". Am Schreibtisch wandern beide an ihre ursprüngliche
- * Stelle in der Seitenleiste zurück. Die Elemente behalten ihre Bezeichner und
- * Klassen, daher greifen alle bestehenden Zuhörer unverändert.
+ * Unterwegs die Ansichtstiefe (Basis/Profi) aus dem Blatt in den festen
+ * Kopf-Streifen heben – so bleibt sie immer sichtbar „oben aufgehängt". Am
+ * Schreibtisch wandert sie an ihre ursprüngliche Stelle in der Seitenleiste
+ * zurück. Das Element behält Bezeichner und Klassen, daher greifen alle
+ * bestehenden Zuhörer unverändert.
+ *
+ * ## Die Reiter bleiben unten
+ *
+ * Bis zum 16.08.2026 zogen sie mit nach oben. Der Streifen war dadurch
+ * zweizeilig (gemessene 100 px statt 55) und nahm der Karte 45 px, die sie an
+ * ihrer wichtigsten Stelle braucht — oben, wo man hinschaut.
+ *
+ * Der Stamm hat das mit `19b3951` geradegezogen, und die Begründung trägt auch
+ * hier: Die Ansichtstiefe gilt für die ganze Anwendung und muss deshalb immer
+ * erreichbar sein. Die Reiter dagegen schalten den Inhalt **des Blatts** um —
+ * sie gehören dorthin, wo dieser Inhalt steht. Oben angeheftet wären sie eine
+ * Navigation, die auf etwas zeigt, das gerade eingeklappt ist.
  */
 function reiterUmhaengen(): void {
   const topnav = document.getElementById('mobile-topnav');
   const sidebar = document.getElementById('sidebar');
   const tiefe = document.getElementById('depth-switch');
-  const reiter = document.querySelector('.tabs');
-  if (!topnav || !sidebar || !tiefe || !reiter) return;
+  if (!topnav || !sidebar || !tiefe) return;
 
   if (istBlatt()) {
-    // Reihenfolge im Streifen: erst Basis/Profi, dann die Reiter.
     if (tiefe.parentElement !== topnav) topnav.appendChild(tiefe);
-    if (reiter.parentElement !== topnav) topnav.appendChild(reiter);
   } else {
-    // Zurück in die Seitenleiste an die ursprünglichen Ankerpunkte.
+    // Zurück in die Seitenleiste an den ursprünglichen Ankerpunkt.
     const kartenstil = sidebar.querySelector('.basemap-control');
-    const erstesBlatt = sidebar.querySelector('.tab-panel');
     if (tiefe.parentElement !== sidebar && kartenstil) sidebar.insertBefore(tiefe, kartenstil);
-    if (reiter.parentElement !== sidebar && erstesBlatt) sidebar.insertBefore(reiter, erstesBlatt);
   }
 }
 
@@ -204,7 +222,6 @@ export function schaleAnwenden(): void {
   // Als Klasse am Körper, damit schwebende Kartenelemente per CSS ausweichen
   // können, ohne den Zustand selbst nachzuhalten. Aus dem Stamm.
   document.body.classList.toggle('sheet-open', istBlatt() && zustand.blattOffen);
-  topnavMasse();
   melde(BLATT_GEAENDERT, zustand.blattOffen);
 }
 
@@ -217,13 +234,18 @@ export function reiterOeffnen(reiter: Reiter): void {
     p.classList.toggle('active', p.id === `tab-${reiter}`);
   });
   melde(REITER_GEWECHSELT, reiter);
+}
 
-  if (istBlatt()) {
-    // Der Karten-Reiter ist der einzige, der das Blatt schließt: Er zeigt die
-    // Karte, und die liegt darunter. Aus dem Stamm.
-    zustand.blattOffen = reiter !== 'karte';
-    schaleAnwenden();
-  }
+/**
+ * Die Karte freilegen — das Blatt zuziehen, ohne den Reiter zu wechseln.
+ *
+ * Aus dem Stamm (`showMapView`). Am Schreibtisch gibt es nichts freizulegen:
+ * Dort steht die Karte ohnehin neben der Seitenleiste.
+ */
+export function zeigeKarte(): void {
+  if (!istBlatt()) return;
+  zustand.blattOffen = false;
+  schaleAnwenden();
 }
 
 /** Das Blatt ganz auf die Guckhöhe zurückziehen (kein Rest). Aus dem Stamm. */
@@ -243,11 +265,6 @@ function blattEinklappen(): void {
 function blattUmschalten(): void {
   const sidebar = document.getElementById('sidebar');
   if (istBlatt()) {
-    // Auf „karte" gibt es nichts einzuklappen — dort ist das Blatt schon unten.
-    if (zustand.reiter === 'karte') {
-      reiterOeffnen('daten');
-      return;
-    }
     zustand.blattOffen = !zustand.blattOffen;
     schaleAnwenden();
   } else if (sidebar?.classList.contains('sheet-sized')) {
@@ -509,23 +526,25 @@ export function schaleAufbauen(): void {
     schaleAnwenden();
   });
 
-  // Unterwegs startet die Karte frei: das Blatt liegt auf Guckhöhe, und der
-  // Karten-Reiter ist der offene. Am Schreibtisch steht die Seitenleiste
-  // ohnehin, dort ist „Standorte" der sinnvolle Einstieg.
-  reiterOeffnen(istBlatt() ? 'karte' : 'daten');
+  // „Standorte" ist der Einstieg. Unterwegs liegt das Blatt dabei auf
+  // Guckhöhe (siehe `zustand.blattOffen`), die Karte ist also frei — der
+  // Reiter sagt nur, was man sieht, wenn man aufzieht.
+  reiterOeffnen('daten');
 
+  /**
+   * Beim Drehen: umhängen, nicht neu anfangen.
+   *
+   * Das ist die Stelle, an der ein Tablet zwischen den Gesichtern wechselt.
+   * Was der Nutzer gerade tut, bleibt: offener Standort, gewählte Maschine,
+   * offener Reiter. Umgehängt wird nur, was am neuen Ort anders steht.
+   */
   onFaceChange(() => {
     reiterUmhaengen();
     sidebarPositionFuersGesicht();
-    // Der Karten-Reiter existiert nur unterwegs. Wer am Schreibtisch landet,
-    // während er offen war, stünde sonst vor einem leeren Blatt.
-    if (!istBlatt() && zustand.reiter === 'karte') {
-      reiterOeffnen('daten');
-    } else {
-      schaleAnwenden();
-    }
+    // Am Schreibtisch steht die Seitenleiste, unterwegs liegt das Blatt unten.
+    zustand.blattOffen = !istBlatt();
+    schaleAnwenden();
   });
 
-  window.addEventListener('resize', topnavMasse, { passive: true });
   schaleAnwenden();
 }

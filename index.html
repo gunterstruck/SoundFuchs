@@ -262,28 +262,21 @@
           </button>
         </div>
 
-        <!-- Kartenstil. Der Stamm hat hier ein Auswahlfeld
-             (`.basemap-control > select`); SoundFuchs hat die drei Gründe
-             schon als Knopfreihe, ebenfalls von TourFuchs übernommen
-             (`#map-basemap-row`, Hell · Standard · Satellit). Zwei Formen für
-             dieselbe Sache wären eine zu viel — die vorhandene bleibt, weil
-             sie bereits verdrahtet ist und dieselben drei Gründe zeigt. -->
-        <label class="basemap-control">
+        <!-- Kartenstil, als Auswahlfeld wie im Stamm.
+             Hier stand bis zum 16.08.2026 eine Knopfreihe mit drei Pillen
+             (`#map-basemap-row`). Sie war einmal selbst von TourFuchs
+             abgeschaut, stammt aber aus einer älteren Fassung; der Stamm hat
+             heute ein `<select>` in der Seitenleiste. Drei Pillen kosten in
+             der 400-px-Leiste eine ganze Zeile, das Auswahlfeld eine halbe —
+             und vor dem Scharnier gilt das Vorbild, nicht der eigene
+             Geschmack. -->
+        <label class="basemap-control" for="basemap-select">
           <span data-i18n="map.basemapLabel">Kartenstil</span>
+          <select id="basemap-select"></select>
         </label>
-        <div class="map-basemap-row" id="map-basemap-row"></div>
         <p class="map-unlocated" id="map-unlocated" style="display: none"></p>
 
         <nav class="tabs" role="tablist">
-          <button
-            class="tab-button mobile-map-tab"
-            data-tab="karte"
-            data-mobile-only="true"
-            role="tab"
-            data-i18n="stamm.tabMap"
-          >
-            Karte
-          </button>
           <button
             class="tab-button active"
             data-tab="daten"
@@ -303,8 +296,6 @@
         <!-- Reiter: Filter -->
         <section id="tab-filter" class="tab-panel"></section>
 
-        <!-- Reiter: Karte – „In der Nähe"-Begleiter, wenn das Blatt aufgezogen ist -->
-        <section id="tab-karte" class="tab-panel karte-companion"></section>
       </aside>
 
       <!-- Knopfzeile über der Karte. Im Vorbild stehen hier „Kunden in meiner

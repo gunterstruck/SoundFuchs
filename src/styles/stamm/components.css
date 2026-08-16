@@ -2,12 +2,20 @@
 
 /* Mobile Außendienst & Tour: am Desktop sichtbar, im eingebetteten Handy nicht. */
 .mobile-preview-entry { position: relative; flex: 0 0 auto; }
-/* Die Vorschau beantwortet „wie sieht das auf meinem Handy aus?" – auf einem
-   Handy ist das sinnlos, auf einem Tablet nicht. Die Schwelle liegt deshalb bei
-   der Handy-Grenze (768px), nicht bei 900px: Im Band 769–900px wurde die
-   QR-Demo angeboten, deren Schritt 9 aber genau diesen Knopf braucht und ins
-   Leere griff. Der Rahmen ist 390px breit und passt dort mühelos. */
-@media (max-width: 768px) { .mobile-preview-entry { display: none; } }
+/* Die Vorschau beantwortet „wie sieht das auf meinem Handy aus?" und ist damit
+   ein Schreibtisch-Werkzeug: In der Touransicht schaut man ohnehin schon auf
+   dieses Bild.
+
+   Die Schwelle stand hier bei 768px und damit **nicht** auf der Gesichtsgrenze.
+   Ein Tablet hochkant zeigte die Touransicht und darin diesen Desktop-Einstieg –
+   Mobile View plus ein Element, das es dort nicht gibt. Genau das ist die
+   Mischung, die es nicht geben darf; auf dem Tablet ist der Knopf eine Drehung
+   entfernt. */
+@media (max-width: 768px),
+       (max-width: 1200px) and (orientation: portrait),
+       (max-width: 900px) and (max-height: 520px) {
+    .mobile-preview-entry { display: none; }
+}
 .in-mobile-preview .mobile-preview-entry { display: none; }
 #btn-mobile-preview {
     border: 1px solid #99f6e4;
@@ -509,8 +517,12 @@
 }
 .linklike:hover:not(:disabled) { background: transparent; color: var(--color-primary); }
 
-/* Kontext-abhängige Sichtbarkeit im Onboarding */
-@media (max-width: 768px) {
+/* Kontext-abhängige Sichtbarkeit im Onboarding – an der Gesichtsgrenze, nicht an
+   einer eigenen. Bei 768/769 sah ein Tablet hochkant die Touransicht, las darin
+   aber die Desktop-Texte (`.only-desktop`) und nicht die mobilen. */
+@media (max-width: 768px),
+       (max-width: 1200px) and (orientation: portrait),
+       (max-width: 900px) and (max-height: 520px) {
     .only-desktop { display: none !important; }
     .own-data-dialog {
         width: calc(100vw - 16px);
@@ -519,7 +531,11 @@
         padding: 14px;
     }
 }
-@media (min-width: 769px) { .only-mobile { display: none !important; } }
+@media (min-width: 1201px),
+       (min-width: 901px) and (orientation: landscape),
+       (min-width: 769px) and (orientation: landscape) and (min-height: 521px) {
+    .only-mobile { display: none !important; }
+}
 
 /* kurzer Aufmerksamkeits-Puls (z. B. „In meiner Nähe" nach Demo) */
 @keyframes gf-pulse {
@@ -576,13 +592,15 @@
 .seg-toggle .seg + .seg { border-left: none; }
 .seg-toggle .seg.active { background: var(--color-primary); color: #fff; font-weight: 600; }
 
-/* „In der Nähe"-Begleiter (Karte-Tab, mobil) */
-.karte-companion { padding-top: 4px; }
-.near-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 0 6px; }
-.near-title { font-size: 1rem; }
-.near-origin { flex: 0 0 auto; margin: 0; }
+/* „In der Nähe"-Begleiter (Klappkarte über dem Tour-Prozess) */
+/* Der Titel bricht nicht um: Rechts steht die Zusammenfassung, und die kürzt
+   sich selbst per Ellipse. Ohne dies rutscht „In der Nähe" auf zwei Zeilen,
+   sobald die Zahl länger wird – die Karte wäre dann höher als ein Schritt. */
+.near-title { font-weight: 600; white-space: nowrap; }
+.near-origin { margin: 6px 0 8px; }
 .near-origin .seg { padding: 6px 10px; font-size: 0.78rem; white-space: nowrap; }
 .near-stats { margin: 0 0 8px; }
+.near-more { display: block; margin: 8px 0 0; font-size: 0.84rem; }
 .near-gps-hint { color: var(--color-primary-dark); }
 .near-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
 .near-row {
@@ -1173,7 +1191,6 @@ body:not(.depth-profi) .profi-only { display: none !important; }
     font-size: 0.78rem;
 }
 .mobile-data-reset { display: none; width: 100%; margin-top: 10px; }
-.btn-nearby { width: 100%; margin: 4px 0 10px; }
 .aussen-view-block { margin: 0 0 14px; }
 .aussen-view-block .field-label { display: block; }
 .start-chip {
@@ -1196,8 +1213,47 @@ body:not(.depth-profi) .profi-only { display: none !important; }
     color: var(--color-text-muted);
 }
 .start-chip .chip-x:hover { color: #b91c1c; background: transparent; }
+/* „★ merken" steht am Chip, nicht in der Werkzeugleiste: Es gehört zu dem
+   Punkt, der gerade gewählt ist, und verschwindet, sobald er gemerkt ist. */
+.start-chip .chip-star {
+    margin-left: auto;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    border-radius: var(--radius-l);
+    /* Höhe für den Daumen, nicht nur für die Maus: 24 px waren am Handy
+       gemessen zu wenig, um den Knopf sicher zu treffen. */
+    padding: 6px 10px;
+    min-height: 34px;
+    font-size: 0.78rem;
+    line-height: 1.3;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+.start-chip .chip-star:hover { color: var(--color-text); }
+.start-chip .chip-star + .chip-x { margin-left: 0; }
 .start-search-wrap { position: relative; margin-top: 8px; }
 #start-results, #dest-results { margin-top: 4px; }
+/* Trefferliste mit Gruppen: eigene Orte, Kunden, Ortsverzeichnis. */
+.result-group {
+    padding: 6px 12px 2px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+}
+.result-row-wrap { display: flex; align-items: stretch; background: var(--color-surface); }
+.result-row-wrap .result-row { flex: 1; }
+.result-row-x {
+    border: none;
+    border-bottom: 1px solid var(--color-surface-2);
+    background: var(--color-surface);
+    padding: 0 12px;
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+.result-row-x:hover { color: #b91c1c; }
 /* Ziel-Zeile in der Tourliste (fester Streckenabschluss) */
 .stop-row.dest-row { background: #fef2f2; border-radius: var(--radius-l); }
 .stop-row.dest-row .stop-num { background: #b91c1c; }
@@ -1360,7 +1416,7 @@ body.tour-focus .basemap-control,
 body.tour-focus #first-steps,
 body.tour-focus .tour-panel-title,
 body.tour-focus #tab-tour #tour-scope,
-body.tour-focus #btn-nearby,
+body.tour-focus #nearby-card,
 body.tour-focus #btn-tour-scan {
     display: none;
 }
@@ -1613,8 +1669,10 @@ dialog {
 }
 dialog::backdrop { background: rgba(15, 23, 42, 0.45); }
 
-/* Ruhige, einheitliche Modal-Bewegung auf dem Desktop. */
-@media (min-width: 769px) {
+/* Ruhige, einheitliche Modal-Bewegung auf dem Schreibtisch. */
+@media (min-width: 1201px),
+       (min-width: 901px) and (orientation: landscape),
+       (min-width: 769px) and (orientation: landscape) and (min-height: 521px) {
     dialog[open] {
         animation: tf-modal-enter 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
@@ -1772,6 +1830,25 @@ dialog footer { margin-top: 14px; display: flex; justify-content: flex-end; gap:
 .mapping-table th, .mapping-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--color-border); }
 .mapping-table select { min-width: 160px; }
 .mapping-table .preview { color: var(--color-text-muted); font-size: 0.8rem; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Herkunft der Tabelle: Blatt und Überschriftenzeile bleiben korrigierbar. */
+.mapping-source { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 2px 0 10px; }
+.mapping-source label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+.mapping-source select { max-width: 60vw; font-size: 0.85rem; }
+.mapping-source-warning {
+    margin: -4px 0 10px;
+    padding: 8px 10px;
+    border-left: 3px solid #f59e0b;
+    background: #fffbeb;
+    color: #92400e;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
 /* „Weitere Felder": optionale Zuordnungen eingeklappt (Konzept: Wichtiges zuerst). */
 .mapping-more { margin-top: 6px; border-top: 1px dashed var(--color-border); }
 .mapping-more > summary {
@@ -2447,6 +2524,17 @@ body.lasso-active .mobile-next-step { display: none; }
     .map-fab { padding: 9px 12px; font-size: 0.84rem; max-width: 48vw; }
     .map-fab .mns-icon { font-size: 1rem; }
 }
+
+/* ---- Entscheidungsvorlage (Roadmap 3.1) -----------------------------------
+   Steht nur da, wenn eine Simulation läuft – `hidden` setzt das Cockpit.
+   Zwei Ausgabewege für zwei Adressaten: die aggregierte Druckvorlage für die
+   Sitzung, die namentliche Excel-Liste für die Umsetzung. */
+.sim-report-actions {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    margin: 10px 0 4px;
+}
+.sim-report-actions[hidden] { display: none; }
+.sim-report-actions .muted { flex: 1 1 220px; }
 
 /* ---- Benannte Simulations-Szenarien ---------------------------------------
    „Variante Nord" gegen „Variante Süd": Der Bereich ist eingeklappt, weil er
