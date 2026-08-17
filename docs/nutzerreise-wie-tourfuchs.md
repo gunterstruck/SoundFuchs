@@ -977,16 +977,108 @@ meldete es als Kaskade von zwanzig Befunden.
 
 ### Was noch nicht dasteht
 
-Die Aufnahme startet noch von Hand (ein dritter Tipp), das Ergebnis kommt noch
-in der bisherigen Form, und die Hör-Lupe gibt es nicht. Das sind die Schnitte
-2 bis 4. Was dieser Schnitt liefert, ist der **Ort**, an dem sie stattfinden.
+Das Ergebnis kommt noch in der bisherigen Form, und die Hör-Lupe gibt es
+nicht. Das sind die Schnitte 3 und 4. Was dieser Schnitt liefert, ist der
+**Ort**, an dem sie stattfinden.
 
 Falsifiziert: Mit dem Auswahlfenster zurück im Weg meldet `npm run wow` je
 Fenster sieben Befunde — 130 Bestandszeilen, 0 dominante Handlungen, der
 nächste Schritt nicht im Bild.
 
-**S4b — Aufnahme und Ergebnis.** _offen._ Referenz, Vergleich, Ähnlichkeitswert,
-Spektrogramm, Verlauf, NFC/QR — aus der alten Oberfläche überführt.
+### Der erste Erfolg — Schnitt 2 (17.08.2026)
+
+✅ _erledigt._ Die Referenzaufnahme endet jetzt in einem Bild statt in einem
+Formular.
+
+**Was vorher an dieser Stelle stand.** Nach zehn Sekunden Aufnahme kam ein
+Bestätigungsfenster: anhören, Qualität ansehen, „Als Referenz speichern"
+drücken. Das ist eine Frage, deren Antwort schon feststeht — und sie steht
+genau dort, wo der erste Erfolg gefeiert gehört. Wer zum ersten Mal ein
+Mikrofon an eine Maschine gehalten hat, bekam als Belohnung ein Formular.
+
+**Was jetzt passiert.** Eine brauchbare Aufnahme speichert sich selbst und
+führt zurück auf die Maschinenebene. Dort steht der akustische Fingerabdruck
+dieser Maschine — die radiale Iris, gezeichnet aus ihrem Klang — mit dem Satz
+„Normalzustand ist bereit". Darunter die eine nächste Handlung, und die heißt
+in diesem Augenblick nicht „Jetzt 10 Sekunden prüfen", sondern **„Jetzt
+Gegenprobe machen"**.
+
+```
+    ‹ Zum Standort
+
+    Kompressor 1
+    ● Bereit zum Prüfen
+
+         ( ((●)) )        ← der Fingerabdruck, aus dieser Aufnahme
+    Normalzustand ist bereit
+
+    [  Jetzt Gegenprobe machen  ]
+
+    Nimm dieselbe Maschine noch einmal auf — so
+    siehst du sofort, wie genau der Vergleich ist.
+```
+
+Die Gegenprobe ist der Grund, warum das Bild allein nicht reicht. Der
+Fingerabdruck belegt, dass etwas entstanden ist; erst die zweite Aufnahme
+derselben gesunden Maschine zeigt, dass der Vergleich **funktioniert**. Das
+ist der Moment, in dem aus „hübsch" Vertrauen wird — und er kostet den Nutzer
+einen Tipp, weil er unmittelbar danebensteht.
+
+**Gefragt wird noch, wo es etwas zu entscheiden gibt.** Bei `BAD` taugt die
+Aufnahme nicht zum Vergleichen; dann muss der Nutzer erfahren, warum, und
+wiederholen können — die schlechte Qualität ist ein lösbarer Zustand, kein
+Abbruch. `OK` speichert mit: eine brauchbare Referenz ist besser als keine,
+und der Hinweis darauf steht in der Meldung. Der Ausweg bleibt in jedem Fall,
+eine neue Aufnahme zu machen; sie ersetzt die alte.
+
+**Wo die Grenze liegt.** Der Merker „gerade gelernt" ist kein Zustand in
+`zustand.ts`. Die Maschine ist danach schlicht `ready`; dass sie es gerade
+erst geworden ist, ist ein Augenblick in der Reise und gehört der Oberfläche.
+Die Zustandsmaschine kennt keine Augenblicke — sonst hätte sie bald elf
+Zustände, von denen einer nur eine Beschriftung ist.
+
+**Gemessen** (`npm run wow`, Handy 390×844, mit echtem Mikrofonsignal):
+
+| | |
+|---|---|
+| Tipps Maschinenzeile → gespeicherter Normalzustand | **3** |
+| Fenster nach einer guten Aufnahme | **0** |
+| Fingerabdruck wirklich gezeichnet | **ja** (Bildpunkte gemessen, nicht Element gezählt) |
+| Urteil danach | „Bereit zum Prüfen" |
+| nächste Handlung | „Jetzt Gegenprobe machen" |
+
+Der Wächter prüft die **Farbe** der Leinwand, nicht ihr Dasein. Eine leere
+Leinwand im richtigen Rahmen ist genau der Fehler, den man sonst nicht sieht.
+
+Zweimal falsifiziert:
+
+- Bestätigungsfenster wieder bedingungslos → sechs Befunde (Fenster da, kein
+  Fingerabdruck, Leinwand leer, keine Beschriftung, falsche Handlung, falsche
+  Ebene).
+- Auto-Speichern behalten, aber nicht zeichnen → **genau ein** Befund: „die
+  Fingerabdruck-Leinwand ist leer". Der Test unterscheidet also wirklich
+  zwischen Rahmen und Bild.
+
+**Was der Durchlauf dabei gefunden hat.** Zwei Wächterfehler, beide älter als
+dieser Schnitt:
+
+1. `durchlauf` wartete fest auf den Speichern-Knopf und **starb** an einem
+   Zeitablauf, statt einen Befund zu melden. Ein toter Wächter sagt nur, dass
+   er tot ist. Er wartet jetzt auf beide gültigen Ausgänge und berichtet,
+   welcher eingetreten ist.
+2. Sein Helfer `inDieTiefe()` legte `tiefe-bestand` dazu, ohne `tiefe-maschine`
+   zu entfernen — zwei Ebenen gleichzeitig, und die Bestandsliste blieb
+   verborgen. Aufgefallen ist das erst, seit der gespeicherte Normalzustand
+   von selbst auf die Maschinenebene zurückführt; vorher kam der Lauf nie mit
+   einer anderen Ebene dort an.
+
+Der Klanggenerator liegt seit diesem Schnitt in `tools/klang.mjs` und wird von
+`durchlauf` und `wow` geteilt. Zwei Generatoren wären zwei Maschinen, und ein
+Unterschied im Ergebnis nicht mehr vom Unterschied im Ton zu trennen.
+
+**S4b — Ergebnis und Hör-Lupe.** _offen._ Vergleich, Ähnlichkeitswert in
+Alltagssprache, Spektrogramm, Verlauf, NFC/QR — aus der alten Oberfläche
+überführt. Das sind die Schnitte 3 und 4.
 
 **S5 — Die Reiter füllen.** _offen._ „Standorte", „Filter" und der
 Nähe-Begleiter im Karten-Reiter; Standort- und Maschinenimport.

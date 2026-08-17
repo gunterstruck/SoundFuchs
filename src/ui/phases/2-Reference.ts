@@ -51,6 +51,15 @@ import { promptReferenceAudioExport } from './referenceAudioExport.js';
 import { showLabelTypeModal } from './referenceLabelModal.js';
 import { setMeasurementActive } from '@utils/measurementActivity.js';
 
+/**
+ * Ein Normalzustand ist gespeichert.
+ *
+ * Der Anlass für den Fingerabdruck-Moment auf der Maschinenebene. Als
+ * Dokument-Ereignis und nicht als weiterer Rückruf im Konstruktor: Zuhörer ist
+ * die Schale, und die Referenzphase soll sie nicht kennenlernen müssen.
+ */
+export const NORMALZUSTAND_GESPEICHERT = 'zanobot:normalzustand-gespeichert';
+
 export class ReferencePhase {
   private machine: Machine | null;
   private selectedDeviceId: string | undefined; // Selected microphone device ID
@@ -1144,8 +1153,28 @@ export class ReferencePhase {
       // Hide recording modal
       this.hideRecordingModal();
 
-      // PHASE 2: Show review modal instead of saving directly
-      this.showReviewModal();
+      /**
+       * Eine gute Aufnahme speichert sich selbst.
+       *
+       * Bis zum 17.08.2026 kam hier immer das Bestätigungsfenster: Anhören,
+       * Qualität ansehen, „Speichern" drücken. Bei einer guten Aufnahme ist
+       * das eine Frage, deren Antwort schon feststeht — und sie steht genau an
+       * der Stelle, an der der erste Erfolg gefeiert werden sollte.
+       *
+       * Gefragt wird jetzt nur noch, wenn es etwas zu entscheiden gibt: bei
+       * `BAD` taugt die Aufnahme nicht zum Vergleichen, und dann muss der
+       * Nutzer wissen, warum, und wiederholen können. `OK` speichert mit —
+       * eine brauchbare Referenz ist besser als keine, und der Hinweis darauf
+       * steht in der Meldung.
+       *
+       * Der Ausweg bleibt: Wer die gespeicherte Referenz doch nicht will,
+       * nimmt eine neue auf; die alte wird dabei ersetzt.
+       */
+      if (qualityResult.rating === 'BAD') {
+        this.showReviewModal();
+      } else {
+        await this.performReviewSave();
+      }
     } catch (error) {
       logger.error('Processing error:', error);
       this.showRecordingFailedToast(error as Error);
@@ -2058,6 +2087,20 @@ export class ReferencePhase {
 
       // Hide review modal
       this.hideReviewModal();
+
+      /**
+       * Der Normalzustand steht — und das ist der erste Wow-Moment.
+       *
+       * Gemeldet und nicht selbst gezeigt: Diese Datei weiß, dass gespeichert
+       * wurde; sie weiß nicht, wo der Nutzer gerade steht. Die Maschinenebene
+       * weiß das und zeigt den akustischen Fingerabdruck. Wer die Ebene nicht
+       * benutzt, für den kostet die Zeile nichts.
+       */
+      document.dispatchEvent(
+        new CustomEvent<{ machineId: string }>(NORMALZUSTAND_GESPEICHERT, {
+          detail: { machineId: machineToUpdate.id },
+        })
+      );
 
       // Sprint 1 UX: Enhanced success confirmation toast
       notify.success(t('reference.savedSuccess'), {

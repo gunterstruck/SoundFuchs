@@ -14,6 +14,12 @@
  * dominante Handlungen, Antippgrößen. Ein Weg, der „sich kurz anfühlt", ist
  * keine Abnahme.
  *
+ * Seit dem 17.08.2026 endet der Lauf auf dem Handy nicht am Aufnahmeknopf,
+ * sondern eine Aufnahme später: Eine gute Referenz speichert sich selbst, und
+ * danach steht der akustische Fingerabdruck der Maschine im Bild. Das ist der
+ * erste Wow-Moment der Reise, und ein Moment, den niemand misst, ist einer,
+ * der beim nächsten Umbau still verschwindet.
+ *
  * WARUM TIPPS UND NICHT SEKUNDEN
  *
  * Sekunden hängen an der Maschine, auf der gemessen wird. Ein Tipp ist eine
@@ -28,6 +34,10 @@
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { schreibeKlang } from './klang.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -76,11 +86,27 @@ for (let i = 0; i < 80; i += 1) {
   }
 }
 
+/**
+ * Ein echtes Mikrofon für den Referenzweg.
+ *
+ * Die Wegmessung selbst braucht keinen Ton — Tipps zählen ist stumm. Der
+ * Fingerabdruck-Moment am Ende schon: Er entsteht aus einer Aufnahme, die die
+ * Qualitätsprüfung bestehen muss. Chromiums eingebautes Kunstmikrofon liefert
+ * Stille, und Stille wird zu Recht abgewiesen.
+ */
+const klangDatei = join(mkdtempSync(join(tmpdir(), 'soundfuchs-wow-')), 'maschine.wav');
+schreibeKlang(klangDatei);
+
 const browser = await chromium.launch({
   ...(process.env.PLAYWRIGHT_CHROMIUM_PATH
     ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH }
     : {}),
-  args: ['--no-sandbox'],
+  args: [
+    '--no-sandbox',
+    '--use-fake-device-for-media-stream',
+    `--use-file-for-fake-audio-capture=${klangDatei}`,
+    '--use-fake-ui-for-media-stream',
+  ],
 });
 
 const befunde = [];
@@ -125,6 +151,38 @@ const AUFMASS_MASCHINE = () => {
         return k.height < 44 || k.width < 44;
       })
       .map((b) => `${b.className || b.id}(${Math.round(b.getBoundingClientRect().height)}px)`),
+  };
+};
+
+/**
+ * Was nach der Referenzaufnahme auf der Maschinenebene steht.
+ *
+ * Der Fingerabdruck wird nicht daran erkannt, dass eine Leinwand da ist —
+ * eine leere Leinwand ist genau der Fehler, den man nicht sehen würde. Gemessen
+ * wird die Farbe: Sind Bildpunkte gesetzt, wurde gezeichnet.
+ */
+const AUFMASS_FINGERABDRUCK = () => {
+  const leinwand = document.querySelector('.maschine-iris');
+  return {
+    ebene: document.body.classList.contains('tiefe-maschine'),
+    // Ein Bestätigungsfenster an dieser Stelle stellt eine Frage, deren
+    // Antwort schon feststeht — und steht dort, wo gefeiert werden sollte.
+    fenster: [...document.querySelectorAll('.modal')].filter(
+      (m) => getComputedStyle(m).display !== 'none'
+    ).length,
+    fingerabdruck: Boolean(document.querySelector('.maschine-fingerabdruck')),
+    gezeichnet: (() => {
+      if (!leinwand) return false;
+      const punkte = leinwand
+        .getContext('2d')
+        .getImageData(0, 0, leinwand.width, leinwand.height).data;
+      for (let i = 3; i < punkte.length; i += 40) if (punkte[i] > 0) return true;
+      return false;
+    })(),
+    beschriftung: leinwand?.getAttribute('aria-label') ?? '',
+    urteil: document.querySelector('.maschine-lage')?.textContent?.trim() ?? '',
+    aktionsname: document.querySelector('.maschine-aktion')?.textContent?.trim() ?? '',
+    hinweis: document.querySelector('.maschine-hinweis')?.textContent?.trim() ?? '',
   };
 };
 
@@ -260,6 +318,67 @@ try {
       `${name}: Antippziele unter ${BUDGET.antippgroesse} px — ${maschine.zuKlein.join(', ')}`
     );
     pruefe(arbeit.ebene, `${name}: die Primäraktion führt nicht in die Arbeitsebene`);
+
+    /**
+     * ── Der dritte Tipp: aufnehmen — und was danach steht ─────────────────
+     *
+     * Nur auf dem Handy. Die Aufnahme dauert zehn Sekunden echte Zeit, die
+     * Verarbeitung noch einmal so lange; viermal wäre das eine Minute für eine
+     * Aussage, die viermal dieselbe ist. Was die Formate unterscheidet, ist
+     * die Länge des Weges, und die ist oben schon gemessen.
+     *
+     * Geprüft wird der Fingerabdruck-Moment: Eine gute Aufnahme speichert sich
+     * selbst, das Bild wird wirklich gezeichnet, und der nächste Schritt
+     * knüpft an das an, was gerade passiert ist.
+     */
+    if (name === 'handy') {
+      await tipp('#record-btn', 2000); // 3
+      // Auf das Ende warten statt blind zu schlafen — sonst misst der Wächter
+      // die Wartezeit mit und wird beim ersten langsamen Rechner rot.
+      await page
+        .waitForFunction(() => Boolean(document.querySelector('.maschine-fingerabdruck')), null, {
+          timeout: 60000,
+        })
+        .catch(() => {});
+      const referenz = await page.evaluate(AUFMASS_FINGERABDRUCK);
+
+      console.log(`  ── nach der Referenzaufnahme ──`);
+      console.log(`  Tipps gesamt              ${tipps}`);
+      console.log(`  Fenster danach            ${referenz.fenster}`);
+      console.log(`  Fingerabdruck gezeichnet  ${referenz.gezeichnet ? 'ja' : 'NEIN'}`);
+      console.log(`  Urteil                    ${referenz.urteil || '(leer)'}`);
+      console.log(`  nächste Handlung          ${referenz.aktionsname || '(fehlt)'}`);
+
+      pruefe(
+        referenz.ebene,
+        `${name}: nach der Referenzaufnahme steht der Nutzer nicht wieder auf der Maschinenebene`
+      );
+      pruefe(
+        referenz.fenster === 0,
+        `${name}: nach einer guten Referenzaufnahme steht ein Bestätigungsfenster — eine gute Aufnahme speichert sich selbst`
+      );
+      pruefe(
+        referenz.fingerabdruck,
+        `${name}: kein Fingerabdruck nach der Referenzaufnahme — der erste Erfolg bleibt unsichtbar`
+      );
+      pruefe(
+        referenz.gezeichnet,
+        `${name}: die Fingerabdruck-Leinwand ist leer — ein Rahmen ohne Bild ist kein Beleg`
+      );
+      pruefe(
+        referenz.beschriftung.length > 0,
+        `${name}: der Fingerabdruck hat keine Beschriftung — ein Bild ohne Text ist für Vorlesende nichts`
+      );
+      pruefe(
+        /gegenprobe/i.test(referenz.aktionsname),
+        `${name}: der nächste Schritt heißt „${referenz.aktionsname}" statt nach der Gegenprobe zu fragen`
+      );
+      pruefe(
+        referenz.hinweis.length > 0 && referenz.hinweis !== referenz.aktionsname,
+        `${name}: zum nächsten Schritt steht kein erklärender Satz`
+      );
+    }
+
     pruefe(
       seitenfehler.length === 0,
       `${name}: Seitenfehler — ${seitenfehler.slice(0, 2).join(' | ')}`
@@ -277,5 +396,8 @@ if (befunde.length) {
   for (const b of befunde) console.log(`  ✗ ${b}`);
   process.exitCode = 1;
 } else {
-  console.log('\n✓ Der Weg zur Maschine ist kurz, und auf jedem Bild steht eine Frage.');
+  console.log(
+    '\n✓ Der Weg zur Maschine ist kurz, auf jedem Bild steht eine Frage,\n' +
+      '  und am Ende der ersten Aufnahme steht ein Bild statt eines Formulars.'
+  );
 }
