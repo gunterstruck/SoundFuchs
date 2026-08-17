@@ -30,7 +30,31 @@ export const zh: TranslationDict = {
   // Das Scharnier und die Standortansicht (§0h, Stamm-Schnitt 3).
   hinge: {
     backToMap: '返回地图',
+    backToMachine: '返回机器',
     backToSite: '返回地点',
+  },
+  // Die Maschinen-Arbeitsebene (Zanobot_UI_Nutzerreise, Schnitt 1).
+  maschine: {
+    lageUntrained: '尚无正常状态',
+    lageReady: '可以检测',
+    lageSimilar: '与正常状态相似',
+    lageDeviating: '声音明显不同',
+    lageMikrofon: '麦克风未授权',
+    lageQualitaet: '录音不足以进行比较',
+    lageOffline: '无连接',
+    lageLaeuft: '处理中 …',
+    aktionReferenz: '录制正常状态',
+    aktionPruefen: '检测 10 秒',
+    aktionStoppen: '停止',
+    aktionRechnet: '分析中 …',
+    aktionFertig: '完成',
+    aktionUnterschied: '收听差异',
+    aktionMikrofon: '允许使用麦克风',
+    aktionWiederholen: '重新录制',
+    aktionErneut: '重试',
+    zuletzt: '上次 {{wert}} % · {{wann}}',
+    hinweisReferenz: '请在机器正常运行良好时录制它的声音。',
+    hinweisPruefung: '把设备放在与上次相同的位置。',
   },
   site: {
     machines: '台机器',

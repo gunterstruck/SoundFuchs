@@ -41,7 +41,16 @@ export interface TiefeDetail {
  * Zwei Ebenen hinter der Tür.
  *
  * `standort` — die Standortansicht: Name, Adresse, alle Maschinen.
- * `maschine` — eine einzelne Maschine mit den akustischen Funktionen.
+ * `maschine` — die Arbeitsebene EINER Maschine: Zustand, ein nächster Schritt.
+ * `arbeit`   — Aufnahme, Prüfung, Ergebnis. Noch die bisherige Oberfläche.
+ * `bestand`  — die bisherige Oberfläche **vollständig**, mit Liste, Anlegen,
+ *              Scannen, Einlesen und Flotte.
+ *
+ * Die vierte ist ein Übergang und kein Entwurf. Anlegen, Scannen und Einlesen
+ * sind Bestandsaktionen; sie gehören dorthin, wo man Maschinen sucht, und
+ * bekommen in einem späteren Schnitt ihren richtigen Ort. Bis dahin liegen sie
+ * dort, wo sie immer lagen — und die Ebene sagt wenigstens, dass das so ist,
+ * statt es unter „Arbeit" zu verstecken.
  *
  * Sie sind eine Kette und kein Nebeneinander: Von der Karte kommt man in den
  * Standort, aus dem Standort in eine Maschine, und derselbe Weg führt zurück.
@@ -52,7 +61,7 @@ export interface TiefeDetail {
  * oder einen NFC-Anhänger erreicht werden. Dann gibt es keinen Standort, aus
  * dem man kam, und der Rückweg führt direkt auf die Karte.
  */
-export type Tiefenebene = 'standort' | 'maschine';
+export type Tiefenebene = 'standort' | 'maschine' | 'arbeit' | 'bestand';
 
 let offenerStandort: string | null = null;
 let ebene: Tiefenebene = 'standort';
@@ -97,6 +106,8 @@ export function oeffneTiefe(
   ziel.hidden = false;
   document.body.classList.add('tiefe-offen');
   document.body.classList.toggle('tiefe-maschine', aufEbene === 'maschine');
+  document.body.classList.toggle('tiefe-arbeit', aufEbene === 'arbeit');
+  document.body.classList.toggle('tiefe-bestand', aufEbene === 'bestand');
   // Von oben anfangen. Wer vorher weit unten war und zurückkommt, soll nicht
   // mitten im Text landen.
   ziel.scrollTop = 0;
@@ -114,6 +125,17 @@ export function oeffneTiefe(
  * worden — dann gibt es keine Zwischenstation, und der Weg führt hinaus.
  */
 export function eineStufeZurueck(): void {
+  if (ebene === 'bestand') {
+    // Aus dem Bestand führt der Weg dorthin zurück, wo man ihn geöffnet hat:
+    // auf den Standort, wenn einer bekannt ist, sonst auf die Karte.
+    if (offenerStandort) oeffneTiefe(offenerStandort, 'standort');
+    else schliesseTiefe();
+    return;
+  }
+  if (ebene === 'arbeit') {
+    oeffneTiefe(offenerStandort, 'maschine');
+    return;
+  }
   if (ebene === 'maschine' && offenerStandort) {
     oeffneTiefe(offenerStandort, 'standort');
     return;
@@ -131,8 +153,12 @@ export function eineStufeZurueck(): void {
 function rueckwegBeschriften(): void {
   const knopf = tiefe()?.querySelector<HTMLElement>('.tiefe-zurueck');
   if (!knopf) return;
-  const zumStandort = ebene === 'maschine' && Boolean(offenerStandort);
-  const wort = zumStandort ? t('hinge.backToSite') : t('hinge.backToMap');
+  const wort =
+    ebene === 'arbeit'
+      ? t('hinge.backToMachine')
+      : ebene === 'maschine' && offenerStandort
+        ? t('hinge.backToSite')
+        : t('hinge.backToMap');
   knopf.textContent = '';
   const pfeil = document.createElement('span');
   pfeil.setAttribute('aria-hidden', 'true');
@@ -150,7 +176,12 @@ export function schliesseTiefe(): void {
   offenerStandort = null;
   ebene = 'standort';
   ziel.hidden = true;
-  document.body.classList.remove('tiefe-offen', 'tiefe-maschine');
+  document.body.classList.remove(
+    'tiefe-offen',
+    'tiefe-maschine',
+    'tiefe-arbeit',
+    'tiefe-bestand'
+  );
   document.dispatchEvent(
     new CustomEvent<TiefeDetail>(TIEFE_GESCHLOSSEN, {
       detail: { standortId: vorher, ebene: vorherigeEbene },

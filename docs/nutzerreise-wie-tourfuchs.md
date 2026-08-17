@@ -911,7 +911,81 @@ Gesicht wechselt, der Tiefenschalter zieht zwischen Streifen und Seitenleiste
 um, und der Arbeitszustand bleibt: derselbe Standort, dieselben vier
 Maschinen, keine Seitenfehler.
 
-**S4 — Die Maschinenansicht.** _offen._ Referenz, Vergleich, Ähnlichkeitswert,
+**S4 — Die Maschinen-Arbeitsebene.** ✅ _Schnitt 1 erledigt._ Eine Maschine ist
+eine eigene Ebene, kein Abschnitt am Ende einer langen Bestandsseite.
+
+### Was gemessen war
+
+Nach einem Tipp auf eine Maschinenzeile, mit 130 Maschinen im Bestand:
+
+| | vorher |
+|---|---|
+| Maschinenzeilen im Arbeitskontext | **130** |
+| fokussierbare Elemente hinter dem Scharnier | **178** |
+| Höhe des Arbeitsbereichs | **10 174 px** (Handy), 11 016 px (Tisch) |
+| Aufnahmeknopf | **52 px unter dem Rand**, nach zwei Tipps darauf |
+| Fenster dazwischen | ein Auswahlfenster für die Maschine, die man gerade wählte |
+
+### Was jetzt dasteht
+
+| | nachher |
+|---|---|
+| Maschinenzeilen | **0** — auf Maschinen- **und** Arbeitsebene |
+| fokussierbare Elemente | **2** |
+| Höhe der Maschinenebene | **792 px** (Handy) |
+| Höhe der Arbeitsebene | **896 px** |
+| Tipps Maschinenzeile → Aufnahmefläche | **2** |
+| dominante Handlungen je Bild | **1** |
+| Antippziele unter 44 px | **0** |
+
+```
+    ‹ Zum Standort
+
+    Kompressor 1
+    ● Noch kein Normalzustand
+
+    [  Normalzustand aufnehmen  ]
+
+    Nimm die Maschine so auf, wie sie sich
+    im guten Normalbetrieb anhört.
+```
+
+### Die Zustandsmaschine
+
+Sie steht als **Wert** in `stamm/maschine/zustand.ts`, nicht als Folge von
+`style.display`-Schaltungen: zehn Zustände, und `handlungFuer()` gibt zu jedem
+**genau eine** dominante Handlung. Das ist der Punkt — die Regel lässt sich
+nicht nur einhalten, sie lässt sich beweisen. Der Test geht jeden Zustand
+durch (25 Prüfungen), statt drei anzuklicken.
+
+Die Ähnlichkeitsschwelle ist dieselbe wie im Bestand (75). Zwei Schwellen für
+dieselbe Frage wären zwei Antworten, und die Karte zeigte grün, wo die
+Maschinenebene „anders" sagt.
+
+### Vier Ebenen hinter der Tür
+
+`standort` · `maschine` · `arbeit` · `bestand`. Die vierte ist ein Übergang
+und kein Entwurf: Anlegen, Scannen und Einlesen sind Bestandsaktionen und
+bekommen in Schnitt 6 ihren richtigen Ort. Bis dahin liegen sie, wo sie lagen
+— und die Ebene sagt wenigstens, dass das so ist, statt es unter „Arbeit" zu
+verstecken.
+
+Dass es sie braucht, habe ich selbst herbeigeführt: Als der Bestand aus der
+Arbeitsebene verschwand, ging „Neue Maschine anlegen" aus der Standortansicht
+mit kaputt — das Formular liegt in der Bestandskarte. Der Aufmerksamkeitstest
+meldete es als Kaskade von zwanzig Befunden.
+
+### Was noch nicht dasteht
+
+Die Aufnahme startet noch von Hand (ein dritter Tipp), das Ergebnis kommt noch
+in der bisherigen Form, und die Hör-Lupe gibt es nicht. Das sind die Schnitte
+2 bis 4. Was dieser Schnitt liefert, ist der **Ort**, an dem sie stattfinden.
+
+Falsifiziert: Mit dem Auswahlfenster zurück im Weg meldet `npm run wow` je
+Fenster sieben Befunde — 130 Bestandszeilen, 0 dominante Handlungen, der
+nächste Schritt nicht im Bild.
+
+**S4b — Aufnahme und Ergebnis.** _offen._ Referenz, Vergleich, Ähnlichkeitswert,
 Spektrogramm, Verlauf, NFC/QR — aus der alten Oberfläche überführt.
 
 **S5 — Die Reiter füllen.** _offen._ „Standorte", „Filter" und der

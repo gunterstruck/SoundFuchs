@@ -30,7 +30,31 @@ export const en: TranslationDict = {
   // Das Scharnier und die Standortansicht (§0h, Stamm-Schnitt 3).
   hinge: {
     backToMap: 'To the map',
+    backToMachine: 'To the machine',
     backToSite: 'To the site',
+  },
+  // Die Maschinen-Arbeitsebene (Zanobot_UI_Nutzerreise, Schnitt 1).
+  maschine: {
+    lageUntrained: 'No reference sound yet',
+    lageReady: 'Ready to check',
+    lageSimilar: 'Sounds like the reference',
+    lageDeviating: 'Clearly different sound',
+    lageMikrofon: 'Microphone not allowed',
+    lageQualitaet: 'Recording not usable for comparison',
+    lageOffline: 'No connection',
+    lageLaeuft: 'Working …',
+    aktionReferenz: 'Record reference sound',
+    aktionPruefen: 'Check for 10 seconds',
+    aktionStoppen: 'Stop',
+    aktionRechnet: 'Analysing …',
+    aktionFertig: 'Done',
+    aktionUnterschied: 'Listen to the difference',
+    aktionMikrofon: 'Allow microphone',
+    aktionWiederholen: 'Record again',
+    aktionErneut: 'Try again',
+    zuletzt: 'Last {{wert}} % · {{wann}}',
+    hinweisReferenz: 'Record the machine as it sounds in good normal operation.',
+    hinweisPruefung: 'Hold the device in the same place as last time.',
   },
   site: {
     machines: 'machines',

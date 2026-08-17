@@ -20,6 +20,7 @@
     "token-check": "node tools/token-check.mjs",
     "css-check": "node tools/css-check.mjs",
     "durchlauf": "node tools/durchlauf.mjs",
+    "wow": "node tools/wow.mjs",
     "stammvergleich": "node tools/stammvergleich.mjs"
   },
   "dependencies": {
