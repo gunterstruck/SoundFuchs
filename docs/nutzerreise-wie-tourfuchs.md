@@ -1076,9 +1076,178 @@ Der Klanggenerator liegt seit diesem Schnitt in `tools/klang.mjs` und wird von
 `durchlauf` und `wow` geteilt. Zwei Generatoren wären zwei Maschinen, und ein
 Unterschied im Ergebnis nicht mehr vom Unterschied im Ton zu trennen.
 
-**S4b — Ergebnis und Hör-Lupe.** _offen._ Vergleich, Ähnlichkeitswert in
-Alltagssprache, Spektrogramm, Verlauf, NFC/QR — aus der alten Oberfläche
-überführt. Das sind die Schnitte 3 und 4.
+### Das Ergebnis wird zur Hör-Lupe — Schnitt 3 (17.08.2026)
+
+✅ _erledigt._ Nach einer Prüfung fällt der Nutzer nicht mehr in den alten
+Ergebnisdialog. Das Ergebnis ist ein **Zustand derselben Reise**, und die
+Hör-Lupe steht darin.
+
+```
+Standort → Maschine → Prüfung → Verarbeitung → Ergebnis/Hör-Lupe
+```
+
+**Die drei Fälle, alle drei gemessen.**
+
+_Fall A — die Maschine klingt anders:_
+
+```
+    ‹ Zum Standort
+
+    Kompressor 1
+    ● Deutliche akustische Abweichung
+    Die Messung klingt anders als der Normalzustand.
+    Ähnlichkeit 72 % · gerade eben
+
+    [      Unterschied anhören      ]
+
+    ─────────────────────────────────
+    HÖR-LUPE
+    Vergleiche Normalzustand und Messung –
+    oder höre nur, was neu hinzugekommen ist.
+
+    [ 🔊 Normalzustand ][ 🔊 Messung ][ 🔍 Unterschied ]
+    Läuft: 🔍 Unterschied
+    ▸ Fein einstellen
+```
+
+Ein Tipp auf die Primäraktion **spielt** den Unterschied — kein weiterer
+Dialog, kein Suchen. Die Aktion ruft die Komponente an ihrer eigenen
+Schnittstelle auf (`spieleUnterschied()`), statt einen ihrer Knöpfe
+nachzuklicken; ein nachgemachter Klick wäre eine zweite Bedienung derselben
+Sache und die erste, die bricht, wenn dort jemand eine Klasse umbenennt.
+
+_Fall B — sie klingt wie immer:_ „Fertig" ist die einzige Primäraktion, die
+Hör-Lupe bleibt über einen sichtbaren Sekundärweg erreichbar („Vergleich
+trotzdem anhören"). Auch ein gutes Ergebnis muss überprüfbar sein — aber es
+bekommt keinen zweiten gleich lauten Knopf.
+
+_Fall C — die Maschine später wieder öffnen:_ Die Ebene startet wieder in
+`ready`. Darunter „🔍 Letzten Unterschied anhören", ein Tipp bis zum Ton. Der
+Knopf erscheint **nur**, wenn Messaudio und eine örtliche Referenz wirklich da
+sind: Die Aufbewahrung ist eine Einstellung des Nutzers und wird nicht
+heimlich umgestellt, damit ein Knopf dastehen kann. Kein toter Knopf.
+
+### Gemessen (`npm run wow`, Handy 390 × 844, echtes Mikrofonsignal)
+
+| | |
+|---|---|
+| Ende der Messung → sichtbares Ergebnis | **0 Tipps** |
+| Ergebnis → hörbarer Unterschied (Fall A) | **1 Tipp** |
+| Maschinenebene → letzte Hör-Lupe (Fall C) | **1 Tipp** |
+| Fenster im Ergebnis | **0** |
+| dominante Handlungen je Ergebniszustand | **1** |
+| Urteil und Handlung ohne Scrollen | **ja** |
+| Antippziele unter 44 px | **0** |
+| Ergebnisfläche am Schreibtisch (1440 × 900) | **1120 px, zwei Spalten** |
+
+Am Schreibtisch steht links das Urteil mit der einen Handlung, rechts die
+Hör-Lupe — dieselbe Reise, andere Anordnung. Vorher stand dort eine 900 px
+breite Mobilspalte in der Mitte.
+
+### Wie die Daten hinüberkommen
+
+`stamm/maschine/ergebnis.ts` ist ein **Wert**, kein Ereignis mit Fracht. Das
+Ereignis `PRUEFUNG_FERTIG` trägt nur die Maschinen-Kennung; die beiden
+AudioBuffer holt sich der Empfänger. Zwei Gründe:
+
+1. Ein Ereignis geht an alle. Zwei Zuhörer, die je einen Buffer festhalten,
+   halten ihn unterschiedlich lange, und keiner weiß, wann er ihn loslassen
+   darf. Zehn Sekunden Ton sind rund ein Megabyte.
+2. Ein Ereignis ist ein Zeitpunkt, kein Zustand. Wer eine Sekunde zu spät
+   zuhört, erfährt nichts — genau das passiert beim Zeichnen einer Ebene, die
+   erst nach dem Ereignis aufgebaut wird.
+
+Wer das Ergebnis zeigt, entscheidet ein Merker (`gehoertDerMaschinenebene`),
+den `starteArbeit()` setzt — **keine** CSS-Klasse am `body`. Der Weg herein ist
+eine Tatsache über die Reise, keine über das Aussehen. Alle anderen Wege
+(Flottenlauf, Bestandsliste, Schnellvergleich) führen weiter in den bisherigen
+Ergebnisdialog; ihn im selben Zug mit umzubauen hieße, zwei Dinge auf einmal
+zu ändern.
+
+Beim Verlassen der Maschine wird das Ergebnis vergessen und die Aufnahmen
+losgelassen. Die Arbeitsebene zählt dabei nicht als Verlassen — dorthin führt
+der Weg der Prüfung selbst.
+
+### Eine Hör-Lupe, nicht drei
+
+Es gab zwei Fassungen desselben Dings: `ui/components/ListenPanel.ts` (im
+Verlauf) und 250 Zeilen in `3-Diagnose.ts` (im Ergebnis) — dieselben Knöpfe,
+derselbe Spieler, dieselbe Differenz. Zwei Fassungen sind zwei Wahrheiten
+darüber, was „Unterschied" bedeutet, und sie laufen auseinander, sobald jemand
+nur eine anfasst. Jetzt benutzen Verlauf, alter Ergebnisdialog und neue
+Ergebnisfläche **dieselbe** Komponente; die 250 Zeilen sind weg, mit ihnen ein
+toter Spieler, ein totes Feld und sechs tote Importe.
+
+Neu darin: die drei Quellen stehen oben und gleich groß, Tempo und
+„Auffälligkeit hörbar machen" liegen unter „Fein einstellen". Was läuft, trägt
+`aria-pressed` **und** steht geschrieben („Läuft: 🔍 Unterschied") — Farbe
+allein wäre ausgerechnet bei einem Wiedergabegerät die schlechteste
+Kennzeichnung.
+
+### Was der Umbau an den Wächtern gefunden hat
+
+**`css-check` sah den halben Bestand nicht.** Ein flaches `readdirSync`, und
+seit die Stamm-Dateien in `src/styles/stamm/` liegen, prüfte das Werkzeug den
+größten Teil des CSS gar nicht mehr — auch die Grenzschicht nicht. Aufgefallen
+beim Falsifizieren: ein absichtlich erfundener Selektor wurde nicht gemeldet.
+Jetzt läuft es rekursiv. Der kopierte Stamm wird dabei **berichtet, nicht
+erzwungen** (809 ungenutzte Selektoren, Stand heute): Dort stehen TourFuchs-
+Regeln für Tourenplanung, Lasso und Simulation — Dinge, die es hier bewusst
+nicht gibt. Sie zu löschen hieße, den Stamm zu bearbeiten, und danach könnte
+niemand mehr durch einen Vergleich feststellen, ob er noch der Stamm ist.
+Derselbe Maßstab wie bei `stammvergleich`: Was uns gehört, wird erzwungen; was
+kopiert ist, wird gezählt.
+
+Beim Falsifizieren fiel noch etwas auf: Ein Klassenname, der aus Rumpf und
+Variable entsteht, macht den ganzen Rumpf lebendig — danach gilt jeder
+erfundene Selektor mit diesem Anfang als benutzt. Das Werkzeug liest dafür auch
+Kommentare. Die drei Quellenklassen sind deshalb ausgeschrieben.
+
+**Zwei Fehler, die der Lauf selbst gefunden hat** — nicht ein Mensch beim
+Hinsehen: „Auffälligkeit hörbar machen" war 34 px hoch, der Verlaufs-Verweis
+15 px. Beide sind jetzt 44.
+
+**Und ein falscher Satz:** Unter „Unterschied anhören" stand „Halte das Gerät
+wie beim letzten Mal an dieselbe Stelle" — ein Aufnahmehinweis unter einem
+Knopf, der etwas abspielt. Im Ergebnis steht jetzt kein stützender Satz mehr;
+die Hör-Lupe bringt ihren eigenen mit.
+
+### Wie eine echte Abweichung gemessen wird
+
+Chromiums Fake-Mikrofon liest eine Datei, die beim Start feststeht. Der
+Wow-Lauf startet deshalb **zweimal auf demselben Profil**: Der Normalzustand
+entsteht mit dem sauberen Klang, die Gegenprobe mit einem, der pfeift, klopft
+und rauscht. Ergebnis: 72 % — eine echte Abweichung, keine behauptete.
+
+Das ist der Unterschied zwischen Messen und Vorführen. Dem Ergebnis eine Zahl
+unterzuschieben hätte dieselben Bildschirme gezeigt und genau das nicht
+geprüft, worum es geht. Der Lauf meldet es auch, wenn die Bewertung den
+veränderten Klang für den Normalzustand hielte — dann prüfte er ab da den
+falschen Fall, und das darf nicht unbemerkt bleiben.
+
+Falsifiziert: Mit dem alten Ergebnisdialog zurück im Weg meldet `npm run wow`
+17 Befunde (Ergebnis im Fenster, kein Urteil in Alltagssprache, 0 dominante
+Handlungen, der Tipp spielt nichts, …). Dabei fiel zum dritten Mal dasselbe
+Muster auf: Der Wächter **starb** an einem verdeckten Knopf, statt zu melden.
+Auch diese Klicks sind jetzt duldsam.
+
+### Was dieser Schnitt nicht enthält
+
+Die **Hervorhebung des Störanteils** (`Original · Deutlich · Stark`) ist nicht
+dabei. Sie ist kein Anzeigetrick, sondern DSP: Pegelabgleich, Headroom, Fades,
+Limiter — und vor allem ein Lautheitsabgleich zwischen den Fassungen, damit
+„lauter" nicht mit „überzeugender" verwechselt wird. Der Auftrag lässt diesen
+Aufschub ausdrücklich zu und verlangt dafür, `Normalzustand | Messung |
+Unterschied` prominent zu liefern; genau das steht jetzt da. Simuliert wird
+nichts.
+
+Ebenfalls offen: freie Auswahl im Spektrogramm, „Mit Fachmann teilen", der
+vollständige Schreibtisch-Analysearbeitsplatz (die dritte Spalte mit großem
+2D-Spektrum), und das Entfernen des alten Ergebnisdialogs aus den übrigen
+Wegen.
+
+**S4c — Hervorhebung und Teilen.** _offen._ Störanteil in drei Stufen mit
+Clipping-Schutz und Lautheitsabgleich; Befund mit einem Fachmann teilen.
 
 **S5 — Die Reiter füllen.** _offen._ „Standorte", „Filter" und der
 Nähe-Begleiter im Karten-Reiter; Standort- und Maschinenimport.

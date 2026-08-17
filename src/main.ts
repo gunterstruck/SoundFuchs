@@ -62,6 +62,7 @@ import { MASCHINENFENSTER_ABGEBROCHEN } from '@ui/phases/MachineDetailModal.js';
 import { beispieldatenAnbieten } from './stamm/ui/beispieldaten.js';
 import { standortansichtAufbauen } from './stamm/ui/standortansicht.js';
 import { maschinenansichtAufbauen } from './stamm/ui/maschinenansicht.js';
+import { pruefungAngemeldet } from './stamm/maschine/ergebnis.js';
 import type { Machine } from '@data/types.js';
 import { escapeHtml } from '@utils/sanitize.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
@@ -820,6 +821,15 @@ class ZanobotApp {
    */
   private starteArbeit(machine: Machine): void {
     this.offeneMaschine = machine;
+    /**
+     * Diese Prüfung gehört der Maschinenebene.
+     *
+     * Damit weiß die Diagnosephase später, wohin das Ergebnis geht: auf die
+     * Ebene, von der der Nutzer kam, und nicht in den alten Ergebnisdialog
+     * obendrauf. Der Merker steht hier, weil hier die Tatsache entsteht —
+     * hinterher wäre sie nur noch zu erraten.
+     */
+    pruefungAngemeldet(machine.id);
     oeffneTiefe(machine.customerId ?? null, 'arbeit');
     this.router?.waehleMaschine(machine);
   }

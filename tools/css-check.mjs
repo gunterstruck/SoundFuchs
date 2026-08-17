@@ -88,12 +88,53 @@ const lebt = (name) => {
   return new RegExp(`[^\\w-]${wort}[^\\w-]`).test(wortschatz);
 };
 
-const dateien = readdirSync(CSS_ORT).filter((f) => f.endsWith('.css'));
+/**
+ * Alle Stylesheets, auch die in Unterordnern.
+ *
+ * Bis zum 17.08.2026 stand hier ein flaches `readdirSync` — und seit die
+ * Stamm-Dateien in `src/styles/stamm/` liegen, prüfte dieses Werkzeug den
+ * größten Teil des CSS gar nicht mehr. Aufgefallen ist es beim Falsifizieren:
+ * Ein absichtlich erfundener Selektor in `stamm/tiefe.css` wurde nicht
+ * gemeldet. Ein Wächter, der schweigt, weil er nicht hinsieht, ist schlimmer
+ * als keiner — man verlässt sich auf ihn.
+ */
+function alleStylesheets(ort) {
+  const gefunden = [];
+  for (const eintrag of readdirSync(ort)) {
+    const pfad = join(ort, eintrag);
+    if (statSync(pfad).isDirectory()) gefunden.push(...alleStylesheets(pfad));
+    else if (eintrag.endsWith('.css')) gefunden.push(pfad);
+  }
+  return gefunden;
+}
+
+/**
+ * Der kopierte Stamm wird berichtet, nicht erzwungen.
+ *
+ * `src/styles/stamm/` ist Datei für Datei unverändert aus TourFuchs übernommen
+ * (§0h in docs/nutzerreise-wie-tourfuchs.md). Dort stehen Regeln für Dinge, die
+ * es in SoundFuchs bewusst nicht gibt — Tourenplanung, Lasso, Simulation. Diese
+ * Selektoren greifen hier nie, und das ist richtig so: Sie zu löschen hieße, den
+ * Stamm zu bearbeiten, und danach könnte niemand mehr durch einen Vergleich
+ * feststellen, ob er noch der Stamm ist.
+ *
+ * Also derselbe Maßstab wie bei `stammvergleich`: Was uns gehört, wird
+ * erzwungen; was kopiert ist, wird gezählt und genannt.
+ *
+ * `tiefe.css` ist ausgenommen — sie ist die Grenzschicht und in diesem Haus
+ * geschrieben. Sie zählt zum eigenen Bestand.
+ */
+const STAMM_ORT = join(CSS_ORT, 'stamm');
+const istStamm = (pfad) =>
+  pfad.startsWith(STAMM_ORT + '/') && !pfad.endsWith('tiefe.css');
+
+const dateien = alleStylesheets(CSS_ORT);
 const tot = [];
+const stammTot = [];
 let geprueft = 0;
 
 for (const datei of dateien) {
-  const css = readFileSync(join(CSS_ORT, datei), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const css = readFileSync(datei, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   for (const m of css.matchAll(/([^{}]+)\{[^{}]*\}/g)) {
     const roh = m[1].trim();
     if (!roh || roh.startsWith('@') || roh.includes(':root')) continue;
@@ -106,20 +147,33 @@ for (const datei of dateien) {
       if (!namen.length) continue;
       geprueft++;
       const fehlend = namen.filter((n) => !lebt(n));
-      if (fehlend.length) tot.push({ datei, selektor: einzeln, fehlend: [...new Set(fehlend)] });
+      if (!fehlend.length) continue;
+      const befund = { datei, selektor: einzeln, fehlend: [...new Set(fehlend)] };
+      if (istStamm(datei)) stammTot.push(befund);
+      else tot.push(befund);
     }
   }
 }
 
 console.log(`${geprueft} Selektoren geprueft in ${dateien.length} Dateien.`);
+if (stammTot.length) {
+  // Bericht, kein Befund: TourFuchs-Regeln fuer Dinge, die SoundFuchs bewusst
+  // nicht hat. Die Zahl steht da, damit sie auffaellt, wenn sie springt.
+  const je = {};
+  for (const t of stammTot) je[t.datei] = (je[t.datei] ?? 0) + 1;
+  const liste = Object.entries(je)
+    .map(([d, n]) => `${d.replace('src/styles/stamm/', '')} ${n}`)
+    .join(', ');
+  console.log(`· Stamm (kopiert, nicht erzwungen): ${stammTot.length} ungenutzte Selektoren — ${liste}`);
+}
 if (!tot.length) {
-  console.log('✓ Kein Selektor zeigt auf einen Namen, den es nirgends gibt.');
+  console.log('✓ Kein eigener Selektor zeigt auf einen Namen, den es nirgends gibt.');
   process.exit(0);
 }
 console.log(`\n✗ ${tot.length} Selektoren koennen nie greifen:\n`);
 for (const t of tot)
   console.log(
-    `  ${t.datei.padEnd(22)} ${t.selektor.slice(0, 58).padEnd(60)} ← ${t.fehlend.join(', ')}`
+    `  ${t.datei.padEnd(30)} ${t.selektor.slice(0, 58).padEnd(60)} ← ${t.fehlend.join(', ')}`
   );
 console.log();
 process.exit(1);

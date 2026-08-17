@@ -33,8 +33,8 @@
  * Formenvokabular (§0h).
  */
 
-import type { Machine } from '@data/types.js';
-import { getLatestDiagnosis } from '@data/db.js';
+import type { DiagnosisResult, Machine } from '@data/types.js';
+import { getLatestDiagnosis, getRecording, getRecordingsForMachine } from '@data/db.js';
 import { t } from '../../i18n/index.js';
 import { logger } from '@utils/logger.js';
 import { farbeFuerZustand } from '../features/standortmarker.js';
@@ -42,6 +42,7 @@ import { zustandZuWert } from '../../services/bestandsuebersicht.js';
 import {
   zustandAus,
   handlungFuer,
+  istErgebnis,
   type Lage,
   type Maschinenzustand,
 } from '../maschine/zustand.js';
@@ -50,6 +51,8 @@ import { NORMALZUSTAND_GESPEICHERT } from '@ui/phases/2-Reference.js';
 import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
 import { getReferenceIrisVector } from '@ui/phases/referenceIris.js';
 import { getMachine } from '@data/db.js';
+import { ListenPanel } from '@ui/components/ListenPanel.js';
+import { holeErgebnis, PRUEFUNG_FERTIG, vergissErgebnis } from '../maschine/ergebnis.js';
 
 export interface MaschinenansichtDeps {
   /**
@@ -197,16 +200,92 @@ async function zeichneFingerabdruck(ziel: HTMLElement, maschine: Machine): Promi
   if (vektor) requestAnimationFrame(() => renderMachineFingerprint(leinwand, vektor));
 }
 
+/**
+ * Die Hör-Lupe dieser Ebene — höchstens eine, und sie wird abgeräumt.
+ *
+ * Sie hält einen Web-Audio-Spieler; zwei davon nebeneinander hieße zwei
+ * Wiedergaben gleichzeitig, und die zweite hörte man nicht mehr richtig.
+ */
+let lupe: ListenPanel | null = null;
+
+function raeumeLupeAb(): void {
+  lupe?.destroy();
+  // `destroy()` hält die Wiedergabe an, entfernt aber nichts aus dem Baum —
+  // die Komponente weiß nicht, wo sie hängt. Wer sie eingehängt hat, hängt sie
+  // auch wieder aus; sonst stünden nach dem zweiten Aufruf zwei Hör-Lupen da,
+  // von denen nur eine reagiert.
+  lupe?.element.remove();
+  lupe = null;
+}
+
+/**
+ * Die Hör-Lupe an eine Stelle zeichnen.
+ *
+ * Sie bekommt keine eigene Fassung für das Ergebnis: Es ist dieselbe
+ * Komponente, die im Verlauf steht (`ui/components/ListenPanel.ts`). Eine
+ * zweite wäre eine zweite Wahrheit darüber, was „Unterschied" bedeutet.
+ */
+function zeichneLupe(
+  ziel: HTMLElement,
+  referenz: AudioBuffer | null,
+  messung: AudioBuffer | null
+): ListenPanel | null {
+  raeumeLupeAb();
+  const panel = new ListenPanel({ reference: referenz, measurement: messung, mitUeberschrift: true });
+  if (!panel.hasContent) return null;
+  lupe = panel;
+  ziel.appendChild(panel.element);
+  return panel;
+}
+
+/**
+ * Die Aufnahmen einer vergangenen Prüfung holen — für „Letzten Unterschied
+ * anhören".
+ *
+ * Die Kennung der Aufnahme ist die der Diagnose; deshalb genügt die Diagnose,
+ * um an ihren Ton zu kommen. Fehlt er, weil die Aufbewahrung ihn nicht behalten
+ * hat, kommt `null` zurück — und der Knopf erscheint gar nicht erst. Ein Knopf,
+ * der nichts tut, ist schlimmer als kein Knopf.
+ */
+async function toeneZurPruefung(
+  maschine: Machine,
+  diagnose: DiagnosisResult
+): Promise<{ referenz: AudioBuffer; messung: AudioBuffer } | null> {
+  try {
+    const messungsAufnahme = await getRecording(diagnose.id);
+    if (!messungsAufnahme?.audioBuffer) return null;
+    const alle = await getRecordingsForMachine(maschine.id);
+    const referenz = alle
+      .filter((r) => r.type === 'reference' && r.audioBuffer)
+      .sort((a, b) => b.timestamp - a.timestamp)[0]?.audioBuffer;
+    if (!referenz) return null;
+    return { referenz, messung: messungsAufnahme.audioBuffer };
+  } catch (fehler) {
+    logger.warn('Maschinenansicht: Ton der letzten Prüfung nicht ladbar', fehler);
+    return null;
+  }
+}
+
 async function zeichne(maschine: Machine): Promise<void> {
   const ziel = behaelter();
   if (!ziel) return;
+  raeumeLupeAb();
   ziel.textContent = '';
+  ziel.classList.remove('maschinen-ansicht-ergebnis');
 
   const letzte = await getLatestDiagnosis(maschine.id);
+  /**
+   * Das Ergebnis dieser Sitzung — und nur dieser.
+   *
+   * `holeErgebnis` liefert etwas, wenn der Nutzer gerade eben geprüft hat. Ein
+   * Wert aus der Datenbank kommt hier bewusst NICHT hinein: Die Ebene öffnet
+   * sich im Ruhezustand, nicht in einem Ergebnis von vorgestern. Was vorgestern
+   * war, steht darunter als Auskunft.
+   */
+  const frisch = holeErgebnis(maschine.id);
   const lage: Lage = {
     hatNormalzustand: (maschine.referenceModels?.length ?? 0) > 0,
-    // Bewusst kein `ergebnis`: Die Ebene öffnet sich im Ruhezustand, nicht in
-    // einem Ergebnis von vorgestern. Der alte Wert steht im Kopf als Auskunft.
+    ergebnis: frisch ? frisch.wert : null,
   };
   const zustand = zustandAus(lage);
 
@@ -222,12 +301,39 @@ async function zeichne(maschine: Machine): Promise<void> {
   lageZeile.className = 'maschine-lage';
   const punkt = document.createElement('span');
   punkt.className = 'maschine-punkt';
-  punkt.style.background = farbeFuerZustand(zustandZuWert(letzte?.healthScore ?? null));
+  punkt.style.background = farbeFuerZustand(zustandZuWert(frisch?.wert ?? letzte?.healthScore ?? null));
   punkt.setAttribute('aria-hidden', 'true');
   lageZeile.append(punkt, urteil(zustand));
   kopf.appendChild(lageZeile);
 
-  if (letzte) {
+  /**
+   * Erst der Satz, dann die Zahl.
+   *
+   * „Die Messung klingt anders als der Normalzustand" ist die Aussage;
+   * „Ähnlichkeit 61 %" ist der Beleg dafür. In der anderen Reihenfolge müsste
+   * der Nutzer aus einer Prozentzahl schließen, was sie bedeutet — und genau
+   * das kann er nicht, weil er die Schwelle nicht kennt.
+   *
+   * Und niemals eine Ursache: Die App hört einen Unterschied. Sie sieht kein
+   * Lager.
+   */
+  if (frisch) {
+    const satz = document.createElement('p');
+    satz.className = 'maschine-ergebnissatz';
+    satz.textContent =
+      zustand === 'result-deviating'
+        ? t('maschine.ergebnisAbweichung')
+        : t('maschine.ergebnisAehnlich');
+    kopf.appendChild(satz);
+
+    const beleg = document.createElement('p');
+    beleg.className = 'muted small maschine-zuletzt';
+    beleg.textContent = t('maschine.aehnlichkeit', {
+      wert: String(Math.round(frisch.wert)),
+      wann: vorWieLange(frisch.zeitpunkt),
+    });
+    kopf.appendChild(beleg);
+  } else if (letzte) {
     const zuletzt = document.createElement('p');
     zuletzt.className = 'muted small maschine-zuletzt';
     zuletzt.textContent = t('maschine.zuletzt', {
@@ -268,15 +374,117 @@ async function zeichne(maschine: Machine): Promise<void> {
   knopf.textContent = geradeGelernt
     ? t('maschine.aktionGegenprobe')
     : handlungstext(handlung.schluessel);
-  knopf.addEventListener('click', () => deps?.starteNaechstenSchritt(maschine));
+  if (zustand === 'processing') {
+    // Eine Auskunft, kein Angebot. Sie steht an der Stelle der Handlung, damit
+    // die Fläche nicht eingefroren wirkt — aber sie ist nicht drückbar, sonst
+    // verspricht sie etwas, das sie nicht hat.
+    knopf.disabled = true;
+  }
   ziel.appendChild(knopf);
 
-  const hinweis = document.createElement('p');
-  hinweis.className = 'muted small maschine-hinweis';
-  hinweis.textContent =
-    zustand === 'untrained' ? t('maschine.hinweisReferenz') : t('maschine.hinweisPruefung');
-  if (geradeGelernt) hinweis.textContent = t('maschine.hinweisGegenprobe');
-  ziel.appendChild(hinweis);
+  /**
+   * Der stützende Satz — aber nicht im Ergebnis.
+   *
+   * Dort stand bis zur ersten Messung dieses Schnitts „Halte das Gerät wie beim
+   * letzten Mal an dieselbe Stelle": ein Hinweis zum Aufnehmen, unter einem
+   * Knopf, der etwas abspielt. Im Ergebnis erklärt sich der nächste Schritt
+   * durch die Hör-Lupe direkt darunter, und die bringt ihren eigenen Satz mit.
+   * Zwei Sätze übereinander, von denen einer falsch ist, sind schlechter als
+   * einer.
+   */
+  if (!istErgebnis(zustand)) {
+    const hinweis = document.createElement('p');
+    hinweis.className = 'muted small maschine-hinweis';
+    hinweis.textContent =
+      zustand === 'untrained' ? t('maschine.hinweisReferenz') : t('maschine.hinweisPruefung');
+    if (geradeGelernt) hinweis.textContent = t('maschine.hinweisGegenprobe');
+    if (zustand === 'processing') hinweis.textContent = t('maschine.rechnetHinweis');
+    ziel.appendChild(hinweis);
+  }
+
+  // ── Das Ergebnis: die Hör-Lupe ───────────────────────────────────────────
+  //
+  // Sie ist der Punkt, an dem aus einer Prozentzahl etwas wird, das ein
+  // zweiter Mensch nachvollziehen kann. Deshalb steht sie IM Ergebnis und
+  // nicht hinter einem Weg dorthin.
+  if (frisch) {
+    /**
+     * Am Schreibtisch bekommt das Ergebnis zwei Spalten.
+     *
+     * Die Klasse steht nur am Ergebnis, nicht an der Ebene: Im Ruhezustand
+     * gibt es nichts, was eine zweite Spalte füllen würde, und eine leere
+     * Spalte ist keine Nutzung der Fläche, sondern ein Loch. Was die Klasse
+     * bewirkt, entscheidet allein die Schreibtisch-Abfrage in `tiefe.css` —
+     * auf dem Handy bleibt alles, wie es ist.
+     */
+    ziel.classList.add('maschinen-ansicht-ergebnis');
+  }
+
+  if (frisch && zustand === 'result-deviating') {
+    const panel = zeichneLupe(ziel, frisch.referenz, frisch.messung);
+    /**
+     * Ein Tipp bis zum hörbaren Unterschied.
+     *
+     * Die Primäraktion ruft die Komponente an ihrer eigenen Schnittstelle auf,
+     * statt einen ihrer Knöpfe zu klicken. Ein nachgemachter Klick wäre eine
+     * zweite Bedienung derselben Sache — und die erste, die kaputtgeht, wenn
+     * dort jemand eine Klasse umbenennt.
+     */
+    knopf.addEventListener('click', () => {
+      if (!panel) return;
+      void panel.spieleUnterschied();
+      // Sichtbar hinführen, ohne zu springen: Der Fokus wandert auf die
+      // Lupe, damit auch ohne Blick klar ist, wo es weitergeht.
+      panel.element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      panel.element.querySelector<HTMLButtonElement>('.hoerlupe-difference')?.focus();
+    });
+  } else if (frisch && zustand === 'result-similar') {
+    /**
+     * „Fertig" ist die einzige Primäraktion — die Lupe bleibt erreichbar.
+     *
+     * Auch ein gutes Ergebnis muss überprüfbar sein: Wer misstraut, soll
+     * nachhören können, ohne dass die App ihm dazu einen zweiten gleich
+     * lauten Knopf danebenstellt.
+     */
+    knopf.addEventListener('click', () => {
+      vergissErgebnis();
+      void zeichne(maschine);
+    });
+
+    const trotzdem = document.createElement('button');
+    trotzdem.type = 'button';
+    trotzdem.className = 'linklike maschine-trotzdem';
+    trotzdem.textContent = t('maschine.trotzdemHoeren');
+    trotzdem.addEventListener('click', () => {
+      trotzdem.remove();
+      zeichneLupe(ziel, frisch.referenz, frisch.messung);
+    });
+    ziel.appendChild(trotzdem);
+  } else if (zustand !== 'processing') {
+    knopf.addEventListener('click', () => deps?.starteNaechstenSchritt(maschine));
+  }
+
+  // ── Sekundär: die letzte Prüfung nachhören ───────────────────────────────
+  //
+  // Der Weg zur letzten Hör-Lupe, ohne Umweg über den Verlauf. Er erscheint
+  // nur, wenn es den Ton wirklich gibt — die Aufbewahrung ist eine Einstellung
+  // des Nutzers, und sie wird hier nicht heimlich umgestellt, nur damit ein
+  // Knopf dastehen kann.
+  if (!frisch && letzte && zustand === 'ready') {
+    const toene = await toeneZurPruefung(maschine, letzte);
+    if (toene) {
+      const nachhoeren = document.createElement('button');
+      nachhoeren.type = 'button';
+      nachhoeren.className = 'maschine-nachhoeren';
+      nachhoeren.textContent = t('maschine.letzterUnterschied');
+      nachhoeren.addEventListener('click', () => {
+        nachhoeren.remove();
+        const panel = zeichneLupe(ziel, toene.referenz, toene.messung);
+        void panel?.spieleUnterschied();
+      });
+      ziel.appendChild(nachhoeren);
+    }
+  }
 
   // ── Sekundär: der Verlauf ────────────────────────────────────────────────
   if (maschine.lastDiagnosisAt) {
@@ -335,8 +543,38 @@ export function maschinenansichtAufbauen(abhaengigkeiten: MaschinenansichtDeps):
     })();
   });
 
+  /**
+   * Eine Prüfung ist ausgewertet — zurück auf die Maschinenebene, und dort
+   * steht das Ergebnis.
+   *
+   * Null Tipps vom Ende der Messung bis zum sichtbaren Ergebnis: Der Nutzer hat
+   * die Prüfung gestartet, er hat damit schon gesagt, dass er das Ergebnis
+   * sehen will. Eine Nachfrage wäre dieselbe Frage ein zweites Mal.
+   */
+  document.addEventListener(PRUEFUNG_FERTIG, (ereignis) => {
+    const { machineId } = (ereignis as CustomEvent<{ machineId: string }>).detail;
+    void (async () => {
+      const frisch = await getMachine(machineId);
+      if (!frisch) return;
+      deps?.uebernimmMaschine(frisch);
+      oeffneTiefe(frisch.customerId ?? null, 'maschine');
+    })();
+  });
+
   document.addEventListener(TIEFE_GEOEFFNET, (ereignis) => {
     const detail = (ereignis as CustomEvent<TiefeDetail>).detail;
+    /**
+     * Wer die Maschine verlässt, lässt auch ihr Ergebnis los.
+     *
+     * Zwei Aufnahmen sind rund zwei Megabyte. Sie festzuhalten, bis die Seite
+     * neu lädt, wäre ein Leck, das man erst nach dem fünfzigsten Standort
+     * merkt. Die Arbeitsebene zählt nicht als Verlassen — dorthin führt der
+     * Weg der Prüfung selbst.
+     */
+    if (detail.ebene !== 'maschine' && detail.ebene !== 'arbeit') {
+      raeumeLupeAb();
+      vergissErgebnis();
+    }
     if (detail.ebene !== 'maschine') return;
     const maschine = deps?.aktuelleMaschine() ?? null;
     if (!maschine) {

@@ -3285,6 +3285,87 @@ body {
   text-align: center;
 }
 
+/* ── Die Hör-Lupe ───────────────────────────────────────────────────────────
+
+   Derselbe Behälter wie oben (`.listen-controls`), aber gestapelt: Quellen,
+   Ansage, „Fein einstellen". `.listen-controls` ist eine umbrechende REIHE —
+   ohne diese Zeilen stellen sich die drei Blöcke nebeneinander, und „Läuft: …"
+   steht neben dem Einstellungs-Aufklapper statt darunter. */
+.hoerlupe {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* In der Spalte heisst `flex-basis: 100%` volle HOEHE, nicht volle Breite. */
+.hoerlupe > .listen-controls-label,
+.hoerlupe > .listen-controls-hint {
+  flex: 0 0 auto;
+}
+
+/* Die drei Quellen: gleich wichtig, gleich gross. Der Nutzer soll vergleichen,
+   nicht raten, welche die App fuer die richtige haelt. */
+.hoerlupe-quellen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.hoerlupe-quelle {
+  flex: 1 1 30%;
+  min-width: 96px;
+  min-height: 48px;
+}
+
+/* Was laeuft, steht auch geschrieben — nicht nur in einer Farbe. */
+.hoerlupe-quelle.is-playing {
+  border-color: var(--primary-color);
+  box-shadow: inset 0 0 0 1px var(--primary-color);
+}
+
+.hoerlupe-ansage {
+  margin: 8px 0 0;
+  min-height: 1.2em;
+  text-align: center;
+}
+
+/* Tempo und Tonlage sind Werkzeuge fuer den, der schon weiss, was er sucht.
+   Im Erstbild stehen sie im Weg — also eine Stufe tiefer, einen Tipp entfernt. */
+.hoerlupe-fein {
+  margin-top: 10px;
+}
+
+.hoerlupe-fein > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+.hoerlupe-tempo {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0 8px;
+}
+
+/* Jeder Knopf hier drin ist ein Antippziel — auch der, der eine Stufe tiefer
+   liegt. Gemessen am 17.08.2026: „Auffälligkeit hörbar machen" war 34 px hoch,
+   gefunden vom Wow-Lauf, nicht von Hand. */
+.hoerlupe-fein button {
+  min-height: 44px;
+}
+
+.hoerlupe-tempo > button {
+  flex: 1 1 0;
+}
+
+.hoerlupe-fein > .listen-btn-tune {
+  width: 100%;
+}
+
 .listen-controls-label {
   font-size: var(--font-xs);
   font-weight: 700;
