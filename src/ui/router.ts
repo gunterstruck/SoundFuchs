@@ -228,6 +228,28 @@ export class Router {
   }
 
   /**
+   * Eine Maschine zur Arbeit auswählen — ohne Auswahlfenster.
+   *
+   * `showMachineView()` öffnet das Maschinenfenster, in dem man die Maschine
+   * bestätigt und dann weitergeht. Die neue Arbeitsebene
+   * (`stamm/ui/maschinenansicht.ts`) hat diese Bestätigung schon hinter sich:
+   * Wer dort auf „Jetzt prüfen" tippt, hat die Maschine zweimal gewählt.
+   *
+   * Dieser Weg überspringt das Fenster und geht direkt in dieselbe Fachlogik,
+   * die das Fenster sonst auslöst — Phasen freischalten, Karten setzen, den
+   * nächsten Abschnitt ansagen. Kein zweiter Ablauf, nur ein kürzerer Weg
+   * hinein.
+   */
+  public waehleMaschine(machine: Machine): void {
+    this.onMachineSelected(machine);
+  }
+
+  /** Den Verlauf einer Maschine öffnen. Durchgereicht wie oben. */
+  public zeigeVerlauf(machine: Machine): void {
+    this.identifyPhase.zeigeVerlauf(machine);
+  }
+
+  /**
    * Die Maschinenliste nach Flotten gruppieren oder wieder als Reihe zeigen.
    *
    * Dasselbe Durchreichen wie oben: Der Reiter „Flotte" der neuen Schale

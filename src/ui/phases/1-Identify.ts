@@ -1603,6 +1603,11 @@ export class IdentifyPhase {
     void this.handleMachineDetails(machine);
   }
 
+  /** Den Verlauf einer Maschine öffnen — für die neue Arbeitsebene. */
+  public zeigeVerlauf(machine: Machine): void {
+    void this.machineHistoryModal.show(machine);
+  }
+
   /**
    * Die Maschinenansicht öffnen — Zustand, Zeitstrahl, hinterlegte Zustände und
    * der Knopf, der die Prüfung startet. Ziel des Zeilen-Tipps und der Suche.

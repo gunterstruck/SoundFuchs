@@ -220,7 +220,9 @@ try {
   const inDieTiefe = async () => {
     for (let versuch = 0; versuch < 6; versuch += 1) {
       const stand = await page.evaluate(() => ({
-        offen: document.body.classList.contains('tiefe-offen'),
+        offen:
+          document.body.classList.contains('tiefe-offen') &&
+          document.body.classList.contains('tiefe-bestand'),
         fenster: [...document.querySelectorAll('.modal')].some(
           (m) => getComputedStyle(m).display !== 'none'
         ),
@@ -242,13 +244,14 @@ try {
         const tiefe = document.getElementById('zanobo-tiefe');
         if (!tiefe) return;
         tiefe.hidden = false;
-        // Auf der Maschinenebene, nicht auf der Standortebene.
+        // Auf der Arbeitsebene, nicht auf der Standort- oder Maschinenebene.
         //
-        // Seit Stamm-Schnitt 3 liegen hinter der Tür zwei Ebenen, und die
-        // Standortebene verdeckt den bisherigen Rumpf mit Absicht. Wer nur
-        // `tiefe-offen` setzt, landet dort — und der Prüfweg fände eine
-        // Oberfläche vor, die gerade nicht im Bild sein soll.
-        document.body.classList.add('tiefe-offen', 'tiefe-maschine');
+        // Seit dem Umbau der Nutzerreise liegen hinter der Tür DREI Ebenen:
+        // `standort`, `maschine`, `arbeit` und `bestand`. Der Prüfweg beginnt
+        // im Bestand (Maschine anlegen) und läuft dann in der Arbeitsebene —
+        // beide zeigen die bisherige Oberfläche, die Bestandsebene zusätzlich
+        // mit Liste und Anlegen-Karte.
+        document.body.classList.add('tiefe-offen', 'tiefe-bestand');
       });
       await page.waitForTimeout(800);
     }

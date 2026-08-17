@@ -35,7 +35,31 @@ export const de: TranslationDict = {
   // Das Scharnier und die Standortansicht (§0h, Stamm-Schnitt 3).
   hinge: {
     backToMap: 'Zur Karte',
+    backToMachine: 'Zur Maschine',
     backToSite: 'Zum Standort',
+  },
+  // Die Maschinen-Arbeitsebene (Zanobot_UI_Nutzerreise, Schnitt 1).
+  maschine: {
+    lageUntrained: 'Noch kein Normalzustand',
+    lageReady: 'Bereit zum Prüfen',
+    lageSimilar: 'Klingt wie der Normalzustand',
+    lageDeviating: 'Deutliche akustische Abweichung',
+    lageMikrofon: 'Mikrofon nicht freigegeben',
+    lageQualitaet: 'Aufnahme reicht nicht zum Vergleichen',
+    lageOffline: 'Keine Verbindung',
+    lageLaeuft: 'Läuft …',
+    aktionReferenz: 'Normalzustand aufnehmen',
+    aktionPruefen: 'Jetzt 10 Sekunden prüfen',
+    aktionStoppen: 'Stoppen',
+    aktionRechnet: 'Wird ausgewertet …',
+    aktionFertig: 'Fertig',
+    aktionUnterschied: 'Unterschied anhören',
+    aktionMikrofon: 'Mikrofon freigeben',
+    aktionWiederholen: 'Aufnahme wiederholen',
+    aktionErneut: 'Erneut versuchen',
+    zuletzt: 'Zuletzt {{wert}} % · {{wann}}',
+    hinweisReferenz: 'Nimm die Maschine so auf, wie sie sich im guten Normalbetrieb anhört.',
+    hinweisPruefung: 'Halte das Gerät wie beim letzten Mal an dieselbe Stelle.',
   },
   site: {
     machines: 'Maschinen',

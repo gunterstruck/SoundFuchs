@@ -340,15 +340,17 @@ async function inDieTiefe(page, { profi = false } = {}) {
     const tiefe = document.getElementById('zanobo-tiefe');
     if (!tiefe) return;
     tiefe.hidden = false;
-    // Auf der Maschinenebene, nicht auf der Standortebene.
+    // Auf der Arbeitsebene, nicht auf der Standort- oder Maschinenebene.
     //
-    // Seit Stamm-Schnitt 3 liegen hinter der Tür zwei Ebenen, und die
-    // Standortebene verdeckt den bisherigen Rumpf mit Absicht. Wer nur
-    // `tiefe-offen` setzt, landet dort — und misst dann eine Oberfläche, die
-    // gerade nicht im Bild sein soll. Gemessen: jeder Block meldete „fehlt".
+    // Seit dem Umbau der Nutzerreise liegen hinter der Tür DREI Ebenen:
+    // `standort`, `maschine` (Zustand und ein nächster Schritt) und `arbeit`
+    // (Aufnahme, Prüfung, Ergebnis — noch die bisherige Oberfläche). Jede
+    // verdeckt die anderen mit Absicht.
     //
-    // Der Prüfweg gehört zur Maschinenebene; deshalb wird sie hier genannt.
-    document.body.classList.add('tiefe-offen', 'tiefe-maschine');
+    // Gemessen wird auf der Bestandsebene: Diese Blöcke legen Maschinen an,
+    // lesen Listen ein und zählen den Bestand — alles Dinge, die es auf der
+    // Arbeitsebene mit Absicht nicht mehr gibt.
+    document.body.classList.add('tiefe-offen', 'tiefe-bestand');
   });
   await page.waitForTimeout(600);
 }
@@ -714,7 +716,7 @@ try {
     let scharnierIstKnopf = false;
     let scharnierOeffnet = false;
     let standort = null;
-    let inMaschine = false;
+    let maschinenebene = null;
     let zurueckImStandort = false;
 
     if (inListe) {
@@ -799,23 +801,58 @@ try {
             });
 
             // Eine Ebene tiefer und auf demselben Weg zurück.
+            //
+            // Der Tipp auf eine Maschinenzeile führt seit dem Umbau der
+            // Nutzerreise DIREKT in die Arbeitsebene der Maschine — kein
+            // Fenster mehr, in dem man dieselbe Maschine noch einmal wählt.
             if (standort?.maschinen) {
               await page
                 .locator('.standort-maschine')
                 .first()
                 .click({ force: true })
                 .catch(() => {});
-              await page.waitForTimeout(1400);
-              inMaschine = await page.evaluate(() =>
-                document.body.classList.contains('tiefe-maschine')
-              );
+              await page.waitForTimeout(1600);
+              maschinenebene = await page.evaluate(() => {
+                const sichtbar = (e) => {
+                  const cs = getComputedStyle(e);
+                  return (
+                    cs.display !== 'none' &&
+                    cs.visibility !== 'hidden' &&
+                    e.getBoundingClientRect().height > 0
+                  );
+                };
+                const tiefe = document.getElementById('zanobo-tiefe');
+                const aktion = document.querySelector('.maschine-aktion');
+                const kasten = aktion?.getBoundingClientRect();
+                return {
+                  drin: document.body.classList.contains('tiefe-maschine'),
+                  // Kein Auswahlfenster für eine bereits gewählte Maschine.
+                  fenster: [...document.querySelectorAll('.modal')].filter(
+                    (m) => getComputedStyle(m).display !== 'none'
+                  ).length,
+                  // Der Bestand gehört nicht in den Arbeitskontext — weder ins
+                  // Bild noch in den Tab-Weg.
+                  bestandszeilen: [...document.querySelectorAll('.machine-item')].filter(sichtbar)
+                    .length,
+                  fokussierbar: [
+                    ...tiefe.querySelectorAll(
+                      'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea,[tabindex]:not([tabindex="-1"])'
+                    ),
+                  ].filter(sichtbar).length,
+                  // Genau EINE dominante Handlung.
+                  primaer: [...tiefe.querySelectorAll('button.primary')].filter(sichtbar).length,
+                  // Und sie steht ohne Scrollen im Bild.
+                  ohneScrollen: kasten ? kasten.bottom <= window.innerHeight : false,
+                  urteil: document.querySelector('.maschine-lage')?.textContent?.trim() ?? '',
+                };
+              });
+
               await page
-                .locator('#close-machine-detail-modal')
+                .locator('.tiefe-zurueck')
                 .click({ force: true })
                 .catch(() => {});
               await page.waitForTimeout(1000);
-              // Zurück muss im Standort landen, nicht auf der bisherigen
-              // Maschinenliste: Der Weg herein führte über den Standort.
+              // Zurück muss im Standort landen: Der Weg herein führte über ihn.
               zurueckImStandort = await page.evaluate(
                 () =>
                   !document.body.classList.contains('tiefe-maschine') &&
@@ -878,7 +915,13 @@ try {
     console.log(`  Maschinen darin         ${standort?.maschinen ?? 0}`);
     console.log(`  „Neue Maschine anlegen" ${standort?.anlegen ? 'ja' : 'NEIN'}`);
     console.log(`  alter Rumpf verdeckt    ${standort?.rumpfWeg ? 'ja' : 'NEIN'}`);
-    console.log(`Maschinenebene erreicht   ${inMaschine ? 'ja' : 'NEIN'}`);
+    console.log(`Maschinenebene erreicht   ${maschinenebene?.drin ? 'ja' : 'NEIN'}`);
+    console.log(`  Urteil                  ${maschinenebene?.urteil || '(leer)'}`);
+    console.log(`  offene Fenster          ${maschinenebene?.fenster ?? '—'} (erwartet 0)`);
+    console.log(`  Bestandszeilen          ${maschinenebene?.bestandszeilen ?? '—'} (erwartet 0)`);
+    console.log(`  fokussierbar            ${maschinenebene?.fokussierbar ?? '—'}`);
+    console.log(`  Primäraktionen          ${maschinenebene?.primaer ?? '—'} (erwartet 1)`);
+    console.log(`  ohne Scrollen sichtbar  ${maschinenebene?.ohneScrollen ? 'ja' : 'NEIN'}`);
     console.log(`Zurück landet im Standort ${zurueckImStandort ? 'ja' : 'NEIN'}`);
     console.log(`Maschine im Popup         ${maschineImBlatt ? 'sichtbar' : 'NICHT sichtbar'}`);
     console.log(`Maschinenzeile führt rein ${karteZu ? 'ja' : 'nein'}`);
@@ -927,7 +970,30 @@ try {
       Boolean(standort?.rumpfWeg),
       'Standortansicht: die bisherige Oberfläche steht daneben — zwei Ebenen zugleich im Bild'
     );
-    pruefe(inMaschine, 'Standortansicht: eine Maschinenzeile führt nicht eine Ebene tiefer');
+    pruefe(
+      Boolean(maschinenebene?.drin),
+      'Standortansicht: eine Maschinenzeile führt nicht in die Arbeitsebene der Maschine'
+    );
+    pruefe(
+      maschinenebene?.fenster === 0,
+      'Maschinenebene: es öffnet sich ein Fenster — die Maschine war schon gewählt'
+    );
+    pruefe(
+      maschinenebene?.bestandszeilen === 0,
+      `Maschinenebene: ${maschinenebene?.bestandszeilen} Bestandszeilen im Arbeitskontext — der Bestand ist der Ort, aus dem man KAM`
+    );
+    pruefe(
+      (maschinenebene?.fokussierbar ?? 99) <= 6,
+      `Maschinenebene: ${maschinenebene?.fokussierbar} fokussierbare Elemente — was man nicht sieht, soll man auch nicht durchtabben`
+    );
+    pruefe(
+      maschinenebene?.primaer === 1,
+      `Maschinenebene: ${maschinenebene?.primaer} dominante Handlungen statt genau einer`
+    );
+    pruefe(
+      Boolean(maschinenebene?.ohneScrollen),
+      'Maschinenebene: die Primäraktion steht nicht ohne Scrollen im Bild'
+    );
     pruefe(
       zurueckImStandort,
       'Scharnier: aus der Maschine führt der Weg zurück nicht in den Standort, aus dem man kam'

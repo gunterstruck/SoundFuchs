@@ -61,6 +61,8 @@ import {
 import { MASCHINENFENSTER_ABGEBROCHEN } from '@ui/phases/MachineDetailModal.js';
 import { beispieldatenAnbieten } from './stamm/ui/beispieldaten.js';
 import { standortansichtAufbauen } from './stamm/ui/standortansicht.js';
+import { maschinenansichtAufbauen } from './stamm/ui/maschinenansicht.js';
+import type { Machine } from '@data/types.js';
 import { escapeHtml } from '@utils/sanitize.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
 import { initPwaUpdate } from '@utils/pwaUpdate.js';
@@ -94,15 +96,11 @@ class ZanobotApp {
    */
   private kundenkarte = new CustomerMap({
     /**
-     * Das Scharnier in Betrieb: Ein Tipp auf eine Maschine im Standortblatt
-     * führt hinter die Tür. Erst aufmachen, dann zeigen — andersherum würde
-     * der Router in eine Ansicht schreiben, die noch verborgen ist, und der
-     * erste Anblick wäre ein Sprung.
+     * Das Scharnier in Betrieb: Ein Tipp auf eine Maschine führt in ihre
+     * Arbeitsebene — direkt, ohne ein Fenster, das dieselbe Maschine noch
+     * einmal auswählen lässt.
      */
-    zeigeMaschine: (machine) => {
-      oeffneTiefe(machine.customerId ?? null, 'maschine');
-      this.router?.showMachineView(machine);
-    },
+    zeigeMaschine: (machine) => this.oeffneMaschine(machine),
     /**
      * Das Scharnier: der angetippte Maschinenstandortname.
      *
@@ -738,11 +736,14 @@ class ZanobotApp {
     schaleAufbauen();
     scharnierAufbauen();
     standortansichtAufbauen({
-      zeigeMaschine: (machine) => {
-        oeffneTiefe(machine.customerId ?? null, 'maschine');
-        this.router?.showMachineView(machine);
-      },
+      zeigeMaschine: (machine) => this.oeffneMaschine(machine),
       neueMaschine: (standortId) => this.neueMaschineAmStandort(standortId),
+    });
+
+    maschinenansichtAufbauen({
+      aktuelleMaschine: () => this.offeneMaschine,
+      starteNaechstenSchritt: (machine) => this.starteArbeit(machine),
+      zeigeVerlauf: (machine) => this.router?.zeigeVerlauf(machine),
     });
 
     /**
@@ -780,6 +781,47 @@ class ZanobotApp {
   }
 
   /**
+   * Die Maschine, an der gerade gearbeitet wird.
+   *
+   * Sie steht hier und nicht in der Ansicht: Der Router kennt sie ohnehin, und
+   * zwei Stellen, die sich dasselbe merken, laufen auseinander, sobald nur
+   * eine davon aufgeräumt wird.
+   */
+  private offeneMaschine: Machine | null = null;
+
+  /**
+   * Eine Maschine öffnen — der Weg durch das Scharnier.
+   *
+   * Hier stand bis zum 17.08.2026 `router.showMachineView()`. Das öffnete ein
+   * Fenster, in dem man die Maschine auswählen konnte, die man gerade
+   * angetippt hatte, und dahinter lag der ganze Bestand: 130 Zeilen, 178
+   * fokussierbare Elemente, 10 174 px. Der Inhalt IST die Navigation — eine
+   * Maschinenzeile führt in die Maschine, nicht in eine zweite Frage danach.
+   */
+  private oeffneMaschine(machine: Machine): void {
+    this.offeneMaschine = machine;
+    oeffneTiefe(machine.customerId ?? null, 'maschine');
+  }
+
+  /**
+   * Den nächsten Schritt auslösen — Aufnahme oder Prüfung.
+   *
+   * Was genau, entscheidet der Router: Er trifft dieselbe Entscheidung schon
+   * für `MASCHINE_GEWAEHLT` (Normalzustand vorhanden → prüfen, sonst
+   * aufnehmen). Sie hier zu wiederholen wäre eine zweite Stelle, an der sie
+   * falsch sein kann.
+   *
+   * Die Arbeitsebene ist bis auf Weiteres die bisherige Oberfläche. Sie trägt
+   * Aufnahme, Prüfung, Kamerabild, Abspielen und das 3D-Gebirge; sie wird in
+   * den nächsten Schnitten ersetzt, nicht in diesem.
+   */
+  private starteArbeit(machine: Machine): void {
+    this.offeneMaschine = machine;
+    oeffneTiefe(machine.customerId ?? null, 'arbeit');
+    this.router?.waehleMaschine(machine);
+  }
+
+  /**
    * „Neue Maschine anlegen" aus einem Standort heraus.
    *
    * Der Weg führt in das Anlegen-Formular der bisherigen Oberfläche — es steht,
@@ -793,7 +835,9 @@ class ZanobotApp {
    * gewartet, bis der Eintrag da ist, statt sofort zu setzen und zu hoffen.
    */
   private neueMaschineAmStandort(standortId: string): void {
-    oeffneTiefe(standortId, 'maschine');
+    // Die Bestandsebene, nicht die Arbeitsebene: Das Anlegen-Formular liegt in
+    // der Bestandskarte, und die ist überall sonst mit Absicht draußen.
+    oeffneTiefe(standortId, 'bestand');
     document.getElementById('add-new-machine-btn')?.click();
 
     const frist = Date.now() + 3000;

@@ -95,6 +95,10 @@ body.tiefe-offen #app > *:not(.topbar) {
   font-weight: 600;
   box-shadow: var(--shadow-2);
   cursor: pointer;
+  /* Antippgröße. Gemessen waren es 32 px — unter den 44, die eine Fingerkuppe
+     verlangt, und ausgerechnet am Rückweg: dem Knopf, den man trifft, wenn man
+     sich verlaufen hat. */
+  min-height: 44px;
 }
 
 .tiefe-zurueck:hover {
@@ -116,16 +120,66 @@ body.tiefe-offen #app > *:not(.topbar) {
    3D-Spektrum); solange er das tut, bleibt er unversehrt stehen.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Standortebene: die Ansicht steht, der alte Rumpf ruht. */
-body.tiefe-offen:not(.tiefe-maschine) .zanobo-tiefe > .container,
-body.tiefe-offen:not(.tiefe-maschine) .zanobo-tiefe > .fab-row,
-body.tiefe-offen:not(.tiefe-maschine) .zanobo-tiefe > .tiefe-grip {
+/* Drei Ebenen, immer genau eine im Bild.
+
+   `display: none` und nicht `visibility` oder `opacity`: Was nicht dran ist,
+   soll auch nicht im Tab-Weg und nicht im Vorlesebaum stehen. Gemessen lagen
+   hinter dem Scharnier 178 fokussierbare Elemente und 130 Maschinenzeilen —
+   ein Ding, das man nicht sieht, aber vierzig Tabs lang durchtabben muss, ist
+   nicht verborgen. */
+
+/* Standortebene */
+body.tiefe-offen:not(.tiefe-maschine):not(.tiefe-arbeit):not(.tiefe-bestand)
+  .zanobo-tiefe
+  > .container,
+body.tiefe-offen:not(.tiefe-maschine):not(.tiefe-arbeit):not(.tiefe-bestand)
+  .zanobo-tiefe
+  > .fab-row,
+body.tiefe-offen:not(.tiefe-maschine):not(.tiefe-arbeit):not(.tiefe-bestand)
+  .zanobo-tiefe
+  > .tiefe-grip,
+body.tiefe-offen:not(.tiefe-maschine):not(.tiefe-arbeit):not(.tiefe-bestand)
+  .maschinen-ansicht {
   display: none;
 }
 
-/* Maschinenebene: umgekehrt. */
-body.tiefe-maschine .standort-ansicht {
+/* Bestandsebene: die bisherige Oberfläche vollständig — Liste, Anlegen,
+   Scannen, Einlesen, Flotte. Ein Übergang, kein Entwurf: Diese Aktionen
+   bekommen in einem späteren Schnitt ihren richtigen Ort. */
+body.tiefe-bestand .standort-ansicht,
+body.tiefe-bestand .maschinen-ansicht {
   display: none;
+}
+
+/* Maschinenebene: die Arbeitsebene EINER Maschine. */
+body.tiefe-maschine .standort-ansicht,
+body.tiefe-maschine .zanobo-tiefe > .container,
+body.tiefe-maschine .zanobo-tiefe > .fab-row,
+body.tiefe-maschine .zanobo-tiefe > .tiefe-grip {
+  display: none;
+}
+
+/* Arbeitsebene: Aufnahme, Prüfung, Ergebnis — noch die bisherige Oberfläche. */
+body.tiefe-arbeit .standort-ansicht,
+body.tiefe-arbeit .maschinen-ansicht {
+  display: none;
+}
+
+/* Der Bestand bleibt draußen — auch hier.
+
+   Die Arbeitsebene ist der Ort, an dem man an EINER Maschine arbeitet. Der
+   Bestand ist der Kontext, aus dem man kam. Gemessen standen hier 130
+   Maschinenzeilen über der Aufnahme, und der Arbeitsbereich war 10 621 px
+   hoch — die Aufnahme lag 52 px unter dem Rand, obwohl man gerade zwei Mal
+   genau darauf getippt hatte.
+   
+   Mit ihm gehen das Lagebild und die Karte „Scannen oder anlegen": Beides
+   sind Fragen nach einer anderen Maschine, gestellt an dem Ort, an dem die
+   Maschine schon feststeht. */
+body.tiefe-arbeit #machine-list-section,
+body.tiefe-arbeit #status-dashboard,
+body.tiefe-arbeit #karte-bestandswege {
+  display: none !important;
 }
 
 .standort-ansicht {
@@ -196,4 +250,81 @@ body.tiefe-maschine .standort-ansicht {
 
 .standort-neue-maschine {
   width: 100%;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DIE MASCHINEN-ARBEITSEBENE
+
+   Eine Frage, eine Antwort, ein Knopf. Was hier NICHT steht, ist die Aussage:
+   kein Bestand, keine Akkordeons, keine zweite gleichrangige Handlung.
+
+   Die Maße kommen aus dem Stamm. Der einzige eigene Beitrag ist die Höhe der
+   Primärhandlung — sie muss auf 390 × 844 ohne Scrollen im Bild stehen, und
+   das entscheidet sich in Pixeln, nicht im Entwurf.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.maschinen-ansicht {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 4px 14px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+.maschine-kopf h2 {
+  margin: 8px 0 6px;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+/* Der Zustand in Worten, mit dem Punkt davor.
+
+   Der Punkt allein wäre eine reine Farbcodierung — daneben steht deshalb
+   immer der Satz. Wer die Farben nicht unterscheiden kann, liest „Klingt wie
+   der Normalzustand" und weiß dasselbe. */
+.maschine-lage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.maschine-punkt {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9);
+}
+
+.maschine-zuletzt {
+  margin: 0 0 4px;
+}
+
+/* Die eine Handlung. Groß, weil sie die einzige ist — nicht, um zu schreien. */
+.maschine-aktion {
+  width: 100%;
+  margin-top: 18px;
+  min-height: 52px;
+  font-size: 1.05rem;
+}
+
+/* „Stoppen" während der Aufnahme ist der Notausgang, nicht das Ziel. Es sieht
+   deshalb nicht aus wie ein Fortschritt, bleibt aber voll antippbar. */
+.maschine-aktion-abbruch {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.maschine-hinweis {
+  margin: 8px 2px 0;
+  text-align: center;
+}
+
+.maschine-verlauf {
+  display: block;
+  margin: 18px auto 0;
 }
