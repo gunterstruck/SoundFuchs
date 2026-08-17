@@ -46,6 +46,10 @@ import {
   type Maschinenzustand,
 } from '../maschine/zustand.js';
 import { oeffneTiefe, TIEFE_GEOEFFNET, type TiefeDetail } from './scharnier.js';
+import { NORMALZUSTAND_GESPEICHERT } from '@ui/phases/2-Reference.js';
+import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
+import { getReferenceIrisVector } from '@ui/phases/referenceIris.js';
+import { getMachine } from '@data/db.js';
 
 export interface MaschinenansichtDeps {
   /**
@@ -64,11 +68,31 @@ export interface MaschinenansichtDeps {
   starteNaechstenSchritt: (maschine: Machine) => void;
   /** Den Verlauf dieser Maschine öffnen. */
   zeigeVerlauf: (maschine: Machine) => void;
+  /**
+   * Eine frischere Fassung derselben Maschine übernehmen.
+   *
+   * Nach dem Speichern des Normalzustands trägt die Maschine ein
+   * Referenzmodell, das die Fassung in der Hand nicht kennt. Ohne dieses
+   * Nachreichen stünde die Ebene weiter auf „Noch kein Normalzustand" — direkt
+   * neben dem Fingerabdruck, der gerade daraus entstanden ist.
+   */
+  uebernimmMaschine: (maschine: Machine) => void;
 }
 
 const BEHAELTER_ID = 'maschinen-ansicht';
 
 let deps: MaschinenansichtDeps | null = null;
+
+/**
+ * Der Fingerabdruck-Moment steht an, sobald ein Normalzustand gespeichert
+ * wurde — einmal, für das nächste Zeichnen der Ebene.
+ *
+ * Als Merker und nicht als eigener Zustand in `zustand.ts`: Er ist kein Zustand
+ * der Maschine, sondern ein Augenblick in der Reise. Die Maschine ist danach
+ * schlicht `ready`; dass sie es gerade erst geworden ist, gehört der
+ * Oberfläche und nicht der Fachlogik.
+ */
+let fingerabdruckZeigen = false;
 
 function behaelter(): HTMLElement | null {
   return document.getElementById(BEHAELTER_ID);
@@ -136,6 +160,43 @@ function handlungstext(schluessel: string): string {
   }
 }
 
+/**
+ * DER ERSTE WOW-MOMENT
+ *
+ * „Normalzustand ist bereit" — und daneben das, was gerade entstanden ist:
+ * der akustische Fingerabdruck dieser Maschine, als radiale Iris.
+ *
+ * Er ist kein Schmuck. Bis hierher hat der Nutzer zehn Sekunden lang ein
+ * Mikrofon an eine Maschine gehalten und musste glauben, dass dabei etwas
+ * herauskam. Das Bild ist der Beleg: Es ist bei jeder Maschine anders, es
+ * entsteht aus ihrem Klang, und man erkennt sie daran wieder.
+ *
+ * Gezeichnet wird mit der Komponente, die es längst gibt
+ * (`MachineFingerprint`) — sie steht schon auf den Maschinenkarten und im
+ * Messlabor. Eine zweite Fassung wäre ein zweites Bild derselben Sache.
+ */
+async function zeichneFingerabdruck(ziel: HTMLElement, maschine: Machine): Promise<void> {
+  const kasten = document.createElement('div');
+  kasten.className = 'maschine-fingerabdruck';
+
+  const leinwand = document.createElement('canvas');
+  leinwand.className = 'maschine-iris';
+  leinwand.setAttribute('role', 'img');
+  leinwand.setAttribute('aria-label', t('maschine.fingerabdruckAlt'));
+  kasten.appendChild(leinwand);
+
+  const satz = document.createElement('p');
+  satz.className = 'maschine-fingerabdruck-satz';
+  satz.textContent = t('maschine.fingerabdruckFertig');
+  kasten.appendChild(satz);
+
+  ziel.appendChild(kasten);
+
+  // Erst zeichnen, wenn die Leinwand im Baum steht und ihre Maße hat.
+  const vektor = await getReferenceIrisVector(maschine);
+  if (vektor) requestAnimationFrame(() => renderMachineFingerprint(leinwand, vektor));
+}
+
 async function zeichne(maschine: Machine): Promise<void> {
   const ziel = behaelter();
   if (!ziel) return;
@@ -177,6 +238,13 @@ async function zeichne(maschine: Machine): Promise<void> {
   }
   ziel.appendChild(kopf);
 
+  // ── Der Fingerabdruck, einmal ────────────────────────────────────────────
+  const geradeGelernt = fingerabdruckZeigen;
+  if (geradeGelernt) {
+    fingerabdruckZeigen = false;
+    await zeichneFingerabdruck(ziel, maschine);
+  }
+
   // ── Die eine Handlung ────────────────────────────────────────────────────
   //
   // Genau eine, und sie steht ohne Scrollen im Bild. Was es sonst noch gibt —
@@ -186,7 +254,20 @@ async function zeichne(maschine: Machine): Promise<void> {
   const knopf = document.createElement('button');
   knopf.type = 'button';
   knopf.className = `primary maschine-aktion maschine-aktion-${handlung.art}`;
-  knopf.textContent = handlungstext(handlung.schluessel);
+  /**
+   * Im Fingerabdruck-Moment heißt derselbe Schritt anders.
+   *
+   * Der Zustand ist `ready` wie immer, die Handlung ist dieselbe — eine
+   * Prüfung starten. Nur das Wort wechselt: „Jetzt Gegenprobe machen" knüpft
+   * an das an, was gerade passiert ist, „Jetzt 10 Sekunden prüfen" stünde da
+   * wie beim hundertsten Mal.
+   *
+   * Das ist Darstellung und keine Fachlogik, deshalb steht es hier und nicht
+   * in `zustand.ts`. Die Zustandsmaschine kennt keine Augenblicke.
+   */
+  knopf.textContent = geradeGelernt
+    ? t('maschine.aktionGegenprobe')
+    : handlungstext(handlung.schluessel);
   knopf.addEventListener('click', () => deps?.starteNaechstenSchritt(maschine));
   ziel.appendChild(knopf);
 
@@ -194,6 +275,7 @@ async function zeichne(maschine: Machine): Promise<void> {
   hinweis.className = 'muted small maschine-hinweis';
   hinweis.textContent =
     zustand === 'untrained' ? t('maschine.hinweisReferenz') : t('maschine.hinweisPruefung');
+  if (geradeGelernt) hinweis.textContent = t('maschine.hinweisGegenprobe');
   ziel.appendChild(hinweis);
 
   // ── Sekundär: der Verlauf ────────────────────────────────────────────────
@@ -232,6 +314,26 @@ export function maschinenansichtAufbauen(abhaengigkeiten: MaschinenansichtDeps):
     if (standort?.nextSibling) tiefe.insertBefore(ziel, standort.nextSibling);
     else tiefe.prepend(ziel);
   }
+
+  /**
+   * Ein Normalzustand ist gespeichert — zurück auf die Maschinenebene, und
+   * dort den Fingerabdruck zeigen.
+   *
+   * Der Weg zurück gehört hierher und nicht in die Referenzphase: Diese Ebene
+   * hat den Nutzer hingeschickt, sie holt ihn auch wieder ab. Die Maschine
+   * wird dabei frisch geholt — sie hat gerade ein Referenzmodell bekommen,
+   * und die Fassung in der Hand ist die von vorher.
+   */
+  document.addEventListener(NORMALZUSTAND_GESPEICHERT, (ereignis) => {
+    const { machineId } = (ereignis as CustomEvent<{ machineId: string }>).detail;
+    void (async () => {
+      const frisch = await getMachine(machineId);
+      if (!frisch) return;
+      fingerabdruckZeigen = true;
+      deps?.uebernimmMaschine(frisch);
+      oeffneTiefe(frisch.customerId ?? null, 'maschine');
+    })();
+  });
 
   document.addEventListener(TIEFE_GEOEFFNET, (ereignis) => {
     const detail = (ereignis as CustomEvent<TiefeDetail>).detail;

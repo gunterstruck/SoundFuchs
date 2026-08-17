@@ -49,9 +49,10 @@
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { schreibeKlang } from './klang.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -74,51 +75,6 @@ function starteVorschau(port) {
     { stdio: 'ignore' }
   );
   return kind;
-}
-
-/**
- * Ein Klang, der nach Maschine klingt: Drehzahl-Grundton, drei Oberwellen,
- * etwas Rauschen. Der feste Startwert hält den Lauf wiederholbar — sonst wäre
- * jedes Ergebnis ein anderes und ein Rückgang nicht von Zufall zu trennen.
- */
-function schreibeKlang(pfad) {
-  const sr = 48000;
-  const sek = 30;
-  const n = sr * sek;
-  const daten = Buffer.alloc(n * 2);
-
-  let saat = 7;
-  const zufall = () => {
-    saat = (saat * 1103515245 + 12345) & 0x7fffffff;
-    return saat / 0x7fffffff;
-  };
-
-  for (let i = 0; i < n; i++) {
-    const t = i / sr;
-    let s = 0.35 * Math.sin(2 * Math.PI * 50 * t);
-    s += 0.18 * Math.sin(2 * Math.PI * 100 * t);
-    s += 0.1 * Math.sin(2 * Math.PI * 150 * t);
-    s += 0.06 * Math.sin(2 * Math.PI * 430 * t);
-    s += 0.04 * (zufall() * 2 - 1);
-    daten.writeInt16LE(Math.max(-32768, Math.min(32767, Math.round(s * 12000))), i * 2);
-  }
-
-  const kopf = Buffer.alloc(44);
-  kopf.write('RIFF', 0);
-  kopf.writeUInt32LE(36 + daten.length, 4);
-  kopf.write('WAVE', 8);
-  kopf.write('fmt ', 12);
-  kopf.writeUInt32LE(16, 16);
-  kopf.writeUInt16LE(1, 20); // PCM
-  kopf.writeUInt16LE(1, 22); // mono
-  kopf.writeUInt32LE(sr, 24);
-  kopf.writeUInt32LE(sr * 2, 28);
-  kopf.writeUInt16LE(2, 32);
-  kopf.writeUInt16LE(16, 34);
-  kopf.write('data', 36);
-  kopf.writeUInt32LE(daten.length, 40);
-
-  writeFileSync(pfad, Buffer.concat([kopf, daten]));
 }
 
 const befunde = [];
@@ -244,13 +200,23 @@ try {
         const tiefe = document.getElementById('zanobo-tiefe');
         if (!tiefe) return;
         tiefe.hidden = false;
-        // Auf der Arbeitsebene, nicht auf der Standort- oder Maschinenebene.
+        // Auf der Bestandsebene, nicht auf der Standort-, Maschinen- oder
+        // Arbeitsebene.
         //
-        // Seit dem Umbau der Nutzerreise liegen hinter der Tür DREI Ebenen:
+        // Seit dem Umbau der Nutzerreise liegen hinter der Tür vier Ebenen:
         // `standort`, `maschine`, `arbeit` und `bestand`. Der Prüfweg beginnt
         // im Bestand (Maschine anlegen) und läuft dann in der Arbeitsebene —
         // beide zeigen die bisherige Oberfläche, die Bestandsebene zusätzlich
         // mit Liste und Anlegen-Karte.
+        //
+        // Die anderen Ebenen müssen dabei WEG. Sie sind Geschwister, keine
+        // Schichten: `tiefe-maschine` blendet die Bestandsliste aus, und wer
+        // nur `tiefe-bestand` dazulegt, steht auf zwei Ebenen gleichzeitig und
+        // sieht die Liste trotzdem nicht. Aufgefallen ist das, seit der
+        // gespeicherte Normalzustand von selbst auf die Maschinenebene
+        // zurückführt (17.08.2026) — vorher kam der Lauf nie mit einer anderen
+        // Ebene hier an.
+        document.body.classList.remove('tiefe-maschine', 'tiefe-arbeit');
         document.body.classList.add('tiefe-offen', 'tiefe-bestand');
       });
       await page.waitForTimeout(800);
@@ -304,10 +270,39 @@ try {
     return d.filter((x) => x.kind === 'audioinput').length;
   });
   await page.locator('#record-btn').click();
-  await page.waitForSelector('#review-save-btn', { state: 'visible', timeout: 90000 });
-  pruefe(6, 'Aufnahme läuft bis zur Qualitätskontrolle', true, `${mikros} Mikrofone`);
 
-  await page.locator('#review-save-btn').click();
+  /**
+   * Zwei gültige Ausgänge, seit dem 17.08.2026.
+   *
+   * Eine gute Aufnahme speichert sich selbst und zeigt den Fingerabdruck; nur
+   * eine unbrauchbare fragt noch nach. Bis dahin stand hier ein
+   * `waitForSelector` auf den Speichern-Knopf — der Lauf starb an einem
+   * Zeitablauf, statt einen Befund zu melden, und ein toter Wächter sagt nur,
+   * dass er tot ist. Gewartet wird deshalb auf beides und berichtet, welches
+   * Ende eingetreten ist.
+   */
+  let ende = null;
+  for (let i = 0; i < 100 && !ende; i++) {
+    await page.waitForTimeout(1000);
+    if (
+      await page
+        .locator('#review-save-btn')
+        .isVisible()
+        .catch(() => false)
+    ) {
+      ende = 'Rückfrage';
+    } else if ((await page.locator('.maschine-fingerabdruck').count()) > 0) {
+      ende = 'speichert selbst';
+    }
+  }
+  pruefe(
+    6,
+    'Aufnahme läuft bis zum Ende',
+    ende !== null,
+    `${mikros} Mikrofone, Ausgang: ${ende ?? 'keiner'}`
+  );
+
+  if (ende === 'Rückfrage') await page.locator('#review-save-btn').click();
   await page.waitForTimeout(4000);
   pruefe(
     7,
