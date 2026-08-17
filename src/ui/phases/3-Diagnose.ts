@@ -55,16 +55,15 @@ import {
   saveRecording,
   deleteRecording,
 } from '@data/db.js';
+import { ListenPanel } from '@ui/components/ListenPanel.js';
+import {
+  gehoertDerMaschinenebene,
+  merkeErgebnis,
+} from '../../stamm/maschine/ergebnis.js';
 import { getDiagnosisAudioMode } from '@utils/diagnosisAudioSettings.js';
-import { SlowListenPlayer } from '@core/audio/slowListen.js';
-import { isolateDifference } from '@core/audio/differenceIsolation.js';
-import { getDifferenceTake } from '@core/audio/differenceTake.js';
 import { partitionModels } from '@core/ml/modelCompatibility.js';
 import { resolutionLineState } from './resolutionLine.js';
-import { planTranspose } from '@core/audio/audibleTranspose.js';
-import { peakFrequencyFine } from '@core/dsp/fineSpectrogram.js';
 import { Spectrogram3DPanel } from '../components/Spectrogram3DPanel.js';
-import { formatHz } from '@utils/formatHz.js';
 import { averageSpectrum } from '@core/dsp/spectrumSummary.js';
 import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
 import { HealthGauge } from '@ui/components/HealthGauge.js';
@@ -137,7 +136,7 @@ export class DiagnosePhase {
   private audioWorkletManager: AudioWorkletManager | null = null;
   private visualizer: AudioVisualizer | null = null; // Used in advanced/expert view
   private revealVisualizer: AudioVisualizer | null = null; // basic view "look closer" spectrum
-  private slowListenPlayer: SlowListenPlayer | null = null; // A/B listening on the result screen
+  private hoerlupe: ListenPanel | null = null; // Die Hör-Lupe im Ergebnisbildschirm
   private spectro3dPanel: Spectrogram3DPanel | null = null; // 3D-Gebirge on the result screen
   // "Hear the difference": capture the diagnosis audio (fully decoupled from the
   // scoring pipeline via MediaRecorder) for A/B playback against the reference.
@@ -145,7 +144,6 @@ export class DiagnosePhase {
   private diagnosisAudioChunks: Blob[] = [];
   private lastDiagnosisAudioBuffer: AudioBuffer | null = null;
   private diagnosisAudioPromise: Promise<AudioBuffer | null> | null = null;
-  private listenPlayingKey: string | null = null;
   private healthGauge: HealthGauge | null = null;
   private historyChart: HistoryChart | null = null;
   private activeModels: ReferenceModel[] = [];
@@ -2329,8 +2327,24 @@ export class DiagnosePhase {
       // Hide modal
       this.hideRecordingModal();
 
-      // Show results
-      this.showResults(diagnosis);
+      /**
+       * Zwei Wege, ein Ergebnis — aber nie beide gleichzeitig.
+       *
+       * Wer über die Maschinenebene hereinkam, sieht das Ergebnis dort: als
+       * Zustand derselben Reise, mit der Hör-Lupe darin. Alle anderen Wege
+       * (Flottenlauf, Bestandsliste, Schnellvergleich) führen weiter in den
+       * bisherigen Ergebnisdialog — er ist geprüft und trägt, und ihn in
+       * einem Zug mit umzubauen hieße, zwei Dinge auf einmal zu ändern.
+       *
+       * Entschieden wird an einem Wert (`gehoertDerMaschinenebene`) und nicht
+       * an einer CSS-Klasse am `body`: Der Weg herein ist eine Tatsache über
+       * die Reise, keine über das Aussehen.
+       */
+      if (gehoertDerMaschinenebene(this.machine.id)) {
+        await this.veroeffentlicheErgebnis(diagnosis);
+      } else {
+        this.showResults(diagnosis);
+      }
 
       // Sprint 1 UX: Diagnosis completion confirmation
       notify.success(t('diagnose.compareComplete'), {
@@ -3490,8 +3504,9 @@ export class DiagnosePhase {
     if (closeBtn) {
       closeBtn.onclick = () => {
         modal.style.display = 'none';
-        // Stop slow-motion playback if still running
-        this.slowListenPlayer?.stop();
+        // Die Hör-Lupe hält einen Web-Audio-Spieler — beim Schließen anhalten.
+        this.hoerlupe?.destroy();
+        this.hoerlupe = null;
         // WebGL-Kontexte sind eine knappe Ressource (Browser begrenzen sie
         // pro Seite) — das Gebirge muss beim Schließen wirklich weg sein.
         this.spectro3dPanel?.destroy();
@@ -3513,8 +3528,9 @@ export class DiagnosePhase {
     if (closeResultBtn) {
       closeResultBtn.onclick = () => {
         modal.style.display = 'none';
-        // Stop slow-motion playback if still running
-        this.slowListenPlayer?.stop();
+        // Die Hör-Lupe hält einen Web-Audio-Spieler — beim Schließen anhalten.
+        this.hoerlupe?.destroy();
+        this.hoerlupe = null;
         // WebGL-Kontexte sind eine knappe Ressource (Browser begrenzen sie
         // pro Seite) — das Gebirge muss beim Schließen wirklich weg sein.
         this.spectro3dPanel?.destroy();
@@ -3699,6 +3715,85 @@ export class DiagnosePhase {
   }
 
   /**
+   * Die „schlechten Merkmale" dieser Prüfung festhalten — Frequenzbänder, in
+   * denen die Messung Energie hat und der Normalzustand nicht.
+   *
+   * Sie gehören zur Diagnose und nicht zum Ergebnisbild: Der Verlauf listet
+   * sie, und die Zeitachse markiert sie. Bis zum 17.08.2026 entstanden sie als
+   * Nebenwirkung beim Zeichnen der Iris-Vergleiche — wer den alten
+   * Ergebnisdialog übersprang, verlor sie stillschweigend. Seit die
+   * Maschinenebene das Ergebnis zeigt, ist das ein Weg, den es wirklich gibt,
+   * also steht die Berechnung jetzt für sich und wird von beiden Wegen
+   * aufgerufen.
+   *
+   * Einmal gerechnet (Wächter auf `frequencyAnomalies`); ältere Ergebnisse
+   * werden nachgetragen, solange ihr Ton noch da ist.
+   */
+  private merkeFrequenzauffaelligkeiten(
+    diagnosis: DiagnosisResult,
+    refVector: ArrayLike<number> | null,
+    measVector: ArrayLike<number> | null,
+    nyquist: number
+  ): void {
+    if (!refVector || !measVector) return;
+    if (diagnosis.analysis?.frequencyAnomalies) return;
+    const anomalies = topDeviations(refVector, measVector, nyquist);
+    diagnosis.analysis = { ...(diagnosis.analysis ?? {}), frequencyAnomalies: anomalies };
+    void saveDiagnosis(diagnosis);
+  }
+
+  /**
+   * DAS ERGEBNIS AN DIE MASCHINENEBENE ÜBERGEBEN
+   *
+   * Wer über die Maschinenebene hereinkam, bekommt sie auch wieder — und nicht
+   * den alten Ergebnisdialog obendrauf. Diese Methode lädt, was die
+   * Ergebnisfläche braucht (die beiden Aufnahmen), hinterlegt es und sagt an.
+   *
+   * Die Aufnahmen gehen über einen Wert und nicht im Ereignis mit: Ein
+   * `CustomEvent` mit zwei AudioBuffern im `detail` geht an alle, und keiner
+   * der Empfänger weiß, wann er sie loslassen darf.
+   */
+  private async veroeffentlicheErgebnis(diagnosis: DiagnosisResult): Promise<void> {
+    let referenz: AudioBuffer | null = null;
+    let messung: AudioBuffer | null = null;
+    try {
+      const recordings = await getRecordingsForMachine(this.machine.id);
+      referenz =
+        recordings
+          .filter((r) => r.type === 'reference' && r.audioBuffer)
+          .sort((a, b) => b.timestamp - a.timestamp)[0]?.audioBuffer ?? null;
+    } catch (error) {
+      logger.warn('Referenzaufnahme für das Ergebnis nicht ladbar:', error);
+    }
+    try {
+      messung = (await this.diagnosisAudioPromise) ?? this.lastDiagnosisAudioBuffer;
+    } catch {
+      messung = null;
+    }
+
+    // Die Frequenzauffälligkeiten entstehen sonst beim Zeichnen der Irisse —
+    // auf diesem Weg gibt es die nicht, und der Verlauf soll trotzdem
+    // vollständig sein.
+    if (referenz && messung) {
+      this.merkeFrequenzauffaelligkeiten(
+        diagnosis,
+        averageSpectrum(referenz),
+        averageSpectrum(messung),
+        messung.sampleRate / 2
+      );
+    }
+
+    merkeErgebnis({
+      maschinenId: this.machine.id,
+      diagnoseId: diagnosis.id,
+      wert: diagnosis.healthScore,
+      zeitpunkt: diagnosis.timestamp,
+      referenz,
+      messung,
+    });
+  }
+
+  /**
    * Show two fingerprint "irises" side by side on the result screen: the
    * reference and the measurement just taken, so their acoustic signatures can
    * be compared at a glance. Reference uses the stored reference audio when
@@ -3735,20 +3830,13 @@ export class DiagnosePhase {
         ? { data: measVector, nyquist: measurementBuffer.sampleRate / 2 }
         : null;
 
-    // Document the "bad features" of this check — frequency bands where the
-    // measurement adds energy the reference doesn't — and persist them on the
-    // diagnosis so the history can list them and mark the timeline. Computed
-    // once (guard) and only when both spectra are available; backfills older
-    // results too when their audio is still retained.
-    if (
-      refVector &&
-      measVector &&
-      measurementBuffer &&
-      !diagnosis.analysis?.frequencyAnomalies
-    ) {
-      const anomalies = topDeviations(refVector, measVector, measurementBuffer.sampleRate / 2);
-      diagnosis.analysis = { ...(diagnosis.analysis ?? {}), frequencyAnomalies: anomalies };
-      void saveDiagnosis(diagnosis);
+    if (measurementBuffer) {
+      this.merkeFrequenzauffaelligkeiten(
+        diagnosis,
+        refVector,
+        measVector,
+        measurementBuffer.sampleRate / 2
+      );
     }
 
     if (!refVector && !measVector) return;
@@ -3950,13 +4038,17 @@ export class DiagnosePhase {
   }
 
   /**
-   * Add A/B listening controls to the result screen: play the reference and
-   * "this measurement" back to back by ear (the real "hear the difference"),
-   * with an optional slow-motion toggle for transient/rhythmic detail.
+   * Die Hör-Lupe auf dem alten Ergebnisbildschirm.
    *
-   * Degrades gracefully: shows only what audio is available. NFC-provisioned
-   * machines may have no local reference audio; very old browsers may not have
-   * captured the diagnosis audio.
+   * Bis zum 17.08.2026 standen hier 250 Zeilen, die dasselbe taten wie
+   * `ui/components/ListenPanel.ts`: dieselben Knöpfe, derselbe Spieler,
+   * dieselbe Differenz — nur eine zweite Fassung davon. Zwei Fassungen sind
+   * zwei Wahrheiten darüber, was „Unterschied" bedeutet, und sie laufen
+   * auseinander, sobald jemand nur eine anfasst. Der Verlauf benutzte schon
+   * immer die Komponente; jetzt tun es beide.
+   *
+   * Verträgt fehlende Aufnahmen: zeigt, was da ist. Über NFC eingerichtete
+   * Maschinen haben womöglich keine örtliche Referenz.
    */
   private populateListenControls(
     referenceBuffer: AudioBuffer | null,
@@ -3965,254 +4057,20 @@ export class DiagnosePhase {
     const container = document.getElementById('listen-controls');
     if (!container) return;
 
-    if (!referenceBuffer && !diagnosisBuffer) return;
-
-    if (!this.slowListenPlayer) {
-      this.slowListenPlayer = new SlowListenPlayer();
-    }
-    this.listenPlayingKey = null;
-
+    this.hoerlupe?.destroy();
+    this.hoerlupe = null;
     container.innerHTML = '';
 
-    // Überschrift und ein Satz dazu.
-    //
-    // Bis zum 14.08.2026 standen hier sieben Knöpfe ohne Beschriftung des
-    // Ganzen — „Nur Unterschied", „Auf hörbaren Bereich", „Referenz", „Diese
-    // Messung", „Langsam", „Normal", „Höher". Jeder einzelne ist benannt, aber
-    // wofür sie zusammen da sind, stand nirgends. Dass man den Unterschied
-    // zwischen Normalzustand und Messung *hören* kann, ist das, was diese App
-    // von einer Zahl auf einem Schirm unterscheidet — und ausgerechnet das war
-    // der einzige Teil des Ergebnisses, den man erraten musste.
-    const beschriftung = document.createElement('p');
-    beschriftung.className = 'listen-controls-label';
-    beschriftung.textContent = t('diagnose.display.listenSectionLabel');
-    container.appendChild(beschriftung);
-
-    const hinweis = document.createElement('p');
-    hinweis.className = 'listen-controls-hint';
-    hinweis.textContent = t('diagnose.display.listenSectionHint');
-    container.appendChild(hinweis);
-
-    let speedFactor = 1; // 0.5 = slower/lower, 2 = faster/higher
-    const buttons: Array<{ key: string; el: HTMLButtonElement; label: string }> = [];
-    const buffers: Record<string, AudioBuffer> = {};
-
-    const resetAll = () => {
-      this.listenPlayingKey = null;
-      for (const b of buttons) b.el.textContent = b.label;
-    };
-
-    // Play a given recording at the current speed, updating button labels
-    const startPlayback = (key: string) => {
-      const player = this.slowListenPlayer;
-      const buffer = buffers[key];
-      if (!player || !buffer) return;
-      player.stop();
-      resetAll();
-      this.listenPlayingKey = key;
-      const active = buttons.find((b) => b.key === key);
-      if (active) active.el.textContent = t('diagnose.display.listenStop');
-      void player.play(buffer, { playbackRate: speedFactor }, resetAll).catch((error) => {
-        logger.warn('Listen playback failed:', error);
-        resetAll();
-      });
-    };
-
-    const makeListenButton = (key: string, label: string, buffer: AudioBuffer) => {
-      buffers[key] = buffer;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'listen-btn';
-      btn.textContent = label;
-      btn.onclick = () => {
-        if (this.listenPlayingKey === key) {
-          // tapping the active button just stops
-          this.slowListenPlayer?.stop();
-          resetAll();
-          return;
-        }
-        startPlayback(key);
-      };
-      buttons.push({ key, el: btn, label });
-      container.appendChild(btn);
-    };
-
-    // Geschwindigkeit: HIER erzeugt, aber erst am Ende angehängt. Grund: der
-    // Transponier-Knopf ruft `applySpeed`, steht in der Reihe aber VOR den
-    // Umschaltern. Erzeugung und Platzierung müssen deshalb getrennt sein.
-    const slowToggle = document.createElement('button');
-    const normalToggle = document.createElement('button');
-    const fastToggle = document.createElement('button');
-
-    // Speed selector: slower/lower (🐢), normal (▶), faster/higher (🐇).
-    // Exactly one is active; the speed applies to whichever clip is playing.
-    const updateSpeedActive = () => {
-      slowToggle.classList.toggle('active', speedFactor === 0.5);
-      normalToggle.classList.toggle('active', speedFactor === 1);
-      fastToggle.classList.toggle('active', speedFactor === 2);
-    };
-    const applySpeed = (factor: number) => {
-      speedFactor = factor;
-      updateSpeedActive();
-      // If something is playing, replay it immediately at the new speed
-      const playingKey = this.listenPlayingKey;
-      if (playingKey) startPlayback(playingKey);
-    };
-
-    // „Nur Unterschied" ZUERST, und als einzige gefüllte Fläche in der Reihe.
-    //
-    // Referenz und Messung nacheinander anzuhören kann jede Audio-App; das Ohr
-    // hört dabei vor allem, was in beiden gleich ist. Was nur Zanobo kann, ist
-    // das Gemeinsame WEGZURECHNEN und den Rest übrig zu lassen — und das ist
-    // gleichzeitig das Einzige, womit sich der Ampel widersprechen lässt. Wenn
-    // dieser Knopf hinter dem A/B-Vergleich steht, wird er zur Fußnote einer
-    // Zahl, die man sonst nur glauben kann. Deshalb steht er vorn.
-    //
-    // Technisch: spektrale Subtraktion, nur wenn beide Aufnahmen vorliegen.
-    if (referenceBuffer && diagnosisBuffer) {
-      const refBuf = referenceBuffer;
-      const measBuf = diagnosisBuffer;
-      let differenceComputed = false;
-      let computing = false;
-      const diffLabel = t('diagnose.display.listenDifference');
-
-      const diffBtn = document.createElement('button');
-      diffBtn.type = 'button';
-      diffBtn.className = 'listen-btn listen-btn-difference';
-      diffBtn.textContent = diffLabel;
-      buttons.push({ key: 'difference', el: diffBtn, label: diffLabel });
-
-      diffBtn.onclick = () => {
-        if (this.listenPlayingKey === 'difference') {
-          this.slowListenPlayer?.stop();
-          resetAll();
-          return;
-        }
-        if (differenceComputed) {
-          startPlayback('difference');
-          return;
-        }
-        if (computing) return;
-        computing = true;
-        diffBtn.textContent = t('diagnose.display.listenComputing');
-        // Defer so the "computing" label paints before the heavy synchronous DSP
-        setTimeout(() => {
-          try {
-            const result = isolateDifference(refBuf, measBuf);
-            if (result.samples.length === 0) {
-              notify.info(t('diagnose.display.listenDifferenceTooShort'));
-              diffBtn.textContent = diffLabel;
-              computing = false;
-              return;
-            }
-            buffers['difference'] = this.samplesToAudioBuffer(result.samples, result.sampleRate);
-            differenceComputed = true;
-            computing = false;
-            diffBtn.textContent = diffLabel;
-            startPlayback('difference');
-          } catch (error) {
-            logger.warn('Difference isolation failed:', error);
-            diffBtn.textContent = diffLabel;
-            computing = false;
-          }
-        }, 50);
-      };
-      container.appendChild(diffBtn);
-    }
-
-    // Faktor AUS DER MESSUNG statt 0,5/1/2 nach Gefühl: die Frequenz mit dem
-    // größten Unterschied wird auf ~3 kHz gezogen, wo das Ohr am besten auflöst
-    // und der Handylautsprecher noch trägt. Resampling nimmt den Rhythmus mit —
-    // gewollt, denn genau dadurch wird ein Klopfen im Dauergeräusch hörbar.
-    if (referenceBuffer && diagnosisBuffer) {
-      const refBuf = referenceBuffer;
-      const measBuf = diagnosisBuffer;
-      const tuneBtn = document.createElement('button');
-      tuneBtn.type = 'button';
-      tuneBtn.className = 'listen-btn listen-btn-tune';
-      tuneBtn.textContent = t('diagnose.display.listenTune');
-      let tuning = false;
-      tuneBtn.onclick = () => {
-        if (tuning) return;
-        tuning = true;
-        tuneBtn.textContent = t('diagnose.display.listenComputing');
-        setTimeout(() => {
-          tuning = false;
-          const take = getDifferenceTake(refBuf, measBuf);
-          // Feine Auflösung: 2,93 Hz statt 46,875 Hz. Der Transponier-Faktor folgt
-          // direkt aus dieser Frequenz, ein 16-faches Raster war dort zu grob.
-          const peakHz = take ? peakFrequencyFine(take.buffer) : null;
-          if (!take || peakHz === null) {
-            tuneBtn.textContent = t('diagnose.display.listenTune');
-            notify.info(t('diagnose.display.listenDifferenceTooShort'));
-            return;
-          }
-          buffers['difference'] = take.buffer;
-          const plan = planTranspose(peakHz);
-          tuneBtn.textContent = t('diagnose.display.listenTuneResult', {
-            peak: formatHz(plan.peakHz),
-            target: formatHz(plan.resultHz),
-          });
-          tuneBtn.title = plan.clamped
-            ? t('diagnose.display.listenTuneClamped')
-            : t('diagnose.display.listenTuneExact');
-          applySpeed(plan.factor);
-          startPlayback('difference');
-        }, 50);
-      };
-      container.appendChild(tuneBtn);
-    }
-
-    // A/B danach: Referenz und Messung einzeln anhören. Bleibt erreichbar (es ist
-    // die Gegenprobe zur Differenz), ist aber nicht mehr das Erste, was man sieht.
-    if (referenceBuffer) {
-      makeListenButton('reference', t('diagnose.display.listenReference'), referenceBuffer);
-    }
-    if (diagnosisBuffer) {
-      makeListenButton('measurement', t('diagnose.display.listenMeasurement'), diagnosisBuffer);
-    }
-
-    // Speed toggles: slower/lower (🐢, good for impacts/rattles) and
-    // faster/higher (🐇, transposes low content up into the phone-speaker range
-    // so deep hums become audible). Mutually exclusive; tapping the active one
-    // returns to normal speed. Ganz am Ende: sie verändern das Abspielen, sie
-    // starten nichts.
-    slowToggle.type = 'button';
-    slowToggle.className = 'listen-slow-toggle';
-    slowToggle.textContent = t('diagnose.display.listenSlow');
-    slowToggle.onclick = () => applySpeed(0.5);
-    container.appendChild(slowToggle);
-
-    normalToggle.type = 'button';
-    normalToggle.className = 'listen-slow-toggle listen-normal-toggle';
-    normalToggle.textContent = t('diagnose.display.listenNormal');
-    normalToggle.onclick = () => applySpeed(1);
-    container.appendChild(normalToggle);
-
-    fastToggle.type = 'button';
-    fastToggle.className = 'listen-slow-toggle listen-fast-toggle';
-    fastToggle.textContent = t('diagnose.display.listenFaster');
-    fastToggle.setAttribute('aria-pressed', 'false');
-    fastToggle.onclick = () => applySpeed(2);
-    container.appendChild(fastToggle);
-
-    updateSpeedActive(); // Normal active by default
+    const panel = new ListenPanel({
+      reference: referenceBuffer,
+      measurement: diagnosisBuffer,
+      mitUeberschrift: true,
+    });
+    if (!panel.hasContent) return;
+    this.hoerlupe = panel;
+    container.appendChild(panel.element);
 
     this.revealResultSlot(container);
-  }
-
-  /**
-   * Wrap a mono sample buffer into a playable AudioBuffer.
-   */
-  private samplesToAudioBuffer(samples: Float32Array, sampleRate: number): AudioBuffer {
-    const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    const ctx = new AudioCtx();
-    const buffer = ctx.createBuffer(1, samples.length, sampleRate);
-    buffer.getChannelData(0).set(samples);
-    void ctx.close();
-    return buffer;
   }
 
   /**
@@ -4506,17 +4364,14 @@ export class DiagnosePhase {
     }
 
     // Stop any A/B listening playback
-    if (this.slowListenPlayer) {
-      this.slowListenPlayer.stop();
-      this.slowListenPlayer = null;
-    }
+    this.hoerlupe?.destroy();
+    this.hoerlupe = null;
 
     // Stop diagnosis audio capture and release captured buffers
     this.stopDiagnosisAudioCapture();
     this.diagnosisAudioChunks = [];
     this.lastDiagnosisAudioBuffer = null;
     this.diagnosisAudioPromise = null;
-    this.listenPlayingKey = null;
 
     // Cleanup health gauge instance to prevent leaks
     if (this.healthGauge) {

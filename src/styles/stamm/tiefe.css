@@ -324,9 +324,16 @@ body.tiefe-arbeit #karte-bestandswege {
   text-align: center;
 }
 
+/* Der Verlauf ist sekundär — aber ein Antippziel bleibt ein Antippziel.
+
+   Gemessen am 17.08.2026: 15 px hoch. Auf einem Handy ist das keine Wahl,
+   sondern eine Zielübung. Er sieht weiter aus wie ein Verweis; getroffen wird
+   die volle Fläche. */
 .maschine-verlauf {
   display: block;
   margin: 18px auto 0;
+  min-height: 44px;
+  padding: 0 12px;
 }
 
 /* ── Der Fingerabdruck-Moment ────────────────────────────────────────────────
@@ -375,5 +382,92 @@ body.tiefe-arbeit #karte-bestandswege {
 @media (prefers-reduced-motion: reduce) {
   .maschine-fingerabdruck {
     animation: none;
+  }
+}
+
+/* ── Das Ergebnis, und die Hör-Lupe darin ───────────────────────────────────
+
+   Reihenfolge auf der Fläche: Urteil, Beleg, die eine Handlung, dann die
+   Hör-Lupe. Sie steht IM Ergebnis und nicht hinter einem Weg dorthin — sie ist
+   das, was aus einer Prozentzahl etwas macht, das ein zweiter Mensch
+   nachvollziehen kann. */
+.maschine-ergebnissatz {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+/* „Vergleich trotzdem anhören" und „Letzten Unterschied anhören".
+
+   Beide sind sekundär und sehen auch so aus — aber sie sind vollwertige
+   Antippziele. Ein 30 px hoher Textlink wäre auf einem Handy kein Angebot,
+   sondern eine Zielübung. */
+.maschine-trotzdem {
+  display: block;
+  margin: 14px auto 0;
+  min-height: 44px;
+}
+
+.maschine-nachhoeren {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  min-height: 48px;
+  padding: 0 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 0.98rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.maschine-nachhoeren:hover {
+  border-color: var(--color-primary);
+}
+
+/* Die Hör-Lupe steht im Ergebnis, abgesetzt vom Rest der Ebene.
+   Ihr eigener Aufbau liegt bei den anderen Abhör-Regeln in `style.css`. */
+.maschinen-ansicht .hoerlupe {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ── Das Ergebnis am Schreibtisch: zwei Spalten ─────────────────────────────
+
+   Die Abfrage ist wortgleich `DESKTOP_FACE_MEDIA` aus `stamm/core/viewport.ts`
+   — die exakte Verneinung der Handy-Abfrage. Kein drittes Gesicht für Tablets:
+   hochkant bleibt Handy, quer ist Schreibtisch.
+
+   Links das Urteil und die eine Handlung, rechts die Hör-Lupe. Auf 1440 px
+   stand hier vorher eine 900 px breite Mobilspalte in der Mitte — dieselbe
+   Anordnung, nur mit mehr Weiß daneben. Fläche, die man nicht nutzt, muss man
+   sich nicht nehmen. */
+@media (min-width: 1201px), (min-width: 901px) and (orientation: landscape),
+  (min-width: 769px) and (orientation: landscape) and (min-height: 521px) {
+  .maschinen-ansicht-ergebnis {
+    max-width: 1120px;
+    display: grid;
+    grid-template-columns: minmax(320px, 5fr) minmax(340px, 4fr);
+    column-gap: 36px;
+    align-items: start;
+  }
+
+  /* Alles gehört nach links — außer der Hör-Lupe. */
+  .maschinen-ansicht-ergebnis > * {
+    grid-column: 1;
+  }
+
+  /* Sie steht rechts und über die volle Höhe: Sie ist kein Anhang unter dem
+     Ergebnis, sondern das zweite Fachthema neben ihm. */
+  .maschinen-ansicht-ergebnis > .hoerlupe {
+    grid-column: 2;
+    grid-row: 1 / span 20;
+    margin-top: 0;
+    padding: 0 0 0 32px;
+    border-top: none;
+    border-left: 1px solid var(--color-border);
   }
 }

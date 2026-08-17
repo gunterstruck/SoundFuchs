@@ -14,11 +14,26 @@
  * dominante Handlungen, Antippgrößen. Ein Weg, der „sich kurz anfühlt", ist
  * keine Abnahme.
  *
- * Seit dem 17.08.2026 endet der Lauf auf dem Handy nicht am Aufnahmeknopf,
- * sondern eine Aufnahme später: Eine gute Referenz speichert sich selbst, und
- * danach steht der akustische Fingerabdruck der Maschine im Bild. Das ist der
- * erste Wow-Moment der Reise, und ein Moment, den niemand misst, ist einer,
- * der beim nächsten Umbau still verschwindet.
+ * ZWEI TEILE
+ *
+ * 1. **Die Geometrie**, in vier Formaten und ohne Ton: Tipps, Bestandszeilen,
+ *    fokussierbare Elemente, dominante Handlungen, Antippgrößen.
+ * 2. **Die Reise**, auf dem Handy und mit echtem Mikrofonsignal: Normalzustand
+ *    → Fingerabdruck → Gegenprobe → Ergebnis → Unterschied hören.
+ *
+ * Der zweite Teil startet den Browser ZWEIMAL auf demselben Profil, mit zwei
+ * verschiedenen Klängen. Das ist kein Umweg, sondern die einzige ehrliche Art,
+ * eine Abweichung zu messen: Chromiums Fake-Mikrofon liest eine Datei, die beim
+ * Start feststeht. Der Normalzustand entsteht mit dem sauberen Klang, die
+ * Gegenprobe mit einem, der pfeift und klopft — dieselbe Maschine, hörbar
+ * anders. Eine Abweichung zu behaupten, indem man dem Ergebnis eine Zahl
+ * unterschiebt, würde genau das nicht prüfen, worum es geht.
+ *
+ * Dabei kommen alle drei Ergebnisfälle des Auftrags vor:
+ *
+ *   A  Abweichung        → „Unterschied anhören" ist die dominante Handlung
+ *   B  klingt wie neu    → „Fertig", die Hör-Lupe bleibt sichtbar erreichbar
+ *   C  später wieder auf → „Letzten Unterschied anhören" ohne Umweg
  *
  * WARUM TIPPS UND NICHT SEKUNDEN
  *
@@ -61,6 +76,10 @@ const BUDGET = {
   primaer: 1,
   /** Kleinstes Antippziel in CSS-Pixeln. */
   antippgroesse: 44,
+  /** Ende der Messung → sichtbares Ergebnis. */
+  tippsBisErgebnis: 0,
+  /** Ergebnis → hörbarer Unterschied. */
+  tippsBisUnterschied: 1,
 };
 
 async function freierPort() {
@@ -87,26 +106,23 @@ for (let i = 0; i < 80; i += 1) {
 }
 
 /**
- * Ein echtes Mikrofon für den Referenzweg.
+ * Zwei Klänge für die Reise in Teil 2.
  *
- * Die Wegmessung selbst braucht keinen Ton — Tipps zählen ist stumm. Der
- * Fingerabdruck-Moment am Ende schon: Er entsteht aus einer Aufnahme, die die
- * Qualitätsprüfung bestehen muss. Chromiums eingebautes Kunstmikrofon liefert
- * Stille, und Stille wird zu Recht abgewiesen.
+ * Der saubere ist der Normalzustand. Der andere pfeift, klopft und rauscht —
+ * dieselbe Maschine, hörbar anders. Chromiums eingebautes Kunstmikrofon liefert
+ * Stille, und Stille wird von der Qualitätsprüfung zu Recht abgewiesen.
  */
-const klangDatei = join(mkdtempSync(join(tmpdir(), 'soundfuchs-wow-')), 'maschine.wav');
+const arbeitsordner = mkdtempSync(join(tmpdir(), 'soundfuchs-wow-'));
+const klangDatei = join(arbeitsordner, 'maschine.wav');
 schreibeKlang(klangDatei);
 
 const browser = await chromium.launch({
   ...(process.env.PLAYWRIGHT_CHROMIUM_PATH
     ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH }
     : {}),
-  args: [
-    '--no-sandbox',
-    '--use-fake-device-for-media-stream',
-    `--use-file-for-fake-audio-capture=${klangDatei}`,
-    '--use-fake-ui-for-media-stream',
-  ],
+  // Teil 1 misst Geometrie und braucht kein Signal; das Fake-Gerät hängt
+  // trotzdem dran, damit ein Freigabedialog den Aufbau nicht anhält.
+  args: ['--no-sandbox', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
 });
 
 const befunde = [];
@@ -319,66 +335,6 @@ try {
     );
     pruefe(arbeit.ebene, `${name}: die Primäraktion führt nicht in die Arbeitsebene`);
 
-    /**
-     * ── Der dritte Tipp: aufnehmen — und was danach steht ─────────────────
-     *
-     * Nur auf dem Handy. Die Aufnahme dauert zehn Sekunden echte Zeit, die
-     * Verarbeitung noch einmal so lange; viermal wäre das eine Minute für eine
-     * Aussage, die viermal dieselbe ist. Was die Formate unterscheidet, ist
-     * die Länge des Weges, und die ist oben schon gemessen.
-     *
-     * Geprüft wird der Fingerabdruck-Moment: Eine gute Aufnahme speichert sich
-     * selbst, das Bild wird wirklich gezeichnet, und der nächste Schritt
-     * knüpft an das an, was gerade passiert ist.
-     */
-    if (name === 'handy') {
-      await tipp('#record-btn', 2000); // 3
-      // Auf das Ende warten statt blind zu schlafen — sonst misst der Wächter
-      // die Wartezeit mit und wird beim ersten langsamen Rechner rot.
-      await page
-        .waitForFunction(() => Boolean(document.querySelector('.maschine-fingerabdruck')), null, {
-          timeout: 60000,
-        })
-        .catch(() => {});
-      const referenz = await page.evaluate(AUFMASS_FINGERABDRUCK);
-
-      console.log(`  ── nach der Referenzaufnahme ──`);
-      console.log(`  Tipps gesamt              ${tipps}`);
-      console.log(`  Fenster danach            ${referenz.fenster}`);
-      console.log(`  Fingerabdruck gezeichnet  ${referenz.gezeichnet ? 'ja' : 'NEIN'}`);
-      console.log(`  Urteil                    ${referenz.urteil || '(leer)'}`);
-      console.log(`  nächste Handlung          ${referenz.aktionsname || '(fehlt)'}`);
-
-      pruefe(
-        referenz.ebene,
-        `${name}: nach der Referenzaufnahme steht der Nutzer nicht wieder auf der Maschinenebene`
-      );
-      pruefe(
-        referenz.fenster === 0,
-        `${name}: nach einer guten Referenzaufnahme steht ein Bestätigungsfenster — eine gute Aufnahme speichert sich selbst`
-      );
-      pruefe(
-        referenz.fingerabdruck,
-        `${name}: kein Fingerabdruck nach der Referenzaufnahme — der erste Erfolg bleibt unsichtbar`
-      );
-      pruefe(
-        referenz.gezeichnet,
-        `${name}: die Fingerabdruck-Leinwand ist leer — ein Rahmen ohne Bild ist kein Beleg`
-      );
-      pruefe(
-        referenz.beschriftung.length > 0,
-        `${name}: der Fingerabdruck hat keine Beschriftung — ein Bild ohne Text ist für Vorlesende nichts`
-      );
-      pruefe(
-        /gegenprobe/i.test(referenz.aktionsname),
-        `${name}: der nächste Schritt heißt „${referenz.aktionsname}" statt nach der Gegenprobe zu fragen`
-      );
-      pruefe(
-        referenz.hinweis.length > 0 && referenz.hinweis !== referenz.aktionsname,
-        `${name}: zum nächsten Schritt steht kein erklärender Satz`
-      );
-    }
-
     pruefe(
       seitenfehler.length === 0,
       `${name}: Seitenfehler — ${seitenfehler.slice(0, 2).join(' | ')}`
@@ -388,6 +344,451 @@ try {
   }
 } finally {
   await browser.close();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TEIL 2 — DIE REISE, MIT ECHTEM TON
+
+   Zwei Starts auf demselben Profil. Der erste nimmt den Normalzustand auf und
+   prüft gegen sich selbst (Fall B), der zweite prüft dieselbe Maschine mit
+   einem Klang, der pfeift und klopft (Fall A) — und zeigt beim Öffnen, dass
+   die letzte Prüfung nachzuhören ist (Fall C).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const profil = join(arbeitsordner, 'profil');
+const klangAnders = join(arbeitsordner, 'anders.wav');
+schreibeKlang(klangAnders, { anders: true });
+
+async function starteHandy(klangDatei) {
+  const ctx = await chromium.launchPersistentContext(profil, {
+    ...(process.env.PLAYWRIGHT_CHROMIUM_PATH
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH }
+      : {}),
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+    locale: 'de-DE',
+    permissions: ['microphone'],
+    args: [
+      '--no-sandbox',
+      '--use-fake-device-for-media-stream',
+      `--use-file-for-fake-audio-capture=${klangDatei}`,
+      '--use-fake-ui-for-media-stream',
+      '--autoplay-policy=no-user-gesture-required',
+    ],
+  });
+  const page = ctx.pages()[0] ?? (await ctx.newPage());
+  const seitenfehler = [];
+  page.on('pageerror', (e) => seitenfehler.push(e.message));
+  await page.goto(`http://localhost:${port}/`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(9000);
+  return { ctx, page, seitenfehler };
+}
+
+/** Karte → Standort → Maschinenzeile. Zählt nicht: das ist die Schale. */
+async function bisZurMaschine(page) {
+  for (let i = 0; i < 8; i += 1) {
+    if ((await page.locator('#map .customer-marker-wrapper').count()) > 0) break;
+    const stapel = page.locator('#map .cluster-wrapper');
+    if ((await stapel.count()) === 0) break;
+    await stapel.first().click({ force: true });
+    await page.waitForTimeout(1500);
+  }
+  await page
+    .locator('#map .customer-marker-wrapper')
+    .first()
+    .click({ force: true })
+    .catch(() => {});
+  await page.waitForTimeout(1000);
+  await page
+    .locator('.popup-scharnier')
+    .first()
+    .click()
+    .catch(() => {});
+  await page.waitForTimeout(1400);
+  await page
+    .locator('.standort-maschine')
+    .first()
+    .click({ force: true })
+    .catch(() => {});
+  await page.waitForTimeout(2000);
+}
+
+/**
+ * Eine Prüfung von Hand zu Ende bringen.
+ *
+ * Die Messung läuft, bis der Nutzer sie beendet — das Beenden ist der letzte
+ * Tipp der Messung. Ab da darf bis zum sichtbaren Ergebnis keiner mehr nötig
+ * sein, und genau das wird hier gezählt.
+ *
+ * @returns Tipps zwischen dem Ende der Messung und dem Ergebnis.
+ */
+async function pruefeUndWarte(page) {
+  await page
+    .locator('.maschine-aktion')
+    .first()
+    .click({ force: true })
+    .catch(() => {});
+  await page.waitForTimeout(2600);
+  await page
+    .locator('#diagnose-btn')
+    .first()
+    .click({ force: true })
+    .catch(() => {});
+  await page.waitForTimeout(22000);
+  await page.evaluate(() => document.getElementById('inspection-stop-btn')?.click());
+
+  let tippsDanach = 0;
+  await page
+    .waitForFunction(
+      () =>
+        document.body.classList.contains('tiefe-maschine') &&
+        Boolean(document.querySelector('.maschine-ergebnissatz')),
+      null,
+      { timeout: 120000 }
+    )
+    .catch(() => {
+      tippsDanach = -1; // kam nie an
+    });
+  await page.waitForTimeout(1500);
+  return tippsDanach;
+}
+
+/** Was auf der Ergebnisfläche steht. */
+const AUFMASS_ERGEBNIS = () => {
+  const sichtbar = (e) => {
+    const cs = getComputedStyle(e);
+    return (
+      cs.display !== 'none' && cs.visibility !== 'hidden' && e.getBoundingClientRect().height > 0
+    );
+  };
+  const tiefe = document.getElementById('zanobo-tiefe');
+  const aktion = document.querySelector('.maschine-aktion');
+  const kasten = aktion?.getBoundingClientRect();
+  const urteilEl = document.querySelector('.maschine-lage');
+  const urteilKasten = urteilEl?.getBoundingClientRect();
+  return {
+    ebene: document.body.classList.contains('tiefe-maschine'),
+    fenster: [...document.querySelectorAll('.modal')].filter(
+      (m) => getComputedStyle(m).display !== 'none'
+    ).length,
+    urteil: urteilEl?.textContent?.trim() ?? '',
+    satz: document.querySelector('.maschine-ergebnissatz')?.textContent?.trim() ?? '',
+    beleg: document.querySelector('.maschine-zuletzt')?.textContent?.trim() ?? '',
+    aktionsname: aktion?.textContent?.trim() ?? '',
+    primaer: [...tiefe.querySelectorAll('button.primary')].filter(sichtbar).length,
+    // Urteil UND Handlung ohne Scrollen im Bild.
+    ohneScrollen:
+      Boolean(kasten && urteilKasten) &&
+      kasten.bottom <= window.innerHeight &&
+      urteilKasten.bottom <= window.innerHeight,
+    lupe: Boolean(document.querySelector('.hoerlupe')),
+    quellen: [...document.querySelectorAll('.hoerlupe-quelle')].map((b) => b.textContent.trim()),
+    trotzdem: Boolean(document.querySelector('.maschine-trotzdem')),
+    zuKlein: [...tiefe.querySelectorAll('button')]
+      .filter(sichtbar)
+      .filter((b) => {
+        const k = b.getBoundingClientRect();
+        return k.height < 44 || k.width < 44;
+      })
+      .map((b) => `${b.className || b.id}(${Math.round(b.getBoundingClientRect().height)}px)`),
+  };
+};
+
+/** Läuft gerade eine Quelle — und ist das auch angesagt? */
+const AUFMASS_WIEDERGABE = () => {
+  const gedrueckt = [...document.querySelectorAll('.hoerlupe-quelle')].filter(
+    (b) => b.getAttribute('aria-pressed') === 'true'
+  );
+  return {
+    anzahl: gedrueckt.length,
+    welche: gedrueckt.map((b) => b.className),
+    ansage: document.querySelector('.hoerlupe-ansage')?.textContent?.trim() ?? '',
+  };
+};
+
+try {
+  // ── Start 1: sauberer Klang. Normalzustand, Fingerabdruck, Fall B ────────
+  {
+    const { ctx, page, seitenfehler } = await starteHandy(klangDatei);
+    await bisZurMaschine(page);
+
+    await page
+      .locator('.maschine-aktion')
+      .first()
+      .click({ force: true })
+      .catch(() => {});
+    await page.waitForTimeout(2600);
+    await page
+      .locator('#record-btn')
+      .first()
+      .click({ force: true })
+      .catch(() => {});
+    await page
+      .waitForFunction(() => Boolean(document.querySelector('.maschine-aktion')?.textContent), null, {
+        timeout: 90000,
+      })
+      .catch(() => {});
+    await page
+      .waitForFunction(() => Boolean(document.querySelector('.maschine-fingerabdruck')), null, {
+        timeout: 90000,
+      })
+      .catch(() => {});
+    await page.waitForTimeout(1200);
+    const referenz = await page.evaluate(AUFMASS_FINGERABDRUCK);
+
+    console.log('\n=== Reise, Teil 1: der Normalzustand (sauberer Klang) ===');
+    console.log(`  Fenster danach            ${referenz.fenster}`);
+    console.log(`  Fingerabdruck gezeichnet  ${referenz.gezeichnet ? 'ja' : 'NEIN'}`);
+    console.log(`  Urteil                    ${referenz.urteil || '(leer)'}`);
+    console.log(`  nächste Handlung          ${referenz.aktionsname || '(fehlt)'}`);
+
+    pruefe(
+      referenz.ebene,
+      'Referenz: nach der Aufnahme steht der Nutzer nicht wieder auf der Maschinenebene'
+    );
+    pruefe(
+      referenz.fenster === 0,
+      'Referenz: nach einer guten Aufnahme steht ein Bestätigungsfenster — eine gute Aufnahme speichert sich selbst'
+    );
+    pruefe(referenz.fingerabdruck, 'Referenz: kein Fingerabdruck — der erste Erfolg bleibt unsichtbar');
+    pruefe(
+      referenz.gezeichnet,
+      'Referenz: die Fingerabdruck-Leinwand ist leer — ein Rahmen ohne Bild ist kein Beleg'
+    );
+    pruefe(
+      referenz.beschriftung.length > 0,
+      'Referenz: der Fingerabdruck hat keine Beschriftung — ein Bild ohne Text ist für Vorlesende nichts'
+    );
+    pruefe(
+      /gegenprobe/i.test(referenz.aktionsname),
+      `Referenz: der nächste Schritt heißt „${referenz.aktionsname}" statt nach der Gegenprobe zu fragen`
+    );
+
+    // Fall B: dieselbe Maschine, derselbe Klang → sie klingt wie sie selbst.
+    const tippsDanach = await pruefeUndWarte(page);
+    const gut = await page.evaluate(AUFMASS_ERGEBNIS);
+
+    console.log('\n=== Reise, Teil 2: Gegenprobe mit demselben Klang (Fall B) ===');
+    console.log(`  Tipps Messungsende → Ergebnis  ${tippsDanach}`);
+    console.log(`  Urteil                         ${gut.urteil || '(leer)'}`);
+    console.log(`  Satz                           ${gut.satz || '(fehlt)'}`);
+    console.log(`  Beleg                          ${gut.beleg || '(fehlt)'}`);
+    console.log(`  eine Handlung                  ${gut.aktionsname || '(fehlt)'}`);
+    console.log(`  Weg zur Hör-Lupe sichtbar      ${gut.trotzdem ? 'ja' : 'NEIN'}`);
+
+    pruefe(
+      tippsDanach === BUDGET.tippsBisErgebnis,
+      'Fall B: nach dem Ende der Messung kam kein Ergebnis auf der Maschinenebene an'
+    );
+    pruefe(gut.fenster === 0, 'Fall B: das Ergebnis steht in einem Fenster statt auf der Ebene');
+    pruefe(gut.satz.length > 0, 'Fall B: kein Urteil in Alltagssprache');
+    pruefe(/%/.test(gut.beleg), 'Fall B: kein Ähnlichkeitswert als Beleg');
+    pruefe(
+      gut.primaer === BUDGET.primaer,
+      `Fall B: ${gut.primaer} dominante Handlungen statt genau einer`
+    );
+    pruefe(gut.ohneScrollen, 'Fall B: Urteil und Handlung stehen nicht ohne Scrollen im Bild');
+    pruefe(
+      gut.trotzdem,
+      'Fall B: kein sichtbarer Weg zur Hör-Lupe — auch ein gutes Ergebnis muss überprüfbar sein'
+    );
+    pruefe(
+      gut.zuKlein.length === 0,
+      `Fall B: Antippziele unter ${BUDGET.antippgroesse} px — ${gut.zuKlein.join(', ')}`
+    );
+
+    // Ein Tipp auf den sichtbaren Weg → die Hör-Lupe steht da.
+    await page
+      .locator('.maschine-trotzdem')
+      .first()
+      .click({ force: true })
+      .catch(() => {});
+    await page.waitForTimeout(1200);
+    const lupeB = await page.evaluate(AUFMASS_ERGEBNIS);
+    pruefe(lupeB.lupe, 'Fall B: der Weg zur Hör-Lupe führt nicht zur Hör-Lupe');
+    pruefe(
+      lupeB.quellen.length === 3,
+      `Fall B: die Hör-Lupe zeigt ${lupeB.quellen.length} Quellen statt Normalzustand, Messung und Unterschied`
+    );
+
+    pruefe(seitenfehler.length === 0, `Reise 1: Seitenfehler — ${seitenfehler.slice(0, 2).join(' | ')}`);
+    await ctx.close();
+  }
+
+  // ── Start 2: der Klang pfeift und klopft. Fall C, dann Fall A ────────────
+  {
+    const { ctx, page, seitenfehler } = await starteHandy(klangAnders);
+    await bisZurMaschine(page);
+
+    // Fall C: die Maschine ruht wieder — aber die letzte Prüfung ist zu hören.
+    const ruhe = await page.evaluate(() => {
+      const nach = document.querySelector('.maschine-nachhoeren');
+      const k = nach?.getBoundingClientRect();
+      return {
+        urteil: document.querySelector('.maschine-lage')?.textContent?.trim() ?? '',
+        aktionsname: document.querySelector('.maschine-aktion')?.textContent?.trim() ?? '',
+        nachhoeren: nach?.textContent?.trim() ?? '',
+        nachhoerenHoch: k ? Math.round(k.height) : 0,
+        lupe: Boolean(document.querySelector('.hoerlupe')),
+      };
+    });
+
+    console.log('\n=== Reise, Teil 3: die Maschine später wieder öffnen (Fall C) ===');
+    console.log(`  Urteil                    ${ruhe.urteil || '(leer)'}`);
+    console.log(`  eine Handlung             ${ruhe.aktionsname || '(fehlt)'}`);
+    console.log(`  letzte Hör-Lupe           ${ruhe.nachhoeren || '(fehlt)'}`);
+
+    pruefe(
+      /prüfen/i.test(ruhe.aktionsname),
+      `Fall C: die Ebene öffnet nicht im Ruhezustand — die Handlung heißt „${ruhe.aktionsname}"`
+    );
+    pruefe(!ruhe.lupe, 'Fall C: die Hör-Lupe steht ungefragt im Bild, statt einen Tipp zu kosten');
+    pruefe(
+      ruhe.nachhoeren.length > 0,
+      'Fall C: kein Weg zur letzten Hör-Lupe, obwohl der Ton gespeichert ist'
+    );
+    pruefe(
+      ruhe.nachhoerenHoch >= BUDGET.antippgroesse,
+      `Fall C: „Letzten Unterschied anhören" ist ${ruhe.nachhoerenHoch} px hoch`
+    );
+
+    await page
+      .locator('.maschine-nachhoeren')
+      .first()
+      .click({ force: true })
+      .catch(() => {});
+    await page.waitForTimeout(6000);
+    const nachC = await page.evaluate(AUFMASS_WIEDERGABE);
+    console.log(`  ein Tipp spielt           ${nachC.ansage || '(nichts)'}`);
+    pruefe(
+      nachC.anzahl === 1 && /difference/.test(nachC.welche[0] ?? ''),
+      'Fall C: ein Tipp auf „Letzten Unterschied anhören" spielt den Unterschied nicht'
+    );
+
+    // Fall A: jetzt klingt die Maschine wirklich anders.
+    await page.evaluate(() => {
+      document.querySelectorAll('.hoerlupe-quelle').forEach((b) => {
+        if (b.getAttribute('aria-pressed') === 'true') b.click();
+      });
+    });
+    await page.waitForTimeout(600);
+    const tippsDanach = await pruefeUndWarte(page);
+    const schlecht = await page.evaluate(AUFMASS_ERGEBNIS);
+
+    console.log('\n=== Reise, Teil 4: Gegenprobe mit pfeifendem Klang (Fall A) ===');
+    console.log(`  Tipps Messungsende → Ergebnis  ${tippsDanach}`);
+    console.log(`  Urteil                         ${schlecht.urteil || '(leer)'}`);
+    console.log(`  Satz                           ${schlecht.satz || '(fehlt)'}`);
+    console.log(`  Beleg                          ${schlecht.beleg || '(fehlt)'}`);
+    console.log(`  eine Handlung                  ${schlecht.aktionsname || '(fehlt)'}`);
+    console.log(`  Hör-Lupe im Bild               ${schlecht.lupe ? 'ja' : 'NEIN'}`);
+    console.log(`  Quellen                        ${schlecht.quellen.join(' · ') || '(keine)'}`);
+
+    pruefe(
+      tippsDanach === BUDGET.tippsBisErgebnis,
+      'Fall A: nach dem Ende der Messung kam kein Ergebnis auf der Maschinenebene an'
+    );
+    pruefe(schlecht.fenster === 0, 'Fall A: das Ergebnis steht in einem Fenster statt auf der Ebene');
+    /**
+     * Der Klang pfeift, klopft und rauscht — wenn die Bewertung ihn für den
+     * Normalzustand hält, misst dieser Lauf ab hier den falschen Fall, und
+     * alles Weitere wäre eine Aussage über Fall B mit dem Etikett von Fall A.
+     */
+    pruefe(
+      /abweichung/i.test(schlecht.urteil),
+      `Fall A: der veränderte Klang gilt als Normalzustand („${schlecht.urteil}") — der Lauf prüft den falschen Fall`
+    );
+    pruefe(
+      /unterschied/i.test(schlecht.aktionsname),
+      `Fall A: die dominante Handlung heißt „${schlecht.aktionsname}" statt zum Unterschied zu führen`
+    );
+    pruefe(
+      schlecht.primaer === BUDGET.primaer,
+      `Fall A: ${schlecht.primaer} dominante Handlungen statt genau einer`
+    );
+    pruefe(schlecht.ohneScrollen, 'Fall A: Urteil und Handlung stehen nicht ohne Scrollen im Bild');
+    pruefe(schlecht.lupe, 'Fall A: die Hör-Lupe steht nicht im Ergebnis');
+    pruefe(
+      schlecht.quellen.length === 3,
+      `Fall A: die Hör-Lupe zeigt ${schlecht.quellen.length} Quellen statt Normalzustand, Messung und Unterschied`
+    );
+    pruefe(
+      schlecht.zuKlein.length === 0,
+      `Fall A: Antippziele unter ${BUDGET.antippgroesse} px — ${schlecht.zuKlein.join(', ')}`
+    );
+
+    // Der eine Tipp, um den es geht.
+    //
+    // Mit `catch`: Steht das Ergebnis wider Erwarten in einem Fenster, ist die
+    // Handlung darunter verdeckt und der Klick schlägt fehl. Ein Wächter, der
+    // daran stirbt, meldet nur, dass er tot ist — die Befunde unten sagen,
+    // was los war.
+    await page
+      .locator('.maschine-aktion')
+      .first()
+      .click({ force: true })
+      .catch(() => {});
+    await page.waitForTimeout(6000);
+    const laeuft = await page.evaluate(AUFMASS_WIEDERGABE);
+    console.log(`  ein Tipp spielt                ${laeuft.ansage || '(nichts)'}`);
+
+    pruefe(
+      laeuft.anzahl === 1,
+      `Fall A: nach dem Tipp sind ${laeuft.anzahl} Quellen als laufend markiert statt genau einer`
+    );
+    pruefe(
+      /difference/.test(laeuft.welche[0] ?? ''),
+      'Fall A: ein Tipp auf die Primäraktion spielt nicht den Unterschied'
+    );
+    pruefe(
+      laeuft.ansage.length > 0,
+      'Fall A: was läuft, steht nirgends geschrieben — Farbe allein ist für Vorlesende nichts'
+    );
+
+    /**
+     * ── Dasselbe Ergebnis am Schreibtisch ──────────────────────────────────
+     *
+     * Nur die Größe des Fensters ändert sich, nicht der Ablauf. Gemessen wird,
+     * ob die Fläche wirklich zwei fachliche Spalten benutzt: Steht die Hör-Lupe
+     * rechts NEBEN der Handlung, ist es eine Anordnung; steht sie darunter, ist
+     * es eine Mobilspalte mit Weiß daneben.
+     */
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.waitForTimeout(1200);
+    const tisch = await page.evaluate(() => {
+      const ansicht = document.querySelector('.maschinen-ansicht');
+      const aktion = document.querySelector('.maschine-aktion');
+      const lupe = document.querySelector('.hoerlupe');
+      if (!ansicht || !aktion || !lupe) return null;
+      const a = aktion.getBoundingClientRect();
+      const l = lupe.getBoundingClientRect();
+      return {
+        breite: Math.round(ansicht.getBoundingClientRect().width),
+        nebeneinander: l.left >= a.right - 1,
+        lupeOben: Math.round(l.top),
+        aktionOben: Math.round(a.top),
+      };
+    });
+
+    console.log('\n=== Reise, Teil 5: dasselbe Ergebnis am Schreibtisch (1440×900) ===');
+    console.log(`  Breite der Fläche              ${tisch ? tisch.breite + ' px' : '(fehlt)'}`);
+    console.log(`  Hör-Lupe neben der Handlung    ${tisch?.nebeneinander ? 'ja' : 'NEIN'}`);
+
+    pruefe(Boolean(tisch), 'Schreibtisch: das Ergebnis ist nach dem Umschalten nicht mehr da');
+    pruefe(
+      Boolean(tisch?.nebeneinander),
+      'Schreibtisch: die Hör-Lupe steht unter der Handlung statt daneben — das ist eine Mobilspalte, keine Anordnung'
+    );
+    pruefe(
+      (tisch?.breite ?? 0) > 900,
+      `Schreibtisch: die Ergebnisfläche ist ${tisch?.breite ?? 0} px breit — eine schmale Karte in der Mitte`
+    );
+
+    pruefe(seitenfehler.length === 0, `Reise 2: Seitenfehler — ${seitenfehler.slice(0, 2).join(' | ')}`);
+    await ctx.close();
+  }
+} finally {
   vorschau.kill();
 }
 
@@ -398,6 +799,7 @@ if (befunde.length) {
 } else {
   console.log(
     '\n✓ Der Weg zur Maschine ist kurz, auf jedem Bild steht eine Frage,\n' +
-      '  und am Ende der ersten Aufnahme steht ein Bild statt eines Formulars.'
+      '  am Ende der ersten Aufnahme steht ein Bild statt eines Formulars,\n' +
+      '  und wenn die Maschine anders klingt, hört man das mit einem Tipp.'
   );
 }
