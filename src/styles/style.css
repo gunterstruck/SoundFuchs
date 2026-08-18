@@ -3571,7 +3571,7 @@ body {
   margin-top: 5px;
 }
 
-/* ── KI-Analysepaket: sichtbare Brücke, kein verstecktes Expertenwerkzeug ── */
+/* ── Geräusch-Briefing: sichtbare Brücke, kein verstecktes Expertenwerkzeug ── */
 .analysepaket-einstieg {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

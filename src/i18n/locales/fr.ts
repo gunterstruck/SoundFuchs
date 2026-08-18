@@ -100,7 +100,7 @@ export const fr: TranslationDict = {
     auswahlHinweis:
       'Tracez un cadre autour du motif remarquable. Passez ensuite entre état normal, mesure et différence : le temps et la fréquence restent identiques.',
     auswahlHinweisEinzeln:
-      'Tracez un cadre autour du motif suspect. Cette plage de temps et de fréquence est ajoutée au cas comme aide auditive.',
+      'Tracez un cadre autour du motif suspect. Cette plage de temps et de fréquence est ajoutée au briefing sonore comme aide auditive.',
     auswahlQuelleAufnahme: 'Enregistrement',
     auswahlQuellenTitel: 'Source de la sélection du spectrogramme',
     auswahlLaedt: 'Préparation du spectrogramme …',
@@ -126,19 +126,19 @@ export const fr: TranslationDict = {
   },
   analysisPackage: {
     entryEyebrow: 'Nouveau · local et libre',
-    entryTitle: 'Transformez le bruit en cas clair',
+    entryTitle: 'Transformez le bruit en briefing clair',
     entryHint:
-      'État normal, mesure, différence, contexte et spectrogrammes pour l’IA de votre choix.',
-    entryButton: '✨ Créer le paquet d’analyse IA',
+      'État normal, mesure, différence marquée et contexte pour un spécialiste ou l’IA de votre choix.',
+    entryButton: '✨ Créer le briefing sonore',
     entrySingleEyebrow: 'Pas de référence ? Aucun problème.',
-    entrySingleTitle: 'Transformez un doute en cas sonore clair',
+    entrySingleTitle: 'Transformez un doute en briefing sonore clair',
     entrySingleHint:
       'Original, zone marquée, aide auditive, qualité et plan pour la meilleure contre-prise.',
-    entrySingleButton: '✨ Créer un cas sonore pour l’IA',
-    eyebrow: 'Assistant de transmission SoundFuchs',
-    title: 'Transmettre le bruit clairement',
+    entrySingleButton: '✨ Créer le briefing sonore',
+    eyebrow: 'Assistant sonore SoundFuchs',
+    title: 'Préparer le briefing sonore',
     intro:
-      'Décrivez la situation. SoundFuchs crée localement un paquet traçable, sans envoi ni compte.',
+      'Décrivez la situation. SoundFuchs prépare enregistrement, zone d’écoute et contexte pour la transmission, sans envoi ni compte.',
     caseModeTitle: 'Que savez-vous des deux enregistrements ?',
     caseModeHint: 'Cela évite de confondre une différence acoustique avec un dommage.',
     modeHealthyTitle: 'La référence était saine',
@@ -151,7 +151,7 @@ export const fr: TranslationDict = {
     close: 'Fermer la boîte de dialogue',
     situationTitle: 'Qu’avez-vous enregistré ?',
     situationHint:
-      'Un bon contexte évite à l’IA de confondre compartiment moteur, cuisine ou atelier.',
+      'Un bon contexte aide spécialistes et IA à distinguer compartiment moteur, cuisine ou atelier.',
     situationVehicle: '🚗 Véhicule · compartiment moteur',
     situationHousehold: '🏠 Appareil ménager · intérieur',
     situationBuilding: '🔥 Équipement technique · local technique',
@@ -163,7 +163,7 @@ export const fr: TranslationDict = {
     coldStart: 'démarrage à froid',
     warmIdle: 'ralenti à chaud',
     raisedRpm: 'régime élevé',
-    descriptionLabel: 'Que doit savoir l’IA ?',
+    descriptionLabel: 'Que doit savoir le destinataire ?',
     descriptionVehiclePlaceholder:
       'Exemple : sifflement à l’avant droit, après 30 minutes, vers 1 800 tr/min …',
     descriptionPlaceholder:
@@ -171,26 +171,27 @@ export const fr: TranslationDict = {
     dictate: '🎙️ Dicter la situation',
     dictating: '● J’écoute — touchez pour arrêter',
     dictationNote:
-      'Seul le texte reconnu entre dans le paquet. Le navigateur peut utiliser son service vocal.',
+      'Seul le texte reconnu entre dans le briefing. Le navigateur peut utiliser son service vocal.',
     selectionIncluded: '🎯 Zone marquée incluse : {{from}}–{{to}} s · {{low}}–{{high}} Hz',
     privacyTitle: 'Vous décidez du contenu',
     privacyText:
       'Lieu et données client restent exclus. L’audio peut toutefois contenir des voix ou bruits ambiants.',
     includeName: 'Inclure le nom « {{name}} »',
-    consent: 'J’ai vérifié que je peux transmettre ces fichiers audio à une IA externe.',
+    consent:
+      'J’ai vérifié que je peux transmettre ces fichiers audio à un spécialiste ou une IA externe.',
     localPromise: '🔒 SoundFuchs ne transmet rien',
-    create: 'Télécharger + copier le prompt',
-    working: 'Création locale du paquet …',
-    failed: 'Le paquet complet n’a pas pu être créé. Veuillez réessayer.',
-    successTitle: 'Votre cas est prêt',
-    successCopied: 'Le ZIP est téléchargé et le même prompt d’analyse est dans le presse-papiers.',
+    create: 'Télécharger le briefing + copier la mission',
+    working: 'Préparation locale du briefing sonore …',
+    failed: 'Le briefing sonore complet n’a pas pu être créé. Veuillez réessayer.',
+    successTitle: 'Votre briefing sonore est prêt',
+    successCopied: 'Le ZIP est téléchargé et la même mission est dans le presse-papiers.',
     successFallback:
-      'Le ZIP est téléchargé. Le prompt est dedans et peut aussi être copié ci-dessous.',
+      'Le ZIP est téléchargé. La mission est dedans et peut aussi être copiée ci-dessous.',
     successWarnings:
       '{{count}} fichier(s) facultatif(s) non créé(s) ; détails dans HINWEISE.txt du ZIP.',
-    promptBackup: 'Double sécurité : relire et copier le prompt',
-    copyAgain: 'Recopier le prompt',
-    copied: '✓ Prompt copié',
+    promptBackup: 'Double sécurité : relire et copier la mission',
+    copyAgain: 'Recopier la mission',
+    copied: '✓ Mission copiée',
     copyManually: 'Texte sélectionné — veuillez copier',
     done: 'Terminé',
   },
@@ -1526,7 +1527,7 @@ export const fr: TranslationDict = {
     title: 'À propos de SoundFuchs',
     subtitle: 'Assistant pour la comparaison acoustique des états de machines',
     intro:
-      "<strong>SoundFuchs 2.0</strong> est une Progressive Web App (PWA) respectueuse de la vie privée, conçue pour l'analyse comparative de l'acoustique des machines. L'application permet d'enregistrer et de comparer les sons de machines entièrement <strong>hors ligne</strong> – sans services cloud, sans capteurs externes et sans modèles d'IA entraînés.<br><br>SoundFuchs se comprend délibérément <strong>non pas comme un outil de diagnostic</strong>, mais comme un <strong>instrument de comparaison et d'orientation</strong> qui soutient l'évaluation humaine.",
+      "<strong>SoundFuchs 2.0</strong> est un <strong>assistant sonore</strong> respectueux de la vie privée. La Progressive Web App enregistre, compare et marque localement les bruits de machines et prépare un <strong>briefing sonore</strong> pour des spécialistes ou une IA externe, sans cloud ni compte.<br><br><strong>SoundFuchs ne pose aucun diagnostic.</strong> Il rend clair ce que l'utilisateur veut montrer ; l'examen et l'interprétation appartiennent au destinataire.",
     coreFeaturesTitle: 'Fonctionnalités principales',
     coreFeatures: {
       offlineFirst:
@@ -1655,7 +1656,7 @@ export const fr: TranslationDict = {
       "L'interprétation des résultats de comparaison appartient toujours à l'utilisateur.",
     transparencyTitle: 'Transparence et intention',
     transparencyText1:
-      "SoundFuchs <strong>n'est pas un outil de diagnostic</strong> et <strong>ne fait aucune évaluation technique automatisée</strong>. Il fournit exclusivement une <strong>aide de comparaison visuelle et mathématique</strong>.",
+      "SoundFuchs <strong>n'est pas un outil de diagnostic</strong> et <strong>ne fait aucune évaluation technique automatisée</strong>. Il fournit une <strong>aide de comparaison visuelle et mathématique</strong> et prépare un <strong>briefing sonore</strong> partageable.",
     transparencyText2:
       "Tout le traitement se fait <strong>hors ligne</strong>. <strong>Aucune donnée utilisateur n'est transmise, stockée ou évaluée</strong>.",
     transparencyText3:

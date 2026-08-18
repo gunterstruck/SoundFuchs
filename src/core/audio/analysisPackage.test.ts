@@ -29,6 +29,7 @@ describe('createAnalysisPrompt', () => {
     expect(prompt).toContain('absichtlich verstärkte Hörhilfe');
     expect(prompt).toContain('keine sichere Diagnose');
     expect(prompt).toContain('Beobachtung, Interpretation und Hypothese');
+    expect(prompt).toContain('BRIEFING-STARTEN.txt');
   });
 
   it('lässt die Maschinenbezeichnung bei privatem Export weg', () => {

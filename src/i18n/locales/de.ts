@@ -103,7 +103,7 @@ export const de: TranslationDict = {
     auswahlHinweis:
       'Ziehe einen Rahmen um das auffällige Muster. Wechsle danach zwischen Normalzustand, Messung und Unterschied – Zeit und Frequenz bleiben gleich.',
     auswahlHinweisEinzeln:
-      'Ziehe einen Rahmen um das verdächtige Muster. Genau dieser Zeit- und Frequenzbereich kommt als Hörhilfe in den Geräuschfall.',
+      'Ziehe einen Rahmen um das verdächtige Muster. Genau dieser Zeit- und Frequenzbereich kommt als Hörhilfe in das Geräusch-Briefing.',
     auswahlQuelleAufnahme: 'Aufnahme',
     auswahlQuellenTitel: 'Quelle der Spektrogramm-Auswahl',
     auswahlLaedt: 'Spektrogramm wird vorbereitet …',
@@ -129,19 +129,19 @@ export const de: TranslationDict = {
   },
   analysisPackage: {
     entryEyebrow: 'Neu · lokal & frei',
-    entryTitle: 'Aus dem Geräusch wird ein klarer Fall',
+    entryTitle: 'Aus dem Geräusch wird ein klares Briefing',
     entryHint:
-      'Normalzustand, Messung, Unterschied, Kontext und Spektrogramme für eine KI deiner Wahl.',
-    entryButton: '✨ KI-Analysepaket erstellen',
+      'Normalzustand, Messung, markierter Unterschied und Kontext – für Fachpersonen oder eine KI deiner Wahl.',
+    entryButton: '✨ Geräusch-Briefing erstellen',
     entrySingleEyebrow: 'Keine Referenz? Macht nichts.',
-    entrySingleTitle: 'Mach aus dem Verdacht einen klaren Geräuschfall',
+    entrySingleTitle: 'Mach aus dem Verdacht ein klares Geräusch-Briefing',
     entrySingleHint:
       'Original, markierter Fokus, Hörhilfe, Aufnahmequalität und ein Plan für die beste Gegenaufnahme.',
-    entrySingleButton: '✨ Geräuschfall für KI erstellen',
-    eyebrow: 'SoundFuchs Übergabe-Assistent',
-    title: 'Geräusch verständlich weitergeben',
+    entrySingleButton: '✨ Geräusch-Briefing erstellen',
+    eyebrow: 'SoundFuchs Geräusch-Assistent',
+    title: 'Geräusch-Briefing vorbereiten',
     intro:
-      'Du beschreibst die Situation. SoundFuchs schnürt lokal ein nachvollziehbares Paket – ohne Upload und ohne Konto.',
+      'Du beschreibst die Situation. SoundFuchs bereitet Aufnahme, Hörstelle und Kontext kompakt für die Weitergabe auf – lokal, ohne Upload und ohne Konto.',
     caseModeTitle: 'Was weißt du über die beiden Aufnahmen?',
     caseModeHint:
       'Diese Angabe verhindert, dass ein Unterschied fälschlich als Schaden ausgelegt wird.',
@@ -156,7 +156,7 @@ export const de: TranslationDict = {
     close: 'Dialog schließen',
     situationTitle: 'Was wurde aufgenommen?',
     situationHint:
-      'Ein guter Kontext verhindert, dass eine KI Motorraum, Küche oder Werkstatt verwechselt.',
+      'Ein guter Kontext hilft Fachpersonen und KI, Motorraum, Küche oder Werkstatt richtig einzuordnen.',
     situationVehicle: '🚗 Fahrzeug · Motorraum',
     situationHousehold: '🏠 Haushaltsgerät · Innenraum',
     situationBuilding: '🔥 Haustechnik · Technikraum',
@@ -168,7 +168,7 @@ export const de: TranslationDict = {
     coldStart: 'Kaltstart',
     warmIdle: 'warmer Leerlauf',
     raisedRpm: 'erhöhte Drehzahl',
-    descriptionLabel: 'Was soll die KI wissen?',
+    descriptionLabel: 'Was sollen die Empfänger wissen?',
     descriptionVehiclePlaceholder:
       'Zum Beispiel: Pfeifen vorne rechts, nach 30 Minuten Fahrt, etwa bei 1.800 U/min …',
     descriptionPlaceholder:
@@ -176,27 +176,29 @@ export const de: TranslationDict = {
     dictate: '🎙️ Situation diktieren',
     dictating: '● Ich höre zu – zum Beenden tippen',
     dictationNote:
-      'Nur der erkannte Text kommt ins Paket. Je nach Browser kann die Spracherkennung dessen Dienst verwenden.',
+      'Nur der erkannte Text kommt ins Briefing. Je nach Browser kann die Spracherkennung dessen Dienst verwenden.',
     selectionIncluded: '🎯 Markierter Fokus kommt mit: {{from}}–{{to}} s · {{low}}–{{high}} Hz',
     privacyTitle: 'Du entscheidest, was mitgeht',
     privacyText:
       'Standort und Kundendaten bleiben draußen. Audio kann trotzdem Stimmen oder Ortsgeräusche enthalten.',
     includeName: 'Maschinenbezeichnung „{{name}}“ einbeziehen',
-    consent: 'Ich habe geprüft, dass ich diese Audiodateien an eine externe KI weitergeben darf.',
+    consent:
+      'Ich habe geprüft, dass ich diese Audiodateien an eine Fachperson oder externe KI weitergeben darf.',
     localPromise: '🔒 SoundFuchs lädt nichts hoch',
-    create: 'Paket herunterladen + Prompt kopieren',
-    working: 'Paket wird lokal gebaut …',
-    failed: 'Das Paket konnte nicht vollständig erzeugt werden. Bitte erneut versuchen.',
-    successTitle: 'Dein Fall ist startklar',
+    create: 'Briefing herunterladen + Arbeitsauftrag kopieren',
+    working: 'Geräusch-Briefing wird lokal aufbereitet …',
+    failed:
+      'Das Geräusch-Briefing konnte nicht vollständig erzeugt werden. Bitte erneut versuchen.',
+    successTitle: 'Dein Geräusch-Briefing ist bereit',
     successCopied:
-      'Das ZIP wurde heruntergeladen und der identische Analyse-Prompt liegt in deiner Zwischenablage.',
+      'Das ZIP wurde heruntergeladen und der identische Arbeitsauftrag liegt in deiner Zwischenablage.',
     successFallback:
-      'Das ZIP wurde heruntergeladen. Der Prompt liegt sicher darin und kann unten zusätzlich kopiert werden.',
+      'Das ZIP wurde heruntergeladen. Der Arbeitsauftrag liegt sicher darin und kann unten zusätzlich kopiert werden.',
     successWarnings:
       '{{count}} Zusatzdatei(en) konnten nicht erzeugt werden; die Details stehen im ZIP unter HINWEISE.txt.',
-    promptBackup: 'Doppelter Boden: der Prompt zum Nachlesen und Kopieren',
-    copyAgain: 'Prompt noch einmal kopieren',
-    copied: '✓ Prompt kopiert',
+    promptBackup: 'Doppelter Boden: der Arbeitsauftrag zum Nachlesen und Kopieren',
+    copyAgain: 'Arbeitsauftrag noch einmal kopieren',
+    copied: '✓ Arbeitsauftrag kopiert',
     copyManually: 'Text ist markiert – bitte kopieren',
     done: 'Fertig',
   },
@@ -1846,7 +1848,7 @@ export const de: TranslationDict = {
 
     // Introduction
     intro:
-      '<strong>SoundFuchs 2.0</strong> ist eine datenschutzfreundliche Progressive Web App (PWA) für die vergleichende Analyse von Maschinenakustik. Die Anwendung ermöglicht es, Maschinengeräusche vollständig <strong>offline</strong> aufzuzeichnen und miteinander zu vergleichen – ohne Cloud-Dienste, ohne externe Sensoren und ohne trainierte KI-Modelle.<br><br>SoundFuchs versteht sich bewusst <strong>nicht als Diagnosewerkzeug</strong>, sondern als <strong>Vergleichs- und Orientierungsinstrument</strong>, das menschliche Einschätzung unterstützt.',
+      '<strong>SoundFuchs 2.0</strong> ist ein datenschutzfreundlicher <strong>Geräusch-Assistent</strong>. Die Progressive Web App nimmt Maschinengeräusche lokal auf, vergleicht und markiert sie und bereitet daraus ein <strong>Geräusch-Briefing</strong> für Fachpersonen oder eine externe KI auf – ohne Cloud und ohne Konto.<br><br><strong>SoundFuchs stellt keine Diagnose.</strong> Es macht hörbar, was der Nutzer meint; fachliche Prüfung und Einordnung erfolgen beim Empfänger.',
 
     // Core Features
     coreFeaturesTitle: 'Kernfunktionen',
@@ -1938,7 +1940,7 @@ export const de: TranslationDict = {
     serialComparisonApplication:
       '<strong>Anwendung:</strong><ul><li>Eine Referenzaufnahme wird zu einem Zeitpunkt erstellt, an dem die Maschine als „unauffällig" bewertet wird</li><li>Spätere Aufnahmen werden mit dieser Referenz verglichen</li><li>Abweichungen vom ursprünglichen Muster werden quantifiziert (Ähnlichkeits-Score)</li></ul>',
     serialComparisonHint:
-      '<strong>Hinweis:</strong> SoundFuchs zeigt lediglich <strong>ob und wie stark</strong> sich das aktuelle Geräusch von der Referenz unterscheidet. Die Interpretation, ob eine Abweichung relevant ist, erfolgt durch den Nutzer. Das System trifft keine Diagnose und gibt keine Prognose ab.',
+      '<strong>Hinweis:</strong> SoundFuchs zeigt <strong>ob und wie stark</strong> sich Geräusche unterscheiden und bereitet die Beobachtung als Geräusch-Briefing auf. Ob eine Abweichung relevant ist, prüfen und beurteilen Nutzer, Fachpersonen oder externe KI. SoundFuchs selbst trifft keine Diagnose und gibt keine Prognose ab.',
 
     // Parallel Comparison
     parallelComparisonTitle:
