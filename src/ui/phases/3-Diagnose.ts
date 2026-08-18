@@ -4055,7 +4055,7 @@ export class DiagnosePhase {
       mitUeberschrift: true,
       shareName: this.machine.name,
       analysisPackage:
-        referenceBuffer && diagnosisBuffer ? { machineName: this.machine.name } : undefined,
+        referenceBuffer || diagnosisBuffer ? { machineName: this.machine.name } : undefined,
     });
     if (!panel.hasContent) return;
     this.hoerlupe = panel;

@@ -3,6 +3,7 @@
 import {
   buildAnalysisPackage,
   createAnalysisPrompt,
+  type AnalysisCaseMode,
   type AnalysisRecordingSituation,
   type RecordingSituationKind,
 } from '@core/audio/analysisPackage.js';
@@ -11,7 +12,7 @@ import { t } from '../../i18n/index.js';
 import { logger } from '@utils/logger.js';
 
 export interface AnalysisPackageDialogOptions {
-  reference: AudioBuffer;
+  reference?: AudioBuffer | null;
   measurement: AudioBuffer;
   machineName: string;
   getSelection: () => SpectralSelection | null;
@@ -104,6 +105,7 @@ export class AnalysisPackageDialog {
   private readonly consent: HTMLInputElement;
   private readonly createButton: HTMLButtonElement;
   private readonly vehicleDetails: HTMLDivElement;
+  private mode: AnalysisCaseMode;
   private kind: RecordingSituationKind = 'vehicle-engine-bay';
   private recognition: SpeechRecognitionLike | null = null;
   private lastFocused: HTMLElement | null;
@@ -111,6 +113,7 @@ export class AnalysisPackageDialog {
 
   constructor(options: AnalysisPackageDialogOptions) {
     this.options = options;
+    this.mode = options.reference ? 'baseline-comparison' : 'single-recording';
     this.lastFocused =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
@@ -155,6 +158,71 @@ export class AnalysisPackageDialog {
     const body = document.createElement('div');
     body.className = 'analysepaket-inhalt';
     this.dialog.appendChild(body);
+
+    const caseMode = document.createElement('section');
+    caseMode.className = options.reference
+      ? 'analysepaket-falltyp'
+      : 'analysepaket-falltyp analysepaket-ohne-referenz';
+    if (options.reference) {
+      const caseTitle = document.createElement('h3');
+      caseTitle.textContent = t('analysisPackage.caseModeTitle');
+      const caseHint = document.createElement('p');
+      caseHint.className = 'muted small';
+      caseHint.textContent = t('analysisPackage.caseModeHint');
+      const caseChoices = document.createElement('div');
+      caseChoices.className = 'analysepaket-falltypen';
+      caseChoices.setAttribute('role', 'radiogroup');
+      caseChoices.setAttribute('aria-label', t('analysisPackage.caseModeTitle'));
+      const choices: Array<{
+        mode: AnalysisCaseMode;
+        title: string;
+        hint: string;
+      }> = [
+        {
+          mode: 'baseline-comparison',
+          title: t('analysisPackage.modeHealthyTitle'),
+          hint: t('analysisPackage.modeHealthyHint'),
+        },
+        {
+          mode: 'neutral-comparison',
+          title: t('analysisPackage.modeNeutralTitle'),
+          hint: t('analysisPackage.modeNeutralHint'),
+        },
+      ];
+      for (const [index, item] of choices.entries()) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'analysepaket-falltyp-knopf';
+        button.setAttribute('role', 'radio');
+        button.setAttribute('aria-checked', index === 0 ? 'true' : 'false');
+        const strong = document.createElement('strong');
+        strong.textContent = item.title;
+        const small = document.createElement('span');
+        small.textContent = item.hint;
+        button.append(strong, small);
+        button.onclick = () => {
+          this.mode = item.mode;
+          for (const sibling of caseChoices.querySelectorAll<HTMLElement>('[role="radio"]')) {
+            sibling.setAttribute('aria-checked', sibling === button ? 'true' : 'false');
+          }
+        };
+        caseChoices.appendChild(button);
+      }
+      caseMode.append(caseTitle, caseHint, caseChoices);
+    } else {
+      const icon = document.createElement('span');
+      icon.className = 'analysepaket-ohne-referenz-marke';
+      icon.textContent = '✦';
+      const copy = document.createElement('div');
+      const title = document.createElement('h3');
+      title.textContent = t('analysisPackage.noReferenceTitle');
+      const hint = document.createElement('p');
+      hint.className = 'muted small';
+      hint.textContent = t('analysisPackage.noReferenceHint');
+      copy.append(title, hint);
+      caseMode.append(icon, copy);
+    }
+    body.appendChild(caseMode);
 
     const step = document.createElement('section');
     step.className = 'analysepaket-schritt';
@@ -372,6 +440,7 @@ export class AnalysisPackageDialog {
     const situation = this.context();
     const selection = this.options.getSelection();
     const prompt = createAnalysisPrompt({
+      mode: this.mode,
       situation,
       machineName: this.includeName.checked ? this.options.machineName : undefined,
       selection,
@@ -383,6 +452,7 @@ export class AnalysisPackageDialog {
     try {
       await new Promise((resolve) => setTimeout(resolve, 50));
       const result = await buildAnalysisPackage({
+        mode: this.mode,
         reference: this.options.reference,
         measurement: this.options.measurement,
         machineName: this.options.machineName,

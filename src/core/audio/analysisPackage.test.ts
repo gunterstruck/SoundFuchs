@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { createAnalysisPrompt } from './analysisPackage.js';
+import { createAnalysisPrompt, measureRecordingQuality } from './analysisPackage.js';
+
+function buffer(samples: number[], sampleRate = 4): AudioBuffer {
+  const data = Float32Array.from(samples);
+  return {
+    numberOfChannels: 1,
+    length: data.length,
+    sampleRate,
+    duration: data.length / sampleRate,
+    getChannelData: () => data,
+  } as unknown as AudioBuffer;
+}
 
 describe('createAnalysisPrompt', () => {
   it('trennt Hörhilfe, Messung und Hypothese ausdrücklich', () => {
@@ -26,5 +37,38 @@ describe('createAnalysisPrompt', () => {
     });
     expect(prompt).toContain('Bezeichnung der Maschine/Anlage: nicht mitgegeben');
     expect(prompt).toContain('gesamte Aufnahme');
+  });
+
+  it('behauptet bei einer Einzelaufnahme weder Abweichung noch gesunde Referenz', () => {
+    const prompt = createAnalysisPrompt({
+      mode: 'single-recording',
+      situation: { kind: 'vehicle-engine-bay', description: 'Motorraum, warmer Leerlauf' },
+    });
+    expect(prompt).toContain('KEINEN bekannten gesunden Normalzustand');
+    expect(prompt).toContain('inneren Mustern derselben Aufnahme');
+    expect(prompt).toContain('Vergleiche einen markierten Fokus mit dem Rest');
+    expect(prompt).toContain('NAECHSTE-GEGENAUFNAHME.txt');
+  });
+
+  it('bezeichnet zwei unklare Aufnahmen nur als neutralen A/B-Kontrast', () => {
+    const prompt = createAnalysisPrompt({
+      mode: 'neutral-comparison',
+      situation: { kind: 'other', description: 'Pumpe in zwei Betriebsstufen' },
+    });
+    expect(prompt).toContain('KEINE der beiden Aufnahmen ist als gesund bestätigt');
+    expect(prompt).toContain('nie eine Seite als gesund oder defekt');
+    expect(prompt).toContain('kontrast-hoerhilfe.wav');
+  });
+});
+
+describe('measureRecordingQuality', () => {
+  it('misst Pegel und markiert Übersteuerung, ohne einen Schaden zu bewerten', () => {
+    const quality = measureRecordingQuality(buffer([0, 0.5, -1, 0.0005]));
+    expect(quality.durationSec).toBe(1);
+    expect(quality.peak).toBe(1);
+    expect(quality.clippedSamplePercent).toBe(25);
+    expect(quality.nearSilentSamplePercent).toBe(50);
+    expect(quality.dominantPeakHz).toBeNull();
+    expect(quality.notes.join(' ')).toMatch(/Übersteuerung/);
   });
 });

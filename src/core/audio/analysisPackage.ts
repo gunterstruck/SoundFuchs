@@ -10,7 +10,7 @@
 import { getDifferenceTake } from './differenceTake.js';
 import { audioBufferToWav, safeAudioBaseName } from './hearingComparisonShare.js';
 import { createSpectralSelectionBuffer, type SpectralSelection } from './spectralSelection.js';
-import { getFineSpectrogramMatrix } from '../dsp/fineSpectrogram.js';
+import { getFineSpectrogramMatrix, peakFrequencyFine } from '../dsp/fineSpectrogram.js';
 import {
   compensateSpectrogramGain,
   freqToColumn,
@@ -32,8 +32,12 @@ export interface AnalysisRecordingSituation {
   details?: string[];
 }
 
+/** Was die vorhandenen Töne tatsächlich belegen — nicht, was wir gern hätten. */
+export type AnalysisCaseMode = 'baseline-comparison' | 'single-recording' | 'neutral-comparison';
+
 export interface AnalysisPackageOptions {
-  reference: AudioBuffer;
+  mode: AnalysisCaseMode;
+  reference?: AudioBuffer | null;
   measurement: AudioBuffer;
   machineName: string;
   includeMachineName: boolean;
@@ -50,9 +54,23 @@ export interface AnalysisPackageResult {
 }
 
 interface PromptContext {
+  mode?: AnalysisCaseMode;
   situation: AnalysisRecordingSituation;
   machineName?: string;
   selection?: SpectralSelection | null;
+}
+
+export interface RecordingQualityMetrics {
+  durationSec: number;
+  sampleRate: number;
+  channels: number;
+  rms: number;
+  peak: number;
+  crestFactor: number | null;
+  clippedSamplePercent: number;
+  nearSilentSamplePercent: number;
+  dominantPeakHz: number | null;
+  notes: string[];
 }
 
 function decimal(value: number, digits = 3): number | null {
@@ -63,15 +81,100 @@ function situationText(situation: AnalysisRecordingSituation): string {
   return [situation.description.trim(), ...(situation.details ?? [])].filter(Boolean).join(' · ');
 }
 
+/** Technische Qualität einer Aufnahme, ohne daraus einen Gesundheitszustand abzuleiten. */
+export function measureRecordingQuality(buffer: AudioBuffer): RecordingQualityMetrics {
+  let sumSquares = 0;
+  let peak = 0;
+  let clipped = 0;
+  let nearSilent = 0;
+  const samples = Math.max(1, buffer.length * buffer.numberOfChannels);
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    const data = buffer.getChannelData(channel);
+    for (const raw of data) {
+      const value = Number.isFinite(raw) ? raw : 0;
+      const absolute = Math.abs(value);
+      sumSquares += value * value;
+      peak = Math.max(peak, absolute);
+      if (absolute >= 0.995) clipped++;
+      if (absolute < 0.001) nearSilent++;
+    }
+  }
+  const rms = Math.sqrt(sumSquares / samples);
+  const clippedSamplePercent = (clipped / samples) * 100;
+  const nearSilentSamplePercent = (nearSilent / samples) * 100;
+  const notes: string[] = [];
+  if (buffer.duration < 1)
+    notes.push('Sehr kurze Aufnahme; zeitliche Muster sind nur eingeschränkt beurteilbar.');
+  if (clippedSamplePercent > 0.1)
+    notes.push('Mögliche Übersteuerung; Spitzen können verfälscht sein.');
+  if (rms < 0.003)
+    notes.push('Sehr niedriger Aufnahmepegel; leise Muster können im Eigenrauschen liegen.');
+  if (nearSilentSamplePercent > 80) notes.push('Großer Anteil nahezu stiller Samples.');
+  if (notes.length === 0)
+    notes.push('Keine offensichtliche Übersteuerung oder extreme Stille erkannt.');
+  return {
+    durationSec: decimal(buffer.duration) ?? 0,
+    sampleRate: buffer.sampleRate,
+    channels: buffer.numberOfChannels,
+    rms: decimal(rms, 8) ?? 0,
+    peak: decimal(peak, 8) ?? 0,
+    crestFactor: rms > 1e-12 ? decimal(peak / rms, 3) : null,
+    clippedSamplePercent: decimal(clippedSamplePercent, 4) ?? 0,
+    nearSilentSamplePercent: decimal(nearSilentSamplePercent, 2) ?? 0,
+    dominantPeakHz: peakFrequencyFine(buffer),
+    notes,
+  };
+}
+
+function caseIntroduction(mode: AnalysisCaseMode): string {
+  if (mode === 'single-recording') {
+    return 'Du erhältst einen lokal von SoundFuchs erzeugten Geräuschfall mit genau einer verdächtigen Aufnahme. Es gibt KEINEN bekannten gesunden Normalzustand.';
+  }
+  if (mode === 'neutral-comparison') {
+    return 'Du erhältst einen lokalen A/B-Geräuschfall mit zwei Aufnahmen. KEINE der beiden Aufnahmen ist als gesund bestätigt.';
+  }
+  return 'Du erhältst ein lokal von SoundFuchs erzeugtes Analysepaket mit einem akustischen Normalzustand und einer späteren Messung.';
+}
+
+function modeBoundaries(mode: AnalysisCaseMode): string[] {
+  if (mode === 'single-recording') {
+    return [
+      'Es gibt keine Vergleichsaufnahme. Verwende deshalb nicht die Begriffe Abweichung, Verschlechterung oder neu hinzugekommen, sofern sie nicht ausdrücklich als Hypothese gekennzeichnet sind.',
+      'Eine markierte oder verstärkte Datei ist eine Hörhilfe. Ihre Lautheit ist nicht real und kein Schadensmaß.',
+      'Suche nach inneren Mustern derselben Aufnahme: tonale Linien, Impulse, Rhythmik, Modulation und zeitliche Veränderungen.',
+    ];
+  }
+  if (mode === 'neutral-comparison') {
+    return [
+      'Aufnahme A und Aufnahme B haben einen unbekannten Gesundheitszustand. Ein Kontrast sagt nur, dass sie verschieden sind — nicht, welche richtig oder defekt ist.',
+      'Die Datei „kontrast-hoerhilfe.wav“ ist spektral abgeleitet und absichtlich verstärkt. Ihre Lautheit ist nicht real und kein Schadensmaß.',
+      'Prüfe zuerst, ob Betriebszustand, Mikrofonposition und Pegel einen fairen A/B-Vergleich erlauben.',
+    ];
+  }
+  return [
+    'Die Datei „unterschied-hoerhilfe.wav“ ist eine spektral abgeleitete und absichtlich verstärkte Hörhilfe. Ihre Lautheit entspricht NICHT der realen Lautheit und ist kein Schadensmaß.',
+    'Beurteile die reale Stärke nur anhand der unveränderten WAV-Dateien und der Messwerte in „daten/messwerte.json“.',
+    'Ein akustischer Unterschied beweist weder Ursache noch Defekt. Umgebungsgeräusche, Mikrofonposition, Drehzahl/Last und Aufnahmepegel können Unterschiede erzeugen.',
+  ];
+}
+
 /** Anbieterneutraler Arbeitsauftrag; dieselbe Fassung liegt im ZIP und im Clipboard. */
 export function createAnalysisPrompt(context: PromptContext): string {
+  const mode = context.mode ?? 'baseline-comparison';
   const selection = context.selection
     ? `${context.selection.startSec.toFixed(2)}–${context.selection.endSec.toFixed(2)} s und ${Math.round(context.selection.lowHz)}–${Math.round(context.selection.highHz)} Hz`
     : 'kein Bereich vorab markiert; untersuche die gesamte Aufnahme';
   const machine = context.machineName?.trim() || 'nicht mitgegeben';
   const situation = situationText(context.situation) || 'nicht näher beschrieben';
 
-  return `Du erhältst ein lokal von SoundFuchs erzeugtes Analysepaket mit einem akustischen Normalzustand und einer späteren Messung.
+  const observationTask =
+    mode === 'single-recording'
+      ? 'Beschreibe hör- und sichtbare Muster konkret mit Zeitbereichen, Frequenzbereichen, Tonalität und Rhythmik. Vergleiche einen markierten Fokus mit dem Rest derselben Aufnahme, ohne daraus eine Verschlechterung zu behaupten.'
+      : mode === 'neutral-comparison'
+        ? 'Beschreibe Unterschiede zwischen Aufnahme A und B konkret mit Zeitbereichen, Frequenzbereichen und Rhythmik. Benenne dabei nie eine Seite als gesund oder defekt.'
+        : 'Beschreibe hör- und sichtbare Unterschiede konkret mit Zeitbereichen, Frequenzbereichen und Rhythmik.';
+
+  return `${caseIntroduction(mode)}
 
 AUFNAHMEKONTEXT
 - Situation: ${situation}
@@ -79,18 +182,18 @@ AUFNAHMEKONTEXT
 - Vorab markierter Fokus: ${selection}
 
 WICHTIGE GRENZEN
-- Die Datei „unterschied-hoerhilfe.wav“ ist eine spektral abgeleitete und absichtlich verstärkte Hörhilfe. Ihre Lautheit entspricht NICHT der realen Lautheit und ist kein Schadensmaß.
-- Beurteile die reale Stärke nur anhand der unveränderten WAV-Dateien und der Messwerte in „daten/messwerte.json“.
-- Ein akustischer Unterschied beweist weder Ursache noch Defekt. Umgebungsgeräusche, Mikrofonposition, Drehzahl/Last und Aufnahmepegel können Unterschiede erzeugen.
+${modeBoundaries(mode)
+  .map((line) => `- ${line}`)
+  .join('\n')}
 - Formuliere keine sichere Diagnose aus Audio allein und erfinde keine Fahrzeug-, Maschinen- oder Bauteildaten.
 
 DEIN AUFTRAG
-1. Prüfe zuerst, ob Normalzustand und Messung technisch sinnvoll vergleichbar sind. Benenne Störfaktoren und Unsicherheiten.
-2. Beschreibe hör- und sichtbare Unterschiede konkret mit Zeitbereichen, Frequenzbereichen und Rhythmik. Trenne Beobachtung, Interpretation und Hypothese klar.
+1. Lies zuerst „daten/aufnahmequalitaet.json“. Benenne technische Grenzen, Störfaktoren und Unsicherheiten.
+2. ${observationTask} Trenne Beobachtung, Interpretation und Hypothese klar.
 3. Nenne höchstens drei plausible Geräuschfamilien (z. B. Pfeifen, Klopfen, Schleifen, Rasseln) und erkläre jeweils, was dafür und was dagegen spricht. Keine Ferndiagnose.
 4. Nutze den markierten Ausschnitt, falls vorhanden, aber kontrolliere ihn gegen die vollständigen Aufnahmen.
 5. Wenn du Webquellen verwenden kannst: recherchiere nur belastbare Hersteller-, Fach- oder Primärquellen passend zum beschriebenen Kontext, verlinke sie und kennzeichne Übertragungen als Hypothese.
-6. Schlage den nächsten risikoarmen Vergleichstest vor, der die Hypothesen am stärksten trennt (gleiche Mikrofonposition, definierter Betriebszustand). Bei möglicher Gefahr: Betrieb stoppen und Fachbetrieb empfehlen.
+6. Nutze „NAECHSTE-GEGENAUFNAHME.txt“ und schlage den risikoarmen Vergleichstest vor, der die Hypothesen am stärksten trennt. Bei möglicher Gefahr: Betrieb stoppen und Fachbetrieb empfehlen.
 7. Schließe mit einer kurzen, weitergebbaren Werkstatt-/Fachmann-Notiz: „Ich höre … / besonders bei … / bitte prüfen …“.
 
 ANTWORTFORMAT
@@ -210,17 +313,71 @@ async function spectrogramPng(
   return canvasToBlob(canvas);
 }
 
-function startText(hasSelection: boolean): string {
+function nextCaptureText(situation: AnalysisRecordingSituation): string {
+  const specific =
+    situation.kind === 'vehicle-engine-bay'
+      ? [
+          'Motor und Aufnahmegerät zuerst exakt wie bei der ersten Aufnahme positionieren.',
+          'Dann genau EINE Bedingung ändern: zum Beispiel warmer Leerlauf → leicht erhöhte Drehzahl ODER Klimaanlage an → aus ODER Motorhaube offen → geschlossen.',
+          'Drehzahl und Zeitpunkt der Änderung laut ansagen oder anschließend im Kontext notieren.',
+        ]
+      : situation.kind === 'household-indoor'
+        ? [
+            'Gerät und Telefon an derselben Stelle lassen.',
+            'Genau eine Betriebsstufe, Beladung oder Funktion ändern und beide Zustände jeweils mindestens zehn Sekunden aufnehmen.',
+            'Andere Geräte und Gespräche im Raum möglichst vermeiden.',
+          ]
+        : situation.kind === 'building-services'
+          ? [
+              'Mikrofonabstand und Raumtür unverändert lassen.',
+              'Wenn gefahrlos möglich genau einen Betriebszustand ändern, etwa Pumpe an/aus oder niedrige/hohe Stufe.',
+              'Schaltzeitpunkt und Betriebsanzeige im Kontext notieren.',
+            ]
+          : [
+              'Telefon und Gerät für beide Aufnahmen gleich positionieren.',
+              'Nur eine Bedingung ändern, zum Beispiel Leerlauf/Last, niedrige/hohe Stufe oder Werkzeug frei/im Material.',
+              'Jeden Zustand mindestens zehn Sekunden aufnehmen und Umgebungsgeräusche vermeiden.',
+            ];
+  return `SOUNDFUCHS · NÄCHSTE GEGENAUFNAHME
+
+Ziel: Nicht irgendeine zweite Aufnahme, sondern genau den Vergleich erzeugen, der mögliche Ursachen am besten trennt.
+
+${specific.map((line, index) => `${index + 1}. ${line}`).join('\n')}
+
+Wichtig: Nur durchführen, wenn der Betrieb sicher ist. Keine Abdeckungen, Schutzvorrichtungen oder bewegten Teile berühren. Bei Warnleuchten, Brandgeruch, starkem Schlaggeräusch oder anderer Gefahr Betrieb beenden und einen Fachbetrieb hinzuziehen.
+`;
+}
+
+function startText(mode: AnalysisCaseMode, hasSelection: boolean): string {
+  const minimum =
+    mode === 'single-recording'
+      ? `   - audio/verdaechtige-aufnahme-original.wav
+   - daten/aufnahmequalitaet.json
+   - daten/aufnahmekontext.json`
+      : mode === 'neutral-comparison'
+        ? `   - audio/aufnahme-a-original.wav
+   - audio/aufnahme-b-original.wav
+   - audio/kontrast-hoerhilfe.wav
+   - daten/aufnahmequalitaet.json`
+        : `   - audio/normalzustand-original.wav
+   - audio/messung-original.wav
+   - audio/unterschied-hoerhilfe.wav
+   - daten/messwerte.json
+   - daten/aufnahmequalitaet.json`;
+  const truth =
+    mode === 'single-recording'
+      ? 'Es gibt keinen bekannten gesunden Normalzustand. Das Paket beschreibt Muster innerhalb einer Aufnahme und darf keine Verschlechterung behaupten.'
+      : mode === 'neutral-comparison'
+        ? 'Keine der beiden Aufnahmen ist als gesund bestätigt. Der Kontrast zeigt Verschiedenheit, aber keine Fehlerseite.'
+        : 'Der Unterschied wird gegen einen als gesund bezeichneten Normalzustand gebildet. Die Differenz-Hörhilfe ist absichtlich verstärkt; ihre Lautheit ist nicht real.';
   return `SOUNDFUCHS · KI-ANALYSEPAKET
 
 1. Kopiere den Inhalt von PROMPT-DE.txt in eine KI deiner Wahl.
 2. Lade dieses ZIP dort hoch. Falls ZIP nicht unterstützt wird, entpacke es und lade mindestens hoch:
-   - audio/normalzustand-original.wav
-   - audio/messung-original.wav
-   - audio/unterschied-hoerhilfe.wav
-   - daten/messwerte.json
+${minimum}
    - daten/aufnahmekontext.json
-${hasSelection ? '   - audio/markierung-* (derselbe markierte Bereich aus allen drei Quellen)\n' : ''}3. Spektrogramme sind auf denselben Lautheitsmaßstab gelegt. Die Differenz-Hörhilfe ist absichtlich verstärkt; ihre Lautheit ist nicht real.
+${hasSelection ? '   - audio/markierung-* oder audio/markierter-verdacht-* (bearbeitete Hörhilfe des markierten Bereichs)\n' : ''}3. ${truth}
+4. „NAECHSTE-GEGENAUFNAHME.txt“ enthält einen kurzen Plan für einen aussagekräftigeren Folgeversuch.
 
 DATENSCHUTZ
 Das Paket wurde lokal im Browser erzeugt. SoundFuchs hat nichts hochgeladen. Mit dem Weitergeben an eine KI gelten deren Datenschutzregeln. Audio kann Stimmen oder Ortsgeräusche enthalten — prüfe die Dateien vor dem Hochladen.
@@ -235,10 +392,15 @@ export async function buildAnalysisPackage(
   options: AnalysisPackageOptions
 ): Promise<AnalysisPackageResult> {
   const createdAt = options.createdAt ?? new Date();
-  const take = getDifferenceTake(options.reference, options.measurement);
-  if (!take) throw new Error('Aus diesen Aufnahmen lässt sich keine Differenz bilden.');
+  const reference = options.mode === 'single-recording' ? null : (options.reference ?? null);
+  if (options.mode !== 'single-recording' && !reference) {
+    throw new Error('Für diesen Vergleich werden zwei Aufnahmen benötigt.');
+  }
+  const take = reference ? getDifferenceTake(reference, options.measurement) : null;
+  if (reference && !take) throw new Error('Aus diesen Aufnahmen lässt sich kein Kontrast bilden.');
 
   const prompt = createAnalysisPrompt({
+    mode: options.mode,
     situation: options.situation,
     machineName: options.includeMachineName ? options.machineName : undefined,
     selection: options.selection,
@@ -247,28 +409,19 @@ export async function buildAnalysisPackage(
   const entries: ZipArchiveEntry[] = [
     {
       name: 'ANALYSE-STARTEN.txt',
-      data: startText(Boolean(options.selection)),
+      data: startText(options.mode, Boolean(options.selection)),
       modifiedAt: createdAt,
     },
     { name: 'PROMPT-DE.txt', data: `${prompt}\n`, modifiedAt: createdAt },
     {
-      name: 'audio/normalzustand-original.wav',
-      data: audioBufferToWav(options.reference),
-      modifiedAt: createdAt,
-    },
-    {
-      name: 'audio/messung-original.wav',
-      data: audioBufferToWav(options.measurement),
-      modifiedAt: createdAt,
-    },
-    {
-      name: 'audio/unterschied-hoerhilfe.wav',
-      data: audioBufferToWav(take.buffer),
+      name: 'NAECHSTE-GEGENAUFNAHME.txt',
+      data: nextCaptureText(options.situation),
       modifiedAt: createdAt,
     },
     {
       name: 'daten/aufnahmekontext.json',
       data: json({
+        caseMode: options.mode,
         situation: options.situation,
         machineName: options.includeMachineName ? options.machineName : null,
         privacy: options.includeMachineName
@@ -278,6 +431,77 @@ export async function buildAnalysisPackage(
       modifiedAt: createdAt,
     },
     {
+      name: 'daten/markierung.json',
+      data: json(selectionJson(options.selection)),
+      modifiedAt: createdAt,
+    },
+  ];
+
+  if (options.mode === 'single-recording') {
+    entries.push({
+      name: 'audio/verdaechtige-aufnahme-original.wav',
+      data: audioBufferToWav(options.measurement),
+      modifiedAt: createdAt,
+    });
+  } else if (options.mode === 'neutral-comparison' && reference && take) {
+    entries.push(
+      {
+        name: 'audio/aufnahme-a-original.wav',
+        data: audioBufferToWav(reference),
+        modifiedAt: createdAt,
+      },
+      {
+        name: 'audio/aufnahme-b-original.wav',
+        data: audioBufferToWav(options.measurement),
+        modifiedAt: createdAt,
+      },
+      {
+        name: 'audio/kontrast-hoerhilfe.wav',
+        data: audioBufferToWav(take.buffer),
+        modifiedAt: createdAt,
+      }
+    );
+  } else if (reference && take) {
+    entries.push(
+      {
+        name: 'audio/normalzustand-original.wav',
+        data: audioBufferToWav(reference),
+        modifiedAt: createdAt,
+      },
+      {
+        name: 'audio/messung-original.wav',
+        data: audioBufferToWav(options.measurement),
+        modifiedAt: createdAt,
+      },
+      {
+        name: 'audio/unterschied-hoerhilfe.wav',
+        data: audioBufferToWav(take.buffer),
+        modifiedAt: createdAt,
+      }
+    );
+  }
+
+  entries.push({
+    name: 'daten/aufnahmequalitaet.json',
+    data: json(
+      reference
+        ? {
+            aufnahmeA: measureRecordingQuality(reference),
+            aufnahmeB: measureRecordingQuality(options.measurement),
+            interpretation:
+              'Technische Aufnahmequalität; daraus wird kein Gesundheitszustand abgeleitet.',
+          }
+        : {
+            aufnahme: measureRecordingQuality(options.measurement),
+            interpretation:
+              'Technische Aufnahmequalität; daraus wird kein Gesundheitszustand abgeleitet.',
+          }
+    ),
+    modifiedAt: createdAt,
+  });
+
+  if (take) {
+    entries.push({
       name: 'daten/messwerte.json',
       data: json({
         measurementRms: decimal(take.metrics.measurementRms, 8),
@@ -291,28 +515,39 @@ export async function buildAnalysisPackage(
             : decimal(take.metrics.variationMultiple, 3),
         listeningGain: decimal(take.metrics.listeningGain, 4),
         explanation:
-          'Alle Stärkewerte beschreiben das Differenzsignal vor der absichtlichen Hörverstärkung. listeningGain wurde nur auf die Hörhilfe angewendet.',
+          options.mode === 'neutral-comparison'
+            ? 'Messwerte des gerichteten Kontrasts A→B vor Hörverstärkung. Sie bestimmen nicht, welche Aufnahme gesund ist.'
+            : 'Alle Stärkewerte beschreiben das Differenzsignal vor der absichtlichen Hörverstärkung. listeningGain wurde nur auf die Hörhilfe angewendet.',
       }),
       modifiedAt: createdAt,
-    },
-    {
-      name: 'daten/markierung.json',
-      data: json(selectionJson(options.selection)),
-      modifiedAt: createdAt,
-    },
-  ];
+    });
+  }
 
   if (options.selection) {
-    const sources: Array<[string, AudioBuffer]> = [
-      ['normalzustand', options.reference],
-      ['messung', options.measurement],
-      ['unterschied', take.buffer],
-    ];
+    const sources: Array<[string, AudioBuffer]> =
+      options.mode === 'single-recording'
+        ? [['verdacht', options.measurement]]
+        : options.mode === 'neutral-comparison' && reference && take
+          ? [
+              ['aufnahme-a', reference],
+              ['aufnahme-b', options.measurement],
+              ['kontrast', take.buffer],
+            ]
+          : reference && take
+            ? [
+                ['normalzustand', reference],
+                ['messung', options.measurement],
+                ['unterschied', take.buffer],
+              ]
+            : [];
     for (const [name, buffer] of sources) {
       const selected = createSpectralSelectionBuffer(buffer, options.selection);
       if (selected) {
         entries.push({
-          name: `audio/markierung-${name}-hoerhilfe.wav`,
+          name:
+            options.mode === 'single-recording'
+              ? 'audio/markierter-verdacht-hoerhilfe.wav'
+              : `audio/markierung-${name}-hoerhilfe.wav`,
           data: audioBufferToWav(selected.buffer),
           modifiedAt: createdAt,
         });
@@ -322,21 +557,31 @@ export async function buildAnalysisPackage(
     }
   }
 
-  const referenceMatrix = getFineSpectrogramMatrix(options.reference);
+  const referenceMatrix = reference ? getFineSpectrogramMatrix(reference) : null;
   const measurementMatrix = getFineSpectrogramMatrix(options.measurement);
-  const rawDifferenceMatrix = getFineSpectrogramMatrix(take.buffer);
-  const differenceMatrix = rawDifferenceMatrix
-    ? compensateSpectrogramGain(rawDifferenceMatrix, take.metrics.listeningGain)
-    : null;
+  const rawDifferenceMatrix = take ? getFineSpectrogramMatrix(take.buffer) : null;
+  const differenceMatrix =
+    rawDifferenceMatrix && take
+      ? compensateSpectrogramGain(rawDifferenceMatrix, take.metrics.listeningGain)
+      : null;
   const matrices = [referenceMatrix, measurementMatrix, differenceMatrix].filter(
     (matrix): matrix is SpectrogramMatrix => Boolean(matrix)
   );
   const ceiling = matrices.length ? Math.max(...matrices.map((matrix) => matrix.maxDb)) : 0;
-  const images: Array<[string, string, SpectrogramMatrix | null]> = [
-    ['normalzustand.png', 'Normalzustand · Original', referenceMatrix],
-    ['messung.png', 'Messung · Original', measurementMatrix],
-    ['unterschied.png', 'Unterschied · Pegel vor Hörverstärkung', differenceMatrix],
-  ];
+  const images: Array<[string, string, SpectrogramMatrix | null]> =
+    options.mode === 'single-recording'
+      ? [['verdaechtige-aufnahme.png', 'Verdächtige Aufnahme · Original', measurementMatrix]]
+      : options.mode === 'neutral-comparison'
+        ? [
+            ['aufnahme-a.png', 'Aufnahme A · Gesundheitszustand unklar', referenceMatrix],
+            ['aufnahme-b.png', 'Aufnahme B · Gesundheitszustand unklar', measurementMatrix],
+            ['kontrast.png', 'Kontrast A→B · Pegel vor Hörverstärkung', differenceMatrix],
+          ]
+        : [
+            ['normalzustand.png', 'Normalzustand · Original', referenceMatrix],
+            ['messung.png', 'Messung · Original', measurementMatrix],
+            ['unterschied.png', 'Unterschied · Pegel vor Hörverstärkung', differenceMatrix],
+          ];
   for (const [filename, title, matrix] of images) {
     if (!matrix) {
       warnings.push(`Spektrogramm ${filename} konnte nicht erzeugt werden.`);
@@ -357,18 +602,34 @@ export async function buildAnalysisPackage(
   }
   const manifest = {
     format: 'SoundFuchs KI-Analysepaket',
-    version: 1,
+    version: 2,
+    caseMode: options.mode,
     createdAt: createdAt.toISOString(),
     generatedLocally: true,
     uploadedBySoundFuchs: false,
     contents: entries.map((entry) => entry.name).concat('daten/manifest.json'),
     warnings,
-    notices: [
-      'Normalzustand und Messung sind unveränderte PCM-WAV-Dateien.',
-      'Unterschied und Markierungen sind bearbeitete Hörhilfen, keine Originalmessungen.',
-      'Die reale Stärke steht in daten/messwerte.json und wurde vor Hörverstärkung bestimmt.',
-      'Standort- und Kundendaten werden nicht exportiert.',
-    ],
+    notices:
+      options.mode === 'single-recording'
+        ? [
+            'Es gibt keinen bekannten gesunden Normalzustand.',
+            'Die verdächtige Aufnahme ist eine unveränderte PCM-WAV-Datei.',
+            'Eine Markierung ist eine bearbeitete Hörhilfe und keine Originalmessung.',
+            'Standort- und Kundendaten werden nicht exportiert.',
+          ]
+        : options.mode === 'neutral-comparison'
+          ? [
+              'Keine der beiden Originalaufnahmen ist als gesund bestätigt.',
+              'Kontrast und Markierungen sind bearbeitete Hörhilfen, keine Originalmessungen.',
+              'Der Kontrast bestimmt nicht, welche Aufnahme gesund oder defekt ist.',
+              'Standort- und Kundendaten werden nicht exportiert.',
+            ]
+          : [
+              'Normalzustand und Messung sind unveränderte PCM-WAV-Dateien.',
+              'Unterschied und Markierungen sind bearbeitete Hörhilfen, keine Originalmessungen.',
+              'Die reale Stärke steht in daten/messwerte.json und wurde vor Hörverstärkung bestimmt.',
+              'Standort- und Kundendaten werden nicht exportiert.',
+            ],
   };
   entries.push({ name: 'daten/manifest.json', data: json(manifest), modifiedAt: createdAt });
 

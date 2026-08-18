@@ -74,6 +74,9 @@ export const en: TranslationDict = {
     quelleNormalzustand: '🔊 Normal state',
     quelleMessung: '🔊 Measurement',
     quelleUnterschied: '🔍 Difference',
+    quelleAufnahme: '🔊 Recording',
+    einzelaufnahmeHinweis:
+      'No comparison recording needed: mark the suspicious pattern and make it easier to hear.',
     feinEinstellen: 'Fine-tune',
     hoerbarMachen: '🎧 Make the anomaly audible',
     hervorhebungTitel: 'Highlight difference',
@@ -96,6 +99,9 @@ export const en: TranslationDict = {
     auswahlOeffnen: '🎯 Select an area in the spectrogram',
     auswahlHinweis:
       'Draw a frame around the conspicuous pattern. Then switch between normal state, measurement and difference – time and frequency stay the same.',
+    auswahlHinweisEinzeln:
+      'Draw a frame around the suspicious pattern. This exact time and frequency range is added to the sound case as a listening aid.',
+    auswahlQuelleAufnahme: 'Recording',
     auswahlQuellenTitel: 'Spectrogram selection source',
     auswahlLaedt: 'Preparing spectrogram …',
     auswahlCanvasLabel: 'Spectrogram selection. Time is horizontal, frequency vertical.',
@@ -124,10 +130,24 @@ export const en: TranslationDict = {
     entryHint:
       'Baseline, measurement, difference, context and spectrograms for an AI of your choice.',
     entryButton: '✨ Create AI analysis package',
+    entrySingleEyebrow: 'No reference? No problem.',
+    entrySingleTitle: 'Turn a suspicion into a clear sound case',
+    entrySingleHint:
+      'Original, marked focus, listening aid, recording quality and a plan for the best counter-recording.',
+    entrySingleButton: '✨ Create sound case for AI',
     eyebrow: 'SoundFuchs handover assistant',
     title: 'Pass the sound on clearly',
     intro:
       'Describe the situation. SoundFuchs builds a traceable package locally — without uploads or an account.',
+    caseModeTitle: 'What do you know about the two recordings?',
+    caseModeHint: 'This prevents an acoustic difference from being mistaken for damage.',
+    modeHealthyTitle: 'The baseline was healthy',
+    modeHealthyHint: 'Classic comparison: what is new in the later measurement?',
+    modeNeutralTitle: 'Health state is unknown',
+    modeNeutralHint: 'Neutral A/B contrast: different, but neither side is labelled defective.',
+    noReferenceTitle: 'No healthy reference? No problem.',
+    noReferenceHint:
+      'SoundFuchs honestly looks for patterns within this recording and includes a plan for the most useful counter-recording.',
     close: 'Close dialog',
     situationTitle: 'What was recorded?',
     situationHint: 'Good context prevents an AI from confusing an engine bay, kitchen or workshop.',
