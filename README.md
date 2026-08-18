@@ -1,4 +1,4 @@
-# SoundFuchs - Edge AI Machine Monitoring
+# SoundFuchs – Geräuschvergleich und Geräusch-Briefing
 
 ![Local First](https://img.shields.io/badge/Local--First-100%25%20Browser-2ea44f)
 ![Privacy by Design](https://img.shields.io/badge/Privacy%20by%20Design-Edge--Only-blue)
@@ -6,15 +6,15 @@
 ![MIT License](https://img.shields.io/badge/License-MIT-yellow)
 ![Version](https://img.shields.io/badge/Version-2.0.0-orange)
 
-**Smartphones hören Maschinenklänge.**
+**Macht hörbar, was du meinst.**
 
 ---
 
 ## Überblick
 
-**SoundFuchs 2.0** ist eine datenschutzfreundliche **Progressive Web App (PWA)** für die **vergleichende Analyse von Maschinenakustik** mit **Edge AI**. Die gesamte Signalverarbeitung läuft **100 % lokal im Browser** via **WebAssembly (WASM)** – **ohne Cloud, ohne Backend, ohne Serverkommunikation**. Als Sensor dient **ausschließlich das integrierte Mikrofon** des Endgeräts.
+**SoundFuchs 2.0** ist ein datenschutzfreundlicher **Geräusch-Assistent** als Progressive Web App (PWA). Er vergleicht Maschinenakustik, markiert auffällige Hörstellen und bereitet daraus ein kompaktes **Geräusch-Briefing** für Fachpersonen oder eine frei gewählte externe KI auf. Die Signalverarbeitung läuft vollständig lokal im Browser – **ohne Cloud, ohne Backend und ohne Konto**. Als Sensor genügt das integrierte Mikrofon des Endgeräts.
 
-SoundFuchs versteht sich bewusst **nicht als Diagnosewerkzeug**, sondern als **Vergleichs- und Orientierungsinstrument**, das menschliche Einschätzung unterstützt.
+SoundFuchs versteht sich bewusst **nicht als Diagnosewerkzeug**. SoundFuchs bereitet auf und übergibt; die fachliche Prüfung und Einordnung erfolgen beim Empfänger.
 
 ---
 
@@ -23,6 +23,8 @@ SoundFuchs versteht sich bewusst **nicht als Diagnosewerkzeug**, sondern als **V
 - **Edge-Only Verarbeitung**: FFT-Analyse, Spektrogramm und Mustervergleich vollständig lokal im Browser.
 - **Ähnlichkeits-Score (0–100%)**: Mathematische Ähnlichkeit (Kosinus-Ähnlichkeit) zwischen Referenz- und Vergleichsaufnahme.
 - **Vergleich statt Diagnose**: Rein mathematisch-statistischer Mustervergleich – kein Diagnose- oder Klassifikationssystem.
+- **Geräusch-Briefing**: Original, markierte Hörstelle, Kontext, Aufnahmequalität und Arbeitsauftrag kompakt zur Weitergabe aufbereitet.
+- **Auch ohne Referenz**: Eine Einzelaufnahme wird als ehrlicher Verdachtsfall gebrieft; zwei unbekannte Aufnahmen bleiben ein neutraler A/B-Kontrast.
 - **Nutzerdefinierte Schwelle**: Nutzer legen selbst fest, ab welchem Score ein Zustand als „unauffällig" oder „abweichend" gilt.
 - **Local First & Privacy by Design**: Keine Datenübertragung, kein Upload, keine Cloud-Komponenten.
 - **Sensorik-Minimalismus**: Keine externen Sensoren, keine IoT-Hardware, keine Zusatzgeräte.
@@ -85,9 +87,9 @@ SoundFuchs wurde darauf ausgelegt, auch auf unterschiedlichen Smartphones zuverl
 
 ### Ergebnisse
 
-| Vergleichsart | Ähnlichkeit |
-|---|---|
-| Same-Device Vergleich | ca. 95–97 % |
+| Vergleichsart          | Ähnlichkeit |
+| ---------------------- | ----------- |
+| Same-Device Vergleich  | ca. 95–97 % |
 | Cross-Device Vergleich | ca. 93–94 % |
 
 Der Verlust von lediglich **1–3 Prozentpunkten** beim Gerätewechsel ist in der Audioanalyse üblich und praktisch unkritisch. In vergleichbaren Bereichen (z. B. Speaker Recognition, Acoustic Monitoring) gelten **>90 % ohne Domain-Adaptation** bereits als sehr stabil.
@@ -137,18 +139,18 @@ SoundFuchs wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Pro
 
 ### Relevante IP und technische Abgrenzung
 
-| Referenz / Technik | Quelle | Geschützter Bereich | Abgrenzung zu SoundFuchs |
-|---|---|---|---|
-| **Siemens AG** (PAPDEOTT005125) | Defensive Veröffentlichung, 2016 | Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren | SoundFuchs arbeitet vollständig lokal, ohne Cloud, ohne zentrale Datenbank, ohne Diagnose |
-| **Siemens AG** (EP3701708B1) | Europäisches Patent, 2022 | ML-basierte Remote-Diagnose mit trainierten Modellen und Sensorik | SoundFuchs verwendet kein Machine Learning, keine Cloud, keine eingebettete Diagnose-Logik |
-| **Siemens Corp.** (US9263041B2) | US-Patent, 2016 | Anwendung von GMIA für Sprach- und Hörsysteme | SoundFuchs nutzt GMIA-ähnliche Mathematik ausschließlich für Nicht-Sprache und lokale Vergleiche |
-| **Siemens** (US9443201B2) | US-Patent, 2016 | Klassifikation und Modelltraining von Sensorsignaturen | SoundFuchs führt keine Klassifikation und kein Modelltraining durch |
-| **Schlumberger** (US9602781B2) | US-Patent, 2017 | Trennung seismischer Signale mittels GMIA | Unterschiedliche Domäne und Signalart, nicht verwandt |
-| **ABB** | Öffentliche Industrie-Präsentation, 2015 | Mobile Sensorik zur ad-hoc Diagnose mit Cloud- und Service-Integration | SoundFuchs vermeidet Diagnose, Service-Workflows und Cloud-Anbindung |
-| **Prophecy Sensors** | Industrie | Audio-Upload zur Diagnose | SoundFuchs speichert keine Daten extern |
-| **Fisher-Rosemount** | Industrie | Externe Prozessdaten | SoundFuchs nutzt ausschließlich das Mikrofon |
-| **FPT Software / SoundAI** | Industrie | Trainierte Encoder-Decoder-Modelle mit Server-Training | SoundFuchs nutzt ausschließlich mathematisch-statistische Verfahren (Level 1) ohne Modelltraining |
-| **GMIA Verfahren** | Mathematisch | Patentierte Cloud-Workflows und Sensor-Fusion-Setups | SoundFuchs nutzt den GMIA-Algorithmus als reine, lokale mathematische Implementierung in TypeScript (Open Source) |
+| Referenz / Technik              | Quelle                                   | Geschützter Bereich                                                          | Abgrenzung zu SoundFuchs                                                                                          |
+| ------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Siemens AG** (PAPDEOTT005125) | Defensive Veröffentlichung, 2016         | Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren | SoundFuchs arbeitet vollständig lokal, ohne Cloud, ohne zentrale Datenbank, ohne Diagnose                         |
+| **Siemens AG** (EP3701708B1)    | Europäisches Patent, 2022                | ML-basierte Remote-Diagnose mit trainierten Modellen und Sensorik            | SoundFuchs verwendet kein Machine Learning, keine Cloud, keine eingebettete Diagnose-Logik                        |
+| **Siemens Corp.** (US9263041B2) | US-Patent, 2016                          | Anwendung von GMIA für Sprach- und Hörsysteme                                | SoundFuchs nutzt GMIA-ähnliche Mathematik ausschließlich für Nicht-Sprache und lokale Vergleiche                  |
+| **Siemens** (US9443201B2)       | US-Patent, 2016                          | Klassifikation und Modelltraining von Sensorsignaturen                       | SoundFuchs führt keine Klassifikation und kein Modelltraining durch                                               |
+| **Schlumberger** (US9602781B2)  | US-Patent, 2017                          | Trennung seismischer Signale mittels GMIA                                    | Unterschiedliche Domäne und Signalart, nicht verwandt                                                             |
+| **ABB**                         | Öffentliche Industrie-Präsentation, 2015 | Mobile Sensorik zur ad-hoc Diagnose mit Cloud- und Service-Integration       | SoundFuchs vermeidet Diagnose, Service-Workflows und Cloud-Anbindung                                              |
+| **Prophecy Sensors**            | Industrie                                | Audio-Upload zur Diagnose                                                    | SoundFuchs speichert keine Daten extern                                                                           |
+| **Fisher-Rosemount**            | Industrie                                | Externe Prozessdaten                                                         | SoundFuchs nutzt ausschließlich das Mikrofon                                                                      |
+| **FPT Software / SoundAI**      | Industrie                                | Trainierte Encoder-Decoder-Modelle mit Server-Training                       | SoundFuchs nutzt ausschließlich mathematisch-statistische Verfahren (Level 1) ohne Modelltraining                 |
+| **GMIA Verfahren**              | Mathematisch                             | Patentierte Cloud-Workflows und Sensor-Fusion-Setups                         | SoundFuchs nutzt den GMIA-Algorithmus als reine, lokale mathematische Implementierung in TypeScript (Open Source) |
 
 Die Tabelle beschreibt, wie sich SoundFuchs technisch von den genannten Verfahren unterscheidet. Sie ist eine Darstellung der eigenen Bauweise und **keine schutzrechtliche Bewertung** – eine solche kann und will dieses Projekt nicht abgeben.
 
@@ -182,4 +184,4 @@ Alle Verarbeitungen erfolgen **offline**. Es werden **keine Nutzerdaten übertra
 
 ---
 
-**Leitgedanke:** *Hört sich die Maschine normal an?*
+**Leitgedanke:** _Hört sich die Maschine normal an?_

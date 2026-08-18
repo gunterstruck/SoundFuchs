@@ -307,6 +307,66 @@ Kamerabild während der Prüfung, Abspielen der Aufnahmen, 3D-Spektrum. Sie
 liegen hinter dem Scharnier, also im neu gebauten Teil — der Durchlauf
 (Schritte 12–14) bleibt ihr Wächter und muss nach jedem Schnitt grün sein.
 
+## 0i. Produktleuchtturm: das Geräusch-Briefing
+
+**SoundFuchs stellt keine Diagnose.** Sein Leuchtturm ist ein anderer, klarer
+Nutzen: SoundFuchs macht hörbar, was ein Mensch meint, und bereitet es so auf,
+dass eine Fachperson oder externe KI ohne langes Nachfragen weiterarbeiten
+kann.
+
+> **SoundFuchs – der Assistent für auffällige Geräusche.**
+>
+> **Macht hörbar, was du meinst.**
+
+Das verbindliche Produktbild besteht aus vier Teilen:
+
+| Ebene     | Verbindlicher Begriff                 | Bedeutung                                                                        |
+| --------- | ------------------------------------- | -------------------------------------------------------------------------------- |
+| Rolle     | **Geräusch-Assistent**                | führt durch Aufnahme, Markierung, Aufbereitung und Übergabe                      |
+| Bild      | **akustischer Textmarker / Hör-Lupe** | hebt das Gemeinte hervor, ohne es als Ursache zu deuten                          |
+| Tätigkeit | **Geräusch aufbereiten**              | Original, Hörstelle, Kontext und technische Grenzen verständlich zusammenstellen |
+| Ergebnis  | **Geräusch-Briefing**                 | kompakte, weitergebbare Arbeitsgrundlage für Fachperson oder externe KI          |
+
+Die einfache Reise lautet damit:
+
+```text
+Aufnehmen → markieren → aufbereiten → Geräusch-Briefing weitergeben
+```
+
+Die Rollen dürfen in keinem Text vermischt werden:
+
+- **SoundFuchs** vergleicht, markiert, macht hörbar und stellt zusammen.
+- **Der Nutzer** beschreibt, was er wahrnimmt, und entscheidet über die
+  Weitergabe.
+- **Fachperson oder externe KI** prüfen, ordnen ein und stellen gegebenenfalls
+  eine Diagnose. Diese Leistung wird SoundFuchs nie zugeschrieben.
+
+„Briefing" ist dabei kein dekorativer Anglizismus. Es bezeichnet den Zweck:
+Jemand erhält kompakt alle Informationen, die für die nächste Prüfung nötig
+sind. „Paket" bezeichnet nur den ZIP-Behälter, „Fall" nur die konkrete
+Situation und „Prompt" nur den technischen Arbeitsauftrag innerhalb des
+Briefings. Keiner dieser Begriffe ersetzt den Produktbegriff
+**Geräusch-Briefing**.
+
+### Verbindliches Vokabular
+
+| Verwenden                                    | Nicht als Produktversprechen verwenden     |
+| -------------------------------------------- | ------------------------------------------ |
+| Geräusch-Briefing                            | Diagnosepaket, KI-Diagnose                 |
+| Geräusch aufbereiten                         | Schaden analysieren                        |
+| Auffälligkeit, Muster, Unterschied, Kontrast | Fehler erkannt, Defekt festgestellt        |
+| Hör-Lupe, markierte Hörstelle, Hörhilfe      | Beweis, Schadenssignal                     |
+| fachliche Prüfung und Einordnung             | automatische Diagnose                      |
+| nächste Gegenaufnahme                        | Fehlerbestätigung                          |
+| Arbeitsauftrag                               | Analyse-Prompt als sichtbarer Hauptbegriff |
+
+Technische Bestandsnamen wie `AnalysisPackageDialog` oder die historische
+Datei `3-Diagnose.ts` dürfen intern zunächst stabil bleiben. Nutzertexte,
+Exporte, neue Dokumentation und neue Tests folgen ab jetzt ausschließlich
+diesem Begriffsmodell. Übersetzungen verwenden die jeweilige natürliche
+Entsprechung von „Geräusch-Briefing"; sie müssen nicht den deutschen
+Anglizismus wörtlich übernehmen.
+
 ## 1. Was ich falsch verstanden hatte
 
 Bis heute früh habe ich „wie TourFuchs" als **Aussehen** gelesen: dieselben
@@ -1686,6 +1746,55 @@ Datei verwerfen, ohne dass ein Datensatz zurückbleibt.
    Formatmeldung und einen sicheren Rückweg.
 8. Der gesamte Vorgang funktioniert nach dem Laden der App offline und lädt
    ohne ausdrückliche Freigabe nichts hoch.
+
+### 7f. Leuchtturm umgesetzt — Geräusch-Briefing (18.08.2026)
+
+Schnitt 6A/6B hat aus der bisherigen „KI-Analysepaket"-Übergabe den
+Leuchtturm der Produktstrategie gemacht: ein **Geräusch-Briefing**, das lokal
+entsteht und an eine Fachperson oder eine frei gewählte externe KI übergeben
+werden kann. Die externe KI ist ein möglicher Empfänger, nicht Bestandteil
+und nicht Voraussetzung von SoundFuchs.
+
+Das Briefing funktioniert in drei ehrlichen Ausgangslagen:
+
+1. **Bekannter Normalzustand + Messung:** SoundFuchs dokumentiert den hörbaren
+   Unterschied, ohne daraus Ursache oder Schadensschwere abzuleiten.
+2. **Eine verdächtige Aufnahme:** SoundFuchs beschreibt und markiert Muster
+   innerhalb dieser Aufnahme und legt einen Plan für die sinnvollste
+   Gegenaufnahme bei.
+3. **Zwei Aufnahmen mit unbekanntem Zustand:** SoundFuchs nennt das Ergebnis
+   neutralen A/B-Kontrast und erklärt keine Seite für gesund oder defekt.
+
+Jedes Geräusch-Briefing enthält je nach Ausgangslage Originalaufnahmen,
+markierte Hörhilfen, Spektrogramme, Aufnahmequalität, Aufnahmekontext,
+technische Grenzen, einen Arbeitsauftrag und die nächste sinnvolle
+Gegenaufnahme. Der Arbeitsauftrag liegt im ZIP und zusätzlich in der
+Zwischenablage. SoundFuchs lädt selbst nichts hoch.
+
+**Abnahme des Leuchtturms:** Ein Empfänger muss nach dem Öffnen in weniger als
+einer Minute verstehen können: Was wurde aufgenommen? Welche Stelle meint der
+Nutzer? Was ist Original und was Hörhilfe? Welche Aussage ist zulässig? Was
+soll als Nächstes geprüft werden? Erst wenn alle fünf Antworten ohne Rückfrage
+auffindbar sind, ist es ein vollständiges Geräusch-Briefing.
+
+Die weitere Roadmap wird daran priorisiert:
+
+- **P1 · Konsistente Sprache:** alle sichtbaren Übergabetexte und Exportnamen
+  auf Geräusch-Briefing, Aufbereitung und Arbeitsauftrag umstellen.
+- **P1 · Briefing-Qualität messen:** Verständlichkeit mit Fachpersonen und
+  verschiedenen externen KI-Oberflächen prüfen; keine Diagnosegüte behaupten.
+- **P2 · Aufnahmebedingungen stärken:** Position, Abstand, Betriebszustand und
+  Vergleichbarkeit einfacher dokumentieren.
+- **P2 · Audioimport:** vorhandene Audiodateien als Aufnahme oder
+  Normalzustand übernehmen (§7e) und direkt in ein Briefing führen.
+- **P3 · Empfängerhilfe:** anbieterneutrale Hinweise, wie ZIP oder
+  Mindestdateien an Fachpersonen und unterschiedliche KI-Oberflächen
+  übergeben werden.
+
+Ein Roadmap-Punkt erhält Vorrang, wenn er das Briefing schneller,
+verständlicher, ehrlicher oder besser weitergebbar macht. Eine Funktion, die
+nur wie Diagnose wirkt, ohne die Übergabe zu verbessern, gehört nicht zu
+diesem Leuchtturm.
 
 ---
 

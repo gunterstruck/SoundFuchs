@@ -1,10 +1,10 @@
 /**
- * SOUNDFUCHS — EIN ANBIETERNEUTRALES KI-ANALYSEPAKET
+ * SOUNDFUCHS — EIN ANBIETERNEUTRALES GERÄUSCH-BRIEFING
  *
  * Alles entsteht lokal. SoundFuchs lädt nichts hoch und braucht keinen API-Key.
  * Das Ergebnis ist ein nachvollziehbares ZIP: Originale, abgeleitete Hörhilfe,
- * Messwerte, Spektrogramme, Kontext und derselbe Prompt, der zusätzlich in die
- * Zwischenablage gelegt wird.
+ * Messwerte, Spektrogramme, Kontext und derselbe Arbeitsauftrag, der zusätzlich
+ * in die Zwischenablage gelegt wird.
  */
 
 import { getDifferenceTake } from './differenceTake.js';
@@ -128,12 +128,12 @@ export function measureRecordingQuality(buffer: AudioBuffer): RecordingQualityMe
 
 function caseIntroduction(mode: AnalysisCaseMode): string {
   if (mode === 'single-recording') {
-    return 'Du erhältst einen lokal von SoundFuchs erzeugten Geräuschfall mit genau einer verdächtigen Aufnahme. Es gibt KEINEN bekannten gesunden Normalzustand.';
+    return 'Du erhältst ein lokal von SoundFuchs aufbereitetes Geräusch-Briefing mit genau einer verdächtigen Aufnahme. Es gibt KEINEN bekannten gesunden Normalzustand.';
   }
   if (mode === 'neutral-comparison') {
-    return 'Du erhältst einen lokalen A/B-Geräuschfall mit zwei Aufnahmen. KEINE der beiden Aufnahmen ist als gesund bestätigt.';
+    return 'Du erhältst ein lokales A/B-Geräusch-Briefing mit zwei Aufnahmen. KEINE der beiden Aufnahmen ist als gesund bestätigt.';
   }
-  return 'Du erhältst ein lokal von SoundFuchs erzeugtes Analysepaket mit einem akustischen Normalzustand und einer späteren Messung.';
+  return 'Du erhältst ein lokal von SoundFuchs aufbereitetes Geräusch-Briefing mit einem akustischen Normalzustand und einer späteren Messung.';
 }
 
 function modeBoundaries(mode: AnalysisCaseMode): string[] {
@@ -204,12 +204,12 @@ ANTWORTFORMAT
 - Sicherheits- und Unsicherheitshinweis
 - Werkstatt-/Fachmann-Notiz
 
-Beginne mit dem Entpacken und Lesen von „ANALYSE-STARTEN.txt“ und „daten/manifest.json“. Falls deine Oberfläche ZIP-Dateien nicht lesen kann, bitte den Nutzer, die dort genannten Mindestdateien einzeln hochzuladen.`;
+Beginne mit dem Entpacken und Lesen von „BRIEFING-STARTEN.txt“ und „daten/manifest.json“. Falls deine Oberfläche ZIP-Dateien nicht lesen kann, bitte den Nutzer, die dort genannten Mindestdateien einzeln hochzuladen.`;
 }
 
 function downloadName(name: string, date: Date): string {
   const day = date.toISOString().slice(0, 10);
-  return `SoundFuchs-Analyse-${safeAudioBaseName(name)}-${day}.zip`;
+  return `SoundFuchs-Briefing-${safeAudioBaseName(name)}-${day}.zip`;
 }
 
 function json(value: unknown): string {
@@ -366,24 +366,26 @@ function startText(mode: AnalysisCaseMode, hasSelection: boolean): string {
    - daten/aufnahmequalitaet.json`;
   const truth =
     mode === 'single-recording'
-      ? 'Es gibt keinen bekannten gesunden Normalzustand. Das Paket beschreibt Muster innerhalb einer Aufnahme und darf keine Verschlechterung behaupten.'
+      ? 'Es gibt keinen bekannten gesunden Normalzustand. Das Briefing beschreibt Muster innerhalb einer Aufnahme und darf keine Verschlechterung behaupten.'
       : mode === 'neutral-comparison'
         ? 'Keine der beiden Aufnahmen ist als gesund bestätigt. Der Kontrast zeigt Verschiedenheit, aber keine Fehlerseite.'
         : 'Der Unterschied wird gegen einen als gesund bezeichneten Normalzustand gebildet. Die Differenz-Hörhilfe ist absichtlich verstärkt; ihre Lautheit ist nicht real.';
-  return `SOUNDFUCHS · KI-ANALYSEPAKET
+  return `SOUNDFUCHS · GERÄUSCH-BRIEFING
 
-1. Kopiere den Inhalt von PROMPT-DE.txt in eine KI deiner Wahl.
-2. Lade dieses ZIP dort hoch. Falls ZIP nicht unterstützt wird, entpacke es und lade mindestens hoch:
+Zweck: Dieses Briefing macht nachvollziehbar, welches Geräusch der Nutzer meint. SoundFuchs bereitet vor; die fachliche Prüfung und Einordnung erfolgen beim Empfänger.
+
+1. Lies den Arbeitsauftrag in ARBEITSAUFTRAG-DE.txt. Für eine externe KI kopiere ihn in deren Eingabefeld.
+2. Übergib dieses ZIP an eine Fachperson oder KI. Falls ZIP nicht unterstützt wird, entpacke es und übergib mindestens:
 ${minimum}
    - daten/aufnahmekontext.json
 ${hasSelection ? '   - audio/markierung-* oder audio/markierter-verdacht-* (bearbeitete Hörhilfe des markierten Bereichs)\n' : ''}3. ${truth}
 4. „NAECHSTE-GEGENAUFNAHME.txt“ enthält einen kurzen Plan für einen aussagekräftigeren Folgeversuch.
 
 DATENSCHUTZ
-Das Paket wurde lokal im Browser erzeugt. SoundFuchs hat nichts hochgeladen. Mit dem Weitergeben an eine KI gelten deren Datenschutzregeln. Audio kann Stimmen oder Ortsgeräusche enthalten — prüfe die Dateien vor dem Hochladen.
+Das Briefing wurde lokal im Browser erzeugt. SoundFuchs hat nichts hochgeladen. Bei der Weitergabe gelten die Datenschutzregeln des Empfängers. Audio kann Stimmen oder Ortsgeräusche enthalten — prüfe die Dateien vor dem Weitergeben.
 
 GRENZE
-Das Paket unterstützt das Beschreiben und Eingrenzen eines Geräuschs. Es ersetzt keine sicherheitsrelevante Prüfung und keine Fachdiagnose.
+Das Briefing unterstützt das Beschreiben, Hervorheben und Weitergeben eines Geräuschs. SoundFuchs trifft keine Diagnose und ersetzt keine sicherheitsrelevante Prüfung.
 `;
 }
 
@@ -408,11 +410,11 @@ export async function buildAnalysisPackage(
   const warnings: string[] = [];
   const entries: ZipArchiveEntry[] = [
     {
-      name: 'ANALYSE-STARTEN.txt',
+      name: 'BRIEFING-STARTEN.txt',
       data: startText(options.mode, Boolean(options.selection)),
       modifiedAt: createdAt,
     },
-    { name: 'PROMPT-DE.txt', data: `${prompt}\n`, modifiedAt: createdAt },
+    { name: 'ARBEITSAUFTRAG-DE.txt', data: `${prompt}\n`, modifiedAt: createdAt },
     {
       name: 'NAECHSTE-GEGENAUFNAHME.txt',
       data: nextCaptureText(options.situation),
@@ -601,8 +603,11 @@ export async function buildAnalysisPackage(
     entries.push({ name: 'HINWEISE.txt', data: `${warnings.join('\n')}\n`, modifiedAt: createdAt });
   }
   const manifest = {
-    format: 'SoundFuchs KI-Analysepaket',
-    version: 2,
+    format: 'SoundFuchs Geräusch-Briefing',
+    version: 3,
+    purpose: 'Macht nachvollziehbar, welches Geräusch der Nutzer meint.',
+    soundFuchsRole: 'Aufnehmen, vergleichen, markieren, hörbar machen und aufbereiten.',
+    recipientRole: 'Fachlich prüfen und einordnen; SoundFuchs trifft keine Diagnose.',
     caseMode: options.mode,
     createdAt: createdAt.toISOString(),
     generatedLocally: true,

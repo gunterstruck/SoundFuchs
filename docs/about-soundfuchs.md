@@ -1,30 +1,31 @@
-# Über Zanobo
+# Über SoundFuchs
 
-**Assistent für akustischen Vergleich von Maschinenzuständen**
+**Geräusch-Assistent – macht hörbar, was du meinst**
 
 ---
 
 ## Einleitung
 
-**Zanobo 2.0** ist eine datenschutzfreundliche Progressive Web App (PWA) für die vergleichende Analyse von Maschinenakustik. Die Anwendung ermöglicht es, Maschinengeräusche vollständig **offline** aufzuzeichnen und miteinander zu vergleichen – ohne Cloud-Dienste, ohne externe Sensoren und ohne trainierte KI-Modelle.
+**SoundFuchs 2.0** ist eine datenschutzfreundliche Progressive Web App (PWA) für den akustischen Vergleich. Die Anwendung ermöglicht es, Maschinengeräusche vollständig **offline** aufzunehmen, miteinander zu vergleichen und als **Geräusch-Briefing** für Fachpersonen oder eine externe KI aufzubereiten – ohne Cloud-Dienste und ohne externe Sensoren.
 
-Zanobo versteht sich bewusst **nicht als Diagnosewerkzeug**, sondern als **Vergleichs- und Orientierungsinstrument**, das menschliche Einschätzung unterstützt.
+SoundFuchs versteht sich bewusst **nicht als Diagnosewerkzeug**. Es macht auffällige Hörstellen nachvollziehbar und stellt Original, Hörhilfe, Kontext und technische Grenzen kompakt zusammen. Die fachliche Prüfung und Einordnung bleiben beim Empfänger.
 
 ---
 
 ## Kernfunktionen
 
 - **Offline-First:** Alle Aufnahmen und Berechnungen erfolgen lokal im Browser.
-- **Ähnlichkeits-Score (0–100%):** Zanobo berechnet eine mathematische Ähnlichkeit (Kosinus-Ähnlichkeit) zwischen Referenz- und Vergleichsaufnahme.
+- **Ähnlichkeits-Score (0–100%):** SoundFuchs berechnet eine mathematische Ähnlichkeit (Kosinus-Ähnlichkeit) zwischen Referenz- und Vergleichsaufnahme.
 - **Nutzerdefinierte Schwelle:** Nutzer legen selbst fest, ab welchem Score ein Zustand als „unauffällig" oder „abweichend" gilt.
 - **Visuelles Spektrum-Feedback:** Echtzeit-Darstellung von Frequenzspektrum und Vergleichsergebnis.
 - **Lokale Datenspeicherung:** Alle Audioaufnahmen und Scores werden ausschließlich in der lokalen IndexedDB des Geräts gespeichert.
+- **Geräusch-Briefing:** Aufnahmen, markierte Hörstellen, Kontext und Arbeitsauftrag werden lokal zur bewussten Weitergabe aufbereitet.
 
 ---
 
 ## Anwendungsfälle
 
-Zanobo ermöglicht zwei grundlegende Vergleichsszenarien, die sich in ihrer zeitlichen und räumlichen Struktur unterscheiden:
+SoundFuchs ermöglicht zwei grundlegende Vergleichsszenarien, die sich in ihrer zeitlichen und räumlichen Struktur unterscheiden:
 
 ### a) Serieller Vergleich (Zeitlicher Vergleich / Trend)
 
@@ -35,12 +36,13 @@ Vergleich einer aktuellen Aufnahme mit einer zuvor erstellten Referenz **derselb
 Veränderungen des akustischen Musters über die Zeit sichtbar machen.
 
 **Anwendung:**
+
 - Eine Referenzaufnahme wird zu einem Zeitpunkt erstellt, an dem die Maschine als „unauffällig" bewertet wird
 - Spätere Aufnahmen werden mit dieser Referenz verglichen
 - Abweichungen vom ursprünglichen Muster werden quantifiziert (Ähnlichkeits-Score)
 
 **Hinweis:**
-Zanobo zeigt lediglich **ob und wie stark** sich das aktuelle Geräusch von der Referenz unterscheidet. Die Interpretation, ob eine Abweichung relevant ist, erfolgt durch den Nutzer. Das System trifft keine Diagnose und gibt keine Prognose ab.
+SoundFuchs zeigt lediglich **ob und wie stark** sich das aktuelle Geräusch von der Referenz unterscheidet. Die Interpretation, ob eine Abweichung relevant ist, erfolgt durch den Nutzer. Das System trifft keine Diagnose und gibt keine Prognose ab.
 
 ---
 
@@ -53,34 +55,36 @@ Vergleich mehrerer baugleicher Maschinen unter ähnlichen Betriebsbedingungen.
 Identifikation akustischer Ausreißer innerhalb einer Gruppe baugleicher Anlagen.
 
 **Anwendung:**
+
 - Aufnahmen von mehreren baugleichen Maschinen (z. B. in einer Produktionshalle) werden erstellt
-- Zanobo berechnet die akustische Ähnlichkeit zwischen den Maschinen
+- SoundFuchs berechnet die akustische Ähnlichkeit zwischen den Maschinen
 - Maschinen, deren Geräuschsignatur deutlich von der Gruppe abweicht, werden sichtbar
 
 **Besonderheit:**
 Funktioniert **auch ohne historische Referenz**. Die Vergleichsbasis bildet die Gruppe selbst.
 
 **Hinweis:**
-Zanobo entscheidet nicht, welche Maschine defekt ist oder welche den „Sollzustand" darstellt. Es zeigt ausschließlich **relative Abweichungen** innerhalb der Gruppe. Die Bewertung, ob eine abweichende Maschine weiter untersucht werden sollte, liegt beim Nutzer.
+SoundFuchs entscheidet nicht, welche Maschine defekt ist oder welche den „Sollzustand" darstellt. Es zeigt ausschließlich **relative Abweichungen** innerhalb der Gruppe. Die Bewertung, ob eine abweichende Maschine weiter untersucht werden sollte, liegt beim Nutzer.
 
 ---
 
 ## NFC-basierter Sofortzugang und kontextbasierter Vergleich
 
-Zanobo unterstützt den **Einsatz von NFC-Tags** an Maschinen, um den Zugang zur App zu vereinfachen und optional einen maschinenspezifischen Kontext bereitzustellen.
+SoundFuchs unterstützt den **Einsatz von NFC-Tags** an Maschinen, um den Zugang zur App zu vereinfachen und optional einen maschinenspezifischen Kontext bereitzustellen.
 
 ### Funktionsweise
 
 **NFC-Tag an der Maschine:**
 Ein am Gehäuse oder an der Zugangsstelle platzierter NFC-Tag kann folgende Informationen enthalten:
 
-- URL zur Zanobo-PWA (direkter App-Start im Browser)
+- URL zur SoundFuchs-PWA (direkter App-Start im Browser)
 - Maschinen-ID zur automatischen Identifikation
 - Optional: Verweis auf kundenspezifische Referenzdaten (URL zu einer JSON-Datei)
 
 **Sofortzugang ohne Installation:**
+
 - Der Nutzer hält das Smartphone an den NFC-Tag
-- Die Zanobo-PWA öffnet sich direkt im Browser (kein App Store, keine Registrierung erforderlich)
+- Die SoundFuchs-PWA öffnet sich direkt im Browser (kein App Store, keine Registrierung erforderlich)
 - Optional: Die hinterlegte Maschinen-ID wird automatisch geladen
 
 ### Optionale kontextbasierte Referenzdaten
@@ -102,7 +106,7 @@ Ein Servicetechniker oder Bediener, der die Maschine zum ersten Mal prüft, kann
 ### Datenhaltung und Datenschutz
 
 **Wichtig:**
-Die Referenzdaten liegen **nicht in einer Cloud von Zanobo**. Sie werden bereitgestellt:
+Die Referenzdaten liegen **nicht in einer Cloud von SoundFuchs**. Sie werden bereitgestellt:
 
 - Im **lokalen Netzwerk** des Betreibers (z. B. Intranet-Server)
 - In einer **kundeneigenen Umgebung** (z. B. GitHub Pages, eigener Webserver)
@@ -118,7 +122,7 @@ Der NFC-basierte Zugang dient ausschließlich der **Zugänglichkeit und Vergleic
 - Nutzung vorhandener Referenzdaten ohne eigene Aufnahme
 - Konsistente Vergleichsbasis bei mehreren Nutzern oder Standorten
 
-**Zanobo führt auch bei Nutzung von NFC-basierten Referenzdaten:**
+**SoundFuchs führt auch bei Nutzung von NFC-basierten Referenzdaten:**
 
 - **Keine Diagnose** durch (keine Aussage über Schadensursache oder Zustand)
 - **Keine Automatisierung** von Entscheidungen (kein „Gut/Schlecht"-Urteil)
@@ -130,26 +134,26 @@ Die Interpretation der Vergleichsergebnisse liegt stets beim Nutzer.
 
 ## Technische Abgrenzung
 
-Zanobo wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Projekt** unter der **MIT-Lizenz** entwickelt. Die Funktionalität basiert auf **offen beschriebenen mathematischen Verfahren** (z. B. Frequenzanalyse und GMIA-ähnliche Kosinus-Vergleiche) und integriert **keine patentierte Systemlogik**, **keine Klassifikationsmechanismen** und **keine Lernmodelle**.
+SoundFuchs wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Projekt** unter der **MIT-Lizenz** entwickelt. Die Funktionalität basiert auf **offen beschriebenen mathematischen Verfahren** (z. B. Frequenzanalyse und GMIA-ähnliche Kosinus-Vergleiche) und integriert **keine patentierte Systemlogik**.
 
 ### Relevante IP und technische Abgrenzung
 
-| Referenz / Titel | Quelle & Status | Geschützter Bereich | Abgrenzung von Zanobo |
-|---|---|---|---|
-| **PAPDEOTT005125**<br>*Verfahren zur Diagnose von Maschinen* | Defensive Veröffentlichung, Siemens AG, 2016 | Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren | Zanobo arbeitet vollständig lokal, ohne Cloud, ohne zentrale Datenbank, ohne Diagnose |
-| **EP3701708B1**<br>*Remote machine condition analysis* | Europäisches Patent, Siemens AG, 2022 | ML-basierte Remote-Diagnose mit trainierten Modellen und Sensorik | Zanobo verwendet kein Machine Learning, keine Cloud, keine eingebettete Diagnose-Logik |
-| **US9263041B2**<br>*Channel detection in noise using GMIA* | Siemens Corp., 2016 | Anwendung von GMIA für Sprach- und Hörsysteme | Zanobo nutzt GMIA-ähnliche Mathematik ausschließlich für Nicht-Sprache und lokale Vergleiche |
-| **US9443201B2**<br>*Learning of sensor signatures* | Siemens, 2016 | Klassifikation und Modelltraining von Sensorsignaturen | Zanobo führt keine Klassifikation und kein Modelltraining durch |
-| **US9602781B2**<br>*Seismic signal deblending (GMIA)* | Schlumberger, 2017 | Trennung seismischer Signale mittels GMIA | Unterschiedliche Domäne und Signalart, nicht verwandt |
-| **ABB – Integration of Mobile Measurement** | Öffentliche Industrie-Präsentation, ABB, 2015 | Mobile Sensorik zur ad-hoc Diagnose mit Cloud- und Service-Integration | Zanobo vermeidet Diagnose, Service-Workflows und Cloud-Anbindung und fokussiert sich auf lokalen Vergleich |
+| Referenz / Titel                                             | Quelle & Status                               | Geschützter Bereich                                                          | Abgrenzung von SoundFuchs                                                                                      |
+| ------------------------------------------------------------ | --------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **PAPDEOTT005125**<br>_Verfahren zur Diagnose von Maschinen_ | Defensive Veröffentlichung, Siemens AG, 2016  | Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren | SoundFuchs arbeitet vollständig lokal, ohne Cloud, ohne zentrale Datenbank, ohne Diagnose                      |
+| **EP3701708B1**<br>_Remote machine condition analysis_       | Europäisches Patent, Siemens AG, 2022         | ML-basierte Remote-Diagnose mit trainierten Modellen und Sensorik            | SoundFuchs verwendet keine Cloud und keine eingebettete Diagnose-Logik                                         |
+| **US9263041B2**<br>_Channel detection in noise using GMIA_   | Siemens Corp., 2016                           | Anwendung von GMIA für Sprach- und Hörsysteme                                | SoundFuchs nutzt GMIA-ähnliche Mathematik ausschließlich für Nicht-Sprache und lokale Vergleiche               |
+| **US9443201B2**<br>_Learning of sensor signatures_           | Siemens, 2016                                 | Klassifikation und Modelltraining von Sensorsignaturen                       | SoundFuchs nutzt lokale Referenzmodelle für Vergleiche, nicht für eine automatische Diagnose                   |
+| **US9602781B2**<br>_Seismic signal deblending (GMIA)_        | Schlumberger, 2017                            | Trennung seismischer Signale mittels GMIA                                    | Unterschiedliche Domäne und Signalart, nicht verwandt                                                          |
+| **ABB – Integration of Mobile Measurement**                  | Öffentliche Industrie-Präsentation, ABB, 2015 | Mobile Sensorik zur ad-hoc Diagnose mit Cloud- und Service-Integration       | SoundFuchs vermeidet Diagnose, Service-Workflows und Cloud-Anbindung und fokussiert sich auf lokalen Vergleich |
 
 ---
 
 ## Transparenz und Intention
 
-Zanobo ist **kein Diagnosewerkzeug** und trifft **keine automatisierten technischen Bewertungen**. Es stellt ausschließlich eine **visuelle und mathematische Vergleichshilfe** bereit.
+SoundFuchs ist **kein Diagnosewerkzeug** und trifft **keine automatisierten technischen Bewertungen**. Es stellt eine **visuelle und mathematische Vergleichshilfe** sowie ein weitergebbares **Geräusch-Briefing** bereit.
 
-**Zanobo führt explizit nicht durch:**
+**SoundFuchs führt explizit nicht durch:**
 
 - Keine Zustandsklassifikation
 - Keine Fehlerursachenanalyse

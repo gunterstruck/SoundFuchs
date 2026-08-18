@@ -1,5 +1,5 @@
 /**
- * Kleiner ZIP-Schreiber für lokale Analysepakete.
+ * Kleiner ZIP-Schreiber für lokale Geräusch-Briefings.
  *
  * Die Audiodateien sind bereits PCM-WAV und komprimieren kaum. Darum nutzt
  * der Schreiber bewusst die standardisierte STORE-Methode: kein Paket, kein

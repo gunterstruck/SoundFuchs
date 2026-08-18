@@ -463,7 +463,7 @@ export class AnalysisPackageDialog {
       download(result.blob, result.filename);
       this.showSuccess(result.prompt, copied, result.warnings.length);
     } catch (error) {
-      logger.warn('KI-Analysepaket konnte nicht erzeugt werden:', error);
+      logger.warn('Geräusch-Briefing konnte nicht erzeugt werden:', error);
       this.createButton.disabled = false;
       this.createButton.textContent = t('analysisPackage.create');
       const message = document.createElement('p');
