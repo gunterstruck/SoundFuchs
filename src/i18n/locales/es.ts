@@ -74,6 +74,9 @@ export const es: TranslationDict = {
     quelleNormalzustand: '🔊 Estado normal',
     quelleMessung: '🔊 Medición',
     quelleUnterschied: '🔍 Diferencia',
+    quelleAufnahme: '🔊 Grabación',
+    einzelaufnahmeHinweis:
+      'No hace falta una comparación: marca el patrón sospechoso y hazlo más audible.',
     feinEinstellen: 'Ajuste fino',
     hoerbarMachen: '🎧 Hacer audible la anomalía',
     hervorhebungTitel: 'Resaltar la diferencia',
@@ -95,6 +98,9 @@ export const es: TranslationDict = {
     auswahlOeffnen: '🎯 Seleccionar un área del espectrograma',
     auswahlHinweis:
       'Dibuja un marco alrededor del patrón llamativo. Después cambia entre estado normal, medición y diferencia: el tiempo y la frecuencia permanecen iguales.',
+    auswahlHinweisEinzeln:
+      'Dibuja un marco alrededor del patrón sospechoso. Ese rango de tiempo y frecuencia se añade al caso como ayuda auditiva.',
+    auswahlQuelleAufnahme: 'Grabación',
     auswahlQuellenTitel: 'Fuente de la selección del espectrograma',
     auswahlLaedt: 'Preparando el espectrograma …',
     auswahlCanvasLabel: 'Selección del espectrograma. Tiempo horizontal y frecuencia vertical.',
@@ -123,10 +129,24 @@ export const es: TranslationDict = {
     entryHint:
       'Estado normal, medición, diferencia, contexto y espectrogramas para la IA que elijas.',
     entryButton: '✨ Crear paquete de análisis con IA',
+    entrySingleEyebrow: '¿Sin referencia? No pasa nada.',
+    entrySingleTitle: 'Convierte la sospecha en un caso sonoro claro',
+    entrySingleHint:
+      'Original, foco marcado, ayuda auditiva, calidad y un plan para la mejor contragrabación.',
+    entrySingleButton: '✨ Crear caso sonoro para IA',
     eyebrow: 'Asistente de entrega SoundFuchs',
     title: 'Comparte el sonido con claridad',
     intro:
       'Describe la situación. SoundFuchs crea localmente un paquete trazable, sin subir datos ni pedir una cuenta.',
+    caseModeTitle: '¿Qué sabes de las dos grabaciones?',
+    caseModeHint: 'Evita interpretar una diferencia acústica como una avería.',
+    modeHealthyTitle: 'El estado de referencia era sano',
+    modeHealthyHint: 'Comparación clásica: ¿qué aparece en la medición posterior?',
+    modeNeutralTitle: 'El estado es desconocido',
+    modeNeutralHint: 'Contraste A/B neutral: son diferentes, sin declarar averiada ninguna.',
+    noReferenceTitle: '¿Sin referencia sana? No pasa nada.',
+    noReferenceHint:
+      'SoundFuchs busca patrones dentro de esta grabación e incluye el plan para una contragrabación útil.',
     close: 'Cerrar diálogo',
     situationTitle: '¿Qué se grabó?',
     situationHint: 'Un buen contexto evita que una IA confunda un motor, una cocina o un taller.',

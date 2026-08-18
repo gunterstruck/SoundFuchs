@@ -359,7 +359,7 @@ export class MachineHistoryModal {
       reference,
       measurement,
       shareName: machine.name,
-      analysisPackage: reference && measurement ? { machineName: machine.name } : undefined,
+      analysisPackage: reference || measurement ? { machineName: machine.name } : undefined,
     });
 
     // Lightweight modal hosting the listen panel

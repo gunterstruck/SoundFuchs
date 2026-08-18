@@ -45,7 +45,10 @@ import {
   type DifferenceHighlightStrength,
 } from '@core/audio/differenceHighlight.js';
 import { shareHearingComparison } from '@core/audio/hearingComparisonShare.js';
-import { SpectrogramSelectionPanel } from './SpectrogramSelectionPanel.js';
+import {
+  SpectrogramSelectionPanel,
+  type SpectrogramSelectionSource,
+} from './SpectrogramSelectionPanel.js';
 import { DifferenceStrengthIndicator } from './DifferenceStrengthIndicator.js';
 import { openAnalysisPackageDialog } from './AnalysisPackageDialog.js';
 import { planTranspose } from '@core/audio/audibleTranspose.js';
@@ -68,7 +71,7 @@ export interface ListenPanelOptions {
   mitUeberschrift?: boolean;
   /** Maschinenname für verständliche Dateinamen beim bewussten Teilen. */
   shareName?: string;
-  /** Zeigt den lokalen Übergang an eine beliebige KI; nur mit beiden Tönen. */
+  /** Zeigt den lokalen Übergang an eine beliebige KI; eine Aufnahme genügt. */
   analysisPackage?: { machineName: string };
 }
 
@@ -137,7 +140,11 @@ export class ListenPanel {
 
       const hinweis = document.createElement('p');
       hinweis.className = 'listen-controls-hint';
-      hinweis.textContent = t('diagnose.display.listenSectionHint');
+      hinweis.textContent = t(
+        this.hatUnterschied
+          ? 'diagnose.display.listenSectionHint'
+          : 'hoerlupe.einzelaufnahmeHinweis'
+      );
       container.appendChild(hinweis);
     }
 
@@ -161,10 +168,20 @@ export class ListenPanel {
     container.appendChild(reihe);
 
     if (reference) {
-      this.macheQuelle(reihe, 'reference', t('hoerlupe.quelleNormalzustand'), reference);
+      this.macheQuelle(
+        reihe,
+        'reference',
+        measurement ? t('hoerlupe.quelleNormalzustand') : t('hoerlupe.quelleAufnahme'),
+        reference
+      );
     }
     if (measurement) {
-      this.macheQuelle(reihe, 'measurement', t('hoerlupe.quelleMessung'), measurement);
+      this.macheQuelle(
+        reihe,
+        'measurement',
+        reference ? t('hoerlupe.quelleMessung') : t('hoerlupe.quelleAufnahme'),
+        measurement
+      );
     }
     if (this.hatUnterschied) this.macheUnterschiedsknopf(reihe);
 
@@ -183,9 +200,9 @@ export class ListenPanel {
     this.macheTempo(fein);
     if (this.hatUnterschied) this.macheHoerbar(fein);
     if (this.hatUnterschied) this.macheHervorhebung(fein);
-    if (this.hatUnterschied) this.macheSpektrogrammAuswahl(fein);
+    this.macheSpektrogrammAuswahl(fein);
     container.appendChild(fein);
-    if (this.hatUnterschied && reference && measurement && options.analysisPackage) {
+    if (options.analysisPackage) {
       this.macheAnalysepaket(
         container,
         reference,
@@ -202,8 +219,8 @@ export class ListenPanel {
    */
   private macheAnalysepaket(
     ziel: HTMLElement,
-    reference: AudioBuffer,
-    measurement: AudioBuffer,
+    reference: AudioBuffer | null,
+    measurement: AudioBuffer | null,
     machineName: string
   ): void {
     const card = document.createElement('section');
@@ -211,22 +228,35 @@ export class ListenPanel {
     const copy = document.createElement('div');
     const eyebrow = document.createElement('p');
     eyebrow.className = 'analysepaket-einstieg-eyebrow';
-    eyebrow.textContent = t('analysisPackage.entryEyebrow');
+    eyebrow.textContent = t(
+      this.hatUnterschied ? 'analysisPackage.entryEyebrow' : 'analysisPackage.entrySingleEyebrow'
+    );
     const title = document.createElement('h3');
-    title.textContent = t('analysisPackage.entryTitle');
+    title.textContent = t(
+      this.hatUnterschied ? 'analysisPackage.entryTitle' : 'analysisPackage.entrySingleTitle'
+    );
     const hint = document.createElement('p');
     hint.className = 'muted small';
-    hint.textContent = t('analysisPackage.entryHint');
+    hint.textContent = t(
+      this.hatUnterschied ? 'analysisPackage.entryHint' : 'analysisPackage.entrySingleHint'
+    );
     copy.append(eyebrow, title, hint);
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'listen-btn analysepaket-einstieg-knopf';
-    button.textContent = t('analysisPackage.entryButton');
+    button.textContent = t(
+      this.hatUnterschied ? 'analysisPackage.entryButton' : 'analysisPackage.entrySingleButton'
+    );
     button.onclick = () => {
       this.halteAn();
+      const primary = measurement ?? reference;
+      if (!primary) return;
       openAnalysisPackageDialog({
-        reference,
-        measurement,
+        // Nur wenn wirklich zwei Aufnahmen da sind, darf eine davon als
+        // mögliche Referenz auftreten. Eine einzelne alte „Referenz" wird zum
+        // neutralen Geräuschfall und nicht heimlich als gesund behauptet.
+        reference: reference && measurement ? reference : null,
+        measurement: primary,
         machineName,
         getSelection: () => this.auswahlPanel?.selection() ?? null,
       });
@@ -622,16 +652,20 @@ export class ListenPanel {
    * wechseln dabei immer gemeinsam dieselbe Quelle.
    */
   private macheSpektrogrammAuswahl(ziel: HTMLElement): void {
+    const sources: Partial<Record<SpectrogramSelectionSource, () => AudioBuffer | null>> = {};
+    if (this.referenz) sources.reference = () => this.referenz;
+    if (this.messung) sources.measurement = () => this.messung;
+    if (this.hatUnterschied) sources.difference = () => this.holeUnterschied()?.buffer ?? null;
     const panel = new SpectrogramSelectionPanel({
-      sources: {
-        reference: () => this.referenz,
-        measurement: () => this.messung,
-        difference: () => this.holeUnterschied()?.buffer ?? null,
-      },
+      sources,
       listeningGain: {
         difference: () => this.holeUnterschied()?.metrics.listeningGain ?? 1,
       },
-      initialSource: 'difference',
+      initialSource: this.hatUnterschied
+        ? 'difference'
+        : this.messung
+          ? 'measurement'
+          : 'reference',
       onSelectionChange: () => this.verwerfeAuswahlFreigabe(),
       onSourceChange: () => {
         this.verwerfeAuswahlFreigabe();

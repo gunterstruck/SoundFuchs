@@ -74,6 +74,9 @@ export const fr: TranslationDict = {
     quelleNormalzustand: '🔊 État normal',
     quelleMessung: '🔊 Mesure',
     quelleUnterschied: '🔍 Différence',
+    quelleAufnahme: '🔊 Enregistrement',
+    einzelaufnahmeHinweis:
+      'Aucune référence nécessaire : marquez le motif suspect et rendez-le plus audible.',
     feinEinstellen: 'Réglage fin',
     hoerbarMachen: '🎧 Rendre l\u2019anomalie audible',
     hervorhebungTitel: 'Accentuer la différence',
@@ -96,6 +99,9 @@ export const fr: TranslationDict = {
     auswahlOeffnen: '🎯 Sélectionner une zone du spectrogramme',
     auswahlHinweis:
       'Tracez un cadre autour du motif remarquable. Passez ensuite entre état normal, mesure et différence : le temps et la fréquence restent identiques.',
+    auswahlHinweisEinzeln:
+      'Tracez un cadre autour du motif suspect. Cette plage de temps et de fréquence est ajoutée au cas comme aide auditive.',
+    auswahlQuelleAufnahme: 'Enregistrement',
     auswahlQuellenTitel: 'Source de la sélection du spectrogramme',
     auswahlLaedt: 'Préparation du spectrogramme …',
     auswahlCanvasLabel: 'Sélection du spectrogramme. Temps horizontal, fréquence verticale.',
@@ -124,10 +130,24 @@ export const fr: TranslationDict = {
     entryHint:
       'État normal, mesure, différence, contexte et spectrogrammes pour l’IA de votre choix.',
     entryButton: '✨ Créer le paquet d’analyse IA',
+    entrySingleEyebrow: 'Pas de référence ? Aucun problème.',
+    entrySingleTitle: 'Transformez un doute en cas sonore clair',
+    entrySingleHint:
+      'Original, zone marquée, aide auditive, qualité et plan pour la meilleure contre-prise.',
+    entrySingleButton: '✨ Créer un cas sonore pour l’IA',
     eyebrow: 'Assistant de transmission SoundFuchs',
     title: 'Transmettre le bruit clairement',
     intro:
       'Décrivez la situation. SoundFuchs crée localement un paquet traçable, sans envoi ni compte.',
+    caseModeTitle: 'Que savez-vous des deux enregistrements ?',
+    caseModeHint: 'Cela évite de confondre une différence acoustique avec un dommage.',
+    modeHealthyTitle: 'La référence était saine',
+    modeHealthyHint: 'Comparaison classique : qu’est-ce qui apparaît dans la mesure suivante ?',
+    modeNeutralTitle: 'L’état de santé est inconnu',
+    modeNeutralHint: 'Contraste A/B neutre : différents, sans déclarer un côté défectueux.',
+    noReferenceTitle: 'Pas de référence saine ? Aucun problème.',
+    noReferenceHint:
+      'SoundFuchs recherche honnêtement les motifs internes et joint un plan pour une contre-prise utile.',
     close: 'Fermer la boîte de dialogue',
     situationTitle: 'Qu’avez-vous enregistré ?',
     situationHint:

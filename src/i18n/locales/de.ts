@@ -79,6 +79,9 @@ export const de: TranslationDict = {
     quelleNormalzustand: '🔊 Normalzustand',
     quelleMessung: '🔊 Messung',
     quelleUnterschied: '🔍 Unterschied',
+    quelleAufnahme: '🔊 Aufnahme',
+    einzelaufnahmeHinweis:
+      'Keine Vergleichsaufnahme nötig: Markiere das verdächtige Muster und mach es gezielt hörbar.',
     feinEinstellen: 'Fein einstellen',
     hoerbarMachen: '🎧 Auffälligkeit hörbar machen',
     hervorhebungTitel: 'Unterschied hervorheben',
@@ -99,6 +102,9 @@ export const de: TranslationDict = {
     auswahlOeffnen: '🎯 Bereich im Spektrogramm auswählen',
     auswahlHinweis:
       'Ziehe einen Rahmen um das auffällige Muster. Wechsle danach zwischen Normalzustand, Messung und Unterschied – Zeit und Frequenz bleiben gleich.',
+    auswahlHinweisEinzeln:
+      'Ziehe einen Rahmen um das verdächtige Muster. Genau dieser Zeit- und Frequenzbereich kommt als Hörhilfe in den Geräuschfall.',
+    auswahlQuelleAufnahme: 'Aufnahme',
     auswahlQuellenTitel: 'Quelle der Spektrogramm-Auswahl',
     auswahlLaedt: 'Spektrogramm wird vorbereitet …',
     auswahlCanvasLabel: 'Auswahl im Spektrogramm. Horizontal Zeit, vertikal Frequenz.',
@@ -127,10 +133,26 @@ export const de: TranslationDict = {
     entryHint:
       'Normalzustand, Messung, Unterschied, Kontext und Spektrogramme für eine KI deiner Wahl.',
     entryButton: '✨ KI-Analysepaket erstellen',
+    entrySingleEyebrow: 'Keine Referenz? Macht nichts.',
+    entrySingleTitle: 'Mach aus dem Verdacht einen klaren Geräuschfall',
+    entrySingleHint:
+      'Original, markierter Fokus, Hörhilfe, Aufnahmequalität und ein Plan für die beste Gegenaufnahme.',
+    entrySingleButton: '✨ Geräuschfall für KI erstellen',
     eyebrow: 'SoundFuchs Übergabe-Assistent',
     title: 'Geräusch verständlich weitergeben',
     intro:
       'Du beschreibst die Situation. SoundFuchs schnürt lokal ein nachvollziehbares Paket – ohne Upload und ohne Konto.',
+    caseModeTitle: 'Was weißt du über die beiden Aufnahmen?',
+    caseModeHint:
+      'Diese Angabe verhindert, dass ein Unterschied fälschlich als Schaden ausgelegt wird.',
+    modeHealthyTitle: 'Normalzustand war gesund',
+    modeHealthyHint: 'Klassischer Vergleich: Was ist in der späteren Messung neu?',
+    modeNeutralTitle: 'Gesundheitszustand ist unklar',
+    modeNeutralHint:
+      'Neutraler A/B-Kontrast: verschieden, aber keine Seite wird als defekt behauptet.',
+    noReferenceTitle: 'Keine gesunde Referenz? Macht nichts.',
+    noReferenceHint:
+      'SoundFuchs sucht ehrlich nach Mustern innerhalb dieser Aufnahme und legt gleich den sinnvollsten Plan für eine Gegenaufnahme bei.',
     close: 'Dialog schließen',
     situationTitle: 'Was wurde aufgenommen?',
     situationHint:

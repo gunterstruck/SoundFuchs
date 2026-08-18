@@ -130,6 +130,7 @@ export class SpectrogramSelectionPanel {
   private preparing: SpectrogramSelectionSource | null = null;
   private destroyed = false;
   private resizeObserver: ResizeObserver | null = null;
+  private singleSource = false;
 
   constructor(options: SpectrogramSelectionPanelOptions) {
     this.sourceProviders = options.sources;
@@ -139,6 +140,7 @@ export class SpectrogramSelectionPanel {
     const available = (['reference', 'measurement', 'difference'] as const).filter((key) =>
       Boolean(this.sourceProviders[key])
     );
+    this.singleSource = available.length === 1;
     this.activeSource =
       options.initialSource && available.includes(options.initialSource)
         ? options.initialSource
@@ -157,7 +159,9 @@ export class SpectrogramSelectionPanel {
 
     const hint = document.createElement('p');
     hint.className = 'muted small hoerlupe-auswahl-hinweis';
-    hint.textContent = t('hoerlupe.auswahlHinweis');
+    hint.textContent = t(
+      this.singleSource ? 'hoerlupe.auswahlHinweisEinzeln' : 'hoerlupe.auswahlHinweis'
+    );
     details.appendChild(hint);
 
     const sources = document.createElement('div');
@@ -244,6 +248,7 @@ export class SpectrogramSelectionPanel {
   }
 
   private sourceName(source: SpectrogramSelectionSource): string {
+    if (this.singleSource) return t('hoerlupe.auswahlQuelleAufnahme');
     if (source === 'reference') return t('spectro3d.sourceReference');
     if (source === 'measurement') return t('spectro3d.sourceMeasurement');
     return t('spectro3d.sourceDifference');
