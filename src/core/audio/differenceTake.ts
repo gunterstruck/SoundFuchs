@@ -16,7 +16,7 @@
  */
 
 import type { FeatureVector } from '@data/types.js';
-import { isolateDifference } from './differenceIsolation.js';
+import { isolateDifference, type DifferenceMetrics } from './differenceIsolation.js';
 import { extractFeatures, DEFAULT_DSP_CONFIG } from '../dsp/features.js';
 import { logger } from '@utils/logger.js';
 
@@ -25,6 +25,8 @@ export interface DifferenceTake {
   buffer: AudioBuffer;
   /** FFT-Frames desselben Signals (Produktions-Extraktion). */
   features: FeatureVector[];
+  /** Reale Stärke vor der absichtlichen Verstärkung der Hörhilfe. */
+  metrics: DifferenceMetrics;
 }
 
 /** Cache: Mess-Buffer → Differenz gegen die zugehörige Referenz. */
@@ -75,6 +77,7 @@ export function getDifferenceTake(
             ...DEFAULT_DSP_CONFIG,
             sampleRate: buffer.sampleRate,
           }),
+          metrics: result.metrics,
         };
       }
     }

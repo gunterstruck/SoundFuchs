@@ -13,8 +13,17 @@
  * abspielt (`getDifferenceTake`) — Auge und Ohr zeigen denselben Gegenstand.
  */
 
-import { Spectrogram3D } from './Spectrogram3D.js';
-import type { SpectrogramMatrix } from '@core/dsp/spectrogram.js';
+import {
+  DEFAULT_SPECTROGRAM_CAMERA,
+  Spectrogram3D,
+  type Spectrogram3DCameraState,
+} from './Spectrogram3D.js';
+import { DifferenceStrengthIndicator } from './DifferenceStrengthIndicator.js';
+import {
+  compensateSpectrogramGain,
+  rescaleSpectrogramMatrix,
+  type SpectrogramMatrix,
+} from '@core/dsp/spectrogram.js';
 import { getFineSpectrogramMatrix } from '@core/dsp/fineSpectrogram.js';
 import { DEFAULT_DSP_CONFIG } from '@core/dsp/features.js';
 import { getDifferenceTake } from '@core/audio/differenceTake.js';
@@ -38,11 +47,18 @@ export class Spectrogram3DPanel {
   private view: Spectrogram3D | null = null;
   private shown = false;
   private toggle: HTMLButtonElement;
+  private reset: HTMLButtonElement;
+  private scale: HTMLButtonElement;
   private chips: Array<{ key: Spectro3DSource; el: HTMLButtonElement }> = [];
   private matrixCache = new Map<Spectro3DSource, SpectrogramMatrix | null>();
   private reference: AudioBuffer | null;
   private measurement: AudioBuffer | null;
   private activeKey: Spectro3DSource | null = null;
+  private preferredKey: Spectro3DSource | null = null;
+  private cameraState: Spectrogram3DCameraState = { ...DEFAULT_SPECTROGRAM_CAMERA };
+  private strength = new DifferenceStrengthIndicator();
+  private sharedScale = false;
+  private mountRequest = 0;
 
   /** WebGL vorhanden? Ohne wird die Ansicht gar nicht angeboten. */
   static isSupported(): boolean {
@@ -78,8 +94,31 @@ export class Spectrogram3DPanel {
       row.appendChild(el);
       this.chips.push({ key, el });
     }
+    this.preferredKey = sources[0] ?? null;
+
+    this.reset = this.makeChip(t('spectro3d.resetView'), () => {
+      this.view?.resetCamera();
+      this.cameraState = { ...DEFAULT_SPECTROGRAM_CAMERA };
+    });
+    this.reset.classList.add('spectro3d-reset');
+    this.reset.style.display = 'none';
+    row.appendChild(this.reset);
+
+    this.scale = this.makeChip(t('spectro3d.compareScale'), () => {
+      this.sharedScale = !this.sharedScale;
+      this.scale.setAttribute('aria-pressed', this.sharedScale ? 'true' : 'false');
+      this.scale.textContent = this.sharedScale
+        ? t('spectro3d.detailScale')
+        : t('spectro3d.compareScale');
+      if (this.activeKey) this.doMount(this.activeKey);
+    });
+    this.scale.classList.add('spectro3d-scale');
+    this.scale.setAttribute('aria-pressed', 'false');
+    this.scale.style.display = 'none';
+    row.appendChild(this.scale);
 
     root.appendChild(row);
+    root.appendChild(this.strength.element);
     root.appendChild(this.host);
 
     if (!this.hasContent) root.style.display = 'none';
@@ -107,10 +146,17 @@ export class Spectrogram3DPanel {
       // Nur eine Quelle → Chips wären eine Wahl ohne Alternative.
       const multi = this.chips.length > 1;
       for (const c of this.chips) c.el.style.display = multi ? '' : 'none';
-      if (this.chips[0]) this.mount(this.chips[0].key);
+      this.reset.style.display = '';
+      this.scale.style.display = multi ? '' : 'none';
+      const key = this.preferredKey ?? this.chips[0]?.key;
+      if (key) this.mount(key);
     } else {
+      this.mountRequest++;
       this.toggle.textContent = `🏔️ ${t('spectro3d.show')}`;
       for (const c of this.chips) c.el.style.display = 'none';
+      this.reset.style.display = 'none';
+      this.scale.style.display = 'none';
+      if (this.view) this.cameraState = this.view.cameraState();
       this.view?.destroy();
       this.view = null;
       this.activeKey = null;
@@ -131,7 +177,14 @@ export class Spectrogram3DPanel {
             : null;
         // Auch die Differenz fein: sonst hätten die drei Chips verschiedene
         // Frequenzachsen und wären nicht vergleichbar.
-        matrix = take ? getFineSpectrogramMatrix(take.buffer, DEFAULT_DSP_CONFIG.hopSize) : null;
+        if (take) this.strength.update(take.metrics);
+        const normalized = take
+          ? getFineSpectrogramMatrix(take.buffer, DEFAULT_DSP_CONFIG.hopSize)
+          : null;
+        matrix =
+          take && normalized
+            ? compensateSpectrogramGain(normalized, take.metrics.listeningGain)
+            : null;
       } else {
         const buffer = key === 'measurement' ? this.measurement : this.reference;
         // Feine Auflösung (2,93 Hz statt 46,875 Hz): unten ein FFT-Bin je Spalte.
@@ -151,6 +204,7 @@ export class Spectrogram3DPanel {
 
   private mount(key: Spectro3DSource): void {
     if (this.activeKey === key && this.view) return;
+    const request = ++this.mountRequest;
 
     const chip = this.chips.find((c) => c.key === key)?.el;
     const needsWork = !this.matrixCache.has(key);
@@ -160,31 +214,44 @@ export class Spectrogram3DPanel {
       chip.textContent = t('spectro3d.computing');
       setTimeout(() => {
         chip.textContent = original;
+        if (request !== this.mountRequest || !this.shown) return;
         this.doMount(key);
       }, 0);
       return;
     }
+    if (request !== this.mountRequest) return;
     this.doMount(key);
   }
 
   private doMount(key: Spectro3DSource): void {
-    const matrix = this.matrixOf(key);
-    if (!matrix) {
+    const sourceMatrix = this.matrixOf(key);
+    if (!sourceMatrix) {
       // Ehrlich statt stumm: eine Differenz, die sich nicht bilden lässt (zu kurze
       // Aufnahme, zu ähnliche Signale), darf nicht wie ein Fehler wirken.
       this.host.innerHTML = `<p class="spectro3d-empty">${t('spectro3d.unavailable')}</p>`;
       this.activeKey = null;
       return;
     }
+    const ceiling = Math.max(
+      ...[...this.matrixCache.values()]
+        .filter((matrix): matrix is SpectrogramMatrix => Boolean(matrix))
+        .map((matrix) => matrix.maxDb)
+    );
+    const matrix = this.sharedScale
+      ? rescaleSpectrogramMatrix(sourceMatrix, ceiling)
+      : sourceMatrix;
     this.host.innerHTML = '';
+    if (this.view) this.cameraState = this.view.cameraState();
     this.view?.destroy();
-    this.view = new Spectrogram3D(matrix);
+    this.view = new Spectrogram3D(matrix, this.cameraState);
     this.host.appendChild(this.view.element);
     this.activeKey = key;
+    this.preferredKey = key;
     for (const c of this.chips) c.el.classList.toggle('listen-btn-active', c.key === key);
   }
 
   public destroy(): void {
+    if (this.view) this.cameraState = this.view.cameraState();
     this.view?.destroy();
     this.view = null;
     this.element.remove();

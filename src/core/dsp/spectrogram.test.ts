@@ -13,8 +13,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildSpectrogramMatrix,
+  compensateSpectrogramGain,
   freqToColumn,
   logBandEdges,
+  rescaleSpectrogramMatrix,
   SPECTROGRAM_COLS,
   SPECTROGRAM_MAX_ROWS,
   SPECTROGRAM_MIN_FREQ_HZ,
@@ -24,12 +26,27 @@ import {
   buildHeightFieldMesh,
   niceTimeStep,
   projectToScreen,
+  normalizeSpectrogramCameraState,
   turboColor,
 } from '@ui/components/Spectrogram3D.js';
 import type { FeatureVector } from '@data/types.js';
 
 const BINS = 512;
 const HOP = 0.066;
+
+describe('3D-Kamerazustand', () => {
+  it('bewahrt gültige Perspektiven und klemmt unbrauchbare Werte', () => {
+    expect(normalizeSpectrogramCameraState({ yaw: 2.1, pitch: 0.5, distance: 4 })).toEqual({
+      yaw: 2.1,
+      pitch: 0.5,
+      distance: 4,
+    });
+    const clamped = normalizeSpectrogramCameraState({ yaw: Number.NaN, pitch: 99, distance: 0 });
+    expect(clamped.yaw).toBeCloseTo(0.6);
+    expect(clamped.pitch).toBeLessThan(2);
+    expect(clamped.distance).toBeGreaterThan(0);
+  });
+});
 
 /** Frame mit Rauschboden + optionaler Linie bei `peakBin`. */
 function frame(peakBin: number | null, peakEnergy = 1): FeatureVector {
@@ -88,6 +105,23 @@ describe('buildSpectrogramMatrix', () => {
   it('returns null without usable frames', () => {
     expect(buildSpectrogramMatrix([], HOP)).toBeNull();
   });
+
+  it('macht eine leisere Quelle unter gemeinsamem Maßstab sichtbar kleiner', () => {
+    const quiet = buildSpectrogramMatrix([frame(100, 0.01)], HOP)!;
+    const loud = buildSpectrogramMatrix([frame(100, 1)], HOP)!;
+    const ownPeak = Math.max(...quiet.values);
+    const shared = rescaleSpectrogramMatrix(quiet, loud.maxDb);
+    expect(ownPeak).toBeCloseTo(1, 6);
+    expect(Math.max(...shared.values)).toBeLessThan(ownPeak);
+    expect(quiet.maxDb).toBeLessThan(loud.maxDb);
+  });
+
+  it('rechnet reine Hörverstärkung aus dem gemeinsamen Maßstab heraus', () => {
+    const matrix = buildSpectrogramMatrix([frame(100, 1)], HOP)!;
+    const compensated = compensateSpectrogramGain(matrix, 10);
+    expect(compensated.maxDb).toBeCloseTo(matrix.maxDb - 20, 6);
+    expect(compensated.values).toBe(matrix.values);
+  });
 });
 
 describe('logarithmische Frequenzachse', () => {
@@ -96,7 +130,8 @@ describe('logarithmische Frequenzachse', () => {
     // Spalte 187 Hz breit, ein 50-Hz-Motor mit Harmonischen also unsichtbar.
     // Bins bei ~94 Hz (k=2), ~188 Hz (k=4), ~375 Hz (k=8) — je eine Oktave.
     const m = buildSpectrogramMatrix([frame(2), frame(4), frame(8)], HOP)!;
-    const colOf = (k: number) => Math.floor(freqToColumn((k + 0.5) * (24000 / BINS), m.bandEdgesHz));
+    const colOf = (k: number) =>
+      Math.floor(freqToColumn((k + 0.5) * (24000 / BINS), m.bandEdgesHz));
     const c2 = colOf(2);
     const c4 = colOf(4);
     const c8 = colOf(8);
@@ -176,7 +211,10 @@ describe('buildHeightFieldMesh', () => {
 
 describe('buildAxisGeometry', () => {
   const matrixOf = (durationFrames: number) =>
-    buildSpectrogramMatrix(Array.from({ length: durationFrames }, () => frame(100)), HOP)!;
+    buildSpectrogramMatrix(
+      Array.from({ length: durationFrames }, () => frame(100)),
+      HOP
+    )!;
 
   it('setzt Frequenz-Teilstriche an die Position der Log-Achse, nicht linear', () => {
     const m = matrixOf(60);

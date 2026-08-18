@@ -3,8 +3,8 @@
  *
  * Die 3D-Ansicht erklärt das Klanggebirge, ist aber kein Schneidwerkzeug: Ziehen
  * dreht dort die Kamera. Diese kleine 2D-Ansicht hat genau eine Geste. Ein
- * Rechteck bestimmt Zeit und Frequenz; der zugehörige Differenz-Ausschnitt kann
- * anschließend als ausdrücklich bearbeitete Hörhilfe abgespielt werden.
+ * Rechteck bestimmt Zeit und Frequenz; derselbe Bereich kann anschließend im
+ * Normalzustand, in der Messung und im Unterschied gesehen und gehört werden.
  */
 
 import {
@@ -13,7 +13,12 @@ import {
 } from '@core/audio/spectralSelection.js';
 import { getFineSpectrogramMatrix } from '@core/dsp/fineSpectrogram.js';
 import { DEFAULT_DSP_CONFIG } from '@core/dsp/features.js';
-import { freqToColumn, type SpectrogramMatrix } from '@core/dsp/spectrogram.js';
+import {
+  compensateSpectrogramGain,
+  freqToColumn,
+  rescaleSpectrogramMatrix,
+  type SpectrogramMatrix,
+} from '@core/dsp/spectrogram.js';
 import { formatHz } from '@utils/formatHz.js';
 import { logger } from '@utils/logger.js';
 import { t } from '../../i18n/index.js';
@@ -26,10 +31,17 @@ export interface NormalizedSelectionRect {
 }
 
 export interface SpectrogramSelectionPanelOptions {
-  source: () => AudioBuffer | null;
+  sources: Partial<Record<SpectrogramSelectionSource, () => AudioBuffer | null>>;
+  /** Nachträgliche Hörverstärkung je Quelle; wird nur aus dem Vergleichsmaßstab entfernt. */
+  listeningGain?: Partial<Record<SpectrogramSelectionSource, () => number>>;
+  initialSource?: SpectrogramSelectionSource;
   /** Eine neue Geometrie ist noch keine neue Hörhilfe; alte Ausgabe entwerten. */
   onSelectionChange?: () => void;
+  /** Quellenwechsel entwertet die alte Hörhilfe ebenfalls. */
+  onSourceChange?: (source: SpectrogramSelectionSource) => void;
 }
+
+export type SpectrogramSelectionSource = 'reference' | 'measurement' | 'difference';
 
 let nextSelectionPanelId = 0;
 
@@ -64,28 +76,75 @@ export function rectToSpectralSelection(
   };
 }
 
+/** Eine fachliche Zeit-/Frequenzauswahl in die Geometrie einer Quelle übertragen. */
+export function spectralSelectionToRect(
+  selection: SpectralSelection,
+  durationSec: number,
+  bandEdgesHz: Float32Array
+): NormalizedSelectionRect {
+  const columns = Math.max(1, bandEdgesHz.length - 1);
+  const duration = Math.max(0.001, durationSec);
+  const lowPosition = freqToColumn(selection.lowHz, bandEdgesHz) / columns;
+  const highPosition = freqToColumn(selection.highHz, bandEdgesHz) / columns;
+  return {
+    x0: clamp(selection.startSec / duration),
+    x1: clamp(selection.endSec / duration),
+    y0: clamp(1 - highPosition),
+    y1: clamp(1 - lowPosition),
+  };
+}
+
 export class SpectrogramSelectionPanel {
   public readonly element: HTMLDetailsElement;
   public readonly playButton: HTMLButtonElement;
 
-  private readonly sourceProvider: () => AudioBuffer | null;
+  private readonly sourceProviders: Partial<
+    Record<SpectrogramSelectionSource, () => AudioBuffer | null>
+  >;
+  private readonly listeningGainProviders: Partial<
+    Record<SpectrogramSelectionSource, () => number>
+  >;
   private readonly onSelectionChange: () => void;
+  private readonly onSourceChange: (source: SpectrogramSelectionSource) => void;
   private readonly canvas: HTMLCanvasElement;
   private readonly status: HTMLElement;
   private readonly loading: HTMLElement;
   private source: AudioBuffer | null = null;
   private matrix: SpectrogramMatrix | null = null;
   private baseImage: HTMLCanvasElement | null = null;
+  private activeSource: SpectrogramSelectionSource;
+  private sourceButtons: Array<{
+    key: SpectrogramSelectionSource;
+    el: HTMLButtonElement;
+  }> = [];
+  private prepared = new Map<
+    SpectrogramSelectionSource,
+    { source: AudioBuffer; matrix: SpectrogramMatrix; image: HTMLCanvasElement }
+  >();
+  private pendingSelection: SpectralSelection | null = null;
+  private sharedScale = false;
+  private scaleButton: HTMLButtonElement;
   private rect: NormalizedSelectionRect = { x0: 0, x1: 1, y0: 0.22, y1: 0.78 };
   private dragStart: { x: number; y: number } | null = null;
   private rectBeforeDrag: NormalizedSelectionRect | null = null;
-  private preparing = false;
+  private preparing: SpectrogramSelectionSource | null = null;
   private destroyed = false;
   private resizeObserver: ResizeObserver | null = null;
 
   constructor(options: SpectrogramSelectionPanelOptions) {
-    this.sourceProvider = options.source;
+    this.sourceProviders = options.sources;
+    this.listeningGainProviders = options.listeningGain ?? {};
     this.onSelectionChange = options.onSelectionChange ?? (() => {});
+    this.onSourceChange = options.onSourceChange ?? (() => {});
+    const available = (['reference', 'measurement', 'difference'] as const).filter((key) =>
+      Boolean(this.sourceProviders[key])
+    );
+    this.activeSource =
+      options.initialSource && available.includes(options.initialSource)
+        ? options.initialSource
+        : available.includes('difference')
+          ? 'difference'
+          : (available[0] ?? 'measurement');
     const panelId = ++nextSelectionPanelId;
 
     const details = document.createElement('details');
@@ -100,6 +159,43 @@ export class SpectrogramSelectionPanel {
     hint.className = 'muted small hoerlupe-auswahl-hinweis';
     hint.textContent = t('hoerlupe.auswahlHinweis');
     details.appendChild(hint);
+
+    const sources = document.createElement('div');
+    sources.className = 'hoerlupe-auswahl-quellen';
+    sources.setAttribute('role', 'group');
+    sources.setAttribute('aria-label', t('hoerlupe.auswahlQuellenTitel'));
+    for (const key of available) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'listen-btn hoerlupe-auswahl-quelle';
+      button.textContent = this.sourceName(key);
+      button.classList.toggle('listen-btn-active', key === this.activeSource);
+      button.setAttribute('aria-pressed', key === this.activeSource ? 'true' : 'false');
+      button.onclick = () => this.selectSource(key);
+      sources.appendChild(button);
+      this.sourceButtons.push({ key, el: button });
+    }
+    details.appendChild(sources);
+
+    this.scaleButton = document.createElement('button');
+    this.scaleButton.type = 'button';
+    this.scaleButton.className = 'listen-btn hoerlupe-auswahl-massstab';
+    this.scaleButton.textContent = t('spectro3d.compareScale');
+    this.scaleButton.setAttribute('aria-pressed', 'false');
+    this.scaleButton.hidden = available.length < 2;
+    this.scaleButton.onclick = () => {
+      this.sharedScale = !this.sharedScale;
+      this.scaleButton.setAttribute('aria-pressed', this.sharedScale ? 'true' : 'false');
+      this.scaleButton.textContent = this.sharedScale
+        ? t('spectro3d.detailScale')
+        : t('spectro3d.compareScale');
+      const cached = this.prepared.get(this.activeSource);
+      if (cached) {
+        this.baseImage = this.imageFor(cached);
+        this.draw();
+      }
+    };
+    details.appendChild(this.scaleButton);
 
     this.loading = document.createElement('p');
     this.loading.className = 'muted small hoerlupe-auswahl-laedt';
@@ -131,7 +227,7 @@ export class SpectrogramSelectionPanel {
     this.playButton = document.createElement('button');
     this.playButton.type = 'button';
     this.playButton.className = 'listen-btn hoerlupe-auswahl-spielen';
-    this.playButton.textContent = t('hoerlupe.auswahlAnhoeren');
+    this.playButton.textContent = this.playLabel();
     this.playButton.disabled = true;
     this.playButton.setAttribute('aria-pressed', 'false');
     details.appendChild(this.playButton);
@@ -147,31 +243,116 @@ export class SpectrogramSelectionPanel {
     }
   }
 
-  /** Differenz und Matrix erst dann rechnen, wenn der Nutzer das Werkzeug öffnet. */
-  private prepare(): void {
-    if (this.matrix || this.preparing) {
-      this.draw();
-      return;
+  private sourceName(source: SpectrogramSelectionSource): string {
+    if (source === 'reference') return t('spectro3d.sourceReference');
+    if (source === 'measurement') return t('spectro3d.sourceMeasurement');
+    return t('spectro3d.sourceDifference');
+  }
+
+  public selectedSource(): SpectrogramSelectionSource {
+    return this.activeSource;
+  }
+
+  public sourceBuffer(): AudioBuffer | null {
+    return this.source;
+  }
+
+  public playLabel(): string {
+    return t('hoerlupe.auswahlAnhoerenQuelle', { quelle: this.sourceName(this.activeSource) });
+  }
+
+  /** Dieselbe fachliche Auswahl auf eine andere Quelle legen. */
+  private selectSource(source: SpectrogramSelectionSource): void {
+    if (source === this.activeSource) return;
+    this.pendingSelection = this.selection();
+    this.activeSource = source;
+    for (const item of this.sourceButtons) {
+      const active = item.key === source;
+      item.el.classList.toggle('listen-btn-active', active);
+      item.el.setAttribute('aria-pressed', active ? 'true' : 'false');
     }
-    this.preparing = true;
+    this.onSelectionChange();
+    this.onSourceChange(source);
+    this.usePrepared(source);
+    if (this.element.open) this.prepare();
+  }
+
+  private usePrepared(source: SpectrogramSelectionSource): boolean {
+    const cached = this.prepared.get(source);
+    if (!cached) {
+      this.source = null;
+      this.matrix = null;
+      this.baseImage = null;
+      this.canvas.hidden = true;
+      this.playButton.disabled = true;
+      this.playButton.textContent = this.playLabel();
+      return false;
+    }
+    this.source = cached.source;
+    this.matrix = cached.matrix;
+    this.baseImage = this.imageFor(cached);
+    if (this.pendingSelection) {
+      this.rect = spectralSelectionToRect(
+        this.pendingSelection,
+        cached.source.duration,
+        cached.matrix.bandEdgesHz
+      );
+      this.pendingSelection = null;
+    }
+    this.canvas.hidden = false;
+    this.playButton.disabled = false;
+    this.playButton.textContent = this.playLabel();
+    this.updateStatus();
+    this.draw();
+    return true;
+  }
+
+  /** Die aktive Quelle und Matrix erst rechnen, wenn der Nutzer das Werkzeug öffnet. */
+  private prepare(): void {
+    if (this.usePrepared(this.activeSource)) return;
+    if (this.preparing === this.activeSource) return;
+    const requestedSource = this.activeSource;
+    this.preparing = requestedSource;
     this.loading.hidden = false;
     setTimeout(() => {
       if (this.destroyed) {
-        this.preparing = false;
+        this.preparing = null;
         return;
       }
       try {
-        this.source = this.sourceProvider();
-        this.matrix = this.source
-          ? getFineSpectrogramMatrix(this.source, DEFAULT_DSP_CONFIG.hopSize)
+        const source = this.sourceProviders[requestedSource]?.() ?? null;
+        const normalizedMatrix = source
+          ? getFineSpectrogramMatrix(source, DEFAULT_DSP_CONFIG.hopSize)
           : null;
-        if (this.source && this.matrix) {
-          this.setUsefulDefault();
-          this.buildBaseImage();
-          this.canvas.hidden = false;
-          this.playButton.disabled = false;
-          this.updateStatus();
-          this.draw();
+        const matrix = normalizedMatrix
+          ? compensateSpectrogramGain(
+              normalizedMatrix,
+              this.listeningGainProviders[requestedSource]?.() ?? 1
+            )
+          : null;
+        if (source && matrix) {
+          const image = this.buildBaseImage(matrix);
+          this.prepared.set(requestedSource, { source, matrix, image });
+          if (requestedSource === this.activeSource) {
+            this.source = source;
+            this.matrix = matrix;
+            this.baseImage = this.imageFor({ source, matrix, image });
+            if (this.pendingSelection) {
+              this.rect = spectralSelectionToRect(
+                this.pendingSelection,
+                source.duration,
+                matrix.bandEdgesHz
+              );
+              this.pendingSelection = null;
+            } else if (this.prepared.size === 1) {
+              this.setUsefulDefault();
+            }
+            this.canvas.hidden = false;
+            this.playButton.disabled = false;
+            this.playButton.textContent = this.playLabel();
+            this.updateStatus();
+            this.draw();
+          }
         } else {
           this.status.textContent = t('hoerlupe.auswahlNichtVerfuegbar');
         }
@@ -179,8 +360,8 @@ export class SpectrogramSelectionPanel {
         logger.warn('2D-Hör-Auswahl konnte nicht vorbereitet werden:', error);
         this.status.textContent = t('hoerlupe.auswahlNichtVerfuegbar');
       } finally {
-        this.preparing = false;
-        this.loading.hidden = true;
+        if (this.preparing === requestedSource) this.preparing = null;
+        if (requestedSource === this.activeSource) this.loading.hidden = true;
       }
     }, 50);
   }
@@ -204,14 +385,13 @@ export class SpectrogramSelectionPanel {
   }
 
   /** Matrix einmal in ein Pixelbild verwandeln; Auswahlrahmen bleibt separat. */
-  private buildBaseImage(): void {
-    if (!this.matrix) return;
-    const { rows, cols, values } = this.matrix;
+  private buildBaseImage(matrix: SpectrogramMatrix): HTMLCanvasElement {
+    const { rows, cols, values } = matrix;
     const imageCanvas = document.createElement('canvas');
     imageCanvas.width = rows;
     imageCanvas.height = cols;
     const context = imageCanvas.getContext('2d');
-    if (!context) return;
+    if (!context) return imageCanvas;
     const image = context.createImageData(rows, cols);
     for (let time = 0; time < rows; time++) {
       for (let frequency = 0; frequency < cols; frequency++) {
@@ -227,7 +407,21 @@ export class SpectrogramSelectionPanel {
       }
     }
     context.putImageData(image, 0, 0);
-    this.baseImage = imageCanvas;
+    return imageCanvas;
+  }
+
+  private imageFor(cached: {
+    source: AudioBuffer;
+    matrix: SpectrogramMatrix;
+    image: HTMLCanvasElement;
+  }): HTMLCanvasElement {
+    if (!this.sharedScale) return cached.image;
+    const ceiling = Math.max(
+      ...[...this.prepared.values()].map((entry) => entry.matrix.maxDb),
+      cached.matrix.maxDb
+    );
+    const scaled = rescaleSpectrogramMatrix(cached.matrix, ceiling);
+    return scaled === cached.matrix ? cached.image : this.buildBaseImage(scaled);
   }
 
   private attachInteraction(): void {
@@ -343,6 +537,7 @@ export class SpectrogramSelectionPanel {
     const selection = this.selection();
     if (!selection) return t('hoerlupe.auswahlQuelle');
     return t('hoerlupe.auswahlBeschreibung', {
+      quelle: this.sourceName(this.activeSource),
       vonZeit: selection.startSec.toFixed(1),
       bisZeit: selection.endSec.toFixed(1),
       vonHz: formatHz(selection.lowHz),
@@ -355,6 +550,7 @@ export class SpectrogramSelectionPanel {
     this.status.textContent = label;
     const selection = this.selection();
     if (selection) {
+      this.playButton.dataset.selectionSource = this.activeSource;
       this.playButton.dataset.selectionStart = selection.startSec.toFixed(3);
       this.playButton.dataset.selectionEnd = selection.endSec.toFixed(3);
       this.playButton.dataset.selectionLow = selection.lowHz.toFixed(1);
