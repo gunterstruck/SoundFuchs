@@ -228,10 +228,16 @@ function raeumeLupeAb(): void {
 function zeichneLupe(
   ziel: HTMLElement,
   referenz: AudioBuffer | null,
-  messung: AudioBuffer | null
+  messung: AudioBuffer | null,
+  shareName: string
 ): ListenPanel | null {
   raeumeLupeAb();
-  const panel = new ListenPanel({ reference: referenz, measurement: messung, mitUeberschrift: true });
+  const panel = new ListenPanel({
+    reference: referenz,
+    measurement: messung,
+    mitUeberschrift: true,
+    shareName,
+  });
   if (!panel.hasContent) return null;
   lupe = panel;
   ziel.appendChild(panel.element);
@@ -301,7 +307,9 @@ async function zeichne(maschine: Machine): Promise<void> {
   lageZeile.className = 'maschine-lage';
   const punkt = document.createElement('span');
   punkt.className = 'maschine-punkt';
-  punkt.style.background = farbeFuerZustand(zustandZuWert(frisch?.wert ?? letzte?.healthScore ?? null));
+  punkt.style.background = farbeFuerZustand(
+    zustandZuWert(frisch?.wert ?? letzte?.healthScore ?? null)
+  );
   punkt.setAttribute('aria-hidden', 'true');
   lageZeile.append(punkt, urteil(zustand));
   kopf.appendChild(lageZeile);
@@ -421,7 +429,7 @@ async function zeichne(maschine: Machine): Promise<void> {
   }
 
   if (frisch && zustand === 'result-deviating') {
-    const panel = zeichneLupe(ziel, frisch.referenz, frisch.messung);
+    const panel = zeichneLupe(ziel, frisch.referenz, frisch.messung, maschine.name);
     /**
      * Ein Tipp bis zum hörbaren Unterschied.
      *
@@ -457,7 +465,7 @@ async function zeichne(maschine: Machine): Promise<void> {
     trotzdem.textContent = t('maschine.trotzdemHoeren');
     trotzdem.addEventListener('click', () => {
       trotzdem.remove();
-      zeichneLupe(ziel, frisch.referenz, frisch.messung);
+      zeichneLupe(ziel, frisch.referenz, frisch.messung, maschine.name);
     });
     ziel.appendChild(trotzdem);
   } else if (zustand !== 'processing') {
@@ -479,7 +487,7 @@ async function zeichne(maschine: Machine): Promise<void> {
       nachhoeren.textContent = t('maschine.letzterUnterschied');
       nachhoeren.addEventListener('click', () => {
         nachhoeren.remove();
-        const panel = zeichneLupe(ziel, toene.referenz, toene.messung);
+        const panel = zeichneLupe(ziel, toene.referenz, toene.messung, maschine.name);
         void panel?.spieleUnterschied();
       });
       ziel.appendChild(nachhoeren);

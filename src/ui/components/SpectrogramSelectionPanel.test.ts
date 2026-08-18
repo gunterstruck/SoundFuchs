@@ -1,0 +1,28 @@
+import { describe, expect, it } from 'vitest';
+import { rectToSpectralSelection } from './SpectrogramSelectionPanel.js';
+
+describe('rectToSpectralSelection', () => {
+  it('bildet Zeit horizontal und Frequenz von unten nach oben ab', () => {
+    const selection = rectToSpectralSelection(
+      { x0: 0.2, x1: 0.7, y0: 0.25, y1: 0.75 },
+      10,
+      new Float32Array([100, 200, 400, 800, 1600])
+    );
+    expect(selection.startSec).toBeCloseTo(2);
+    expect(selection.endSec).toBeCloseTo(7);
+    expect(selection.lowHz).toBeCloseTo(200);
+    expect(selection.highHz).toBeCloseTo(800);
+  });
+
+  it('ordnet ein rückwärts gezogenes Rechteck richtig', () => {
+    const selection = rectToSpectralSelection(
+      { x0: 0.9, x1: 0.1, y0: 0.8, y1: 0.2 },
+      20,
+      new Float32Array([0, 1000, 2000])
+    );
+    expect(selection.startSec).toBeCloseTo(2);
+    expect(selection.endSec).toBeCloseTo(18);
+    expect(selection.lowHz).toBeCloseTo(400);
+    expect(selection.highHz).toBeCloseTo(1600);
+  });
+});

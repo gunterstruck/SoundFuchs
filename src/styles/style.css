@@ -3366,6 +3366,117 @@ body {
   width: 100%;
 }
 
+/* Schnitt 4a: Die Hervorhebung ist bewusst Teil der Feinwerkzeuge. Sie ersetzt
+   weder die drei Quellen noch die Bewertung. Gleich grosse Stufen machen den
+   direkten A/B-Vergleich möglich; „Aus" ist die unveränderte Messung. */
+.hoerlupe-hervorhebung {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.12));
+}
+
+.hoerlupe-hervorhebung-titel {
+  margin: 0 0 8px;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hoerlupe-hervorhebung-stufen {
+  display: flex;
+  gap: 8px;
+}
+
+.hoerlupe-hervorhebung-knopf {
+  flex: 1 1 0;
+}
+
+.hoerlupe-hervorhebung-knopf.is-playing {
+  border-color: var(--primary-color);
+  box-shadow: inset 0 0 0 1px var(--primary-color);
+}
+
+.hoerlupe-hervorhebung-hinweis {
+  margin: 8px 0 0;
+  line-height: 1.35;
+}
+
+.hoerlupe-teilen {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Schnitt 4c: Das Rechteck braucht eine flache Ansicht. Im 3D-Gebirge bedeutet
+   Ziehen bereits „drehen"; hier bedeutet jede Geste eindeutig „auswählen". */
+.hoerlupe-auswahl {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.12));
+}
+
+.hoerlupe-auswahl > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hoerlupe-auswahl-hinweis,
+.hoerlupe-auswahl-laedt {
+  margin: 4px 0 8px;
+  line-height: 1.4;
+}
+
+.hoerlupe-spektrogramm {
+  display: block;
+  width: 100%;
+  height: 210px;
+  border: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.2));
+  border-radius: 8px;
+  background: #0d1420;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.hoerlupe-spektrogramm:focus-visible {
+  outline: 3px solid var(--primary-color);
+  outline-offset: 3px;
+}
+
+.hoerlupe-auswahl-achsen {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.hoerlupe-auswahl-status {
+  min-height: 1.35em;
+  margin: 8px 0;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.hoerlupe-auswahl-spielen {
+  width: 100%;
+}
+
+.hoerlupe-auswahl-spielen.is-playing {
+  border-color: var(--primary-color);
+  box-shadow: inset 0 0 0 1px var(--primary-color);
+}
+
+@media (max-width: 600px) {
+  .hoerlupe-spektrogramm {
+    height: 180px;
+  }
+}
+
 .listen-controls-label {
   font-size: var(--font-xs);
   font-weight: 700;
@@ -11526,4 +11637,3 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
 
    Was das Popup zusätzlich braucht — den klickbaren Namen und die
    Maschinenzeilen — steht in `scharnier.css`. */
-

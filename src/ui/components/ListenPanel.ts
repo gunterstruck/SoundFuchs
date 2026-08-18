@@ -40,6 +40,12 @@
 
 import { SlowListenPlayer } from '@core/audio/slowListen.js';
 import { getDifferenceTake } from '@core/audio/differenceTake.js';
+import {
+  createDifferenceHighlightBuffer,
+  type DifferenceHighlightStrength,
+} from '@core/audio/differenceHighlight.js';
+import { shareHearingComparison } from '@core/audio/hearingComparisonShare.js';
+import { SpectrogramSelectionPanel } from './SpectrogramSelectionPanel.js';
 import { planTranspose } from '@core/audio/audibleTranspose.js';
 import { peakFrequencyFine } from '@core/dsp/fineSpectrogram.js';
 import { formatHz } from '@utils/formatHz.js';
@@ -58,10 +64,18 @@ export interface ListenPanelOptions {
    * Prüfung es geht, und eine zweite Überschrift wäre eine Wiederholung.
    */
   mitUeberschrift?: boolean;
+  /** Maschinenname für verständliche Dateinamen beim bewussten Teilen. */
+  shareName?: string;
 }
 
 /** Welche Quelle gerade läuft. */
-type Quelle = 'reference' | 'measurement' | 'difference';
+type Quelle =
+  | 'reference'
+  | 'measurement'
+  | 'difference'
+  | 'highlight-clear'
+  | 'highlight-strong'
+  | 'selection';
 
 export class ListenPanel {
   /** The root element to insert into the DOM. */
@@ -76,16 +90,30 @@ export class ListenPanel {
   private playingKey: Quelle | null = null;
   private buffers: Partial<Record<Quelle, AudioBuffer>> = {};
   private buttons: Array<{ key: Quelle; el: HTMLButtonElement; label: string }> = [];
+  private playingButton: HTMLButtonElement | null = null;
+  private playingLabel: string | null = null;
   private ansage: HTMLElement | null = null;
   private referenz: AudioBuffer | null;
   private messung: AudioBuffer | null;
   private unterschiedLaeuft = false;
+  private shareName: string;
+  private shareButton: HTMLButtonElement | null = null;
+  private teilbareHoerhilfe: {
+    buffer: AudioBuffer;
+    kind: DifferenceHighlightStrength | 'selection';
+    label: string;
+  } | null = null;
+  private teilenLaeuft = false;
+  private auswahlLaeuft = false;
+  private auswahlPanel: SpectrogramSelectionPanel | null = null;
+  private destroyed = false;
 
   constructor(options: ListenPanelOptions) {
     const reference = options.reference ?? null;
     const measurement = options.measurement ?? null;
     this.referenz = reference;
     this.messung = measurement;
+    this.shareName = options.shareName ?? 'SoundFuchs';
     this.hasContent = Boolean(reference || measurement);
     this.hatUnterschied = Boolean(reference && measurement);
 
@@ -147,6 +175,8 @@ export class ListenPanel {
     fein.appendChild(zusammenfassung);
     this.macheTempo(fein);
     if (this.hatUnterschied) this.macheHoerbar(fein);
+    if (this.hatUnterschied) this.macheHervorhebung(fein);
+    if (this.hatUnterschied) this.macheSpektrogrammAuswahl(fein);
     container.appendChild(fein);
   }
 
@@ -175,11 +205,11 @@ export class ListenPanel {
     knopf.textContent = label;
     knopf.setAttribute('aria-pressed', 'false');
     knopf.onclick = () => {
-      if (this.playingKey === key) {
+      if (this.playingButton === knopf) {
         this.halteAn();
         return;
       }
-      this.starte(key);
+      this.starte(key, knopf, label);
     };
     this.buttons.push({ key, el: knopf, label });
     ziel.appendChild(knopf);
@@ -202,7 +232,7 @@ export class ListenPanel {
     knopf.textContent = label;
     knopf.setAttribute('aria-pressed', 'false');
     knopf.onclick = () => {
-      if (this.playingKey === 'difference') {
+      if (this.playingButton === knopf) {
         this.halteAn();
         return;
       }
@@ -224,6 +254,7 @@ export class ListenPanel {
    */
   public async spieleUnterschied(): Promise<boolean> {
     if (!this.referenz || !this.messung) return false;
+    this.player.unlock();
     if (this.buffers.difference) {
       this.starte('difference');
       return true;
@@ -237,6 +268,10 @@ export class ListenPanel {
     // Einen Bildaufbau abwarten, damit „… rechne …" wirklich sichtbar wird,
     // bevor die synchrone STFT den Faden für eine Weile belegt.
     await new Promise((r) => setTimeout(r, 50));
+    if (this.destroyed) {
+      this.unterschiedLaeuft = false;
+      return false;
+    }
 
     const take = getDifferenceTake(this.referenz, this.messung);
     this.unterschiedLaeuft = false;
@@ -280,7 +315,13 @@ export class ListenPanel {
         // Läuft gerade etwas, wird es mit dem neuen Tempo neu gestartet —
         // sonst gälte die Einstellung erst beim nächsten Mal, und niemand
         // wüsste, ob sie überhaupt etwas tut.
-        if (this.playingKey) this.starte(this.playingKey);
+        if (this.playingKey) {
+          this.starte(
+            this.playingKey,
+            this.playingButton ?? undefined,
+            this.playingLabel ?? undefined
+          );
+        }
       };
       alle.push({ faktor, el: knopf });
       reihe.appendChild(knopf);
@@ -306,10 +347,12 @@ export class ListenPanel {
     let laeuft = false;
     knopf.onclick = () => {
       if (laeuft || !this.referenz || !this.messung) return;
+      this.player.unlock();
       laeuft = true;
       knopf.textContent = t('diagnose.display.listenComputing');
       setTimeout(() => {
         laeuft = false;
+        if (this.destroyed) return;
         const take = getDifferenceTake(this.referenz!, this.messung!);
         // Feine Auflösung: 2,93 Hz statt 46,875 Hz. Der Faktor folgt direkt aus
         // dieser Frequenz, ein 16-faches Raster war dort zu grob.
@@ -337,20 +380,306 @@ export class ListenPanel {
     ziel.appendChild(knopf);
   }
 
+  /**
+   * Originalmessung · Deutlich · Stark — der Unterschied bleibt im Maschinenklang.
+   *
+   * „Originalmessung" ist tatsächlich der unveränderte Mess-Buffer. Die beiden anderen
+   * Stufen entstehen nur im Arbeitsspeicher und werden weder gespeichert noch
+   * an die Bewertung zurückgegeben. Darum steht die Kennzeichnung direkt am
+   * Werkzeug und nicht in einer Hilfe-Seite, die beim Hören niemand sieht.
+   */
+  private macheHervorhebung(ziel: HTMLElement): void {
+    if (!this.messung) return;
+
+    const gruppe = document.createElement('section');
+    gruppe.className = 'hoerlupe-hervorhebung';
+    gruppe.setAttribute('aria-label', t('hoerlupe.hervorhebungTitel'));
+
+    const titel = document.createElement('p');
+    titel.className = 'hoerlupe-hervorhebung-titel';
+    titel.textContent = t('hoerlupe.hervorhebungTitel');
+    gruppe.appendChild(titel);
+
+    const stufen = document.createElement('div');
+    stufen.className = 'hoerlupe-hervorhebung-stufen';
+    gruppe.appendChild(stufen);
+
+    const aus = this.macheHervorhebungsknopf(stufen, 'measurement', t('hoerlupe.hervorhebungAus'));
+    aus.dataset.highlightLevel = 'off';
+    aus.onclick = () => {
+      if (this.playingButton === aus) {
+        this.halteAn();
+        return;
+      }
+      this.starte('measurement', aus, t('hoerlupe.quelleMessung'));
+    };
+
+    const deutlich = this.macheHervorhebungsknopf(
+      stufen,
+      'highlight-clear',
+      t('hoerlupe.hervorhebungDeutlich')
+    );
+    deutlich.dataset.highlightLevel = 'clear';
+    deutlich.onclick = () => void this.spieleHervorhebung('clear', deutlich);
+
+    const stark = this.macheHervorhebungsknopf(
+      stufen,
+      'highlight-strong',
+      t('hoerlupe.hervorhebungStark')
+    );
+    stark.dataset.highlightLevel = 'strong';
+    stark.onclick = () => void this.spieleHervorhebung('strong', stark);
+
+    const hinweis = document.createElement('p');
+    hinweis.className = 'hoerlupe-hervorhebung-hinweis muted small';
+    hinweis.textContent = t('hoerlupe.hervorhebungHinweis');
+    gruppe.appendChild(hinweis);
+
+    const teilen = document.createElement('button');
+    teilen.type = 'button';
+    teilen.className = 'listen-btn hoerlupe-teilen';
+    teilen.textContent = t('hoerlupe.vergleichTeilen');
+    teilen.hidden = true;
+    teilen.onclick = () => void this.teileHoerhilfe();
+    this.shareButton = teilen;
+    gruppe.appendChild(teilen);
+    ziel.appendChild(gruppe);
+  }
+
+  private macheHervorhebungsknopf(
+    ziel: HTMLElement,
+    key: Quelle,
+    label: string
+  ): HTMLButtonElement {
+    const knopf = document.createElement('button');
+    knopf.type = 'button';
+    knopf.className = 'listen-btn hoerlupe-hervorhebung-knopf';
+    knopf.textContent = label;
+    knopf.setAttribute('aria-pressed', 'false');
+    this.buttons.push({ key, el: knopf, label });
+    ziel.appendChild(knopf);
+    return knopf;
+  }
+
+  /** Differenz bilden, in die Messung mischen und nur diese Ableitung spielen. */
+  private async spieleHervorhebung(
+    strength: DifferenceHighlightStrength,
+    knopf: HTMLButtonElement
+  ): Promise<void> {
+    const key: Quelle = strength === 'clear' ? 'highlight-clear' : 'highlight-strong';
+    const label =
+      strength === 'clear' ? t('hoerlupe.hervorhebungDeutlich') : t('hoerlupe.hervorhebungStark');
+    const ansage =
+      strength === 'clear'
+        ? t('hoerlupe.hervorhebungDeutlichLaeuft')
+        : t('hoerlupe.hervorhebungStarkLaeuft');
+
+    if (this.playingButton === knopf) {
+      this.halteAn();
+      return;
+    }
+    this.player.unlock();
+    if (this.buffers[key]) {
+      this.markiereTeilbar(this.buffers[key]!, strength, label);
+      this.starte(key, knopf, ansage);
+      return;
+    }
+    if (!this.referenz || !this.messung || this.unterschiedLaeuft) return;
+
+    this.unterschiedLaeuft = true;
+    knopf.textContent = t('diagnose.display.listenComputing');
+    await new Promise((r) => setTimeout(r, 50));
+    if (this.destroyed) {
+      this.unterschiedLaeuft = false;
+      return;
+    }
+
+    let take: ReturnType<typeof getDifferenceTake> = null;
+    let highlighted: ReturnType<typeof createDifferenceHighlightBuffer> = null;
+    try {
+      take = getDifferenceTake(this.referenz, this.messung);
+      highlighted = take
+        ? createDifferenceHighlightBuffer(this.messung, take.buffer, strength)
+        : null;
+    } catch (error) {
+      logger.warn('Hervorgehobenes Differenz-Signal konnte nicht gebildet werden:', error);
+    } finally {
+      this.unterschiedLaeuft = false;
+      knopf.textContent = label;
+    }
+    if (!take || !highlighted) {
+      notify.info(t('diagnose.display.listenDifferenceTooShort'));
+      return;
+    }
+
+    this.buffers.difference = take.buffer;
+    this.buffers[key] = highlighted.buffer;
+    // Ein End-to-End-Wächter kann damit nachweisen, dass nicht bloss der Text
+    // umspringt: beide Stufen müssen einen tatsächlich berechneten, anderen
+    // Mischfaktor besitzen. Die Zahl ist Diagnose, keine Bewertung.
+    knopf.dataset.differenceGain = highlighted.metrics.differenceGain.toFixed(8);
+    knopf.dataset.audioDerived = highlighted.metrics.applied ? 'true' : 'unchanged';
+    knopf.dataset.audioFingerprint = this.audioFingerprint(highlighted.buffer);
+    this.markiereTeilbar(highlighted.buffer, strength, label);
+    this.starte(key, knopf, ansage);
+  }
+
+  private markiereTeilbar(
+    buffer: AudioBuffer,
+    kind: DifferenceHighlightStrength | 'selection',
+    label: string
+  ): void {
+    this.teilbareHoerhilfe = { buffer, kind, label };
+    if (!this.shareButton) return;
+    this.shareButton.hidden = false;
+    this.shareButton.dataset.shareStrength = kind;
+    this.shareButton.textContent = t('hoerlupe.vergleichTeilen');
+  }
+
+  /** Eine verschobene Markierung darf niemals noch den alten Ausschnitt teilen. */
+  private verwerfeAuswahlFreigabe(): void {
+    if (this.playingKey === 'selection') this.halteAn();
+    delete this.buffers.selection;
+    if (this.teilbareHoerhilfe?.kind !== 'selection') return;
+    this.teilbareHoerhilfe = null;
+    if (!this.shareButton) return;
+    this.shareButton.hidden = true;
+    delete this.shareButton.dataset.shareStrength;
+    this.shareButton.textContent = t('hoerlupe.vergleichTeilen');
+  }
+
+  /**
+   * 2D statt 3D: Ziehen bedeutet hier immer auswählen und nie Kamera drehen.
+   * Gezeigt und gefiltert wird die bereits ausgerichtete Differenz. Dadurch
+   * sucht der Nutzer im Auffälligen, nicht noch einmal im gesamten Motorlärm.
+   */
+  private macheSpektrogrammAuswahl(ziel: HTMLElement): void {
+    const panel = new SpectrogramSelectionPanel({
+      source: () => {
+        if (this.buffers.difference) return this.buffers.difference;
+        if (!this.referenz || !this.messung) return null;
+        const take = getDifferenceTake(this.referenz, this.messung);
+        if (!take) return null;
+        this.buffers.difference = take.buffer;
+        return take.buffer;
+      },
+      onSelectionChange: () => this.verwerfeAuswahlFreigabe(),
+    });
+    this.auswahlPanel = panel;
+    const label = t('hoerlupe.auswahlAnhoeren');
+    this.buttons.push({ key: 'selection', el: panel.playButton, label });
+    panel.playButton.onclick = () => {
+      if (this.playingButton === panel.playButton) {
+        this.halteAn();
+        return;
+      }
+      if (this.auswahlLaeuft) return;
+      this.player.unlock();
+      this.auswahlLaeuft = true;
+      panel.playButton.disabled = true;
+      panel.playButton.textContent = t('diagnose.display.listenComputing');
+      setTimeout(() => {
+        if (this.destroyed) {
+          this.auswahlLaeuft = false;
+          return;
+        }
+        try {
+          const selected = panel.createSelectedBuffer();
+          if (!selected) {
+            notify.info(t('hoerlupe.auswahlNichtVerfuegbar'));
+            return;
+          }
+          const selectionLabel = panel.selectionLabel();
+          this.buffers.selection = selected.buffer;
+          panel.playButton.dataset.audioDerived = 'true';
+          panel.playButton.dataset.audioFingerprint = this.audioFingerprint(selected.buffer);
+          panel.playButton.dataset.outputPeak = selected.metrics.outputPeak.toFixed(6);
+          panel.playButton.dataset.outputDuration = selected.buffer.duration.toFixed(3);
+          this.teilbareHoerhilfe = {
+            buffer: selected.buffer,
+            kind: 'selection',
+            label: selectionLabel,
+          };
+          if (this.shareButton) {
+            this.shareButton.hidden = false;
+            this.shareButton.dataset.shareStrength = 'selection';
+          }
+          this.starte('selection', panel.playButton, selectionLabel);
+        } catch (error) {
+          logger.warn('Spektrogramm-Auswahl konnte nicht hörbar gemacht werden:', error);
+          notify.error(t('hoerlupe.auswahlNichtVerfuegbar'));
+        } finally {
+          this.auswahlLaeuft = false;
+          panel.playButton.disabled = false;
+          if (this.playingButton !== panel.playButton) panel.playButton.textContent = label;
+        }
+      }, 50);
+    };
+    ziel.appendChild(panel.element);
+  }
+
+  /** Teilt Original + exakt zuletzt gehörte Hörhilfe, nie eine heimliche Stufe. */
+  private async teileHoerhilfe(): Promise<void> {
+    if (this.teilenLaeuft || !this.shareButton || !this.messung || !this.teilbareHoerhilfe) {
+      return;
+    }
+    this.teilenLaeuft = true;
+    this.shareButton.disabled = true;
+    this.shareButton.textContent = t('hoerlupe.vergleichWirdVorbereitet');
+    try {
+      const outcome = await shareHearingComparison({
+        measurement: this.messung,
+        highlighted: this.teilbareHoerhilfe.buffer,
+        baseName: this.shareName,
+        highlightedSuffix: this.teilbareHoerhilfe.label,
+        title: t('hoerlupe.vergleichTitel', { name: this.shareName }),
+        text: t('hoerlupe.vergleichText', { stufe: this.teilbareHoerhilfe.label }),
+      });
+      if (outcome === 'shared') notify.success(t('hoerlupe.vergleichGeteilt'));
+      if (outcome === 'downloaded') notify.success(t('hoerlupe.vergleichHeruntergeladen'));
+    } catch (error) {
+      logger.warn('Hörvergleich konnte nicht ausgegeben werden:', error);
+      notify.error(t('hoerlupe.vergleichFehlgeschlagen'));
+    } finally {
+      this.teilenLaeuft = false;
+      this.shareButton.disabled = false;
+      this.shareButton.textContent = t('hoerlupe.vergleichTeilen');
+    }
+  }
+
+  /** Kurzer, nicht umkehrbarer Prüfwert des tatsächlich erzeugten Buffers. */
+  private audioFingerprint(buffer: AudioBuffer): string {
+    const samples = buffer.getChannelData(0);
+    const stride = Math.max(1, Math.floor(samples.length / 2_048));
+    let hash = 2_166_136_261;
+    for (let i = 0; i < samples.length; i += stride) {
+      const quantized = Math.round((Number.isFinite(samples[i]) ? samples[i] : 0) * 32_767);
+      hash ^= quantized & 0xffff;
+      hash = Math.imul(hash, 16_777_619) >>> 0;
+    }
+    return hash.toString(16).padStart(8, '0');
+  }
+
   /** Eine Quelle starten und überall anzeigen, dass sie es ist. */
-  private starte(key: Quelle): void {
+  private starte(key: Quelle, knopf?: HTMLButtonElement, ansageLabel?: string): void {
     const buffer = this.buffers[key];
     if (!buffer) return;
     this.player.stop();
     this.zeigeRuhe();
     this.playingKey = key;
 
-    const aktiv = this.buttons.find((b) => b.key === key);
+    const aktiv = knopf
+      ? this.buttons.find((b) => b.el === knopf)
+      : this.buttons.find((b) => b.key === key);
     if (aktiv) {
+      this.playingButton = aktiv.el;
+      this.playingLabel = ansageLabel ?? aktiv.label;
       aktiv.el.textContent = t('diagnose.display.listenStop');
       aktiv.el.setAttribute('aria-pressed', 'true');
       aktiv.el.classList.add('is-playing');
-      if (this.ansage) this.ansage.textContent = t('hoerlupe.laeuft', { quelle: aktiv.label });
+      if (this.ansage) {
+        this.ansage.textContent = t('hoerlupe.laeuft', { quelle: this.playingLabel });
+      }
     }
 
     void this.player
@@ -369,6 +698,8 @@ export class ListenPanel {
   /** Alle Knöpfe zurück in den Ruhezustand. */
   private zeigeRuhe(): void {
     this.playingKey = null;
+    this.playingButton = null;
+    this.playingLabel = null;
     for (const b of this.buttons) {
       b.el.textContent = b.label;
       b.el.setAttribute('aria-pressed', 'false');
@@ -379,6 +710,10 @@ export class ListenPanel {
 
   /** Stop playback and release resources. */
   public destroy(): void {
-    this.player.stop();
+    if (this.destroyed) return;
+    this.destroyed = true;
+    this.player.destroy();
+    this.auswahlPanel?.destroy();
+    this.auswahlPanel = null;
   }
 }

@@ -355,7 +355,7 @@ export class MachineHistoryModal {
       return;
     }
 
-    const panel = new ListenPanel({ reference, measurement });
+    const panel = new ListenPanel({ reference, measurement, shareName: machine.name });
 
     // Lightweight modal hosting the listen panel
     const overlay = document.createElement('div');
