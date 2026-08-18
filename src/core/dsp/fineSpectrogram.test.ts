@@ -10,6 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildFineSpectrogramMatrix,
+  getFineSpectrogramMatrix,
   peakFrequencyFine,
   SPECTROGRAM_FINE_COLS,
 } from './fineSpectrogram.js';
@@ -43,6 +44,14 @@ function tones(freqs: number[], seconds = 2, amplitude = 0.3): Float32Array {
 }
 
 describe('buildFineSpectrogramMatrix', () => {
+  it('teilt dieselbe Matrix zwischen 2D- und 3D-Ansicht', () => {
+    const buffer = fakeBuffer(tones([1_000], 0.5));
+    const first = getFineSpectrogramMatrix(buffer);
+    const second = getFineSpectrogramMatrix(buffer);
+    expect(first).not.toBeNull();
+    expect(second).toBe(first);
+  });
+
   it('trennt die Ordnungen eines 4-Zylinder-Viertakts bei 1800 min⁻¹', () => {
     const m = buildFineSpectrogramMatrix(fakeBuffer(tones([15, 30, 60, 120])))!;
     expect(m).not.toBeNull();

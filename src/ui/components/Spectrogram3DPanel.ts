@@ -15,7 +15,7 @@
 
 import { Spectrogram3D } from './Spectrogram3D.js';
 import type { SpectrogramMatrix } from '@core/dsp/spectrogram.js';
-import { buildFineSpectrogramMatrix } from '@core/dsp/fineSpectrogram.js';
+import { getFineSpectrogramMatrix } from '@core/dsp/fineSpectrogram.js';
 import { DEFAULT_DSP_CONFIG } from '@core/dsp/features.js';
 import { getDifferenceTake } from '@core/audio/differenceTake.js';
 import { t } from '../../i18n/index.js';
@@ -131,14 +131,14 @@ export class Spectrogram3DPanel {
             : null;
         // Auch die Differenz fein: sonst hätten die drei Chips verschiedene
         // Frequenzachsen und wären nicht vergleichbar.
-        matrix = take ? buildFineSpectrogramMatrix(take.buffer, DEFAULT_DSP_CONFIG.hopSize) : null;
+        matrix = take ? getFineSpectrogramMatrix(take.buffer, DEFAULT_DSP_CONFIG.hopSize) : null;
       } else {
         const buffer = key === 'measurement' ? this.measurement : this.reference;
         // Feine Auflösung (2,93 Hz statt 46,875 Hz): unten ein FFT-Bin je Spalte.
         // Erst dadurch sind tieffrequente Ordnungen überhaupt sichtbar — bei einem
         // 4-Zylinder-Viertakt mit 1800 min⁻¹ liegen 15 und 30 Hz sonst in derselben
         // Spalte. Reine Anzeige: der Bewertungspfad bleibt bei seinen 512 Bändern.
-        matrix = buffer ? buildFineSpectrogramMatrix(buffer, DEFAULT_DSP_CONFIG.hopSize) : null;
+        matrix = buffer ? getFineSpectrogramMatrix(buffer, DEFAULT_DSP_CONFIG.hopSize) : null;
       }
     } catch (error) {
       logger.warn(`3D-Spektrogramm (${key}) konnte nicht erstellt werden:`, error);

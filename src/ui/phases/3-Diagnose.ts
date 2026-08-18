@@ -56,10 +56,7 @@ import {
   deleteRecording,
 } from '@data/db.js';
 import { ListenPanel } from '@ui/components/ListenPanel.js';
-import {
-  gehoertDerMaschinenebene,
-  merkeErgebnis,
-} from '../../stamm/maschine/ergebnis.js';
+import { gehoertDerMaschinenebene, merkeErgebnis } from '../../stamm/maschine/ergebnis.js';
 import { getDiagnosisAudioMode } from '@utils/diagnosisAudioSettings.js';
 import { partitionModels } from '@core/ml/modelCompatibility.js';
 import { resolutionLineState } from './resolutionLine.js';
@@ -608,8 +605,7 @@ export class DiagnosePhase {
       // Tier 1: detect a YAMNet (embedding) machine → separate async path.
       // Sync engines (GMIA, spectral-cosine) keep the existing path unchanged.
       this.diagnosisIsYamnet =
-        this.activeModels.length > 0 &&
-        this.activeModels.every((m) => m.engineId === 'yamnet');
+        this.activeModels.length > 0 && this.activeModels.every((m) => m.engineId === 'yamnet');
       this.lastYamnetScores = null; // fresh ranking per diagnosis
       if (this.diagnosisIsYamnet) {
         this.yamnetBuffer = new RollingAudioBuffer(Math.round(1.1 * this.actualSampleRate));
@@ -787,9 +783,7 @@ export class DiagnosePhase {
             this.noiseSubProfileName = t('noiseSub.minStatsName');
             logger.info('🎚️ Min-stats noise fallback activated (no stored profile)');
           } else {
-            logger.warn(
-              '⚠️ Min-stats noise fallback needs a reference with refLogMean – skipped'
-            );
+            logger.warn('⚠️ Min-stats noise fallback needs a reference with refLogMean – skipped');
           }
         }
       }
@@ -921,10 +915,7 @@ export class DiagnosePhase {
             this.activeModels.find((m) => m.label === 'Baseline') || this.activeModels[0];
           const baselineWeights = baselineModel ? getModelWeightVector(baselineModel) : undefined;
           if (baselineWeights?.length) {
-            this.visualizer.setReferenceSpectrum(
-              baselineWeights,
-              baselineModel.sampleRate / 2
-            );
+            this.visualizer.setReferenceSpectrum(baselineWeights, baselineModel.sampleRate / 2);
           } else if (baselineModel) {
             // YAMNet models carry an embedding, not a spectrum. Derive the ghost
             // from the reference AUDIO (same averageSpectrum used for the iris) so
@@ -1356,8 +1347,7 @@ export class DiagnosePhase {
 
       // A FAULT reference matched confidently → status is faulty regardless of
       // how "clean" the score looks. Otherwise derive health from the gauge.
-      const faultDetected =
-        hasFaultModels && filteredFaultScore >= settings.confidenceThreshold;
+      const faultDetected = hasFaultModels && filteredFaultScore >= settings.confidenceThreshold;
       const filteredStatus: 'healthy' | 'uncertain' | 'faulty' = faultDetected
         ? 'faulty'
         : classifyHealthStatus(
@@ -1376,9 +1366,7 @@ export class DiagnosePhase {
 
       // Detected state for display/save: the fault label when a fault is
       // detected, otherwise the best-matching healthy state.
-      const detectedState = faultDetected
-        ? bestFaultyLabel
-        : bestHealthyLabel || 'UNKNOWN';
+      const detectedState = faultDetected ? bestFaultyLabel : bestHealthyLabel || 'UNKNOWN';
       this.labelHistory.addLabel(detectedState);
 
       // Step 6: Store debug values from diagnosis metadata
@@ -1541,8 +1529,7 @@ export class DiagnosePhase {
       const filteredScore = this.scoreHistory.getFilteredScore();
       const filteredFaultScore = this.faultScoreHistory.getFilteredScore();
       const settings = getRecordingSettings();
-      const faultDetected =
-        hasFaultModels && filteredFaultScore >= settings.confidenceThreshold;
+      const faultDetected = hasFaultModels && filteredFaultScore >= settings.confidenceThreshold;
       const filteredStatus: 'healthy' | 'uncertain' | 'faulty' = faultDetected
         ? 'faulty'
         : classifyHealthStatus(
@@ -2298,11 +2285,14 @@ export class DiagnosePhase {
           // Fault-aware fields: when a known fault reference was matched, record
           // its label and match quality separately from the health gauge.
           faultLabel: this.lastFaultLabel || undefined,
-          faultScore: this.lastFaultScore > 0 ? Math.round(this.lastFaultScore * 10) / 10 : undefined,
+          faultScore:
+            this.lastFaultScore > 0 ? Math.round(this.lastFaultScore * 10) / 10 : undefined,
           // Best fault check regardless of detection — lets the result/history
           // document that known faults were actively checked and ruled out.
           faultModelsExist: this.lastFaultModelsExist || undefined,
-          bestFaultLabel: this.lastFaultModelsExist ? this.lastBestFaultLabel || undefined : undefined,
+          bestFaultLabel: this.lastFaultModelsExist
+            ? this.lastBestFaultLabel || undefined
+            : undefined,
           bestFaultScore: this.lastFaultModelsExist
             ? Math.round(this.lastBestFaultScore * 10) / 10
             : undefined,
@@ -2511,9 +2501,7 @@ export class DiagnosePhase {
             this.revealVisualizer.start(this.audioContext, this.mediaStream);
             const baselineModel =
               this.activeModels.find((m) => m.label === 'Baseline') || this.activeModels[0];
-            const baselineWeights = baselineModel
-              ? getModelWeightVector(baselineModel)
-              : undefined;
+            const baselineWeights = baselineModel ? getModelWeightVector(baselineModel) : undefined;
             if (baselineWeights?.length) {
               this.revealVisualizer.setReferenceSpectrum(
                 baselineWeights,
@@ -4065,6 +4053,7 @@ export class DiagnosePhase {
       reference: referenceBuffer,
       measurement: diagnosisBuffer,
       mitUeberschrift: true,
+      shareName: this.machine.name,
     });
     if (!panel.hasContent) return;
     this.hoerlupe = panel;
@@ -4199,10 +4188,7 @@ export class DiagnosePhase {
     if (!listEl) return;
     listEl.innerHTML = '';
 
-    const latest = diagnoses.reduce(
-      (a, b) => (b.timestamp > a.timestamp ? b : a),
-      diagnoses[0]
-    );
+    const latest = diagnoses.reduce((a, b) => (b.timestamp > a.timestamp ? b : a), diagnoses[0]);
     const anomalies = latest?.analysis?.frequencyAnomalies ?? [];
 
     if (anomalies.length === 0) {

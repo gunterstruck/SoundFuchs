@@ -245,7 +245,7 @@ try {
     await page.waitForTimeout(1400);
 
     const standortDa = await page.evaluate(
-      () => (document.querySelectorAll('.standort-maschine').length > 0)
+      () => document.querySelectorAll('.standort-maschine').length > 0
     );
     pruefe(standortDa, `${name}: die Standortansicht zeigt keine Maschinen — der Weg endet hier`);
     if (!standortDa) {
@@ -272,7 +272,9 @@ try {
       const sichtbar = (e) => {
         const cs = getComputedStyle(e);
         return (
-          cs.display !== 'none' && cs.visibility !== 'hidden' && e.getBoundingClientRect().height > 0
+          cs.display !== 'none' &&
+          cs.visibility !== 'hidden' &&
+          e.getBoundingClientRect().height > 0
         );
       };
       const start = [...document.querySelectorAll('button')].find(
@@ -484,6 +486,12 @@ const AUFMASS_ERGEBNIS = () => {
       urteilKasten.bottom <= window.innerHeight,
     lupe: Boolean(document.querySelector('.hoerlupe')),
     quellen: [...document.querySelectorAll('.hoerlupe-quelle')].map((b) => b.textContent.trim()),
+    hervorhebung: [...document.querySelectorAll('.hoerlupe-hervorhebung-knopf')].map((b) =>
+      b.textContent.trim()
+    ),
+    hervorhebungHinweis:
+      document.querySelector('.hoerlupe-hervorhebung-hinweis')?.textContent?.trim() ?? '',
+    teilenVorherSichtbar: !document.querySelector('.hoerlupe-teilen')?.hidden,
     trotzdem: Boolean(document.querySelector('.maschine-trotzdem')),
     zuKlein: [...tiefe.querySelectorAll('button')]
       .filter(sichtbar)
@@ -497,9 +505,11 @@ const AUFMASS_ERGEBNIS = () => {
 
 /** Läuft gerade eine Quelle — und ist das auch angesagt? */
 const AUFMASS_WIEDERGABE = () => {
-  const gedrueckt = [...document.querySelectorAll('.hoerlupe-quelle')].filter(
-    (b) => b.getAttribute('aria-pressed') === 'true'
-  );
+  const gedrueckt = [
+    ...document.querySelectorAll(
+      '.hoerlupe-quelle, .hoerlupe-hervorhebung-knopf, .hoerlupe-auswahl-spielen'
+    ),
+  ].filter((b) => b.getAttribute('aria-pressed') === 'true');
   return {
     anzahl: gedrueckt.length,
     welche: gedrueckt.map((b) => b.className),
@@ -525,9 +535,13 @@ try {
       .click({ force: true })
       .catch(() => {});
     await page
-      .waitForFunction(() => Boolean(document.querySelector('.maschine-aktion')?.textContent), null, {
-        timeout: 90000,
-      })
+      .waitForFunction(
+        () => Boolean(document.querySelector('.maschine-aktion')?.textContent),
+        null,
+        {
+          timeout: 90000,
+        }
+      )
       .catch(() => {});
     await page
       .waitForFunction(() => Boolean(document.querySelector('.maschine-fingerabdruck')), null, {
@@ -551,7 +565,10 @@ try {
       referenz.fenster === 0,
       'Referenz: nach einer guten Aufnahme steht ein Bestätigungsfenster — eine gute Aufnahme speichert sich selbst'
     );
-    pruefe(referenz.fingerabdruck, 'Referenz: kein Fingerabdruck — der erste Erfolg bleibt unsichtbar');
+    pruefe(
+      referenz.fingerabdruck,
+      'Referenz: kein Fingerabdruck — der erste Erfolg bleibt unsichtbar'
+    );
     pruefe(
       referenz.gezeichnet,
       'Referenz: die Fingerabdruck-Leinwand ist leer — ein Rahmen ohne Bild ist kein Beleg'
@@ -612,7 +629,10 @@ try {
       `Fall B: die Hör-Lupe zeigt ${lupeB.quellen.length} Quellen statt Normalzustand, Messung und Unterschied`
     );
 
-    pruefe(seitenfehler.length === 0, `Reise 1: Seitenfehler — ${seitenfehler.slice(0, 2).join(' | ')}`);
+    pruefe(
+      seitenfehler.length === 0,
+      `Reise 1: Seitenfehler — ${seitenfehler.slice(0, 2).join(' | ')}`
+    );
     await ctx.close();
   }
 
@@ -689,7 +709,10 @@ try {
       tippsDanach === BUDGET.tippsBisErgebnis,
       'Fall A: nach dem Ende der Messung kam kein Ergebnis auf der Maschinenebene an'
     );
-    pruefe(schlecht.fenster === 0, 'Fall A: das Ergebnis steht in einem Fenster statt auf der Ebene');
+    pruefe(
+      schlecht.fenster === 0,
+      'Fall A: das Ergebnis steht in einem Fenster statt auf der Ebene'
+    );
     /**
      * Der Klang pfeift, klopft und rauscht — wenn die Bewertung ihn für den
      * Normalzustand hält, misst dieser Lauf ab hier den falschen Fall, und
@@ -712,6 +735,19 @@ try {
     pruefe(
       schlecht.quellen.length === 3,
       `Fall A: die Hör-Lupe zeigt ${schlecht.quellen.length} Quellen statt Normalzustand, Messung und Unterschied`
+    );
+    pruefe(
+      schlecht.hervorhebung.length === 3,
+      `Fall A: die Hervorhebung zeigt ${schlecht.hervorhebung.length} Stufen statt Originalmessung, Deutlich und Stark`
+    );
+    pruefe(
+      /bearbeitete hörhilfe/i.test(schlecht.hervorhebungHinweis) &&
+        /unverändert/i.test(schlecht.hervorhebungHinweis),
+      'Fall A: die Hervorhebung ist nicht klar als bearbeitete, folgenlose Hörhilfe gekennzeichnet'
+    );
+    pruefe(
+      !schlecht.teilenVorherSichtbar,
+      'Schnitt 4b: Teilen wird angeboten, bevor feststeht, welche Hörhilfe gemeint ist'
     );
     pruefe(
       schlecht.zuKlein.length === 0,
@@ -744,6 +780,208 @@ try {
     pruefe(
       laeuft.ansage.length > 0,
       'Fall A: was läuft, steht nirgends geschrieben — Farbe allein ist für Vorlesende nichts'
+    );
+
+    // Schnitt 4a: Nicht nur drei Etiketten, sondern drei hörbar verschiedene
+    // Zustände. Der Fingerabdruck stammt aus dem tatsächlich erzeugten
+    // AudioBuffer; gleiche Werte würden bedeuten, dass „Stark" nur Text ist.
+    await page.evaluate(() => {
+      const aktiv = document.querySelector(
+        '.hoerlupe-quelle[aria-pressed="true"], .hoerlupe-hervorhebung-knopf[aria-pressed="true"]'
+      );
+      if (aktiv) aktiv.click();
+      const details = document.querySelector('.hoerlupe-fein');
+      if (details) details.open = true;
+    });
+    await page.locator('.hoerlupe-hervorhebung-knopf[data-highlight-level="clear"]').click();
+    await page.waitForTimeout(1200);
+    const deutlich = await page.evaluate(() => {
+      const b = document.querySelector(
+        '.hoerlupe-hervorhebung-knopf[data-highlight-level="clear"]'
+      );
+      return {
+        pressed: b?.getAttribute('aria-pressed') === 'true',
+        derived: b?.dataset.audioDerived ?? '',
+        fingerprint: b?.dataset.audioFingerprint ?? '',
+        gain: b?.dataset.differenceGain ?? '',
+        shareVisible: !document.querySelector('.hoerlupe-teilen')?.hidden,
+        shareStrength: document.querySelector('.hoerlupe-teilen')?.dataset.shareStrength ?? '',
+        ansage: document.querySelector('.hoerlupe-ansage')?.textContent?.trim() ?? '',
+      };
+    });
+
+    await page.locator('.hoerlupe-hervorhebung-knopf[data-highlight-level="strong"]').click();
+    await page.waitForTimeout(1200);
+    const stark = await page.evaluate(() => {
+      const b = document.querySelector(
+        '.hoerlupe-hervorhebung-knopf[data-highlight-level="strong"]'
+      );
+      const aktive = [
+        ...document.querySelectorAll('.hoerlupe-quelle, .hoerlupe-hervorhebung-knopf'),
+      ].filter((e) => e.getAttribute('aria-pressed') === 'true');
+      return {
+        pressed: b?.getAttribute('aria-pressed') === 'true',
+        activeCount: aktive.length,
+        derived: b?.dataset.audioDerived ?? '',
+        fingerprint: b?.dataset.audioFingerprint ?? '',
+        gain: b?.dataset.differenceGain ?? '',
+        shareVisible: !document.querySelector('.hoerlupe-teilen')?.hidden,
+        shareStrength: document.querySelector('.hoerlupe-teilen')?.dataset.shareStrength ?? '',
+        ansage: document.querySelector('.hoerlupe-ansage')?.textContent?.trim() ?? '',
+      };
+    });
+
+    await page.locator('.hoerlupe-hervorhebung-knopf[data-highlight-level="off"]').click();
+    await page.waitForTimeout(250);
+    const aus = await page.evaluate(() => {
+      const b = document.querySelector('.hoerlupe-hervorhebung-knopf[data-highlight-level="off"]');
+      return {
+        pressed: b?.getAttribute('aria-pressed') === 'true',
+        derived: b?.dataset.audioDerived ?? '',
+        ansage: document.querySelector('.hoerlupe-ansage')?.textContent?.trim() ?? '',
+      };
+    });
+
+    console.log(`  Hervorhebung Deutlich           ${deutlich.ansage || '(nichts)'}`);
+    console.log(`  Hervorhebung Stark              ${stark.ansage || '(nichts)'}`);
+    console.log(`  Hervorhebung Originalmessung   ${aus.ansage || '(nichts)'}`);
+    pruefe(
+      deutlich.pressed && deutlich.derived === 'true' && deutlich.fingerprint.length > 0,
+      'Schnitt 4a: „Deutlich" spielt keinen tatsächlich abgeleiteten Buffer'
+    );
+    pruefe(
+      deutlich.shareVisible && deutlich.shareStrength === 'clear',
+      'Schnitt 4b: nach „Deutlich" ist nicht genau diese Hörhilfe teilbar'
+    );
+    pruefe(
+      stark.pressed && stark.activeCount === 1 && stark.derived === 'true',
+      'Schnitt 4a: „Stark" ist nicht eindeutig als laufende Hörhilfe markiert'
+    );
+    pruefe(
+      deutlich.fingerprint !== stark.fingerprint && deutlich.gain !== stark.gain,
+      'Schnitt 4a: „Deutlich" und „Stark" erzeugen dasselbe Audiosignal'
+    );
+    pruefe(
+      stark.shareVisible && stark.shareStrength === 'strong',
+      'Schnitt 4b: nach „Stark" zeigt Teilen noch auf eine andere Hörhilfe'
+    );
+    pruefe(
+      aus.pressed && aus.derived === '' && /messung/i.test(aus.ansage),
+      'Schnitt 4a: „Originalmessung" spielt nicht erkennbar die unveränderte Messung'
+    );
+
+    // Schnitt 4c: Nicht nur einen Rahmen malen. Der mobile Lauf zieht eine
+    // echte Zeit-/Frequenzauswahl und prüft den daraus erzeugten AudioBuffer
+    // auf kürzere Dauer, Headroom, Fingerabdruck und die Teilen-Übergabe.
+    await page.evaluate(() => {
+      const auswahl = document.querySelector('.hoerlupe-auswahl');
+      if (auswahl) auswahl.open = true;
+    });
+    await page.waitForTimeout(3500);
+    const canvas = page.locator('.hoerlupe-spektrogramm');
+    await canvas.scrollIntoViewIfNeeded();
+    const canvasBox = await canvas.boundingBox();
+    if (canvasBox) {
+      await page.mouse.move(
+        canvasBox.x + canvasBox.width * 0.15,
+        canvasBox.y + canvasBox.height * 0.18
+      );
+      await page.mouse.down();
+      await page.mouse.move(
+        canvasBox.x + canvasBox.width * 0.72,
+        canvasBox.y + canvasBox.height * 0.82
+      );
+      await page.mouse.up();
+    }
+    await page.locator('.hoerlupe-auswahl-spielen').click();
+    await page.waitForTimeout(1800);
+    const auswahl = await page.evaluate(() => {
+      const button = document.querySelector('.hoerlupe-auswahl-spielen');
+      const share = document.querySelector('.hoerlupe-teilen');
+      return {
+        canvasVisible: !document.querySelector('.hoerlupe-spektrogramm')?.hidden,
+        pressed: button?.getAttribute('aria-pressed') === 'true',
+        derived: button?.dataset.audioDerived ?? '',
+        fingerprint: button?.dataset.audioFingerprint ?? '',
+        start: Number(button?.dataset.selectionStart ?? NaN),
+        end: Number(button?.dataset.selectionEnd ?? NaN),
+        low: Number(button?.dataset.selectionLow ?? NaN),
+        high: Number(button?.dataset.selectionHigh ?? NaN),
+        duration: Number(button?.dataset.outputDuration ?? NaN),
+        peak: Number(button?.dataset.outputPeak ?? NaN),
+        shareVisible: !share?.hidden,
+        shareStrength: share?.dataset.shareStrength ?? '',
+        ansage: document.querySelector('.hoerlupe-ansage')?.textContent?.trim() ?? '',
+      };
+    });
+    console.log(`  2D-Auswahl                       ${auswahl.ansage || '(nichts)'}`);
+    pruefe(
+      Boolean(canvasBox) && auswahl.canvasVisible,
+      'Schnitt 4c: das 2D-Spektrogramm ist nicht bedienbar sichtbar'
+    );
+    pruefe(
+      auswahl.pressed && auswahl.derived === 'true' && auswahl.fingerprint.length > 0,
+      'Schnitt 4c: „Auswahl anhören" spielt keinen tatsächlich abgeleiteten Buffer'
+    );
+    pruefe(
+      auswahl.start > 0 && auswahl.end > auswahl.start && auswahl.duration < 9,
+      'Schnitt 4c: die gezogene Zeitspanne wird nicht als kürzerer Ausschnitt ausgegeben'
+    );
+    pruefe(
+      auswahl.low >= 0 && auswahl.high > auswahl.low && auswahl.high <= 24_000,
+      'Schnitt 4c: die gezogenen Frequenzgrenzen sind unplausibel'
+    );
+    pruefe(
+      auswahl.peak > 0 && auswahl.peak <= 0.900001,
+      'Schnitt 4c: die Auswahl ist stumm oder überschreitet ihren Headroom'
+    );
+    pruefe(
+      auswahl.shareVisible && auswahl.shareStrength === 'selection',
+      'Schnitt 4c: Teilen zeigt nach dem Anhören nicht auf die Spektrogramm-Auswahl'
+    );
+
+    // Wird der Rahmen danach verändert, wäre der alte Buffer eine falsche
+    // Übergabe unter einer neuen sichtbaren Auswahl. Teilen muss deshalb bis
+    // zum erneuten Anhören verschwinden und danach den neuen Buffer tragen.
+    const zweitesCanvasBox = await canvas.boundingBox();
+    if (zweitesCanvasBox) {
+      await page.mouse.move(
+        zweitesCanvasBox.x + zweitesCanvasBox.width * 0.28,
+        zweitesCanvasBox.y + zweitesCanvasBox.height * 0.25
+      );
+      await page.mouse.down();
+      await page.mouse.move(
+        zweitesCanvasBox.x + zweitesCanvasBox.width * 0.62,
+        zweitesCanvasBox.y + zweitesCanvasBox.height * 0.68
+      );
+      await page.mouse.up();
+    }
+    const nachVerschieben = await page.evaluate(() => ({
+      shareVisible: !document.querySelector('.hoerlupe-teilen')?.hidden,
+      selectionPlaying:
+        document.querySelector('.hoerlupe-auswahl-spielen')?.getAttribute('aria-pressed') ===
+        'true',
+    }));
+    pruefe(
+      !nachVerschieben.shareVisible && !nachVerschieben.selectionPlaying,
+      'Schnitt 4c: nach neuer Markierung bleibt der alte Ausschnitt abspielbar oder teilbar'
+    );
+    await page.locator('.hoerlupe-auswahl-spielen').click();
+    await page.waitForTimeout(1200);
+    const neuBerechnet = await page.evaluate(() => {
+      const button = document.querySelector('.hoerlupe-auswahl-spielen');
+      const share = document.querySelector('.hoerlupe-teilen');
+      return {
+        fingerprint: button?.dataset.audioFingerprint ?? '',
+        shareVisible: !share?.hidden,
+        shareStrength: share?.dataset.shareStrength ?? '',
+      };
+    });
+    pruefe(
+      neuBerechnet.shareVisible &&
+        neuBerechnet.shareStrength === 'selection' &&
+        neuBerechnet.fingerprint !== auswahl.fingerprint,
+      'Schnitt 4c: die neue Markierung erzeugt und teilt nicht ihren eigenen Buffer'
     );
 
     /**
@@ -785,7 +1023,10 @@ try {
       `Schreibtisch: die Ergebnisfläche ist ${tisch?.breite ?? 0} px breit — eine schmale Karte in der Mitte`
     );
 
-    pruefe(seitenfehler.length === 0, `Reise 2: Seitenfehler — ${seitenfehler.slice(0, 2).join(' | ')}`);
+    pruefe(
+      seitenfehler.length === 0,
+      `Reise 2: Seitenfehler — ${seitenfehler.slice(0, 2).join(' | ')}`
+    );
     await ctx.close();
   }
 } finally {

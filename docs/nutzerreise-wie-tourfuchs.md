@@ -215,7 +215,9 @@ ist ehrlich benannt eine **Verkleidung**: dieselbe Silhouette, fremde Substanz.
 Am deutlichsten wird es an einer Zeile, die ich selbst geschrieben habe:
 
 ```css
-html[data-schale='neu'] .fab-row { display: none }
+html[data-schale='neu'] .fab-row {
+  display: none;
+}
 ```
 
 Ich habe SoundFuchs' schwebende Pillen **ausgeblendet** — also genau das
@@ -228,12 +230,12 @@ keine.
 **TourFuchs ist der unveränderte gestalterische Stamm.** Nicht Vorbild, nicht
 Inspiration, nicht Messlatte — Ausgangspunkt. Die Richtung dreht sich um:
 
-| | bisher | ab jetzt |
-|---|---|---|
-| Ausgangspunkt | SoundFuchs' Schale | TourFuchs' Schale |
-| Bewegung | SoundFuchs wird „tourfuchsiger" | TourFuchs wird fachlich reduziert |
-| Ergebnis | Ähnlichkeit | Deckungsgleichheit vor dem Scharnier |
-| Prüffrage | „sieht es aus wie …?" | „ist es dasselbe?" |
+|               | bisher                          | ab jetzt                             |
+| ------------- | ------------------------------- | ------------------------------------ |
+| Ausgangspunkt | SoundFuchs' Schale              | TourFuchs' Schale                    |
+| Bewegung      | SoundFuchs wird „tourfuchsiger" | TourFuchs wird fachlich reduziert    |
+| Ergebnis      | Ähnlichkeit                     | Deckungsgleichheit vor dem Scharnier |
+| Prüffrage     | „sieht es aus wie …?"           | „ist es dasselbe?"                   |
 
 Vor dem Scharnier wird **nur weggenommen und umbenannt**, nichts hinzuerfunden.
 Hinter dem Scharnier entsteht Neues — aber vollständig in der Formensprache des
@@ -259,29 +261,29 @@ Der klickbare **Name** ist der Übergang. Fünf Ebenen, eine Kette:
 
 ### Die Zuordnung der Daten
 
-| TourFuchs | SoundFuchs |
-|---|---|
-| Kunde | Maschinenstandort |
-| Kundenname | Maschinenstandortname |
-| Kundenmarker | Standortmarker |
-| Kundenliste | Maschinenstandortliste |
-| „Neuer Kunde" | „Neuen Maschinenstandort anlegen" |
-| — | ein Standort enthält **mehrere** Maschinen |
-| Kundendatenimport | Standort- und Maschinenimport |
-| Tourplanung | entfällt |
-| Umsatz-/Vertriebsdaten | entfallen |
-| Vertriebsgebiete | nur, falls für Standorte sinnvoll |
+| TourFuchs              | SoundFuchs                                 |
+| ---------------------- | ------------------------------------------ |
+| Kunde                  | Maschinenstandort                          |
+| Kundenname             | Maschinenstandortname                      |
+| Kundenmarker           | Standortmarker                             |
+| Kundenliste            | Maschinenstandortliste                     |
+| „Neuer Kunde"          | „Neuen Maschinenstandort anlegen"          |
+| —                      | ein Standort enthält **mehrere** Maschinen |
+| Kundendatenimport      | Standort- und Maschinenimport              |
+| Tourplanung            | entfällt                                   |
+| Umsatz-/Vertriebsdaten | entfallen                                  |
+| Vertriebsgebiete       | nur, falls für Standorte sinnvoll          |
 
 ### Was das kostet
 
 Gemessen, nicht geschätzt:
 
-| | Zeilen |
-|---|---|
-| TourFuchs-Schale, zu übernehmen | ~1 100 HTML · 4 551 CSS · ~5 260 JS |
-| TourFuchs-Teile, die entfallen | ~6 000 (Tourplaner, Showcase, Lasso, Tresor, Besuchsplaner, Gebietseditor, SafeTransfer, Mobilvorschau) |
-| SoundFuchs-Motor, unberührt | ~17 200 (DSP, ML, Datenbank, Typen) |
-| Meine Schale aus Schnitt 2–7 | ~1 500 — **wird ersetzt, nicht behalten** |
+|                                 | Zeilen                                                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| TourFuchs-Schale, zu übernehmen | ~1 100 HTML · 4 551 CSS · ~5 260 JS                                                                     |
+| TourFuchs-Teile, die entfallen  | ~6 000 (Tourplaner, Showcase, Lasso, Tresor, Besuchsplaner, Gebietseditor, SafeTransfer, Mobilvorschau) |
+| SoundFuchs-Motor, unberührt     | ~17 200 (DSP, ML, Datenbank, Typen)                                                                     |
+| Meine Schale aus Schnitt 2–7    | ~1 500 — **wird ersetzt, nicht behalten**                                                               |
 
 Die letzte Zeile ist der Punkt. Zwei Schalen nebeneinander stehen zu lassen
 wäre die bequeme Wahl und die falsche: „Die Anwendung darf nicht wie zwei
@@ -605,14 +607,14 @@ trägt das erste Bild.
 
 Gemessen (`npm run stammvergleich`, neu — es ersetzt `schalenvergleich`):
 
-| | TourFuchs | SoundFuchs |
-|---|---|---|
-| Kopfleiste | 0,0 390×52 | 0,0 390×52 |
-| Kopfstreifen | 0,52 390×100 | 0,52 390×100 |
-| Blatt (sichtbar) | 0,744 390×100 | 0,744 390×100 |
-| Karte | 0,52 390×792 | 0,52 390×792 |
-| Knopfzeile | 0,676 390×38 | 0,676 390×38 |
-| Ansichtstiefe | im Kopfstreifen | im Kopfstreifen |
+|                  | TourFuchs       | SoundFuchs      |
+| ---------------- | --------------- | --------------- |
+| Kopfleiste       | 0,0 390×52      | 0,0 390×52      |
+| Kopfstreifen     | 0,52 390×100    | 0,52 390×100    |
+| Blatt (sichtbar) | 0,744 390×100   | 0,744 390×100   |
+| Karte            | 0,52 390×792    | 0,52 390×792    |
+| Knopfzeile       | 0,676 390×38    | 0,676 390×38    |
+| Ansichtstiefe    | im Kopfstreifen | im Kopfstreifen |
 
 Am Schreibtisch ebenso, auf den Pixel. Was abweicht, weicht mit Auftrag ab:
 Reiter (kein „Tour"), Pillen (kein Lasso), Zahl der Beispielpunkte.
@@ -896,12 +898,12 @@ drei fest und wäre rot geworden, sobald jemand den Fehler behebt.
 
 ### Abnahme, gemessen
 
-| Fenster | Gesicht | Streifen | Karte | Knopfzeile | Reiter oben |
-|---|---|---|---|---|---|
-| 390×844 | phone | 0,52 390×55 | 0,52 390×792 | 0,676 | 0 |
-| 820×1180 | phone | 0,52 820×55 | 0,52 820×1128 | 0,**1011** | 0 |
-| 1180×820 | desktop | — | 0,52 1180×768 | **400**,759 | 0 |
-| 1440×900 | desktop | — | 0,52 1440×848 | 400,839 | 0 |
+| Fenster  | Gesicht | Streifen    | Karte         | Knopfzeile  | Reiter oben |
+| -------- | ------- | ----------- | ------------- | ----------- | ----------- |
+| 390×844  | phone   | 0,52 390×55 | 0,52 390×792  | 0,676       | 0           |
+| 820×1180 | phone   | 0,52 820×55 | 0,52 820×1128 | 0,**1011**  | 0           |
+| 1180×820 | desktop | —           | 0,52 1180×768 | **400**,759 | 0           |
+| 1440×900 | desktop | —           | 0,52 1440×848 | 400,839     | 0           |
 
 Die Kartenknöpfe des hochkanten Tablets stehen unten (1011) statt oben (164).
 Am Schreibtisch sind sie 41 px hoch wie am 1440er — keine Touch-Vergrößerung.
@@ -918,25 +920,25 @@ eine eigene Ebene, kein Abschnitt am Ende einer langen Bestandsseite.
 
 Nach einem Tipp auf eine Maschinenzeile, mit 130 Maschinen im Bestand:
 
-| | vorher |
-|---|---|
-| Maschinenzeilen im Arbeitskontext | **130** |
-| fokussierbare Elemente hinter dem Scharnier | **178** |
-| Höhe des Arbeitsbereichs | **10 174 px** (Handy), 11 016 px (Tisch) |
-| Aufnahmeknopf | **52 px unter dem Rand**, nach zwei Tipps darauf |
-| Fenster dazwischen | ein Auswahlfenster für die Maschine, die man gerade wählte |
+|                                             | vorher                                                     |
+| ------------------------------------------- | ---------------------------------------------------------- |
+| Maschinenzeilen im Arbeitskontext           | **130**                                                    |
+| fokussierbare Elemente hinter dem Scharnier | **178**                                                    |
+| Höhe des Arbeitsbereichs                    | **10 174 px** (Handy), 11 016 px (Tisch)                   |
+| Aufnahmeknopf                               | **52 px unter dem Rand**, nach zwei Tipps darauf           |
+| Fenster dazwischen                          | ein Auswahlfenster für die Maschine, die man gerade wählte |
 
 ### Was jetzt dasteht
 
-| | nachher |
-|---|---|
-| Maschinenzeilen | **0** — auf Maschinen- **und** Arbeitsebene |
-| fokussierbare Elemente | **2** |
-| Höhe der Maschinenebene | **792 px** (Handy) |
-| Höhe der Arbeitsebene | **896 px** |
-| Tipps Maschinenzeile → Aufnahmefläche | **2** |
-| dominante Handlungen je Bild | **1** |
-| Antippziele unter 44 px | **0** |
+|                                       | nachher                                     |
+| ------------------------------------- | ------------------------------------------- |
+| Maschinenzeilen                       | **0** — auf Maschinen- **und** Arbeitsebene |
+| fokussierbare Elemente                | **2**                                       |
+| Höhe der Maschinenebene               | **792 px** (Handy)                          |
+| Höhe der Arbeitsebene                 | **896 px**                                  |
+| Tipps Maschinenzeile → Aufnahmefläche | **2**                                       |
+| dominante Handlungen je Bild          | **1**                                       |
+| Antippziele unter 44 px               | **0**                                       |
 
 ```
     ‹ Zum Standort
@@ -1039,13 +1041,13 @@ Zustände, von denen einer nur eine Beschriftung ist.
 
 **Gemessen** (`npm run wow`, Handy 390×844, mit echtem Mikrofonsignal):
 
-| | |
-|---|---|
-| Tipps Maschinenzeile → gespeicherter Normalzustand | **3** |
-| Fenster nach einer guten Aufnahme | **0** |
-| Fingerabdruck wirklich gezeichnet | **ja** (Bildpunkte gemessen, nicht Element gezählt) |
-| Urteil danach | „Bereit zum Prüfen" |
-| nächste Handlung | „Jetzt Gegenprobe machen" |
+|                                                    |                                                     |
+| -------------------------------------------------- | --------------------------------------------------- |
+| Tipps Maschinenzeile → gespeicherter Normalzustand | **3**                                               |
+| Fenster nach einer guten Aufnahme                  | **0**                                               |
+| Fingerabdruck wirklich gezeichnet                  | **ja** (Bildpunkte gemessen, nicht Element gezählt) |
+| Urteil danach                                      | „Bereit zum Prüfen"                                 |
+| nächste Handlung                                   | „Jetzt Gegenprobe machen"                           |
 
 Der Wächter prüft die **Farbe** der Leinwand, nicht ihr Dasein. Eine leere
 Leinwand im richtigen Rahmen ist genau der Fehler, den man sonst nicht sieht.
@@ -1129,15 +1131,15 @@ heimlich umgestellt, damit ein Knopf dastehen kann. Kein toter Knopf.
 
 ### Gemessen (`npm run wow`, Handy 390 × 844, echtes Mikrofonsignal)
 
-| | |
-|---|---|
-| Ende der Messung → sichtbares Ergebnis | **0 Tipps** |
-| Ergebnis → hörbarer Unterschied (Fall A) | **1 Tipp** |
-| Maschinenebene → letzte Hör-Lupe (Fall C) | **1 Tipp** |
-| Fenster im Ergebnis | **0** |
-| dominante Handlungen je Ergebniszustand | **1** |
-| Urteil und Handlung ohne Scrollen | **ja** |
-| Antippziele unter 44 px | **0** |
+|                                             |                           |
+| ------------------------------------------- | ------------------------- |
+| Ende der Messung → sichtbares Ergebnis      | **0 Tipps**               |
+| Ergebnis → hörbarer Unterschied (Fall A)    | **1 Tipp**                |
+| Maschinenebene → letzte Hör-Lupe (Fall C)   | **1 Tipp**                |
+| Fenster im Ergebnis                         | **0**                     |
+| dominante Handlungen je Ergebniszustand     | **1**                     |
+| Urteil und Handlung ohne Scrollen           | **ja**                    |
+| Antippziele unter 44 px                     | **0**                     |
 | Ergebnisfläche am Schreibtisch (1440 × 900) | **1120 px, zwei Spalten** |
 
 Am Schreibtisch steht links das Urteil mit der einen Handlung, rechts die
@@ -1233,7 +1235,7 @@ Auch diese Klicks sind jetzt duldsam.
 
 ### Was dieser Schnitt nicht enthält
 
-Die **Hervorhebung des Störanteils** (`Original · Deutlich · Stark`) ist nicht
+Die **Hervorhebung des Unterschieds** (`Originalmessung · Deutlich · Stark`) ist nicht
 dabei. Sie ist kein Anzeigetrick, sondern DSP: Pegelabgleich, Headroom, Fades,
 Limiter — und vor allem ein Lautheitsabgleich zwischen den Fassungen, damit
 „lauter" nicht mit „überzeugender" verwechselt wird. Der Auftrag lässt diesen
@@ -1241,13 +1243,29 @@ Aufschub ausdrücklich zu und verlangt dafür, `Normalzustand | Messung |
 Unterschied` prominent zu liefern; genau das steht jetzt da. Simuliert wird
 nichts.
 
-Ebenfalls offen: freie Auswahl im Spektrogramm, „Mit Fachmann teilen", der
+Ebenfalls zu diesem Stand offen: freie Auswahl im Spektrogramm, „Mit Fachmann teilen", der
 vollständige Schreibtisch-Analysearbeitsplatz (die dritte Spalte mit großem
 2D-Spektrum), und das Entfernen des alten Ergebnisdialogs aus den übrigen
 Wegen.
 
-**S4c — Hervorhebung und Teilen.** _offen._ Störanteil in drei Stufen mit
-Clipping-Schutz und Lautheitsabgleich; Befund mit einem Fachmann teilen.
+**S4a/4b — Hervorhebung und Teilen.** ✅ _erledigt._
+Unterschied in drei Stufen mit Clipping-Schutz und Lautheitsabgleich; den
+wirklich gehörten Vergleich als Original plus gekennzeichnete Hörhilfe mit
+einem Fachmann teilen.
+
+**S4c — Rechteckige 2D-Hör-Auswahl.** ✅ _erledigt._ Den auffälligen Bereich
+der Differenz über Zeit und Frequenz markieren, als gekennzeichnete Hörhilfe
+abspielen und zusammen mit dem Original teilen. Freies Einkreisen bleibt eine
+spätere Bedienvariante desselben Auswahlmodells.
+
+**S4d — Audiodateien als Normalzustand oder Messung importieren.**
+_Vorgemerkt, noch nicht umgesetzt._ Eine vorhandene Tondatei vom Smartphone,
+Rekorder oder Schreibtisch soll denselben Analyseweg benutzen können wie eine
+Live-Aufnahme. Die Rolle ergibt sich aus dem Einstieg: „Audiodatei verwenden"
+unter „Normalzustand aufnehmen" legt nach Qualitätsprüfung einen Normalzustand
+an; dieselbe Nebenhandlung unter „Prüfung starten" führt die Datei als Messung
+durch Vergleich, Ergebnis und Hör-Lupe. Einzelheiten und Abnahmekriterien
+stehen in §7e.
 
 **S5 — Die Reiter füllen.** _offen._ „Standorte", „Filter" und der
 Nähe-Begleiter im Karten-Reiter; Standort- und Maschinenimport.
@@ -1473,6 +1491,201 @@ drei Zustände übernommen, und der Auftrag lautet „wie TourFuchs". Der Tipp i
 der Preis dafür, dass die Karte beim Start zu sehen ist — das ist genau das,
 was der Auftraggeber wollte. Über die Karte ist der Weg ohnehin gleich lang:
 Marker → Standortblatt → Maschine.
+
+### 7b. Schnitt 4a — den Unterschied hervorheben (17.08.2026)
+
+Die Hör-Lupe hat unter „Fein einstellen" jetzt drei Stufen: **Originalmessung ·
+Deutlich · Stark**. „Originalmessung" spielt wörtlich den vorhandenen
+Mess-Buffer; „Deutlich" und
+„Stark" sind flüchtige, bearbeitete Hörhilfen. Sie werden weder gespeichert
+noch an Bewertung, Prozentwert oder Ampel zurückgegeben. Dieser Satz steht
+direkt unter den drei Knöpfen, nicht nur in dieser Dokumentation.
+
+Die technische Grenze ist wichtig: Die spektrale Differenz wird in
+`differenceIsolation` für das eigene Abspielen auf 90 % Spitzenpegel
+normalisiert. Ihre absolute Lautstärke ist deshalb keine physikalische Aussage
+mehr. Schnitt 4a mischt sie nicht blind zurück, sondern dosiert ihre Form
+relativ zur RMS-Lautheit der Messung:
+
+- „Deutlich" zielt auf 45 % der Mess-RMS, „Stark" auf 85 %.
+- Danach wird die gesamte Ableitung wieder auf die RMS-Lautheit der Messung
+  abgeglichen. „Stark" heißt mehr Anteil des Unterschieds, nicht einfach mehr Lautstärke.
+- Ein Peak-Limiter hält 0,92 als feste digitale Obergrenze ein.
+- Der zugemischte Anteil blendet 12 ms ein und aus; beim Quellenwechsel liegen
+  18 ms Ein- und Ausblendung übereinander, damit der Schalter kein künstliches
+  Knacken erzeugt.
+- Stereo- und unterschiedlich lange Kanäle bleiben erhalten; ungültige Werte,
+  Stille und zu kurze Signale fallen sicher auf die Messung zurück. Alle
+  Eingaben bleiben unverändert.
+
+Sieben neue Signaltests prüfen: keine Differenz, synthetischen Zusatzton,
+Monotonie Deutlich < Stark, Headroom, Lautheitsabgleich, Sonderfälle und
+Unveränderlichkeit. Der vollständige Unit-Lauf steht bei **652 bestanden, 2
+übersprungen**. Der erweiterte Wow-Wächter schaltet alle drei Stufen und
+vergleicht Prüfwerte der tatsächlich gebauten AudioBuffer. Eine zusätzliche
+Komponentenprüfung mit synthetischem Maschinenklang ergab verschiedene
+Fingerabdrücke (`8fe2b894` / `58ad5ae3`) und Mischfaktoren (0,114 / 0,216);
+„Aus" hatte keine Ableitung. Mobil und am Schreibtisch waren alle drei Ziele
+44 px hoch und gleich breit.
+
+### 7c. Schnitt 4b — den gehörten Vergleich teilen (17.08.2026)
+
+„Mit Fachmann teilen" erscheint erst, nachdem **Deutlich** oder **Stark**
+wirklich berechnet und gehört werden kann. Die zuletzt gewählte Stufe ist die
+Stufe, die ausgegeben wird — kein Standard, den die App im Hintergrund
+heimlich auswählt.
+
+Die Übergabe enthält zwei gewöhnliche 16-Bit-PCM-WAV-Dateien:
+
+1. `…-messung-original.wav` — die unveränderte Messaufnahme,
+2. `…-hoerhilfe-deutlich.wav` oder `…-hoerhilfe-stark.wav` — genau die
+   gekennzeichnete Ableitung.
+
+Auf Mobilgeräten öffnet SoundFuchs das System-Teilen-Sheet mit beiden Dateien
+und einem Satz, der die Hörhilfe als bearbeitet kennzeichnet. Ohne Datei-Share
+werden beide WAVs lokal heruntergeladen. SoundFuchs lädt dabei selbst nichts
+hoch; erst der bewusste Tipp des Nutzers übergibt Dateien an das Betriebssystem.
+Der Empfänger braucht weder SoundFuchs noch ein proprietäres Format.
+
+Vier Exporttests prüfen WAV-Kopf, Stereo-Verschachtelung, Peak-Begrenzung,
+unveränderte Eingaben, Fehlerfälle und sichere Dateinamen. Der Wow-Wächter
+hält zusätzlich fest: vor der Auswahl kein Teilen; nach „Deutlich" genau
+`clear`, nach „Stark" genau `strong`.
+
+### 7d. Schnitt 4c — im 2D-Spektrogramm auswählen und hören (17.08.2026)
+
+Unter „Fein einstellen" liegt jetzt **„Bereich im Spektrogramm auswählen"**.
+Die Ansicht ist absichtlich flach: horizontal läuft die Zeit, vertikal die
+logarithmische Frequenzachse. Im 3D-Gebirge dreht ein Finger die Kamera; in
+dieser Ansicht bedeutet Ziehen immer nur eines — einen Bereich markieren.
+Darum wurde die Auswahl nicht auf die vorhandene 3D-Geste gelegt.
+
+Gezeigt wird die bereits zeitlich ausgerichtete **Differenz**. Der Nutzer sucht
+also im Auffälligen und nicht noch einmal zwischen allen bekannten
+Motorgeräuschen. Der Startbereich umfasst die gesamte Zeit und 1–4 kHz, das
+anschauliche Beispiel aus dem Produktkonzept. Danach gilt:
+
+- Finger oder Maus ziehen ein Rechteck über Zeit und Frequenz.
+- Pfeiltasten verschieben es; Umschalt + Pfeiltasten verändern seine Größe.
+- Die genaue Auswahl steht als Text darunter, zum Beispiel
+  `1,8–5,4 s · 940 Hz–4,2 kHz`.
+- „Auswahl anhören" schneidet genau die Zeitspanne aus und begrenzt sie mit
+  Hoch- und Tiefpass 4. Ordnung auf das markierte Frequenzband.
+- 12-ms-Blenden verhindern künstliche Knackser. Die Hörhilfe wird höchstens
+  zwölfmal angehoben und bleibt unter 0,90 digitalem Spitzenpegel.
+- Das Ergebnis ist ausdrücklich eine bearbeitete Hörhilfe. Es verändert weder
+  Originalmessung, gespeicherte Messung, Differenz noch Bewertung.
+
+Nach dem Anhören zeigt „Mit Fachmann teilen" auf **genau diese Auswahl** und
+gibt sie gemeinsam mit der unveränderten Messaufnahme aus. Damit kann ein
+Nutzer nicht nur sagen „da pfeift etwas", sondern einen kleinen, hörbaren
+Beleg mit Zeit- und Frequenzangabe übergeben.
+
+Sieben neue Tests prüfen Achsenzuordnung, rückwärts gezogene Rechtecke,
+Grenzwerte, Zeitschnitt, Bandunterdrückung, Blenden, Headroom, Mehrkanalton und
+unveränderte Eingaben. Der vollständige Unit-Lauf steht jetzt bei **663
+bestanden, 2 übersprungen**. Der Wow-Wächter zieht zusätzlich im echten mobilen
+Ergebnis ein Rechteck und weist nach, dass ein kürzerer Buffer mit plausiblen
+Frequenzgrenzen, eigenem Fingerabdruck und höchstens 0,90 Peak entsteht und
+anschließend als `selection` teilbar ist.
+
+### 7e. Vorgemerkt — Audiodatei importieren
+
+**Produktziel:** Ein bereits aufgenommenes Geräusch soll nicht erst über den
+Lautsprecher eines zweiten Geräts erneut aufgenommen werden müssen. SoundFuchs
+nimmt eine lokale Audiodatei entgegen und behandelt sie wahlweise als
+**Normalzustand** oder als **Messung**. Danach gelten dieselben Analyse-, Hör-
+und Freigabewerkzeuge wie bei einer Live-Aufnahme.
+
+Der Import ist kein neuer Hauptmodus. Er sitzt dort, wo die Entscheidung schon
+klar ist:
+
+- Fehlt der Maschine ein Normalzustand, bleibt „Normalzustand aufnehmen" die
+  dominante Handlung. Direkt darunter steht als ruhige Alternative
+  **„Audiodatei verwenden"**.
+- Hat die Maschine einen Normalzustand, steht dieselbe Alternative unter
+  „Prüfung starten". Eine dort gewählte Datei ist automatisch eine Messung.
+- Am Schreibtisch darf die Datei zusätzlich auf die Aufnahmefläche gezogen
+  werden. Mobil öffnet derselbe Knopf die Dateiauswahl. Beide Wege führen in
+  dieselbe Vorschau; Drag-and-drop ist keine eigene Funktion.
+- Ein allgemeiner Import im Daten-Reiter darf später beide Rollen anbieten.
+  Er fragt erst nach der Maschine und dann eindeutig: **„Als Normalzustand"
+  oder „Als Messung prüfen"**. Im Maschinenweg entfällt diese zusätzliche
+  Frage.
+
+#### Der kurze Weg
+
+```text
+Maschine → Audiodatei verwenden → anhören und Ausschnitt prüfen
+         → verwenden → Ergebnis beziehungsweise Normalzustand bereit
+```
+
+Nach der Dateiwahl zeigt SoundFuchs genau eine Vorschau mit Dateiname,
+Spieldauer, abspielbarer Wellenform und dem vorgesehenen Ziel
+„Normalzustand“ oder „Messung“. Eine passende Datei braucht nur noch
+**„Verwenden“**. Ist sie länger als die für die Analyse benötigte Dauer, kann
+der Nutzer einen Ausschnitt verschieben; SoundFuchs schlägt automatisch einen
+ruhigen, nicht übersteuerten Abschnitt mit ausreichendem Maschinensignal vor.
+Die Auswahl bleibt jederzeit anhörbar. Eine zu kurze oder unlesbare Datei
+führt nicht in eine Sackgasse, sondern erklärt konkret, was fehlt, und bietet
+„Andere Datei wählen" an.
+
+Ein vorhandener Normalzustand wird nie still überschrieben. Vor dem Ersetzen
+steht: **„Diese Datei ersetzt den bisherigen Normalzustand. Frühere Prüfungen
+bleiben erhalten.“** Dazu gibt es „Abbrechen“ und „Normalzustand ersetzen“.
+Bei einer Messung gibt es keine solche Zusatzfrage; nach „Verwenden“ erscheint
+direkt das Ergebnis mit Hör-Lupe.
+
+#### Formate und technische Wahrheit
+
+Die Oberfläche darf nicht „jedes Format“ versprechen, weil Browser und
+Betriebssysteme verschiedene Decoder mitbringen. Die Dateiauswahl akzeptiert
+`audio/*`; zuerst sollen mindestens WAV, MP3, AAC/M4A und Ogg/Opus abgedeckt
+werden, soweit der jeweilige Browser sie dekodiert. FLAC ist willkommen, wenn
+der Browser es unterstützt. Schlägt das Dekodieren fehl, nennt SoundFuchs das
+Format und empfiehlt WAV oder MP3 — nicht bloß „Import fehlgeschlagen“.
+
+Nach dem Dekodieren arbeitet die vorhandene Audio-Pipeline: Kanäle werden
+kontrolliert verarbeitet, die Abtastrate intern angepasst und nur der gewählte
+Ausschnitt analysiert. Lautheitsanhebung darf eine schlechte Aufnahme nicht
+als gute Referenz tarnen. Die bestehende Qualitätsprüfung für den
+Normalzustand bleibt deshalb verbindlich; Übersteuerung, Stille, zu wenig
+Maschinensignal und ungeeignete Dauer werden vor dem Speichern gemeldet.
+
+Importierte Dateien tragen sichtbar **„Importiert“**, ursprünglichen
+Dateinamen und Importzeitpunkt. Dieser Herkunftshinweis ist wichtig, weil
+Mikrofonposition, Entfernung, Raum und Betriebspunkt unbekannt sein können.
+SoundFuchs bewertet deshalb nicht die Herkunft, weist aber vor dem Vergleich
+knapp darauf hin, möglichst Aufnahmen derselben Maschine unter vergleichbaren
+Bedingungen zu verwenden.
+
+#### Datenschutz und Speicherung
+
+Der Import bleibt wie die Aufnahme lokal. Keine Datei wird allein durch die
+Auswahl hochgeladen oder geteilt. Gespeichert wird nur das, was die vorhandene
+Aufbewahrungseinstellung erlaubt; eine daraus erzeugte Hörhilfe bleibt eine
+gekennzeichnete Ableitung. Vor dem endgültigen Übernehmen kann der Nutzer die
+Datei verwerfen, ohne dass ein Datensatz zurückbleibt.
+
+#### Abnahmekriterien für den späteren Schnitt
+
+1. Import ist auf Handy und Schreibtisch erreichbar, ohne die Live-Aufnahme
+   zur zweiten Primärhandlung zu machen.
+2. Dieselbe Datei kann bewusst als Normalzustand oder Messung verwendet
+   werden; der Maschinenkontext vermeidet eine unnötige Rollenfrage.
+3. Vorschau, Abspielen und Ausschnittswahl geschehen vor dem Speichern oder
+   Vergleichen.
+4. Ein bestehender Normalzustand wird niemals ohne ausdrückliche Bestätigung
+   ersetzt.
+5. Unterstützte Formate, Stereo/Mono, abweichende Abtastraten, sehr lange,
+   zu kurze, stille, übersteuerte, beschädigte und falsch benannte Dateien
+   sind automatisiert geprüft.
+6. Eine importierte Messung erreicht dasselbe Ergebnis, dieselbe Hör-Lupe und
+   dieselben Teilfunktionen wie eine Live-Messung.
+7. Ein Browser ohne Decoder-Unterstützung erhält eine verständliche
+   Formatmeldung und einen sicheren Rückweg.
+8. Der gesamte Vorgang funktioniert nach dem Laden der App offline und lädt
+   ohne ausdrückliche Freigabe nichts hoch.
 
 ---
 

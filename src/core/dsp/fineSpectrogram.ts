@@ -34,7 +34,11 @@
  */
 
 import { fft, getMagnitude, applyHanningWindow, padToPowerOfTwo } from './fft.js';
-import { SPECTROGRAM_DB_RANGE, SPECTROGRAM_MAX_ROWS, type SpectrogramMatrix } from './spectrogram.js';
+import {
+  SPECTROGRAM_DB_RANGE,
+  SPECTROGRAM_MAX_ROWS,
+  type SpectrogramMatrix,
+} from './spectrogram.js';
 import { DEFAULT_DSP_CONFIG } from './features.js';
 import { logger } from '@utils/logger.js';
 
@@ -54,6 +58,24 @@ export const SPECTROGRAM_FINE_COLS = 256;
  * 4-Zylinder-Viertakts bei 1800 min⁻¹ — die tiefste Ordnung, die man sehen will.
  */
 export const FINE_MIN_HZ = 15;
+
+/** Eine Aufnahme soll für 2D- und 3D-Ansicht nicht zweimal dieselbe FFT bezahlen. */
+const matrixCache = new WeakMap<AudioBuffer, Map<number, SpectrogramMatrix | null>>();
+
+export function getFineSpectrogramMatrix(
+  buffer: AudioBuffer,
+  hopSec: number = DEFAULT_DSP_CONFIG.hopSize
+): SpectrogramMatrix | null {
+  let byHop = matrixCache.get(buffer);
+  if (!byHop) {
+    byHop = new Map();
+    matrixCache.set(buffer, byHop);
+  }
+  if (byHop.has(hopSec)) return byHop.get(hopSec) ?? null;
+  const matrix = buildFineSpectrogramMatrix(buffer, hopSec);
+  byHop.set(hopSec, matrix);
+  return matrix;
+}
 
 /**
  * Bandgrenzen der ANZEIGE als Rohbin-Indizes, logarithmisch verteilt.
