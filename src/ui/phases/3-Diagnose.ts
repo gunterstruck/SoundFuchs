@@ -4054,6 +4054,8 @@ export class DiagnosePhase {
       measurement: diagnosisBuffer,
       mitUeberschrift: true,
       shareName: this.machine.name,
+      analysisPackage:
+        referenceBuffer && diagnosisBuffer ? { machineName: this.machine.name } : undefined,
     });
     if (!panel.hasContent) return;
     this.hoerlupe = panel;

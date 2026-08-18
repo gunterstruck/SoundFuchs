@@ -3571,6 +3571,434 @@ body {
   margin-top: 5px;
 }
 
+/* ── KI-Analysepaket: sichtbare Brücke, kein verstecktes Expertenwerkzeug ── */
+.analysepaket-einstieg {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(var(--primary-rgb), 0.28);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(var(--primary-rgb), 0.18), transparent 48%),
+    var(--bg-card, rgba(var(--overlay-rgb), 0.04));
+}
+
+.analysepaket-einstieg-eyebrow,
+.analysepaket-einstieg h3,
+.analysepaket-einstieg p {
+  margin: 0;
+}
+
+.analysepaket-einstieg-eyebrow {
+  color: var(--primary-color);
+  font-size: var(--font-xs);
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.analysepaket-einstieg h3 {
+  margin-top: 3px;
+  color: var(--text-primary);
+  font-size: var(--font-md);
+}
+
+.analysepaket-einstieg p:last-child {
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+.analysepaket-einstieg-knopf {
+  min-height: 48px;
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  font-weight: 750;
+}
+
+body.analysepaket-offen {
+  overflow: hidden;
+}
+
+.analysepaket-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(4, 10, 8, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.analysepaket-dialog {
+  width: min(920px, 100%);
+  max-height: min(860px, calc(100vh - 48px));
+  overflow: auto;
+  border: 1px solid rgba(var(--primary-rgb), 0.22);
+  border-radius: 20px;
+  background: var(--bg-primary, #ffffff);
+  color: var(--text-primary);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+}
+
+.analysepaket-kopf {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.12));
+  background: var(--bg-primary, #ffffff);
+}
+
+.analysepaket-kopf h2,
+.analysepaket-kopf p {
+  margin: 0;
+}
+
+.analysepaket-kopf h2 {
+  margin-top: 3px;
+}
+
+.analysepaket-kopf .muted {
+  margin-top: 7px;
+  line-height: 1.45;
+}
+
+.analysepaket-eyebrow {
+  color: var(--primary-color);
+  font-size: var(--font-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analysepaket-schliessen {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.18));
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-primary);
+  font:
+    300 32px/1 system-ui,
+    sans-serif;
+  cursor: pointer;
+}
+
+.analysepaket-inhalt {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(250px, 2fr);
+  gap: 20px;
+  padding: 22px 24px;
+}
+
+.analysepaket-schritt,
+.analysepaket-privat {
+  min-width: 0;
+}
+
+.analysepaket-schritt h3,
+.analysepaket-privat h3,
+.analysepaket-schritt p,
+.analysepaket-privat p {
+  margin: 0;
+}
+
+.analysepaket-schritt > .muted,
+.analysepaket-privat > .muted {
+  margin-top: 5px;
+  line-height: 1.45;
+}
+
+.analysepaket-situationen {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.analysepaket-situation {
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.18));
+  border-radius: 10px;
+  background: var(--bg-card, rgba(var(--overlay-rgb), 0.04));
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.analysepaket-situation[aria-checked='true'] {
+  border-color: var(--primary-color);
+  background: rgba(var(--primary-rgb), 0.12);
+  box-shadow: inset 0 0 0 1px var(--primary-color);
+  font-weight: 700;
+}
+
+.analysepaket-situation:last-child {
+  grid-column: 1 / -1;
+}
+
+.analysepaket-details {
+  margin-top: 16px;
+}
+
+.analysepaket-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 7px;
+}
+
+.analysepaket-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.16));
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+}
+
+.analysepaket-chip:has(input:checked) {
+  border-color: var(--primary-color);
+  color: var(--text-primary);
+  background: rgba(var(--primary-rgb), 0.1);
+}
+
+.analysepaket-chip input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color);
+}
+
+.analysepaket-beschreibung,
+.analysepaket-prompt {
+  display: grid;
+  gap: 7px;
+  margin-top: 16px;
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+  font-weight: 700;
+}
+
+.analysepaket-beschreibung textarea,
+.analysepaket-prompt textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 11px 12px;
+  border: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.18));
+  border-radius: 10px;
+  background: var(--bg-card, rgba(var(--overlay-rgb), 0.04));
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.analysepaket-diktat {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+}
+
+.analysepaket-diktat-hinweis {
+  margin-top: 5px !important;
+}
+
+.analysepaket-fokus {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+  font-weight: 700;
+}
+
+.analysepaket-privat {
+  padding: 16px;
+  border: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.14));
+  border-radius: 14px;
+  background: var(--bg-card, rgba(var(--overlay-rgb), 0.035));
+}
+
+.analysepaket-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.analysepaket-check input {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--primary-color);
+}
+
+.analysepaket-zustimmung {
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.12));
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.analysepaket-fuss {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.12));
+  background: var(--bg-primary, #ffffff);
+}
+
+.analysepaket-lokal {
+  margin: 0;
+  color: var(--primary-color);
+  font-size: var(--font-sm);
+  font-weight: 750;
+}
+
+.analysepaket-erstellen {
+  min-width: 240px;
+  min-height: 48px;
+}
+
+.analysepaket-erstellen:disabled {
+  opacity: 0.48;
+}
+
+.analysepaket-fehler {
+  margin: 0;
+  color: var(--status-error, #cf4545);
+  font-size: var(--font-sm);
+}
+
+.analysepaket-erfolg {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 42px 28px 32px;
+  text-align: center;
+}
+
+.analysepaket-erfolg h2,
+.analysepaket-erfolg p {
+  margin: 0;
+}
+
+.analysepaket-erfolg > p {
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.analysepaket-erfolg-marke {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  font-size: 34px;
+  box-shadow: 0 12px 32px rgba(var(--primary-rgb), 0.28);
+}
+
+.analysepaket-erfolg .analysepaket-prompt {
+  margin-top: 24px;
+  text-align: left;
+}
+
+.analysepaket-erfolg-aktionen {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.analysepaket-erfolg-aktionen button {
+  min-height: 46px;
+}
+
+@media (max-width: 700px) {
+  .analysepaket-einstieg {
+    grid-template-columns: 1fr;
+  }
+
+  .analysepaket-einstieg-knopf {
+    width: 100%;
+  }
+
+  .analysepaket-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .analysepaket-dialog {
+    max-height: 94vh;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .analysepaket-kopf,
+  .analysepaket-inhalt,
+  .analysepaket-fuss {
+    padding-inline: 16px;
+  }
+
+  .analysepaket-inhalt {
+    grid-template-columns: 1fr;
+  }
+
+  .analysepaket-situationen {
+    grid-template-columns: 1fr;
+  }
+
+  .analysepaket-situation:last-child,
+  .analysepaket-fokus {
+    grid-column: 1;
+  }
+
+  .analysepaket-fuss {
+    display: grid;
+  }
+
+  .analysepaket-erstellen {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .analysepaket-erfolg {
+    padding-inline: 16px;
+  }
+
+  .analysepaket-erfolg-aktionen {
+    display: grid;
+  }
+}
+
 @media (max-width: 600px) {
   .hoerlupe-spektrogramm {
     height: 180px;

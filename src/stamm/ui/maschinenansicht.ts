@@ -237,6 +237,7 @@ function zeichneLupe(
     measurement: messung,
     mitUeberschrift: true,
     shareName,
+    analysisPackage: referenz && messung ? { machineName: shareName } : undefined,
   });
   if (!panel.hasContent) return null;
   lupe = panel;
