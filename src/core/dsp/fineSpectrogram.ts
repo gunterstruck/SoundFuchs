@@ -220,6 +220,7 @@ export function buildFineSpectrogramMatrix(
     cols,
     durationSec: frameCount * hopSec,
     maxFreqHz: nyquist,
+    maxDb,
     bandEdgesHz: Float32Array.from(edges, (bin) => (bin * nyquist) / binCount),
   };
 }

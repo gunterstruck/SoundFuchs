@@ -39,6 +39,25 @@ export interface DifferenceOptions {
 export interface DifferenceResult {
   samples: Float32Array;
   sampleRate: number;
+  /** Messwerte VOR der absichtlichen Hörverstärkung des Differenzsignals. */
+  metrics: DifferenceMetrics;
+}
+
+export interface DifferenceMetrics {
+  /** RMS der unveränderten Messaufnahme. */
+  measurementRms: number;
+  /** RMS des isolierten Unterschieds vor Peak-Normalisierung. */
+  rawDifferenceRms: number;
+  /** Amplitudenverhältnis Unterschied/Messung, 0,1 entspricht 10 %. */
+  relativeAmplitude: number;
+  /** Dasselbe Verhältnis als Pegelabstand; −20 dB entspricht 10 %. */
+  relativeDb: number;
+  /** Interne Schwankung des Normalzustands, mit demselben Verfahren bestimmt. */
+  referenceVariationAmplitude: number;
+  /** Unterschied relativ zur internen Schwankung; null bei zu ruhiger Referenz. */
+  variationMultiple: number | null;
+  /** Verstärkung, die ausschließlich die Hörhilfe auf 0,9 Peak bringt. */
+  listeningGain: number;
 }
 
 /** Average all channels of an AudioBuffer to mono, capped to maxSamples. */
@@ -94,6 +113,71 @@ function averageMagnitude(signal: Float32Array, win: Float32Array, hop: number):
   return profile;
 }
 
+function rms(signal: Float32Array): number {
+  if (signal.length === 0) return 0;
+  let sum = 0;
+  for (const sample of signal) {
+    const value = Number.isFinite(sample) ? sample : 0;
+    sum += value * value;
+  }
+  return Math.sqrt(sum / signal.length);
+}
+
+/**
+ * Ein Signal gegen ein mittleres Spektralprofil subtrahieren und mit seiner
+ * Originalphase zurück in die Zeitdomäne bringen. Dieselbe Funktion läuft für
+ * Messung und Normalzustand: Nur so ist die „normale Schwankung" tatsächlich
+ * in derselben Einheit wie der neue Unterschied.
+ */
+function resynthesizeResidual(
+  signal: Float32Array,
+  profile: Float64Array,
+  profileScale: number,
+  alpha: number,
+  win: Float32Array,
+  hop: number
+): Float32Array {
+  const N = win.length;
+  const out = new Float32Array(signal.length);
+  const winSum = new Float32Array(signal.length);
+  const frame = new Float32Array(N);
+
+  for (let pos = 0; pos + N <= signal.length; pos += hop) {
+    for (let i = 0; i < N; i++) frame[i] = signal[pos + i] * win[i];
+    const spec = fft(frame);
+    const newSpec: Cx[] = new Array(N);
+    for (let k = 0; k < N; k++) {
+      const magnitude = Math.hypot(spec[k].real, spec[k].imag);
+      const keep = Math.max(0, magnitude - alpha * profileScale * profile[k]);
+      const ratio = magnitude > 1e-12 ? keep / magnitude : 0;
+      newSpec[k] = { real: spec[k].real * ratio, imag: spec[k].imag * ratio };
+    }
+
+    const timeFrame = ifftReal(newSpec);
+    for (let i = 0; i < N; i++) {
+      out[pos + i] += timeFrame[i] * win[i];
+      winSum[pos + i] += win[i] * win[i];
+    }
+  }
+
+  for (let i = 0; i < out.length; i++) {
+    if (winSum[i] > 1e-6) out[i] /= winSum[i];
+  }
+  return out;
+}
+
+function emptyMetrics(): DifferenceMetrics {
+  return {
+    measurementRms: 0,
+    rawDifferenceRms: 0,
+    relativeAmplitude: 0,
+    relativeDb: -Infinity,
+    referenceVariationAmplitude: 0,
+    variationMultiple: null,
+    listeningGain: 1,
+  };
+}
+
 /**
  * Resynthesize the "difference" (measurement minus reference) as a mono signal.
  *
@@ -120,7 +204,7 @@ export function isolateDifference(
 
   // Too short to process → return empty (caller handles gracefully)
   if (meas.length < N || ref.length < N) {
-    return { samples: new Float32Array(0), sampleRate };
+    return { samples: new Float32Array(0), sampleRate, metrics: emptyMetrics() };
   }
 
   const win = hannWindow(N);
@@ -141,35 +225,23 @@ export function isolateDifference(
   }
   const g = den > 1e-12 ? num / den : 0;
 
-  // Spectral subtraction with overlap-add resynthesis
-  const out = new Float32Array(meas.length);
-  const winSum = new Float32Array(meas.length);
-  const frame = new Float32Array(N);
+  // Beide Rest-Signale in derselben Einheit: Die Messung gegen die passend
+  // skalierte Referenz, die Referenz gegen ihr eigenes Mittelprofil.
+  const out = resynthesizeResidual(meas, refProfile, g, alpha, win, hop);
+  const referenceResidual = resynthesizeResidual(ref, refProfile, 1, alpha, win, hop);
 
-  for (let pos = 0; pos + N <= meas.length; pos += hop) {
-    for (let i = 0; i < N; i++) frame[i] = meas[pos + i] * win[i];
-    const spec = fft(frame);
-
-    const newSpec: Cx[] = new Array(N);
-    for (let k = 0; k < N; k++) {
-      const m = Math.hypot(spec[k].real, spec[k].imag);
-      const keep = Math.max(0, m - alpha * g * refProfile[k]);
-      const ratio = m > 1e-12 ? keep / m : 0;
-      // Keep the measurement phase, scale the magnitude down to the residual
-      newSpec[k] = { real: spec[k].real * ratio, imag: spec[k].imag * ratio };
-    }
-
-    const timeFrame = ifftReal(newSpec);
-    for (let i = 0; i < N; i++) {
-      out[pos + i] += timeFrame[i] * win[i];
-      winSum[pos + i] += win[i] * win[i];
-    }
-  }
-
-  // Normalize the overlap-add window gain
-  for (let i = 0; i < out.length; i++) {
-    if (winSum[i] > 1e-6) out[i] /= winSum[i];
-  }
+  // Diese Werte werden VOR der Hörnormalisierung festgehalten. Der Nutzer darf
+  // später eine leise Differenz deutlich hören, ohne dass „lauter" heimlich zu
+  // „stärker" wird.
+  const measurementRms = rms(meas);
+  const rawDifferenceRms = rms(out);
+  const referenceRms = rms(ref);
+  const relativeAmplitude = measurementRms > 1e-12 ? rawDifferenceRms / measurementRms : 0;
+  const referenceVariationAmplitude =
+    referenceRms > 1e-12 ? rms(referenceResidual) / referenceRms : 0;
+  const variationMultiple =
+    referenceVariationAmplitude >= 0.001 ? relativeAmplitude / referenceVariationAmplitude : null;
+  const relativeDb = relativeAmplitude > 1e-12 ? 20 * Math.log10(relativeAmplitude) : -Infinity;
 
   // Peak-normalize so the (often quiet) residual is comfortably audible
   let peak = 0;
@@ -177,10 +249,22 @@ export function isolateDifference(
     const a = Math.abs(out[i]);
     if (a > peak) peak = a;
   }
+  const listeningGain = peak > 1e-6 ? 0.9 / peak : 1;
   if (peak > 1e-6) {
-    const scale = 0.9 / peak;
-    for (let i = 0; i < out.length; i++) out[i] *= scale;
+    for (let i = 0; i < out.length; i++) out[i] *= listeningGain;
   }
 
-  return { samples: out, sampleRate };
+  return {
+    samples: out,
+    sampleRate,
+    metrics: {
+      measurementRms,
+      rawDifferenceRms,
+      relativeAmplitude,
+      relativeDb,
+      referenceVariationAmplitude,
+      variationMultiple,
+      listeningGain,
+    },
+  };
 }

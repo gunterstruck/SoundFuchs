@@ -50,6 +50,8 @@ export interface SpectrogramMatrix {
   durationSec: number;
   /** Obere Frequenzgrenze der Matrix (Hz, Nyquist der Aufnahme). */
   maxFreqHz: number;
+  /** Absolutes Maximum vor der anzeigeseitigen Normierung. */
+  maxDb: number;
   /**
    * Grenzen der Log-Frequenzbänder in Hz, Länge cols + 1. Spalte c deckt
    * [bandEdgesHz[c], bandEdgesHz[c+1]) ab. Die Achsenbeschriftung braucht das,
@@ -57,6 +59,36 @@ export interface SpectrogramMatrix {
    * proportional zur Frequenz ist.
    */
   bandEdgesHz: Float32Array;
+}
+
+/**
+ * Eine bereits berechnete Matrix auf einen gemeinsamen dB-Deckel umlegen.
+ * Dadurch bleibt eine leise Differenz im Vergleich auch wirklich kleiner.
+ * Die Ursprungsmatrix und ihr absolutes `maxDb` bleiben unverändert.
+ */
+export function rescaleSpectrogramMatrix(
+  matrix: SpectrogramMatrix,
+  ceilingDb: number
+): SpectrogramMatrix {
+  if (!Number.isFinite(ceilingDb) || ceilingDb <= matrix.maxDb + 1e-6) return matrix;
+  const values = Float32Array.from(matrix.values, (value) => {
+    const reconstructedDb = matrix.maxDb + (value - 1) * SPECTROGRAM_DB_RANGE;
+    return Math.min(1, Math.max(0, 1 + (reconstructedDb - ceilingDb) / SPECTROGRAM_DB_RANGE));
+  });
+  return { ...matrix, values };
+}
+
+/**
+ * Eine reine Hörverstärkung aus dem absoluten Anzeigemaximum herausrechnen.
+ * Die relative Form der Matrix bleibt gleich; nur ein gemeinsamer Maßstab darf
+ * nicht so tun, als sei die fürs Ohr normalisierte Differenz wirklich so laut.
+ */
+export function compensateSpectrogramGain(
+  matrix: SpectrogramMatrix,
+  gain: number
+): SpectrogramMatrix {
+  if (!Number.isFinite(gain) || gain <= 0 || Math.abs(gain - 1) < 1e-9) return matrix;
+  return { ...matrix, maxDb: matrix.maxDb - 20 * Math.log10(gain) };
 }
 
 /**
@@ -204,6 +236,7 @@ export function buildSpectrogramMatrix(
     cols,
     durationSec: frames.length * hopSec,
     maxFreqHz: nyquist,
+    maxDb,
     bandEdgesHz,
   };
 }

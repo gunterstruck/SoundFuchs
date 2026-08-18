@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rectToSpectralSelection } from './SpectrogramSelectionPanel.js';
+import { rectToSpectralSelection, spectralSelectionToRect } from './SpectrogramSelectionPanel.js';
 
 describe('rectToSpectralSelection', () => {
   it('bildet Zeit horizontal und Frequenz von unten nach oben ab', () => {
@@ -24,5 +24,17 @@ describe('rectToSpectralSelection', () => {
     expect(selection.endSec).toBeCloseTo(18);
     expect(selection.lowHz).toBeCloseTo(400);
     expect(selection.highHz).toBeCloseTo(1600);
+  });
+
+  it('bewahrt Sekunden und Hertz beim Wechsel auf eine anders lange Quelle', () => {
+    const edges = new Float32Array([100, 200, 400, 800, 1600]);
+    const original = rectToSpectralSelection({ x0: 0.2, x1: 0.6, y0: 0.25, y1: 0.75 }, 10, edges);
+    const onLongerSource = spectralSelectionToRect(original, 20, edges);
+    const restored = rectToSpectralSelection(onLongerSource, 20, edges);
+
+    expect(restored.startSec).toBeCloseTo(original.startSec);
+    expect(restored.endSec).toBeCloseTo(original.endSec);
+    expect(restored.lowHz).toBeCloseTo(original.lowHz);
+    expect(restored.highHz).toBeCloseTo(original.highHz);
   });
 });

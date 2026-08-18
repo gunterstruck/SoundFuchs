@@ -46,6 +46,7 @@ import {
 } from '@core/audio/differenceHighlight.js';
 import { shareHearingComparison } from '@core/audio/hearingComparisonShare.js';
 import { SpectrogramSelectionPanel } from './SpectrogramSelectionPanel.js';
+import { DifferenceStrengthIndicator } from './DifferenceStrengthIndicator.js';
 import { planTranspose } from '@core/audio/audibleTranspose.js';
 import { peakFrequencyFine } from '@core/dsp/fineSpectrogram.js';
 import { formatHz } from '@utils/formatHz.js';
@@ -100,12 +101,14 @@ export class ListenPanel {
   private shareButton: HTMLButtonElement | null = null;
   private teilbareHoerhilfe: {
     buffer: AudioBuffer;
+    original: AudioBuffer;
     kind: DifferenceHighlightStrength | 'selection';
     label: string;
   } | null = null;
   private teilenLaeuft = false;
   private auswahlLaeuft = false;
   private auswahlPanel: SpectrogramSelectionPanel | null = null;
+  private strength = new DifferenceStrengthIndicator();
   private destroyed = false;
 
   constructor(options: ListenPanelOptions) {
@@ -163,6 +166,7 @@ export class ListenPanel {
     if (this.hatUnterschied) this.macheUnterschiedsknopf(reihe);
 
     container.appendChild(ansage);
+    container.appendChild(this.strength.element);
 
     // ── Fein einstellen ────────────────────────────────────────────────────
     //
@@ -273,7 +277,7 @@ export class ListenPanel {
       return false;
     }
 
-    const take = getDifferenceTake(this.referenz, this.messung);
+    const take = this.holeUnterschied();
     this.unterschiedLaeuft = false;
     if (knopf) knopf.el.textContent = knopf.label;
     if (!take) {
@@ -353,7 +357,7 @@ export class ListenPanel {
       setTimeout(() => {
         laeuft = false;
         if (this.destroyed) return;
-        const take = getDifferenceTake(this.referenz!, this.messung!);
+        const take = this.holeUnterschied();
         // Feine Auflösung: 2,93 Hz statt 46,875 Hz. Der Faktor folgt direkt aus
         // dieser Frequenz, ein 16-faches Raster war dort zu grob.
         const peakHz = take ? peakFrequencyFine(take.buffer) : null;
@@ -497,7 +501,7 @@ export class ListenPanel {
     let take: ReturnType<typeof getDifferenceTake> = null;
     let highlighted: ReturnType<typeof createDifferenceHighlightBuffer> = null;
     try {
-      take = getDifferenceTake(this.referenz, this.messung);
+      take = this.holeUnterschied();
       highlighted = take
         ? createDifferenceHighlightBuffer(this.messung, take.buffer, strength)
         : null;
@@ -529,7 +533,8 @@ export class ListenPanel {
     kind: DifferenceHighlightStrength | 'selection',
     label: string
   ): void {
-    this.teilbareHoerhilfe = { buffer, kind, label };
+    if (!this.messung) return;
+    this.teilbareHoerhilfe = { buffer, original: this.messung, kind, label };
     if (!this.shareButton) return;
     this.shareButton.hidden = false;
     this.shareButton.dataset.shareStrength = kind;
@@ -548,26 +553,46 @@ export class ListenPanel {
     this.shareButton.textContent = t('hoerlupe.vergleichTeilen');
   }
 
+  /** Eine Rechnung, eine Stärkeanzeige, ein Cache für alle Hörwerkzeuge. */
+  private holeUnterschied(): ReturnType<typeof getDifferenceTake> {
+    if (!this.referenz || !this.messung) return null;
+    const take = getDifferenceTake(this.referenz, this.messung);
+    if (take) {
+      this.buffers.difference = take.buffer;
+      this.strength.update(take.metrics);
+    }
+    return take;
+  }
+
   /**
    * 2D statt 3D: Ziehen bedeutet hier immer auswählen und nie Kamera drehen.
-   * Gezeigt und gefiltert wird die bereits ausgerichtete Differenz. Dadurch
-   * sucht der Nutzer im Auffälligen, nicht noch einmal im gesamten Motorlärm.
+   * Der Unterschied bleibt die Vorauswahl. Derselbe Rahmen kann aber ohne
+   * Neuzeichnen auf Normalzustand und Messung gelegt werden; Auge und Ohr
+   * wechseln dabei immer gemeinsam dieselbe Quelle.
    */
   private macheSpektrogrammAuswahl(ziel: HTMLElement): void {
     const panel = new SpectrogramSelectionPanel({
-      source: () => {
-        if (this.buffers.difference) return this.buffers.difference;
-        if (!this.referenz || !this.messung) return null;
-        const take = getDifferenceTake(this.referenz, this.messung);
-        if (!take) return null;
-        this.buffers.difference = take.buffer;
-        return take.buffer;
+      sources: {
+        reference: () => this.referenz,
+        measurement: () => this.messung,
+        difference: () => this.holeUnterschied()?.buffer ?? null,
       },
+      listeningGain: {
+        difference: () => this.holeUnterschied()?.metrics.listeningGain ?? 1,
+      },
+      initialSource: 'difference',
       onSelectionChange: () => this.verwerfeAuswahlFreigabe(),
+      onSourceChange: () => {
+        this.verwerfeAuswahlFreigabe();
+        const entry = this.buttons.find((button) => button.el === panel.playButton);
+        if (!entry) return;
+        entry.label = panel.playLabel();
+        if (this.playingButton !== panel.playButton) panel.playButton.textContent = entry.label;
+      },
     });
     this.auswahlPanel = panel;
-    const label = t('hoerlupe.auswahlAnhoeren');
-    this.buttons.push({ key: 'selection', el: panel.playButton, label });
+    const entry = { key: 'selection' as const, el: panel.playButton, label: panel.playLabel() };
+    this.buttons.push(entry);
     panel.playButton.onclick = () => {
       if (this.playingButton === panel.playButton) {
         this.halteAn();
@@ -597,6 +622,12 @@ export class ListenPanel {
           panel.playButton.dataset.outputDuration = selected.buffer.duration.toFixed(3);
           this.teilbareHoerhilfe = {
             buffer: selected.buffer,
+            // Beim Unterschied bleibt die unveränderte Messung der hörbare
+            // Gegenpol; bei den beiden Originalquellen ist es die Quelle selbst.
+            original:
+              panel.selectedSource() === 'reference'
+                ? (this.referenz ?? this.messung!)
+                : (this.messung ?? panel.sourceBuffer()!),
             kind: 'selection',
             label: selectionLabel,
           };
@@ -611,7 +642,7 @@ export class ListenPanel {
         } finally {
           this.auswahlLaeuft = false;
           panel.playButton.disabled = false;
-          if (this.playingButton !== panel.playButton) panel.playButton.textContent = label;
+          if (this.playingButton !== panel.playButton) panel.playButton.textContent = entry.label;
         }
       }, 50);
     };
@@ -620,7 +651,7 @@ export class ListenPanel {
 
   /** Teilt Original + exakt zuletzt gehörte Hörhilfe, nie eine heimliche Stufe. */
   private async teileHoerhilfe(): Promise<void> {
-    if (this.teilenLaeuft || !this.shareButton || !this.messung || !this.teilbareHoerhilfe) {
+    if (this.teilenLaeuft || !this.shareButton || !this.teilbareHoerhilfe) {
       return;
     }
     this.teilenLaeuft = true;
@@ -628,7 +659,7 @@ export class ListenPanel {
     this.shareButton.textContent = t('hoerlupe.vergleichWirdVorbereitet');
     try {
       const outcome = await shareHearingComparison({
-        measurement: this.messung,
+        measurement: this.teilbareHoerhilfe.original,
         highlighted: this.teilbareHoerhilfe.buffer,
         baseName: this.shareName,
         highlightedSuffix: this.teilbareHoerhilfe.label,

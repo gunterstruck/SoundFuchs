@@ -182,14 +182,7 @@ export function buildAxisGeometry(matrix: SpectrogramMatrix): AxisGeometry {
   const pos: number[] = [];
   const labels: AxisLabel[] = [];
 
-  const line = (
-    x1: number,
-    y1: number,
-    z1: number,
-    x2: number,
-    y2: number,
-    z2: number
-  ): void => {
+  const line = (x1: number, y1: number, z1: number, x2: number, y2: number, z2: number): void => {
     pos.push(x1, y1, z1, x2, y2, z2);
   };
 
@@ -350,6 +343,36 @@ void main() {
   gl_FragColor = vec4(vColor, 1.0);
 }`;
 
+export interface Spectrogram3DCameraState {
+  yaw: number;
+  pitch: number;
+  distance: number;
+}
+
+export const DEFAULT_SPECTROGRAM_CAMERA: Readonly<Spectrogram3DCameraState> = {
+  yaw: 0.6,
+  pitch: 0.7,
+  distance: 2.75,
+};
+
+/** Externe oder gemerkte Kamerawerte nie ungeprüft in die Matrixrechnung geben. */
+export function normalizeSpectrogramCameraState(
+  state?: Partial<Spectrogram3DCameraState> | null
+): Spectrogram3DCameraState {
+  const yaw = Number.isFinite(state?.yaw) ? state!.yaw! : DEFAULT_SPECTROGRAM_CAMERA.yaw;
+  const pitchValue = Number.isFinite(state?.pitch)
+    ? state!.pitch!
+    : DEFAULT_SPECTROGRAM_CAMERA.pitch;
+  const distanceValue = Number.isFinite(state?.distance)
+    ? state!.distance!
+    : DEFAULT_SPECTROGRAM_CAMERA.distance;
+  return {
+    yaw,
+    pitch: Math.min(PITCH_MAX, Math.max(PITCH_MIN, pitchValue)),
+    distance: Math.min(DIST_MAX, Math.max(DIST_MIN, distanceValue)),
+  };
+}
+
 export class Spectrogram3D {
   public readonly element: HTMLElement;
 
@@ -368,9 +391,9 @@ export class Spectrogram3D {
   private labelNodes: Array<{ el: HTMLElement; label: AxisLabel; w: number; h: number }> = [];
 
   // Orbit-Zustand
-  private yaw = 0.6;
-  private pitch = 0.7;
-  private dist = 2.75; // Startabstand: Gebirge samt Achsen-Etiketten passt ins Bild
+  private yaw = DEFAULT_SPECTROGRAM_CAMERA.yaw;
+  private pitch = DEFAULT_SPECTROGRAM_CAMERA.pitch;
+  private dist = DEFAULT_SPECTROGRAM_CAMERA.distance;
 
   // Pointer-Zustand (1 Finger = drehen, 2 Finger = Pinch-Zoom)
   private pointers = new Map<number, { x: number; y: number }>();
@@ -389,7 +412,12 @@ export class Spectrogram3D {
     }
   }
 
-  constructor(matrix: SpectrogramMatrix) {
+  constructor(matrix: SpectrogramMatrix, cameraState?: Spectrogram3DCameraState) {
+    const camera = normalizeSpectrogramCameraState(cameraState);
+    this.yaw = camera.yaw;
+    this.pitch = camera.pitch;
+    this.dist = camera.distance;
+
     const container = document.createElement('div');
     container.className = 'spectro3d';
     this.element = container;
@@ -591,6 +619,12 @@ export class Spectrogram3D {
 
   private requestRender(): void {
     if (this.renderQueued || this.destroyed) return;
+    // Nicht visuell, aber end-to-end prüfbar: Der Wächter kann damit beweisen,
+    // dass ein Quellenwechsel dieselbe Kamera übernimmt, statt nur ähnlich
+    // auszusehen. Die Werte enthalten keinerlei Aufnahme- oder Nutzerdaten.
+    this.canvas.dataset.cameraYaw = this.yaw.toFixed(6);
+    this.canvas.dataset.cameraPitch = this.pitch.toFixed(6);
+    this.canvas.dataset.cameraDistance = this.dist.toFixed(6);
     this.renderQueued = true;
     requestAnimationFrame(() => {
       this.renderQueued = false;
@@ -709,6 +743,20 @@ export class Spectrogram3D {
     this.canvas.addEventListener('pointerup', this.onPointerUp);
     this.canvas.addEventListener('pointercancel', this.onPointerUp);
     this.canvas.addEventListener('wheel', this.onWheel, { passive: false });
+  }
+
+  /** Momentane Perspektive für den Quellenwechsel sichern. */
+  public cameraState(): Spectrogram3DCameraState {
+    return { yaw: this.yaw, pitch: this.pitch, distance: this.dist };
+  }
+
+  /** Nur eine bewusste Nutzerhandlung setzt Winkel und Zoom zurück. */
+  public resetCamera(): void {
+    const camera = normalizeSpectrogramCameraState(DEFAULT_SPECTROGRAM_CAMERA);
+    this.yaw = camera.yaw;
+    this.pitch = camera.pitch;
+    this.dist = camera.distance;
+    this.requestRender();
   }
 
   public destroy(): void {

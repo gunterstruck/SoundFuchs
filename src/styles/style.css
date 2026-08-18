@@ -3433,6 +3433,36 @@ body {
   line-height: 1.4;
 }
 
+.hoerlupe-auswahl-quellen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+
+.hoerlupe-auswahl-quelle {
+  min-width: 0;
+  min-height: 44px;
+  padding-inline: 8px;
+}
+
+.hoerlupe-auswahl-quelle.listen-btn-active {
+  border-color: var(--primary-color);
+  box-shadow: inset 0 0 0 1px var(--primary-color);
+}
+
+.hoerlupe-auswahl-massstab {
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 10px;
+  border-style: dashed;
+}
+
+.hoerlupe-auswahl-massstab[aria-pressed='true'] {
+  border-style: solid;
+  border-color: var(--primary-color);
+}
+
 .hoerlupe-spektrogramm {
   display: block;
   width: 100%;
@@ -3474,9 +3504,84 @@ body {
   box-shadow: inset 0 0 0 1px var(--primary-color);
 }
 
+/* Die Einordnung misst VOR der absichtlichen Verstärkung. Sie steht sowohl in
+   der Hör-Lupe als auch direkt beim 3D-Unterschied und trägt ihren Maßstab mit. */
+.differenz-staerke {
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.16));
+  border-radius: 10px;
+  background: var(--bg-card, rgba(var(--overlay-rgb), 0.04));
+}
+
+.differenz-staerke-titel,
+.differenz-staerke-ergebnis,
+.differenz-staerke-detail,
+.differenz-staerke-hinweis {
+  margin: 0;
+}
+
+.differenz-staerke-titel {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.differenz-staerke-ergebnis {
+  margin-top: 3px;
+  font-size: var(--font-md);
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.differenz-staerke-meter {
+  height: 8px;
+  margin: 8px 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(var(--overlay-rgb), 0.1);
+}
+
+.differenz-staerke-meter > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--status-healthy);
+  transition: width 180ms ease;
+}
+
+.differenz-staerke-slight .differenz-staerke-meter > span {
+  background: var(--status-warning, #d99a16);
+}
+
+.differenz-staerke-clear .differenz-staerke-meter > span,
+.differenz-staerke-strong .differenz-staerke-meter > span {
+  background: var(--status-error, #cf4545);
+}
+
+.differenz-staerke-detail,
+.differenz-staerke-hinweis {
+  line-height: 1.35;
+}
+
+.differenz-staerke-hinweis {
+  margin-top: 5px;
+}
+
 @media (max-width: 600px) {
   .hoerlupe-spektrogramm {
     height: 180px;
+  }
+
+  .hoerlupe-auswahl-quellen {
+    gap: 5px;
+  }
+
+  .hoerlupe-auswahl-quelle {
+    font-size: var(--font-xs);
   }
 }
 
