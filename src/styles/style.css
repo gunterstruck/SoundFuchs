@@ -104,7 +104,10 @@
   --z-modal-backdrop: 1000;
   --z-modal: 1100;
   --z-popover: 1200;
-  --z-toast: 2000;
+  /* Hinweise müssen auch über der aus TourFuchs übernommenen Topbar (3600)
+     liegen. Ihre Position hält sie normalerweise darunter; die höhere Ebene
+     verhindert zusätzlich, dass Animation oder kleine Fenster sie abschneiden. */
+  --z-toast: 4000;
 
   /* ═══════════════════════════════════════════════════════════════════════
      FARBEN – ein Satz, hell. Die dunkle Fassung steht direkt darunter und
