@@ -47,6 +47,7 @@ import {
 import { shareHearingComparison } from '@core/audio/hearingComparisonShare.js';
 import { SpectrogramSelectionPanel } from './SpectrogramSelectionPanel.js';
 import { DifferenceStrengthIndicator } from './DifferenceStrengthIndicator.js';
+import { openAnalysisPackageDialog } from './AnalysisPackageDialog.js';
 import { planTranspose } from '@core/audio/audibleTranspose.js';
 import { peakFrequencyFine } from '@core/dsp/fineSpectrogram.js';
 import { formatHz } from '@utils/formatHz.js';
@@ -67,6 +68,8 @@ export interface ListenPanelOptions {
   mitUeberschrift?: boolean;
   /** Maschinenname für verständliche Dateinamen beim bewussten Teilen. */
   shareName?: string;
+  /** Zeigt den lokalen Übergang an eine beliebige KI; nur mit beiden Tönen. */
+  analysisPackage?: { machineName: string };
 }
 
 /** Welche Quelle gerade läuft. */
@@ -182,6 +185,54 @@ export class ListenPanel {
     if (this.hatUnterschied) this.macheHervorhebung(fein);
     if (this.hatUnterschied) this.macheSpektrogrammAuswahl(fein);
     container.appendChild(fein);
+    if (this.hatUnterschied && reference && measurement && options.analysisPackage) {
+      this.macheAnalysepaket(
+        container,
+        reference,
+        measurement,
+        options.analysisPackage.machineName
+      );
+    }
+  }
+
+  /**
+   * Kein Diagnose-Knopf, sondern eine saubere Übergabe: Kontext + Belege +
+   * Arbeitsauftrag verlassen SoundFuchs erst, wenn der Nutzer das ZIP selbst
+   * an eine KI weitergibt.
+   */
+  private macheAnalysepaket(
+    ziel: HTMLElement,
+    reference: AudioBuffer,
+    measurement: AudioBuffer,
+    machineName: string
+  ): void {
+    const card = document.createElement('section');
+    card.className = 'analysepaket-einstieg';
+    const copy = document.createElement('div');
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'analysepaket-einstieg-eyebrow';
+    eyebrow.textContent = t('analysisPackage.entryEyebrow');
+    const title = document.createElement('h3');
+    title.textContent = t('analysisPackage.entryTitle');
+    const hint = document.createElement('p');
+    hint.className = 'muted small';
+    hint.textContent = t('analysisPackage.entryHint');
+    copy.append(eyebrow, title, hint);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'listen-btn analysepaket-einstieg-knopf';
+    button.textContent = t('analysisPackage.entryButton');
+    button.onclick = () => {
+      this.halteAn();
+      openAnalysisPackageDialog({
+        reference,
+        measurement,
+        machineName,
+        getSelection: () => this.auswahlPanel?.selection() ?? null,
+      });
+    };
+    card.append(copy, button);
+    ziel.appendChild(card);
   }
 
   /** Ein Quellenknopf: tippen spielt, nochmal tippen hält an. */

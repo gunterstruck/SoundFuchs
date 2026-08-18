@@ -108,8 +108,7 @@ export const de: TranslationDict = {
     auswahlAnhoerenQuelle: '🔊 Auswahl aus {{quelle}} anhören',
     auswahlNichtVerfuegbar: 'Für diesen Bereich lässt sich keine Hörhilfe bilden.',
     auswahlQuelle: 'Spektrogramm-Auswahl',
-    auswahlBeschreibung:
-      'Auswahl {{quelle}} · {{vonZeit}}–{{bisZeit}} s · {{vonHz}}–{{bisHz}}',
+    auswahlBeschreibung: 'Auswahl {{quelle}} · {{vonZeit}}–{{bisZeit}} s · {{vonHz}}–{{bisHz}}',
     staerkeTitel: 'Stärke der akustischen Abweichung',
     staerkeInnerhalb: 'Innerhalb der normalen Schwankung',
     staerkeLeicht: 'Leicht erhöht',
@@ -121,6 +120,63 @@ export const de: TranslationDict = {
     staerkeHinweis:
       'Zum Erkennen wird der Unterschied danach verstärkt. Die Einordnung beschreibt eine akustische Veränderung, nicht die Schwere eines Schadens.',
     laeuft: 'Läuft: {{quelle}}',
+  },
+  analysisPackage: {
+    entryEyebrow: 'Neu · lokal & frei',
+    entryTitle: 'Aus dem Geräusch wird ein klarer Fall',
+    entryHint:
+      'Normalzustand, Messung, Unterschied, Kontext und Spektrogramme für eine KI deiner Wahl.',
+    entryButton: '✨ KI-Analysepaket erstellen',
+    eyebrow: 'SoundFuchs Übergabe-Assistent',
+    title: 'Geräusch verständlich weitergeben',
+    intro:
+      'Du beschreibst die Situation. SoundFuchs schnürt lokal ein nachvollziehbares Paket – ohne Upload und ohne Konto.',
+    close: 'Dialog schließen',
+    situationTitle: 'Was wurde aufgenommen?',
+    situationHint:
+      'Ein guter Kontext verhindert, dass eine KI Motorraum, Küche oder Werkstatt verwechselt.',
+    situationVehicle: '🚗 Fahrzeug · Motorraum',
+    situationHousehold: '🏠 Haushaltsgerät · Innenraum',
+    situationBuilding: '🔥 Haustechnik · Technikraum',
+    situationTool: '🛠️ Werkzeug oder Gartengerät',
+    situationOther: '✍️ Andere Situation',
+    vehicleDetails: 'Was trifft zu? Mehrere Angaben sind möglich.',
+    hoodOpen: 'Motorhaube offen',
+    hoodClosed: 'Motorhaube geschlossen',
+    coldStart: 'Kaltstart',
+    warmIdle: 'warmer Leerlauf',
+    raisedRpm: 'erhöhte Drehzahl',
+    descriptionLabel: 'Was soll die KI wissen?',
+    descriptionVehiclePlaceholder:
+      'Zum Beispiel: Pfeifen vorne rechts, nach 30 Minuten Fahrt, etwa bei 1.800 U/min …',
+    descriptionPlaceholder:
+      'Gerät, Ort, Betriebszustand und das auffällige Geräusch kurz beschreiben …',
+    dictate: '🎙️ Situation diktieren',
+    dictating: '● Ich höre zu – zum Beenden tippen',
+    dictationNote:
+      'Nur der erkannte Text kommt ins Paket. Je nach Browser kann die Spracherkennung dessen Dienst verwenden.',
+    selectionIncluded: '🎯 Markierter Fokus kommt mit: {{from}}–{{to}} s · {{low}}–{{high}} Hz',
+    privacyTitle: 'Du entscheidest, was mitgeht',
+    privacyText:
+      'Standort und Kundendaten bleiben draußen. Audio kann trotzdem Stimmen oder Ortsgeräusche enthalten.',
+    includeName: 'Maschinenbezeichnung „{{name}}“ einbeziehen',
+    consent: 'Ich habe geprüft, dass ich diese Audiodateien an eine externe KI weitergeben darf.',
+    localPromise: '🔒 SoundFuchs lädt nichts hoch',
+    create: 'Paket herunterladen + Prompt kopieren',
+    working: 'Paket wird lokal gebaut …',
+    failed: 'Das Paket konnte nicht vollständig erzeugt werden. Bitte erneut versuchen.',
+    successTitle: 'Dein Fall ist startklar',
+    successCopied:
+      'Das ZIP wurde heruntergeladen und der identische Analyse-Prompt liegt in deiner Zwischenablage.',
+    successFallback:
+      'Das ZIP wurde heruntergeladen. Der Prompt liegt sicher darin und kann unten zusätzlich kopiert werden.',
+    successWarnings:
+      '{{count}} Zusatzdatei(en) konnten nicht erzeugt werden; die Details stehen im ZIP unter HINWEISE.txt.',
+    promptBackup: 'Doppelter Boden: der Prompt zum Nachlesen und Kopieren',
+    copyAgain: 'Prompt noch einmal kopieren',
+    copied: '✓ Prompt kopiert',
+    copyManually: 'Text ist markiert – bitte kopieren',
+    done: 'Fertig',
   },
   site: {
     machines: 'Maschinen',

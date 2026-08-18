@@ -105,8 +105,7 @@ export const fr: TranslationDict = {
     auswahlAnhoerenQuelle: '🔊 Écouter la sélection de {{quelle}}',
     auswahlNichtVerfuegbar: 'Aucune aide auditive ne peut être créée pour cette zone.',
     auswahlQuelle: 'Sélection du spectrogramme',
-    auswahlBeschreibung:
-      'Sélection {{quelle}} · {{vonZeit}}–{{bisZeit}} s · {{vonHz}}–{{bisHz}}',
+    auswahlBeschreibung: 'Sélection {{quelle}} · {{vonZeit}}–{{bisZeit}} s · {{vonHz}}–{{bisHz}}',
     staerkeTitel: 'Intensité de l’écart acoustique',
     staerkeInnerhalb: 'Dans la variation normale',
     staerkeLeicht: 'Légèrement élevé',
@@ -118,6 +117,62 @@ export const fr: TranslationDict = {
     staerkeHinweis:
       'La différence est ensuite amplifiée pour être détectable. Ceci décrit un changement acoustique, pas la gravité d’un dommage.',
     laeuft: 'Lecture : {{quelle}}',
+  },
+  analysisPackage: {
+    entryEyebrow: 'Nouveau · local et libre',
+    entryTitle: 'Transformez le bruit en cas clair',
+    entryHint:
+      'État normal, mesure, différence, contexte et spectrogrammes pour l’IA de votre choix.',
+    entryButton: '✨ Créer le paquet d’analyse IA',
+    eyebrow: 'Assistant de transmission SoundFuchs',
+    title: 'Transmettre le bruit clairement',
+    intro:
+      'Décrivez la situation. SoundFuchs crée localement un paquet traçable, sans envoi ni compte.',
+    close: 'Fermer la boîte de dialogue',
+    situationTitle: 'Qu’avez-vous enregistré ?',
+    situationHint:
+      'Un bon contexte évite à l’IA de confondre compartiment moteur, cuisine ou atelier.',
+    situationVehicle: '🚗 Véhicule · compartiment moteur',
+    situationHousehold: '🏠 Appareil ménager · intérieur',
+    situationBuilding: '🔥 Équipement technique · local technique',
+    situationTool: '🛠️ Outil ou appareil de jardin',
+    situationOther: '✍️ Autre situation',
+    vehicleDetails: 'Quelles conditions s’appliquent ? Plusieurs choix possibles.',
+    hoodOpen: 'capot ouvert',
+    hoodClosed: 'capot fermé',
+    coldStart: 'démarrage à froid',
+    warmIdle: 'ralenti à chaud',
+    raisedRpm: 'régime élevé',
+    descriptionLabel: 'Que doit savoir l’IA ?',
+    descriptionVehiclePlaceholder:
+      'Exemple : sifflement à l’avant droit, après 30 minutes, vers 1 800 tr/min …',
+    descriptionPlaceholder:
+      'Décrivez brièvement appareil, lieu, fonctionnement et bruit inhabituel …',
+    dictate: '🎙️ Dicter la situation',
+    dictating: '● J’écoute — touchez pour arrêter',
+    dictationNote:
+      'Seul le texte reconnu entre dans le paquet. Le navigateur peut utiliser son service vocal.',
+    selectionIncluded: '🎯 Zone marquée incluse : {{from}}–{{to}} s · {{low}}–{{high}} Hz',
+    privacyTitle: 'Vous décidez du contenu',
+    privacyText:
+      'Lieu et données client restent exclus. L’audio peut toutefois contenir des voix ou bruits ambiants.',
+    includeName: 'Inclure le nom « {{name}} »',
+    consent: 'J’ai vérifié que je peux transmettre ces fichiers audio à une IA externe.',
+    localPromise: '🔒 SoundFuchs ne transmet rien',
+    create: 'Télécharger + copier le prompt',
+    working: 'Création locale du paquet …',
+    failed: 'Le paquet complet n’a pas pu être créé. Veuillez réessayer.',
+    successTitle: 'Votre cas est prêt',
+    successCopied: 'Le ZIP est téléchargé et le même prompt d’analyse est dans le presse-papiers.',
+    successFallback:
+      'Le ZIP est téléchargé. Le prompt est dedans et peut aussi être copié ci-dessous.',
+    successWarnings:
+      '{{count}} fichier(s) facultatif(s) non créé(s) ; détails dans HINWEISE.txt du ZIP.',
+    promptBackup: 'Double sécurité : relire et copier le prompt',
+    copyAgain: 'Recopier le prompt',
+    copied: '✓ Prompt copié',
+    copyManually: 'Texte sélectionné — veuillez copier',
+    done: 'Terminé',
   },
   site: {
     machines: 'machines',
