@@ -1586,6 +1586,85 @@ Hörweg, Briefing und Verlauf ohne Scrollen.**
 `wow` bewacht in Fall C zusätzlich: Briefing vorhanden, ohne Scrollen im Bild,
 mindestens 44 px hoch — und der Verlauf nennt eine Zahl.
 
+### S4h — Eine Zeile für den Weg, und der Text wird wieder sichtbar (21.08.2026)
+
+Der Auftraggeber schickte ein Bildschirmfoto im Dunkelmodus mit einer klaren
+Anweisung: „Bitte den Platz zusammentreffen, zurück zu Standort, 10 Sek prüfen
+in eine Zeile, den Punkt und den Zeilentext weg, da nun redundant."
+
+**Das Zusammenlegen.** Rückweg und die eine Handlung standen untereinander und
+brauchten zwei Zeilen für zwei Knöpfe, die beide kurz sind. Sie stehen jetzt
+nebeneinander in `.maschine-aktionszeile`. Der Rückweg wird dabei **verschoben,
+nicht verdoppelt** — es bleibt derselbe Knopf, den die anderen Ebenen oben
+benutzen; `rueckwegNachHause()` gibt ihn zurück, bevor die Maschinenebene
+geleert wird und wenn eine andere Ebene aufgeht. Zwei Knöpfe mit demselben Ziel
+wären zwei Wahrheiten über den Rückweg.
+
+**Der Punkt und die Zeile.** Auf einer Maschine in Ruhe stand unter dem Namen
+ein Punkt mit „Bereit" — und direkt darunter „Zuletzt 87 % · vor 4 Tagen". Der
+Auftraggeber hat recht: Das ist dieselbe Auskunft zweimal. Der Punkt bleibt
+deshalb nur dort, wo er etwas sagt, das sonst nirgends steht: in den
+Ergebniszuständen und bei den zwei Blockaden (Tonqualität, Mikrofonfreigabe).
+
+**Was das Messen darunter gefunden hat.** Im selben Bildschirmfoto fehlte der
+Maschinenname. Das war nicht Redundanz, sondern ein Defekt:
+
+```
+=== dark === (vorher)
+  .maschine-kopf h2  „Kompressor 1"  rgb(15,23,42) auf rgb(15,23,42) → 1:1
+  .maschine-lage                     rgb(15,23,42) auf rgb(15,23,42) → 1:1
+```
+
+Der Name stand da und war unsichtbar. Die Ursache ist genau die Naht, für die
+es `tiefe.css` gibt: Der Stamm ist hell und kennt keinen Dunkelmodus, seine
+Marken (`--color-text` und Geschwister) sind fest hell. SoundFuchs' Dunkelschema
+setzt `--bg-primary` auf `#0f172a` — denselben Wert, den der Stamm für Text
+benutzt. Behoben wird das in der Grenzschicht: Innerhalb von `.zanobo-tiefe`
+zeigen die Stamm-Marken im Dunkeln auf SoundFuchs' Marken. Der Stamm bleibt
+unberührt. Nachher: **16,3:1 dunkel, 17,1:1 hell.**
+
+### Der Wächter, den es dafür jetzt gibt
+
+Ein Bildschirmfoto zeigt so etwas nur dem, der hinschaut. `wow` misst es:
+Das Handy läuft jetzt **zweimal** durch die Geometrie, hell und dunkel, und auf
+der Maschinenebene wird für jedes sichtbare Element mit eigenem Text der
+Kontrast gegen den Grund gerechnet, der wirklich dahinterliegt — mit der
+größenabhängigen Schwelle (3:1 ab 24 px oder ab 18,66 px fett, sonst 4,5:1).
+
+Der Wächter wurde absichtlich falsifiziert: Mit abgeschaltetem Dunkelblock
+meldet er `handy-dunkel: h2 „Kompressor 1" 1:1 statt 3:1`.
+
+**Und er hat beim ersten Lauf etwas gefunden, wonach niemand gesucht hatte:**
+
+```
+handy · handy-dunkel · tablet-hoch · tablet-quer · tisch
+  primary maschine-aktion „Normalzustand aufn" 3,7:1 statt 4,5:1
+```
+
+Der wichtigste Knopf der Anwendung war in **allen** Formaten unter der Schwelle
+— weiße Schrift auf `--color-primary` (`#0d9488`). Das ist kein Fehler des
+Umbaus, das war immer so. Behoben ohne neue Farbe: Die eine Handlung benutzt
+`--color-primary-dark` (`#0f766e`), den Ton, den der Stamm für dieselbe Fläche
+beim Überfahren schon vorsieht. **5,5:1.** Die Palette bleibt dieselbe.
+
+### Was mit dem freigewordenen Platz passiert
+
+Zusammengelegte Zeile plus gestrichene Statuszeile ergeben 88 px. Auf dieser
+Seite ist freier Platz kein Gewinn — die halbe leere Seite war der Anlass für
+das Klangbild (§S4f). Der Platz geht deshalb an das Bild:
+`clamp(240px, 34vh, 320px)` statt fester 240 px. Gemessen in Fall C sinkt der
+ungenutzte Bildschirm von **173 px auf 126 px**, und die Vorschau wird um 47 px
+höher.
+
+| | vor S4h | jetzt |
+|---|---|---|
+| Zeilen für Rückweg + Handlung | 2 | **1** |
+| Statuszeile auf ruhender Maschine | Punkt + Text, doppelt | **entfällt** |
+| Kontrast Maschinenname (dunkel) | **1:1** | **16,3:1** |
+| Kontrast der einen Handlung | 3,7:1 | **5,5:1** |
+| Höhe des Klangbilds | 240 px | **287 px** (Handy) |
+| ungenutzter Bildschirm (Fall C) | 173 px | **126 px** |
+
 **S4d — Audiodateien als Normalzustand oder Messung importieren.**
 _Vorgemerkt, noch nicht umgesetzt._ Eine vorhandene Tondatei vom Smartphone,
 Rekorder oder Schreibtisch soll denselben Analyseweg benutzen können wie eine

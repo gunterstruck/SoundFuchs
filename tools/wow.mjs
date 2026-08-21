@@ -57,11 +57,22 @@ import { schreibeKlang } from './klang.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 
+/**
+ * Formate der Geometriemessung — und in welchem Farbschema.
+ *
+ * Das Handy kommt zweimal vor, hell und dunkel. Nicht aus Gründlichkeit:
+ * Die Tiefe erbt die Farbmarken des Stamms, und der Stamm definiert sie nur
+ * hell. SoundFuchs' Dunkelschema setzt `--bg-primary` auf denselben Wert, den
+ * der Stamm für Text benutzt — der Maschinenname stand unsichtbar auf seinem
+ * eigenen Hintergrund, Kontrast 1:1. Das sieht man auf einem Bildschirmfoto
+ * nur, wenn man hinschaut; gemessen fällt es sofort auf.
+ */
 const FORMATE = [
-  ['handy', { width: 390, height: 844 }, true],
-  ['tablet-hoch', { width: 820, height: 1180 }, true],
-  ['tablet-quer', { width: 1180, height: 820 }, true],
-  ['tisch', { width: 1440, height: 900 }, false],
+  ['handy', { width: 390, height: 844 }, true, 'light'],
+  ['handy-dunkel', { width: 390, height: 844 }, true, 'dark'],
+  ['tablet-hoch', { width: 820, height: 1180 }, true, 'light'],
+  ['tablet-quer', { width: 1180, height: 820 }, true, 'light'],
+  ['tisch', { width: 1440, height: 900 }, false, 'light'],
 ];
 
 /** Die Abnahmewerte des Auftrags. */
@@ -148,6 +159,45 @@ const AUFMASS_MASCHINE = () => {
   const tiefe = document.getElementById('zanobo-tiefe');
   const aktion = document.querySelector('.maschine-aktion');
   const kasten = aktion?.getBoundingClientRect();
+
+  // ── Lesbarkeit: Textfarbe gegen den Grund, der wirklich dahinter liegt ──
+  const zuRgb = (s) => (s.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+  const leuchte = ([r, g, b]) => {
+    const f = (c) => {
+      const x = c / 255;
+      return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  };
+  // Der Grund ist nicht die eigene Hintergrundfarbe — die ist meist
+  // durchsichtig. Gesucht wird der erste Vorfahr, der wirklich deckt.
+  const grund = (el) => {
+    let e = el;
+    while (e) {
+      const teile = (getComputedStyle(e).backgroundColor.match(/[\d.]+/g) ?? []).map(Number);
+      if (teile.length >= 3 && (teile.length < 4 || teile[3] > 0)) return teile.slice(0, 3);
+      e = e.parentElement;
+    }
+    return [255, 255, 255];
+  };
+  const kontrast = (el) => {
+    const a = leuchte(zuRgb(getComputedStyle(el).color));
+    const b = leuchte(grund(el));
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  };
+  // Großer Text darf blasser sein — das ist keine Nachsicht, sondern die
+  // Regel: ab 24 px, oder ab 18,66 px wenn fett, reichen 3:1.
+  const noetig = (el) => {
+    const cs = getComputedStyle(el);
+    const px = parseFloat(cs.fontSize);
+    const fett = parseInt(cs.fontWeight, 10) >= 700;
+    return px >= 24 || (fett && px >= 18.66) ? 3 : 4.5;
+  };
+  // Nur Elemente mit eigenem Text: sonst würde jeder Behälter die Farbe
+  // seines Kindes erben und derselbe Befund zehnmal gemeldet.
+  const eigenerText = (e) =>
+    [...e.childNodes].some((k) => k.nodeType === 3 && k.textContent.trim().length > 1);
+
   return {
     ebene: document.body.classList.contains('tiefe-maschine'),
     // Ein Fenster, das dieselbe Maschine noch einmal wählen lässt, wäre die
@@ -174,6 +224,17 @@ const AUFMASS_MASCHINE = () => {
         return k.height < 44 || k.width < 44;
       })
       .map((b) => `${b.className || b.id}(${Math.round(b.getBoundingClientRect().height)}px)`),
+    blass: [...tiefe.querySelectorAll('*')]
+      .filter(sichtbar)
+      .filter(eigenerText)
+      .map((e) => ({ e, k: kontrast(e), soll: noetig(e) }))
+      .filter(({ k, soll }) => k < soll)
+      .map(
+        ({ e, k, soll }) =>
+          `${e.className || e.tagName.toLowerCase()} „${e.textContent
+            .trim()
+            .slice(0, 18)}" ${Math.round(k * 10) / 10}:1 statt ${soll}:1`
+      ),
   };
 };
 
@@ -210,12 +271,13 @@ const AUFMASS_FINGERABDRUCK = () => {
 };
 
 try {
-  for (const [name, viewport, touch] of FORMATE) {
+  for (const [name, viewport, touch, farbschema] of FORMATE) {
     const ctx = await browser.newContext({
       viewport,
       hasTouch: touch,
       isMobile: touch,
       locale: 'de-DE',
+      colorScheme: farbschema,
       permissions: ['microphone'],
     });
     const page = await ctx.newPage();
@@ -297,7 +359,7 @@ try {
       };
     });
 
-    console.log(`\n=== ${name} (${viewport.width}×${viewport.height}) ===`);
+    console.log(`\n=== ${name} (${viewport.width}×${viewport.height}, ${farbschema}) ===`);
     console.log(`  Tipps ab Maschinenzeile   ${tipps} (Budget ${BUDGET.tippsBisAufnahme})`);
     console.log(`  Urteil                    ${maschine.urteil || '(leer)'}`);
     console.log(`  eine Handlung             ${maschine.aktionsname || '(fehlt)'}`);
@@ -311,6 +373,7 @@ try {
     console.log(`  ohne Scrollen sichtbar    ${maschine.ohneScrollen ? 'ja' : 'NEIN'}`);
     console.log(`  Aufnahmeknopf im Bild     ${arbeit.startImBild ? 'ja' : 'NEIN'}`);
     console.log(`  zu kleine Antippziele     ${maschine.zuKlein.join(', ') || 'keine'}`);
+    console.log(`  zu blasser Text           ${maschine.blass.join(' | ') || 'keiner'}`);
 
     pruefe(
       tipps <= BUDGET.tippsBisAufnahme,
@@ -341,6 +404,10 @@ try {
     pruefe(
       maschine.zuKlein.length === 0,
       `${name}: Antippziele unter ${BUDGET.antippgroesse} px — ${maschine.zuKlein.join(', ')}`
+    );
+    pruefe(
+      maschine.blass.length === 0,
+      `${name}: Text unter dem nötigen Kontrast — ${maschine.blass.join(' | ')}`
     );
     pruefe(arbeit.ebene, `${name}: die Primäraktion führt nicht in die Arbeitsebene`);
 
