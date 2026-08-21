@@ -53,6 +53,33 @@
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   background: var(--bg-primary, #fff);
+
+  /* Zwei Farbtoken des Stamms zeigen hinter dem Scharnier auf die
+     SoundFuchs-Palette. Bei `--color-text` und `--color-border` ist das im
+     Hellen ein Nullwechsel — beide Paletten haben dort denselben Wert
+     (#0f172a, #e2e8f0). Der Gewinn liegt im Dunkeln, wo der Stamm keine
+     Antwort hat und seine hellen Werte sonst stehen blieben.
+
+     `--color-text-muted` ist der einzige echte Wechsel: Der Stamm hat dort
+     Slate 500 (#64748b), und das ergab auf den Flächen dieser Ebene gemessene
+     **4,2–4,3:1** — knapp unter den 4,5, die Fließtext braucht. Slate 600
+     (#475569), der Ton, den SoundFuchs für dieselbe Rolle benutzt, bringt
+     rund 7:1 und liest sich weiterhin als Nebentext. */
+  --color-text: var(--text-primary);
+  --color-text-muted: var(--text-secondary);
+  --color-border: var(--border-color);
+}
+
+/* Die eine große Handlung — überall hinter dem Scharnier.
+
+   Gemessen am 21.08.2026 in allen Formaten: weiße Schrift auf
+   `--color-primary` ergibt **3,7:1**, unter den 4,5, die 16 px in Halbfett
+   verlangen. Das ist kein Fehler des Umbaus; der Stamm hat diesen Knopf immer
+   so gefärbt. Behoben ohne neue Farbe mit `--color-primary-dark`, dem Ton, den
+   der Stamm für dieselbe Fläche beim Überfahren schon vorsieht: **5,5:1**. */
+.zanobo-tiefe button.primary {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
 }
 
 /* `hidden` allein reicht nicht: Die alte `style.css` gibt `.container` und
@@ -199,19 +226,25 @@ body.tiefe-arbeit #karte-bestandswege {
   margin: 2px 0;
 }
 
-.standort-zahlen {
-  margin: 14px 0 4px;
-  /* Drei Zahlen, drei Spalten. `.stat-grid` steht im Stamm auf vier und fällt
-     unterwegs auf zwei — bei drei Kacheln bleibt dann eine allein in der
-     zweiten Zeile stehen und sieht aus wie ein Rest. */
-  grid-template-columns: repeat(3, 1fr);
+/* Die Lage des Standorts, ein Satz.
+
+   Hier standen drei `.stat`-Kacheln: „4 Maschinen · 0 auffällig · 4 ungeprüft",
+   66 px hoch. Bei vier ungeprüften Maschinen ist „0 auffällig" keine Auskunft,
+   sondern die Folge davon, dass noch nichts gemessen wurde. Ein Satz sagt
+   dasselbe in einer Zeile — in Worten statt in drei Zahlen, die man erst
+   zueinander in Beziehung setzen muss. */
+.standort-lage {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
-/* Die Maschinenliste liegt im Raster von `.near-row` (Punkt · Name · Wert ·
-   Zeit · Pfeil). Ergänzt wird nur, was dort fehlt: Die Zeile ist hier ein
-   Knopf und muss sich deshalb die Knopf-Vorgaben abgewöhnen. */
+/* Die Maschinenliste liegt im Raster von `.near-row` (Punkt · Text · Wert ·
+   Pfeil). Ergänzt wird nur, was dort fehlt: Die Zeile ist hier ein Knopf und
+   muss sich deshalb die Knopf-Vorgaben abgewöhnen. */
 .standort-maschinen {
-  margin: 4px 0 18px;
+  margin: 14px 0 18px;
+  gap: 6px;
 }
 
 .near-row.standort-maschine {
@@ -220,7 +253,32 @@ body.tiefe-arbeit #karte-bestandswege {
   font: inherit;
   color: var(--color-text);
   text-align: left;
-  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-columns: auto 1fr auto auto;
+  /* Gemessen waren es 42 px — zwei unter dem, was eine Fingerkuppe braucht,
+     und das bei jeder Maschine der Liste. Der Wert steht hier und nicht im
+     Stamm: Dort ist `.near-row` eine Anzeigezeile, hier ist sie die Handlung,
+     mit der man in die Maschine geht. */
+  min-height: 56px;
+  padding: 8px 10px;
+}
+
+.standort-maschine-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+/* Was mit der Maschine los ist, in Worten — und in denselben Worten wie auf
+   ihrer eigenen Seite. Vorher stand hier „Referenz fehlt": die Sprache der
+   Datenbank, nicht die der Werkstatt. */
+.standort-maschine-lage {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .near-row.standort-maschine:hover {
@@ -232,24 +290,36 @@ body.tiefe-arbeit #karte-bestandswege {
   outline-offset: -2px;
 }
 
-/* „Referenz fehlt" ist keine gute Nachricht, sondern eine fehlende.
-   `.near-rev` färbt den Wert teal und macht ihn fett — im Stamm steht dort
-   der Umsatz, und da ist beides richtig. Hier stand „Referenz fehlt" damit in
-   derselben Auszeichnung wie „94 %": Der Blick über die Liste las Grün und
-   Fettdruck als Erfolg, und genau das Gegenteil war gemeint. */
-.near-row.standort-maschine .near-rev.muted {
-  color: var(--color-text-muted);
-  font-weight: 400;
-}
-
 .standort-pfeil {
   color: var(--color-text-muted);
   font-size: 1.1rem;
   line-height: 1;
 }
 
+/* Anlegen ist hier nicht die Aufgabe, sondern die Ausnahme — deshalb ein
+   gewöhnlicher Knopf und nur auf einem leeren Standort der große. Antippbar
+   bleibt er in beiden Fällen: gemessen waren es 37 px auf dem Handy und 33 px
+   am Schreibtisch. */
 .standort-neue-maschine {
   width: 100%;
+  min-height: 44px;
+}
+
+/* Am Schreibtisch ist die Liste sonst ein schmales Band in einem breiten
+   Fenster. Gemessen bei 1440 × 900: eine Zeile und 502 px ungenutzt darunter.
+
+   Die Abfrage ist wortgleich `DESKTOP_FACE_MEDIA` und nicht das naheliegende
+   `(min-width: 900px)`. Der erste Versuch stand genau so da und wurde von
+   `gesichter.test.ts` abgewiesen: Eine eigene Schwelle bei 900 trifft das
+   Tablet hochkant und sonst niemanden — das ist ein drittes Gesicht, und
+   entstanden wäre es hier nicht aus Absicht, sondern aus Bequemlichkeit. */
+@media (min-width: 1201px), (min-width: 901px) and (orientation: landscape),
+  (min-width: 769px) and (orientation: landscape) and (min-height: 521px) {
+  .standort-maschinen {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 12px;
+  }
 }
 
 
@@ -303,23 +373,12 @@ body.tiefe-arbeit #karte-bestandswege {
 }
 
 /* Die eine Handlung. Groß, weil sie die einzige ist — nicht, um zu schreien.
-
-   Der dunklere Grünton ist keine eigene Farbe: Es ist `--color-primary-dark`,
-   der Ton, den der Stamm für dieselbe Fläche beim Überfahren benutzt. Gemessen
-   am 21.08.2026 in allen vier Formaten: Die Beschriftung stand mit **3,7:1**
-   auf `--color-primary` — unter den 4,5:1, die 16,8 px in Halbfett brauchen,
-   und das ausgerechnet auf dem wichtigsten Knopf der Anwendung. Mit dem
-   dunkleren Ton sind es 5,5:1. Die Palette bleibt dieselbe. */
+   Ihre Farbe kommt aus der Regel für `button.primary` ganz oben. */
 .maschine-aktion {
   width: 100%;
   margin-top: 18px;
   min-height: 52px;
   font-size: 1.05rem;
-}
-
-.maschine-aktion.primary {
-  background: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
 }
 
 /* „Stoppen" während der Aufnahme ist der Notausgang, nicht das Ziel. Es sieht
@@ -704,12 +763,30 @@ body.tiefe-arbeit #karte-bestandswege {
    Scharnier bleibt der Stamm, wie er ist. */
 @media (prefers-color-scheme: dark) {
   .zanobo-tiefe {
-    --color-text: var(--text-primary);
-    --color-text-muted: var(--text-secondary);
+    /* `--color-text`, `--color-text-muted` und `--color-border` stehen weiter
+       oben und gelten in beiden Schemata. Hier bleiben die Flächen: Im Hellen
+       sind Stamm und SoundFuchs dort verschieden (#f1f5f9 gegen #e2e8f0), also
+       darf der Wechsel nur im Dunkeln gelten. */
     --color-surface: var(--bg-card);
     --color-surface-2: var(--bg-tertiary);
-    --color-border: var(--border-color);
     color: var(--text-primary);
+  }
+
+  /* Der zweite Fund, und der unangenehmere: `--color-primary-light` (#ccfbf1)
+     ist die Fläche, die der Stamm einer Zeile unter dem Finger gibt. Sie ist
+     hell gedacht und blieb im Dunkeln hell, während der Text hell wurde.
+     Gemessen auf dem Handy: **1:1** auf der berührten Maschinenzeile. Der Name
+     verschwand genau in dem Moment, in dem man ihn antippte — auf einem
+     Bildschirmfoto sieht man das nie, weil dort niemand den Finger hält.
+
+     Der Token selbst wird NICHT umgebogen: Er ist im Stamm auch der Fokusring
+     von Eingabefeldern (`base.css`), und ein Fokusring in Flächenfarbe wäre
+     der nächste unsichtbare Zustand. Umgestellt wird nur die Fläche selbst.
+     Im Dunkeln sinkt die Zeile unter dem Finger ab, statt aufzuleuchten —
+     gemessen 9,9:1 für den Nebentext, 13,2:1 für den Namen. */
+  .zanobo-tiefe .near-row:active,
+  .zanobo-tiefe .near-row.standort-maschine:hover {
+    background: var(--bg-secondary);
   }
 
   /* Überschriften und Fließtext erben sonst weiter die Stamm-Farbe aus der

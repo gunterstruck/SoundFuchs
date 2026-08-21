@@ -148,8 +148,15 @@ const pruefe = (bedingung, text) => {
   if (!bedingung) befunde.push(text);
 };
 
-/** Was auf der Maschinenebene steht — als Zahlen. */
-const AUFMASS_MASCHINE = () => {
+/**
+ * Lesbarkeit und Antippbarkeit — für jede Ebene hinter dem Scharnier.
+ *
+ * Dieselben zwei Fragen gelten überall: Kann man den Text lesen, und trifft
+ * man die Knöpfe? Deshalb steht die Messung einmal hier und nicht je Ebene
+ * einmal. Dass die Standortebene ihre eigenen Befunde jahrelang behalten
+ * durfte, lag genau daran, dass sie niemand gestellt hat.
+ */
+const AUFMASS_LESBARKEIT = () => {
   const sichtbar = (e) => {
     const cs = getComputedStyle(e);
     return (
@@ -157,8 +164,6 @@ const AUFMASS_MASCHINE = () => {
     );
   };
   const tiefe = document.getElementById('zanobo-tiefe');
-  const aktion = document.querySelector('.maschine-aktion');
-  const kasten = aktion?.getBoundingClientRect();
 
   // ── Lesbarkeit: Textfarbe gegen den Grund, der wirklich dahinter liegt ──
   const zuRgb = (s) => (s.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
@@ -199,6 +204,44 @@ const AUFMASS_MASCHINE = () => {
     [...e.childNodes].some((k) => k.nodeType === 3 && k.textContent.trim().length > 1);
 
   return {
+    zuKlein: [...tiefe.querySelectorAll('button')]
+      .filter(sichtbar)
+      .filter((b) => {
+        const k = b.getBoundingClientRect();
+        return k.height < 44 || k.width < 44;
+      })
+      .map(
+        (b) =>
+          `${b.className || b.id}(${Math.round(
+            b.getBoundingClientRect().height
+          )}×${Math.round(b.getBoundingClientRect().width)})`
+      ),
+    blass: [...tiefe.querySelectorAll('*')]
+      .filter(sichtbar)
+      .filter(eigenerText)
+      .map((e) => ({ e, k: kontrast(e), soll: noetig(e) }))
+      .filter(({ k, soll }) => k < soll)
+      .map(
+        ({ e, k, soll }) =>
+          `${e.className || e.tagName.toLowerCase()} „${e.textContent
+            .trim()
+            .slice(0, 18)}" ${Math.round(k * 10) / 10}:1 statt ${soll}:1`
+      ),
+  };
+};
+
+/** Was auf der Maschinenebene steht — als Zahlen. */
+const AUFMASS_MASCHINE = () => {
+  const sichtbar = (e) => {
+    const cs = getComputedStyle(e);
+    return (
+      cs.display !== 'none' && cs.visibility !== 'hidden' && e.getBoundingClientRect().height > 0
+    );
+  };
+  const tiefe = document.getElementById('zanobo-tiefe');
+  const aktion = document.querySelector('.maschine-aktion');
+  const kasten = aktion?.getBoundingClientRect();
+  return {
     ebene: document.body.classList.contains('tiefe-maschine'),
     // Ein Fenster, das dieselbe Maschine noch einmal wählen lässt, wäre die
     // Frage, die man mit dem Zeilen-Tipp schon beantwortet hat.
@@ -217,24 +260,40 @@ const AUFMASS_MASCHINE = () => {
     aktionsname: aktion?.textContent?.trim() ?? '',
     // Ohne Scrollen im Bild: Der nächste Schritt darf nicht gesucht werden.
     ohneScrollen: kasten ? kasten.bottom <= window.innerHeight : false,
-    zuKlein: [...tiefe.querySelectorAll('button')]
-      .filter(sichtbar)
-      .filter((b) => {
-        const k = b.getBoundingClientRect();
-        return k.height < 44 || k.width < 44;
-      })
-      .map((b) => `${b.className || b.id}(${Math.round(b.getBoundingClientRect().height)}px)`),
-    blass: [...tiefe.querySelectorAll('*')]
-      .filter(sichtbar)
-      .filter(eigenerText)
-      .map((e) => ({ e, k: kontrast(e), soll: noetig(e) }))
-      .filter(({ k, soll }) => k < soll)
-      .map(
-        ({ e, k, soll }) =>
-          `${e.className || e.tagName.toLowerCase()} „${e.textContent
-            .trim()
-            .slice(0, 18)}" ${Math.round(k * 10) / 10}:1 statt ${soll}:1`
-      ),
+  };
+};
+
+/**
+ * Was auf der Standortebene steht — als Zahlen.
+ *
+ * Die Ebene, auf der ein Techniker ankommt. Ihre Aufgabe ist die Wahl der
+ * Maschine; gemessen wird deshalb, ob diese Wahl trifft, spricht und den
+ * Bildschirm benutzt.
+ */
+const AUFMASS_STANDORT = () => {
+  const sichtbar = (e) => {
+    const cs = getComputedStyle(e);
+    return (
+      cs.display !== 'none' && cs.visibility !== 'hidden' && e.getBoundingClientRect().height > 0
+    );
+  };
+  const tiefe = document.getElementById('zanobo-tiefe');
+  const alle = [...tiefe.querySelectorAll('*')].filter(sichtbar);
+  const unten = alle.reduce((m, e) => Math.max(m, e.getBoundingClientRect().bottom), 0);
+  const zeilen = [...document.querySelectorAll('.standort-maschine')];
+  return {
+    zeilen: zeilen.length,
+    // Jede Zeile sagt in Worten, was mit ihrer Maschine los ist — und zwar in
+    // denselben Worten wie die Maschinenseite selbst.
+    lagen: zeilen.map(
+      (z) => z.querySelector('.standort-maschine-lage')?.textContent?.trim() ?? ''
+    ),
+    lageSatz: document.querySelector('.standort-lage')?.textContent?.trim() ?? '',
+    // „Maschinen" über einer Maschinenliste unter einer Kachel „4 Maschinen".
+    ueberschriften: [...tiefe.querySelectorAll('h3')].filter(sichtbar).length,
+    kacheln: [...tiefe.querySelectorAll('.stat')].filter(sichtbar).length,
+    primaer: [...tiefe.querySelectorAll('button.primary')].filter(sichtbar).length,
+    ungenutzt: Math.max(0, Math.round(window.innerHeight - unten)),
   };
 };
 
@@ -322,6 +381,16 @@ try {
       continue;
     }
 
+    // ── Die Standortebene, bevor sie verlassen wird ────────────────────────
+    //
+    // Sie wurde bis zum 21.08.2026 von keinem Wächter angesehen — der
+    // Durchlauf ging über sie hinweg zur Maschine, und `wow` fing erst dort
+    // an zu zählen. Gefunden hat das eine Messung von Hand: Zeilen mit 42 px,
+    // ein Anlegen-Knopf mit 33 px, Nebentext bei 4,2:1 und im Dunkeln ein
+    // Maschinenname, der beim Antippen auf 1:1 verschwand.
+    const standort = await page.evaluate(AUFMASS_STANDORT);
+    const standortLesbar = await page.evaluate(AUFMASS_LESBARKEIT);
+
     // ── Ab hier zählt der Auftrag ──────────────────────────────────────────
     let tipps = 0;
     const tipp = async (auswahl, warten = 1600) => {
@@ -334,7 +403,10 @@ try {
     };
 
     await tipp('.standort-maschine'); // 1
-    const maschine = await page.evaluate(AUFMASS_MASCHINE);
+    const maschine = {
+      ...(await page.evaluate(AUFMASS_MASCHINE)),
+      ...(await page.evaluate(AUFMASS_LESBARKEIT)),
+    };
 
     await tipp('.maschine-aktion', 2600); // 2
     const arbeit = await page.evaluate(() => {
@@ -360,6 +432,16 @@ try {
     });
 
     console.log(`\n=== ${name} (${viewport.width}×${viewport.height}, ${farbschema}) ===`);
+    console.log(`  — Standortebene —`);
+    console.log(`  Maschinenzeilen           ${standort.zeilen}`);
+    console.log(`  Lage in einem Satz        ${standort.lageSatz || '(fehlt)'}`);
+    console.log(`  Zeile sagt die Lage       ${standort.lagen[0] || '(fehlt)'}`);
+    console.log(`  Kacheln / Überschriften   ${standort.kacheln} / ${standort.ueberschriften}`);
+    console.log(`  Primäraktionen            ${standort.primaer}`);
+    console.log(`  ungenutzter Bildschirm    ${standort.ungenutzt} px`);
+    console.log(`  zu kleine Antippziele     ${standortLesbar.zuKlein.join(', ') || 'keine'}`);
+    console.log(`  zu blasser Text           ${standortLesbar.blass.join(' | ') || 'keiner'}`);
+    console.log(`  — Maschinenebene —`);
     console.log(`  Tipps ab Maschinenzeile   ${tipps} (Budget ${BUDGET.tippsBisAufnahme})`);
     console.log(`  Urteil                    ${maschine.urteil || '(leer)'}`);
     console.log(`  eine Handlung             ${maschine.aktionsname || '(fehlt)'}`);
@@ -409,6 +491,44 @@ try {
       maschine.blass.length === 0,
       `${name}: Text unter dem nötigen Kontrast — ${maschine.blass.join(' | ')}`
     );
+
+    // ── Die Standortebene ──────────────────────────────────────────────────
+    pruefe(
+      standortLesbar.zuKlein.length === 0,
+      `${name}/Standort: Antippziele unter ${BUDGET.antippgroesse} px — ${standortLesbar.zuKlein.join(', ')}`
+    );
+    pruefe(
+      standortLesbar.blass.length === 0,
+      `${name}/Standort: Text unter dem nötigen Kontrast — ${standortLesbar.blass.join(' | ')}`
+    );
+    pruefe(
+      standort.lagen.every((l) => l.length > 0),
+      `${name}/Standort: eine Maschinenzeile sagt nicht, was mit ihrer Maschine los ist`
+    );
+    pruefe(
+      standort.lageSatz.length > 0,
+      `${name}/Standort: der Standort sagt seine Lage nicht in einem Satz`
+    );
+    // Dasselbe Wort dreimal auf 150 px: Kachel „4 Maschinen", Überschrift
+    // „Maschinen", darunter die Maschinen.
+    pruefe(
+      standort.kacheln === 0 && standort.ueberschriften === 0,
+      `${name}/Standort: ${standort.kacheln} Kacheln und ${standort.ueberschriften} Überschriften über einer Liste, die sich selbst erklärt`
+    );
+    // Wo Maschinen stehen, ist die Liste die Handlung — nicht das Anlegen.
+    pruefe(
+      standort.primaer === 0,
+      `${name}/Standort: ${standort.primaer} dominante Handlungen neben einer Liste, die selbst die Handlung ist`
+    );
+    // Für den ungenutzten Bildschirm gibt es hier ABSICHTLICH keine Grenze.
+    //
+    // Auf der Maschinenebene war leerer Platz ein Befund: Dort lag das Beste
+    // vier Tipps entfernt, während die halbe Seite leer stand. Hier hängt die
+    // Höhe an der Zahl der Maschinen — ein Standort mit vier Maschinen füllt
+    // kein Handy, und das ist eine Tatsache über den Standort, keine über den
+    // Entwurf. Eine Obergrenze würde zum Auffüllen zwingen, und Auffüllen ist
+    // genau das, was diese Ebene vorher hatte. Die Zahl wird berichtet, damit
+    // man sie sieht, und nicht erzwungen.
     pruefe(arbeit.ebene, `${name}: die Primäraktion führt nicht in die Arbeitsebene`);
 
     pruefe(

@@ -16,9 +16,22 @@
  * TourFuchs hat keine Standortansicht; es hat Kunden, aber keine Ebene
  * darunter. Diese Datei ist also Neubau. Neu gebaut wird sie aber aus den
  * Teilen, die dastehen: `.near-row` für die Zeilen (dieselbe Rasterung, die
- * der Nähe-Begleiter benutzt), `.stat-grid` für die Kopfzahlen, `button.primary`
- * für die Handlung. Kein eigenes Formenvokabular — das wäre der Anfang der
- * zwei Programme, die es nicht geben soll (§0h).
+ * der Nähe-Begleiter benutzt) und die Knopfformen des Stamms. Kein eigenes
+ * Formenvokabular — das wäre der Anfang der zwei Programme, die es nicht geben
+ * soll (§0h).
+ *
+ * ## Die Liste IST die Handlung
+ *
+ * Hier standen einmal drei Kennzahlkacheln, darunter eine Überschrift
+ * „Maschinen", darunter die Maschinen und darunter ein großer grüner Knopf
+ * „Neue Maschine anlegen". Das sagte dem Techniker, der gerade angekommen ist:
+ * Deine Aufgabe hier ist es, Maschinen anzulegen. Seine Aufgabe ist es, sie zu
+ * prüfen.
+ *
+ * Deshalb trägt die Liste jetzt, was vorher die Kacheln behaupteten: Jede Zeile
+ * sagt in Worten, was mit ihrer Maschine los ist, und sie ist groß genug, um
+ * getroffen zu werden. Anlegen bleibt erreichbar, ist aber nur dort die
+ * dominante Handlung, wo noch keine Maschine steht.
  *
  * ## Warum sie den alten Rumpf verdeckt und nicht ersetzt
  *
@@ -30,6 +43,7 @@
  */
 
 import { ladeBestandsuebersicht, type StandortStand } from '../../services/bestandsuebersicht.js';
+import { AEHNLICH_AB } from '../maschine/zustand.js';
 import { getLatestDiagnosis } from '@data/db.js';
 import { farbeFuerZustand, standortname } from '../features/standortmarker.js';
 import { zustandZuWert } from '../../services/bestandsuebersicht.js';
@@ -76,7 +90,38 @@ function vorWieLange(zeitpunkt: number): string {
   return t('site.agoDays', { count: String(tage) });
 }
 
-/** Eine Zeile der Maschinenliste. Dieselbe Rasterung wie `.near-row`. */
+/** Ist an dieser Maschine schon ein Normalzustand hinterlegt? */
+function hatNormalzustand(maschine: Machine): boolean {
+  return Boolean(maschine.referenceModels?.length);
+}
+
+/**
+ * Was mit dieser Maschine los ist — in denselben Worten wie auf ihrer Seite.
+ *
+ * Die Schlüssel sind absichtlich die der Maschinenansicht (`maschine.lage*`).
+ * Wer in der Liste „Klingt wie der Normalzustand" liest und die Zeile antippt,
+ * liest dort denselben Satz. Zwei Formulierungen für denselben Sachverhalt
+ * wären zwei Behauptungen, von denen eine irgendwann veraltet.
+ *
+ * Und wie überall gilt: Es wird beschrieben, wie es klingt — nie, was defekt
+ * ist. Das steht dem Gerät nicht zu.
+ */
+function lagesatz(maschine: Machine, wert: number | null, wann: number | null): string {
+  if (wert === null) {
+    return hatNormalzustand(maschine) ? t('maschine.lageReady') : t('maschine.lageUntrained');
+  }
+  const lage = wert >= AEHNLICH_AB ? t('maschine.lageSimilar') : t('maschine.lageDeviating');
+  return wann !== null ? `${lage} · ${vorWieLange(wann)}` : lage;
+}
+
+/**
+ * Eine Zeile der Maschinenliste.
+ *
+ * Sie liegt weiter im Raster von `.near-row`, trägt aber zwei Zeilen: Name und
+ * darunter die Lage in Worten. Gemessen waren es vorher 42 px — unter den 44,
+ * die eine Fingerkuppe braucht, und das bei jeder einzelnen Maschine. Die
+ * zweite Zeile ist deshalb nicht nur Auskunft, sie ist auch die Größe.
+ */
 function maschinenzeile(
   maschine: Machine,
   wert: number | null,
@@ -93,49 +138,65 @@ function maschinenzeile(
   punkt.style.background = farbeFuerZustand(zustandZuWert(wert));
   punkt.setAttribute('aria-hidden', 'true');
 
+  const text = document.createElement('span');
+  text.className = 'standort-maschine-text';
+
   const name = document.createElement('span');
   name.className = 'near-name';
   name.textContent = maschine.name;
 
+  const lage = document.createElement('span');
+  lage.className = 'standort-maschine-lage';
+  lage.textContent = lagesatz(maschine, wert, wann);
+
+  text.append(name, lage);
+
   const zahl = document.createElement('span');
   zahl.className = 'near-rev';
-  if (wert !== null) {
-    zahl.textContent = `${Math.round(wert)} %`;
-  } else if (maschine.referenceModels?.length) {
-    zahl.textContent = t('status.ready');
-    zahl.classList.add('muted');
-  } else {
-    // Ohne Referenz gibt es nichts zu vergleichen. Das ist keine schlechte
-    // Nachricht, sondern eine fehlende — und darf deshalb nicht rot aussehen.
-    zahl.textContent = t('map.noReference');
-    zahl.classList.add('muted');
-  }
-
-  const zeit = document.createElement('span');
-  zeit.className = 'near-dist';
-  zeit.textContent = wann !== null ? vorWieLange(wann) : '—';
+  // Die Zahl steht nur da, wo es eine gibt. „—" ist keine Auskunft, sondern
+  // eine Spalte, die so tut, als hätte sie eine.
+  if (wert !== null) zahl.textContent = `${Math.round(wert)} %`;
 
   const pfeil = document.createElement('span');
   pfeil.className = 'standort-pfeil';
   pfeil.textContent = '›';
   pfeil.setAttribute('aria-hidden', 'true');
 
-  knopf.append(punkt, name, zahl, zeit, pfeil);
+  knopf.append(punkt, text, zahl, pfeil);
   knopf.addEventListener('click', () => deps?.zeigeMaschine(maschine));
   zeile.appendChild(knopf);
   return zeile;
 }
 
-/** Eine Kopfzahl. */
-function kennzahl(wert: string, beschriftung: string): HTMLElement {
-  const kasten = document.createElement('div');
-  kasten.className = 'stat';
-  const b = document.createElement('b');
-  b.textContent = wert;
-  const s = document.createElement('span');
-  s.textContent = beschriftung;
-  kasten.append(b, s);
-  return kasten;
+/**
+ * Die Lage des Standorts in einem Satz.
+ *
+ * Vorher standen hier drei Kacheln: „4 Maschinen · 0 auffällig · 4 ungeprüft".
+ * Bei vier ungeprüften Maschinen ist „0 auffällig" keine Auskunft — es ist
+ * bloß die Folge davon, dass noch nichts gemessen wurde. Drei Kacheln, 66 px
+ * hoch, um zu sagen: „Hier wurde noch nichts geprüft."
+ */
+function lageDesStandorts(anzahl: number, auffaellig: number, ohneMessung: number): string {
+  const maschinen = anzahl === 1 ? t('site.countMachineOne') : t('site.countMachines', {
+    n: String(anzahl),
+  });
+  let lage: string;
+  if (ohneMessung === anzahl) {
+    lage = t('site.stateNoneChecked');
+  } else if (auffaellig > 0) {
+    lage =
+      auffaellig === 1
+        ? t('site.stateDeviatingOne')
+        : t('site.stateDeviating', { n: String(auffaellig) });
+  } else if (ohneMessung > 0) {
+    lage =
+      ohneMessung === 1
+        ? t('site.stateUncheckedOne')
+        : t('site.stateUnchecked', { n: String(ohneMessung) });
+  } else {
+    lage = t('site.stateAllFine');
+  }
+  return `${maschinen} · ${lage}`;
 }
 
 async function zeichne(stand: StandortStand): Promise<void> {
@@ -172,9 +233,6 @@ async function zeichne(stand: StandortStand): Promise<void> {
     kopf.appendChild(zeile);
   }
 
-  ziel.appendChild(kopf);
-
-  // ── Die Kopfzahlen ───────────────────────────────────────────────────────
   const befunde = await Promise.all(
     stand.maschinen.map(async (m) => ({
       maschine: m,
@@ -183,20 +241,24 @@ async function zeichne(stand: StandortStand): Promise<void> {
     }))
   );
 
-  const auffaellig = befunde.filter((b) => b.wert !== null && b.wert < 75).length;
+  const auffaellig = befunde.filter((b) => b.wert !== null && b.wert < AEHNLICH_AB).length;
   const ungeprueft = befunde.filter((b) => b.wert === null).length;
 
-  const zahlen = document.createElement('div');
-  zahlen.className = 'stat-grid standort-zahlen';
-  zahlen.appendChild(kennzahl(String(stand.maschinen.length), t('site.machines')));
-  zahlen.appendChild(kennzahl(String(auffaellig), t('site.conspicuous')));
-  zahlen.appendChild(kennzahl(String(ungeprueft), t('site.unchecked')));
-  ziel.appendChild(zahlen);
+  // ── Die Lage in einem Satz ───────────────────────────────────────────────
+  if (befunde.length > 0) {
+    const lage = document.createElement('p');
+    lage.className = 'standort-lage';
+    lage.textContent = lageDesStandorts(befunde.length, auffaellig, ungeprueft);
+    kopf.appendChild(lage);
+  }
+
+  ziel.appendChild(kopf);
 
   // ── Die Maschinen ────────────────────────────────────────────────────────
-  const ueberschrift = document.createElement('h3');
-  ueberschrift.textContent = t('map.machinesLabel');
-  ziel.appendChild(ueberschrift);
+  //
+  // Ohne Überschrift. „Maschinen" stand hier über einer Liste von Maschinen,
+  // unter einer Kachel, auf der „4 Maschinen" stand — dasselbe Wort dreimal
+  // auf 150 px.
 
   if (befunde.length === 0) {
     const leer = document.createElement('p');
@@ -221,9 +283,17 @@ async function zeichne(stand: StandortStand): Promise<void> {
   }
 
   // ── Die Handlung dieser Ebene ────────────────────────────────────────────
+  //
+  // „Neue Maschine anlegen" war der eine große grüne Knopf dieser Seite. Das
+  // sagte dem Techniker, der gerade angekommen ist: Deine Aufgabe hier ist es,
+  // Maschinen anzulegen. Seine Aufgabe ist es, sie zu prüfen — und diese
+  // Handlung ist die Liste selbst.
+  //
+  // Steht noch keine Maschine da, ist Anlegen tatsächlich das Einzige, was man
+  // hier tun kann. Dann, und nur dann, ist es die dominante Handlung.
   const anlegen = document.createElement('button');
   anlegen.type = 'button';
-  anlegen.className = 'primary standort-neue-maschine';
+  anlegen.className = befunde.length === 0 ? 'primary standort-neue-maschine' : 'standort-neue-maschine';
   anlegen.textContent = `➕ ${t('site.newMachine')}`;
   anlegen.addEventListener('click', () => deps?.neueMaschine(kunde.id));
   ziel.appendChild(anlegen);
