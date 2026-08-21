@@ -1431,6 +1431,104 @@ Ebenfalls offen: **„Nicht mehr da" als vierte Hörquelle.** Für das Ohr wäre
 dieselbe Funktion mit vertauschten Rollen — `resynthesizeResidual(ref,
 measProfile, …)`. Erst zeigt das Bild, ob es sich lohnt.
 
+### S4f — Die leere Hälfte bekommt das Klangbild (18.08.2026)
+
+✅ _erledigt._ Der Auftraggeber fragte, wie viele Tipps es bis zu den
+eindrucksvollen Funktionen sind. Nachgezählt im Browser, mit echten Daten,
+auf 390 × 844:
+
+| | vorher |
+|---|---|
+| Angebote auf der ruhenden Maschinenseite | 5 |
+| unterstes Element endet bei | **422 px** |
+| ungenutzter Bildschirm darunter | **422 px — genau die Hälfte** |
+| Tipps bis zum 3D-Gebirge (ab Maschinenseite) | **4** (Verlauf → Hören → 3D → Quelle) |
+| dasselbe ab der Karte | **7**, und vorher auf „Profi" umschalten |
+| Geräusch-Briefing | sichtbar bei **y = 1027 px**, also unter dem Rand |
+
+Die halbe Seite stand leer, und das Eindrucksvollste lag vier Türen weiter.
+
+**Das ist kein Platzproblem, sondern ein Belegungsproblem.** Der Auftraggeber
+schlug vor, alles um ein Viertel zu verkleinern, damit mehr ins Bild passt.
+Dem habe ich widersprochen: In den Schnitten davor wurden dreimal Antippziele
+nach oben korrigiert, weil sie zu klein waren (34 px, 15 px, 32 px). Minus
+25 % macht aus 44 px wieder 33 und nimmt genau die Bedienbarkeit zurück, die
+gerade hergestellt wurde. Die leere Hälfte bekommt stattdessen das, wofür man
+sonst vier Tipps braucht.
+
+### Was jetzt dasteht
+
+```
+    ‹ Zum Standort
+    Kompressor 1
+    ● Bereit zum Prüfen
+    Zuletzt 72 % · gerade eben
+
+    [   Jetzt 10 Sekunden prüfen   ]
+    Halte das Gerät wie beim letzten Mal an dieselbe Stelle.
+
+    ┌───────────────────────────┐
+    │   K L A N G B I L D       │  240 px, ohne Tipp da
+    │   der letzten Prüfung     │  „Antippen für die große Ansicht"
+    └───────────────────────────┘
+    [Normalzustand][Messung][Unterschied]
+    Letzte Prüfung · 72 % · gerade eben
+
+    [ 🔍 Letzten Unterschied anhören ]
+    Verlauf
+```
+
+| | nachher |
+|---|---|
+| Klangbild ohne Tipp | **gemalt, 238 px, ohne Scrollen im Bild** |
+| ungenutzter Bildschirm | **83 px** statt 422 |
+| Tipps bis zum Gebirge | **1** — auf das Bild tippen |
+| Profi-Stufe nötig | **nein** |
+| Seitenhöhe | 792 px bei 844 px Fenster — alles passt |
+
+### Warum erst flach, dann Gebirge
+
+Ein Gebirge in 240 px Höhe ist eine Briefmarke, und ein WebGL-Kontext ist eine
+knappe Ressource — Browser vergeben nur eine Handvoll pro Seite. Das flache
+Spektrogramm ist billig, sofort da und zeigt dieselbe Sache: **das ehrliche
+Vorschaubild seiner selbst.** Ein Tipp verwandelt es an Ort und Stelle in das
+Gebirge; derselbe Tipp führt zurück.
+
+**Keine neue Ebene.** Der Auftraggeber hat ausdrücklich weniger Ebenen
+verlangt, nicht mehr — das Bild wächst dort, wo es steht. Der Wächter prüft
+das mit: Nach dem Tipp muss der Körper weiterhin auf `tiefe-maschine` stehen.
+
+### Eine Farbe für eine Intensität
+
+Damit die Verwandlung als Zoom lesbar ist und nicht als Sprung, müssen Vorschau
+und Gebirge **dasselbe Bild** sein. Es gab dafür zwei Formeln: den
+Turbo-Verlauf im Gebirge und eine eigene, von Hand gemischte im
+Auswahl-Spektrogramm. Beide liegen jetzt in `core/dsp/klangfarben.ts`, zusammen
+mit der Umrechnung Matrix → Bildpunkte. Zwei Formeln sind zwei Aussagen
+darüber, was „laut" aussieht.
+
+Nebenwirkung, offen benannt: Das Auswahl-Spektrogramm aus Schnitt 4c sieht
+seither anders aus — nämlich wie das Gebirge.
+
+### Was gemessen wird
+
+Neun Unit-Tests auf der reinen Bildrechnung. Der wichtigste: **das höchste Band
+liegt oben.** Ein Spektrogramm mit gespiegelter Frequenzachse sieht „irgendwie
+richtig" aus und ist es nicht — falsifiziert, der Test fällt.
+
+Im Browser prüft `wow` in Fall C: Klangbild da, **wirklich gemalt** (gesetzte
+Bildpunkte, nicht bloß eine Leinwand mit Maßen — dieselbe Lehre wie beim
+Fingerabdruck), ohne Scrollen im Bild, drei Quellen, höchstens 160 px
+ungenutzter Bildschirm, und ein Tipp bringt das Gebirge, ohne die Ebene zu
+wechseln.
+
+### Was als Nächstes drankommt
+
+Der Entwurf hat noch zwei Teile: **das Briefing aus dem Keller holen** (es steht
+weiter unter dem Bildschirmrand) und **den Verlauf zu dem machen, was er sein
+sollte** — eine Liste vergangener Prüfungen mit Zahl, die den Inhalt des
+Klangbildes wechselt, statt die einzige Tür zu allem Guten zu sein.
+
 **S4d — Audiodateien als Normalzustand oder Messung importieren.**
 _Vorgemerkt, noch nicht umgesetzt._ Eine vorhandene Tondatei vom Smartphone,
 Rekorder oder Schreibtisch soll denselben Analyseweg benutzen können wie eine

@@ -75,6 +75,15 @@ export const de: TranslationDict = {
     rechnetHinweis: 'Die Aufnahme wird mit dem Normalzustand verglichen.',
   },
   // Die Hör-Lupe (Schnitt 3): Normalzustand · Messung · Unterschied.
+  // Das Klangbild auf der Maschinenseite (Schnitt A der Neuordnung).
+  klangbild: {
+    vergroessern: 'Antippen für die große Ansicht',
+    alt: 'Klangbild der letzten Prüfung',
+    leer: 'Für diese Prüfung liegt kein Klangbild vor',
+    quelleNormalzustand: 'Normalzustand',
+    quelleMessung: 'Messung',
+    quelleUnterschied: 'Unterschied',
+  },
   hoerlupe: {
     quelleNormalzustand: '🔊 Normalzustand',
     quelleMessung: '🔊 Messung',

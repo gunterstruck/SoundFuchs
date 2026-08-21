@@ -80,6 +80,13 @@ const BUDGET = {
   tippsBisErgebnis: 0,
   /** Ergebnis → hörbarer Unterschied. */
   tippsBisUnterschied: 1,
+  /**
+   * Ungenutzter Bildschirm unter der ruhenden Maschinenseite.
+   *
+   * Vor dem Klangbild waren es 422 px von 844 — die halbe Fläche stand leer,
+   * während das Beste vier Tipps entfernt lag.
+   */
+  leerRaum: 160,
 };
 
 async function freierPort() {
@@ -765,12 +772,47 @@ try {
     const ruhe = await page.evaluate(() => {
       const nach = document.querySelector('.maschine-nachhoeren');
       const k = nach?.getBoundingClientRect();
+      const sichtbar = (e) => {
+        const cs = getComputedStyle(e);
+        return (
+          cs.display !== 'none' && cs.visibility !== 'hidden' && e.getBoundingClientRect().height > 0
+        );
+      };
+      const ansicht = document.querySelector('.maschinen-ansicht');
+      const kinder = [...(ansicht?.children ?? [])].filter(sichtbar);
+      const unterste = kinder.length
+        ? Math.max(...kinder.map((e) => e.getBoundingClientRect().bottom))
+        : 0;
+      /**
+       * Das Klangbild — und zwar wirklich gemalt.
+       *
+       * Eine Leinwand mit Maßen sagt nichts; dieselbe Lehre wie beim
+       * Fingerabdruck und beim Gebirge. Gezählt werden gesetzte Bildpunkte.
+       */
+      const bild = document.querySelector('.klangbild-flach');
+      let gemalt = false;
+      if (bild) {
+        const stift = bild.getContext('2d');
+        const d = stift.getImageData(0, 0, bild.width, bild.height).data;
+        for (let i = 3; i < d.length; i += 4 * 37) {
+          if (d[i] > 0) {
+            gemalt = true;
+            break;
+          }
+        }
+      }
+      const bildKasten = bild?.getBoundingClientRect();
       return {
         urteil: document.querySelector('.maschine-lage')?.textContent?.trim() ?? '',
         aktionsname: document.querySelector('.maschine-aktion')?.textContent?.trim() ?? '',
         nachhoeren: nach?.textContent?.trim() ?? '',
         nachhoerenHoch: k ? Math.round(k.height) : 0,
         lupe: Boolean(document.querySelector('.hoerlupe')),
+        klangbild: Boolean(bild),
+        klangbildGemalt: gemalt,
+        klangbildImBild: bildKasten ? bildKasten.bottom <= window.innerHeight : false,
+        klangbildQuellen: document.querySelectorAll('.klangbild-quelle').length,
+        ungenutztUnten: Math.round(window.innerHeight - unterste),
       };
     });
 
@@ -778,6 +820,8 @@ try {
     console.log(`  Urteil                    ${ruhe.urteil || '(leer)'}`);
     console.log(`  eine Handlung             ${ruhe.aktionsname || '(fehlt)'}`);
     console.log(`  letzte Hör-Lupe           ${ruhe.nachhoeren || '(fehlt)'}`);
+    console.log(`  Klangbild ohne Tipp       ${ruhe.klangbildGemalt ? 'gemalt' : 'NEIN'}`);
+    console.log(`  ungenutzter Bildschirm    ${ruhe.ungenutztUnten} px (Budget ${BUDGET.leerRaum})`);
 
     pruefe(
       /prüfen/i.test(ruhe.aktionsname),
@@ -792,6 +836,54 @@ try {
       ruhe.nachhoerenHoch >= BUDGET.antippgroesse,
       `Fall C: „Letzten Unterschied anhören" ist ${ruhe.nachhoerenHoch} px hoch`
     );
+
+    /**
+     * ── Das Klangbild ──────────────────────────────────────────────────────
+     *
+     * Gemessen am 18.08.2026, vor diesem Schnitt: Die Maschinenseite endete
+     * bei 422 px und ließ 422 px leer — die halbe Fläche —, während das
+     * Gebirge vier Tipps entfernt hinter „Verlauf → Hören → 3D → Quelle" lag
+     * und nur auf der Profi-Stufe überhaupt existierte.
+     *
+     * Jetzt steht das Bild ohne Tipp da, und EIN Tipp macht das Gebirge
+     * daraus. Beides wird hier gemessen, sonst verschwindet es beim nächsten
+     * Umbau still.
+     */
+    pruefe(ruhe.klangbild, 'Fall C: kein Klangbild auf der Maschinenseite');
+    pruefe(
+      ruhe.klangbildGemalt,
+      'Fall C: das Klangbild ist leer — eine Leinwand mit Maßen ist kein Bild'
+    );
+    pruefe(ruhe.klangbildImBild, 'Fall C: das Klangbild steht nicht ohne Scrollen im Bild');
+    pruefe(
+      ruhe.klangbildQuellen === 3,
+      `Fall C: das Klangbild bietet ${ruhe.klangbildQuellen} Quellen statt Normalzustand, Messung und Unterschied`
+    );
+    pruefe(
+      ruhe.ungenutztUnten <= BUDGET.leerRaum,
+      `Fall C: ${ruhe.ungenutztUnten} px Bildschirm bleiben ungenutzt (erlaubt ${BUDGET.leerRaum})`
+    );
+
+    // Ein Tipp auf das Bild → das Gebirge, an Ort und Stelle.
+    await page.evaluate(() => document.querySelector('.klangbild-flaeche')?.click());
+    await page.waitForTimeout(5000);
+    const tief = await page.evaluate(() => {
+      const c = document.querySelector('.spectro3d canvas');
+      return {
+        panel: Boolean(document.querySelector('.spectro3d-panel')),
+        leinwand: Boolean(c && c.width > 0 && c.height > 0),
+        ebene: document.body.classList.contains('tiefe-maschine'),
+      };
+    });
+    console.log(`  ein Tipp auf das Bild     ${tief.leinwand ? 'Gebirge steht' : 'NICHTS'}`);
+    pruefe(tief.panel && tief.leinwand, 'Fall C: ein Tipp auf das Klangbild bringt kein Gebirge');
+    pruefe(
+      tief.ebene,
+      'Fall C: das Gebirge öffnet eine neue Ebene — es soll an Ort und Stelle wachsen'
+    );
+    // Wieder zumachen, damit der Rest des Laufs vorfindet, was er erwartet.
+    await page.evaluate(() => document.querySelector('.klangbild-flaeche')?.click());
+    await page.waitForTimeout(1200);
 
     await page
       .locator('.maschine-nachhoeren')

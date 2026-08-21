@@ -22,6 +22,7 @@ import {
 import { formatHz } from '@utils/formatHz.js';
 import { logger } from '@utils/logger.js';
 import { t } from '../../i18n/index.js';
+import { matrixZuBildpunkten } from '@core/dsp/klangfarben.js';
 
 export interface NormalizedSelectionRect {
   x0: number;
@@ -391,26 +392,21 @@ export class SpectrogramSelectionPanel {
 
   /** Matrix einmal in ein Pixelbild verwandeln; Auswahlrahmen bleibt separat. */
   private buildBaseImage(matrix: SpectrogramMatrix): HTMLCanvasElement {
-    const { rows, cols, values } = matrix;
+    const { rows, cols } = matrix;
     const imageCanvas = document.createElement('canvas');
     imageCanvas.width = rows;
     imageCanvas.height = cols;
     const context = imageCanvas.getContext('2d');
     if (!context) return imageCanvas;
-    const image = context.createImageData(rows, cols);
-    for (let time = 0; time < rows; time++) {
-      for (let frequency = 0; frequency < cols; frequency++) {
-        const value = values[time * cols + frequency];
-        const pixel = ((cols - 1 - frequency) * rows + time) * 4;
-        const red = Math.round(255 * Math.min(1, Math.max(0, 1.7 * value - 0.45)));
-        const green = Math.round(255 * Math.min(1, Math.max(0, 1.8 * value)));
-        const blue = Math.round(255 * Math.min(1, Math.max(0, 1.2 - value)));
-        image.data[pixel] = red;
-        image.data[pixel + 1] = green;
-        image.data[pixel + 2] = blue;
-        image.data[pixel + 3] = 255;
-      }
-    }
+    /**
+     * Dasselbe Bild wie im Gebirge — eine Formel, nicht zwei.
+     *
+     * Hier stand bis zum 18.08.2026 eine eigene Farbmischung. Zwei Formeln
+     * sind zwei Aussagen darüber, was „laut" aussieht, und sie laufen
+     * auseinander, sobald jemand nur eine anfasst.
+     */
+    const { punkte } = matrixZuBildpunkten(matrix);
+    const image = new ImageData(punkte, rows, cols);
     context.putImageData(image, 0, 0);
     return imageCanvas;
   }

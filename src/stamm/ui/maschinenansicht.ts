@@ -52,6 +52,7 @@ import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
 import { getReferenceIrisVector } from '@ui/phases/referenceIris.js';
 import { getMachine } from '@data/db.js';
 import { ListenPanel } from '@ui/components/ListenPanel.js';
+import { Klangbild } from '@ui/components/Klangbild.js';
 import { holeErgebnis, PRUEFUNG_FERTIG, vergissErgebnis } from '../maschine/ergebnis.js';
 
 export interface MaschinenansichtDeps {
@@ -208,6 +209,20 @@ async function zeichneFingerabdruck(ziel: HTMLElement, maschine: Machine): Promi
  */
 let lupe: ListenPanel | null = null;
 
+/**
+ * Das Klangbild dieser Ebene — höchstens eines, und es wird abgeräumt.
+ *
+ * Es kann ein WebGL-Gebirge halten, und WebGL-Kontexte sind eine knappe
+ * Ressource: Browser vergeben nur eine Handvoll pro Seite.
+ */
+let klangbild: Klangbild | null = null;
+
+function raeumeKlangbildAb(): void {
+  klangbild?.destroy();
+  klangbild?.element.remove();
+  klangbild = null;
+}
+
 function raeumeLupeAb(): void {
   lupe?.destroy();
   // `destroy()` hält die Wiedergabe an, entfernt aber nichts aus dem Baum —
@@ -277,6 +292,7 @@ async function zeichne(maschine: Machine): Promise<void> {
   const ziel = behaelter();
   if (!ziel) return;
   raeumeLupeAb();
+  raeumeKlangbildAb();
   ziel.textContent = '';
   ziel.classList.remove('maschinen-ansicht-ergebnis');
 
@@ -473,15 +489,43 @@ async function zeichne(maschine: Machine): Promise<void> {
     knopf.addEventListener('click', () => deps?.starteNaechstenSchritt(maschine));
   }
 
-  // ── Sekundär: die letzte Prüfung nachhören ───────────────────────────────
-  //
-  // Der Weg zur letzten Hör-Lupe, ohne Umweg über den Verlauf. Er erscheint
-  // nur, wenn es den Ton wirklich gibt — die Aufbewahrung ist eine Einstellung
-  // des Nutzers, und sie wird hier nicht heimlich umgestellt, nur damit ein
-  // Knopf dastehen kann.
+  /**
+   * ── DAS KLANGBILD ────────────────────────────────────────────────────────
+   *
+   * Ohne Tipp im Bild, in der Hälfte des Bildschirms, die vorher leer war.
+   *
+   * Gemessen am 18.08.2026 (390 × 844, Maschine in Ruhe): Das unterste
+   * Angebot endete bei 422 px, darunter standen 422 px leer — und das
+   * Eindrucksvollste, das 3D-Gebirge, lag vier Tipps entfernt hinter
+   * „Verlauf → Hören → 3D-Ansicht → Quelle", erreichbar nur auf der
+   * Profi-Stufe. Das war kein Platzproblem, sondern ein Belegungsproblem.
+   *
+   * Es steht UNTER der einen Handlung: Prüfen bleibt der Hauptweg, das Bild
+   * ist der Beleg der letzten Prüfung. Und es ersetzt „Letzten Unterschied
+   * anhören" nicht — es steht daneben, weil Sehen und Hören zwei Sinne sind.
+   */
   if (!frisch && letzte && zustand === 'ready') {
     const toene = await toeneZurPruefung(maschine, letzte);
     if (toene) {
+      const bild = new Klangbild({
+        reference: toene.referenz,
+        measurement: toene.messung,
+        bildunterschrift: t('maschine.letztePruefung', {
+          wert: String(Math.round(letzte.healthScore)),
+          wann: vorWieLange(letzte.timestamp),
+        }),
+      });
+      if (bild.hasContent) {
+        klangbild = bild;
+        ziel.appendChild(bild.element);
+      }
+
+      // ── Sekundär: die letzte Prüfung nachhören ────────────────────────────
+      //
+      // Der Weg zur letzten Hör-Lupe, ohne Umweg über den Verlauf. Er
+      // erscheint nur, wenn es den Ton wirklich gibt — die Aufbewahrung ist
+      // eine Einstellung des Nutzers, und sie wird hier nicht heimlich
+      // umgestellt, nur damit ein Knopf dastehen kann.
       const nachhoeren = document.createElement('button');
       nachhoeren.type = 'button';
       nachhoeren.className = 'maschine-nachhoeren';
@@ -582,6 +626,7 @@ export function maschinenansichtAufbauen(abhaengigkeiten: MaschinenansichtDeps):
      */
     if (detail.ebene !== 'maschine' && detail.ebene !== 'arbeit') {
       raeumeLupeAb();
+      raeumeKlangbildAb();
       vergissErgebnis();
     }
     if (detail.ebene !== 'maschine') return;

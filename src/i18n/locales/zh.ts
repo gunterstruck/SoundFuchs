@@ -69,6 +69,15 @@ export const zh: TranslationDict = {
     rechnetHinweis: '正在将录音与正常状态进行比较。',
   },
   // 听觉放大镜（第 3 刀）：正常状态 · 测量 · 差异。
+  // 机器页面上的声音图像。
+  klangbild: {
+    vergroessern: '点按查看大图',
+    alt: '上次检测的声音图像',
+    leer: '本次检测没有声音图像',
+    quelleNormalzustand: '正常状态',
+    quelleMessung: '测量',
+    quelleUnterschied: '差异',
+  },
   hoerlupe: {
     quelleNormalzustand: '🔊 正常状态',
     quelleMessung: '🔊 测量',

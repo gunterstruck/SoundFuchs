@@ -70,6 +70,15 @@ export const en: TranslationDict = {
     rechnetHinweis: 'The recording is being compared with the normal state.',
   },
   // The listening lens (slice 3): normal state · measurement · difference.
+  // The sound picture on the machine page.
+  klangbild: {
+    vergroessern: 'Tap for the large view',
+    alt: 'Sound picture of the last check',
+    leer: 'No sound picture available for this check',
+    quelleNormalzustand: 'Normal state',
+    quelleMessung: 'Measurement',
+    quelleUnterschied: 'Difference',
+  },
   hoerlupe: {
     quelleNormalzustand: '🔊 Normal state',
     quelleMessung: '🔊 Measurement',

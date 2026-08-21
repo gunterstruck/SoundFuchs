@@ -70,6 +70,15 @@ export const fr: TranslationDict = {
     rechnetHinweis: 'L\u2019enregistrement est comparé à l\u2019état normal.',
   },
   // La loupe d\u2019écoute (coupe 3) : état normal · mesure · différence.
+  // L’image sonore sur la page machine.
+  klangbild: {
+    vergroessern: 'Toucher pour la grande vue',
+    alt: 'Image sonore du dernier contrôle',
+    leer: 'Aucune image sonore pour ce contrôle',
+    quelleNormalzustand: 'État normal',
+    quelleMessung: 'Mesure',
+    quelleUnterschied: 'Différence',
+  },
   hoerlupe: {
     quelleNormalzustand: '🔊 État normal',
     quelleMessung: '🔊 Mesure',

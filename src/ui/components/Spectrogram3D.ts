@@ -16,6 +16,15 @@
  */
 
 import type { SpectrogramMatrix } from '@core/dsp/spectrogram.js';
+/**
+ * Farbe und Pixelbild liegen im Rechenmodul: Dieselbe Intensität muss im
+ * kleinen Klangbild und im großen Gebirge gleich aussehen, sonst ist die
+ * Verwandlung vom einen ins andere kein Zoom, sondern ein Sprung.
+ */
+import { signedColor, turboColor } from '@core/dsp/klangfarben.js';
+
+/** Weitergereicht, damit bestehende Prüfungen ihren Ort behalten. */
+export { signedColor, turboColor };
 import { freqToColumn, SPECTROGRAM_DB_RANGE } from '@core/dsp/spectrogram.js';
 import { formatHz } from '@utils/formatHz.js';
 import { t } from '../../i18n/index.js';
@@ -44,61 +53,6 @@ const DIST_MIN = 1.5;
 const DIST_MAX = 6;
 const PITCH_MIN = 0.12;
 const PITCH_MAX = 1.35;
-
-/**
- * Turbo-artiger Farbverlauf (dunkelblau → türkis → gelb → rot) als
- * stückweise lineare Interpolation. Exportiert für Unit-Tests.
- */
-export function turboColor(v: number): [number, number, number] {
-  const stops: Array<[number, number, number, number]> = [
-    [0.0, 0.07, 0.11, 0.27], // tiefes Blau
-    [0.3, 0.1, 0.5, 0.75], // Blau/Cyan
-    [0.55, 0.1, 0.8, 0.45], // Grün-Türkis
-    [0.75, 0.95, 0.85, 0.15], // Gelb
-    [1.0, 0.85, 0.15, 0.1], // Rot
-  ];
-  const x = Math.min(1, Math.max(0, v));
-  for (let i = 1; i < stops.length; i++) {
-    if (x <= stops[i][0]) {
-      const [x0, r0, g0, b0] = stops[i - 1];
-      const [x1, r1, g1, b1] = stops[i];
-      const f = x1 > x0 ? (x - x0) / (x1 - x0) : 0;
-      return [r0 + (r1 - r0) * f, g0 + (g1 - g0) * f, b0 + (b1 - b0) * f];
-    }
-  }
-  return [stops[stops.length - 1][1], stops[stops.length - 1][2], stops[stops.length - 1][3]];
-}
-
-/**
- * Zweiseitiger Verlauf für den Unterschied mit Vorzeichen.
- *
- * Warm (Orange → Rot) heißt „lauter als im Normalzustand", kalt (Türkis →
- * Blau) „leiser". In der Mitte, wo sich nichts geändert hat, treffen sich beide
- * in einem neutralen Grau — sonst sähe „kein Unterschied" nach einer Aussage
- * aus.
- *
- * Nicht Turbo: Ein Regenbogen hat keine Mitte und kein Vorzeichen. Er wäre für
- * einen Unterschied die falsche Skala, egal wie hübsch er ist.
- *
- * Rot/Blau ist zusätzlich die verbreitetste Rot-Grün-Schwäche unbeschadet
- * lesbar — und die Richtung steht ohnehin nicht nur in der Farbe: Sie steht in
- * der Beschriftung der Höhenachse.
- *
- * Exportiert für Unit-Tests.
- */
-export function signedColor(v: number, sign: number): [number, number, number] {
-  const x = Math.min(1, Math.max(0, v));
-  const neutral: [number, number, number] = [0.42, 0.44, 0.47];
-  const ziel: [number, number, number] =
-    sign >= 0
-      ? [0.9, 0.28, 0.12] // lauter geworden
-      : [0.1, 0.52, 0.82]; // leiser geworden
-  return [
-    neutral[0] + (ziel[0] - neutral[0]) * x,
-    neutral[1] + (ziel[1] - neutral[1]) * x,
-    neutral[2] + (ziel[2] - neutral[2]) * x,
-  ];
-}
 
 export interface HeightFieldMesh {
   positions: Float32Array; // xyz je Vertex

@@ -70,6 +70,15 @@ export const es: TranslationDict = {
     rechnetHinweis: 'La grabación se está comparando con el estado normal.',
   },
   // La lupa auditiva (corte 3): estado normal · medición · diferencia.
+  // La imagen sonora en la página de la máquina.
+  klangbild: {
+    vergroessern: 'Toca para la vista grande',
+    alt: 'Imagen sonora de la última prueba',
+    leer: 'No hay imagen sonora para esta prueba',
+    quelleNormalzustand: 'Estado normal',
+    quelleMessung: 'Medición',
+    quelleUnterschied: 'Diferencia',
+  },
   hoerlupe: {
     quelleNormalzustand: '🔊 Estado normal',
     quelleMessung: '🔊 Medición',

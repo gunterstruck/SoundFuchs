@@ -471,3 +471,99 @@ body.tiefe-arbeit #karte-bestandswege {
     border-left: 1px solid var(--color-border);
   }
 }
+
+/* ── Das Klangbild ──────────────────────────────────────────────────────────
+
+   Es füllt die Hälfte des Bildschirms, die vorher leer stand. Gemessen am
+   18.08.2026: Das unterste Angebot der Maschinenseite endete bei 422 px, und
+   darunter kam nichts mehr — während das 3D-Gebirge vier Tipps entfernt lag.
+
+   240 px hoch: genug, um ein Spektrogramm zu lesen, und wenig genug, dass
+   Urteil, Handlung und Bild zusammen ohne Scrollen ins Bild passen. */
+.klangbild {
+  margin-top: 20px;
+}
+
+.klangbild-buehne {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface-2);
+}
+
+/* Das Bild IST der Knopf — deshalb ein echter `button` und kein Kasten mit
+   Klickzuhörer. Wer mit der Tastatur kommt, muss ihn erreichen. */
+.klangbild-flaeche {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 240px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.klangbild-flaeche.ist-versteckt {
+  display: none;
+}
+
+/* Gestreckt statt interpoliert: Das flache Bild ist eine Vorschau, und die
+   Originalauflösung der Matrix ist gröber als die Fläche. */
+.klangbild-flach {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+/* Ein Bild, das man antippen kann, muss aussehen, als könne man es antippen. */
+.klangbild-hinweis {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.klangbild-quellen {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.klangbild-quelle {
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.klangbild-quelle.is-aktiv {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+  background: var(--color-surface-2);
+}
+
+.klangbild-satz {
+  margin: 8px 0 0;
+  text-align: center;
+}
+
+/* Im Gebirge darf die Bühne wachsen — dort wird gedreht und gezogen. */
+.klangbild.ist-tief .klangbild-buehne {
+  min-height: 320px;
+}

@@ -165,6 +165,17 @@ export class Spectrogram3DPanel {
     return b;
   }
 
+  /**
+   * Von außen aufmachen.
+   *
+   * Für das Klangbild auf der Maschinenseite: Dort ist der Tipp auf das Bild
+   * schon die Aufforderung, das Gebirge zu sehen — ein zweiter Tipp auf
+   * „3D-Ansicht" wäre dieselbe Frage ein zweites Mal.
+   */
+  public oeffne(): void {
+    if (!this.shown) this.setShown(true);
+  }
+
   private setShown(shown: boolean): void {
     this.shown = shown;
     if (shown) {
