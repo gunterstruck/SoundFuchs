@@ -1529,6 +1529,63 @@ weiter unter dem Bildschirmrand) und **den Verlauf zu dem machen, was er sein
 sollte** — eine Liste vergangener Prüfungen mit Zahl, die den Inhalt des
 Klangbildes wechselt, statt die einzige Tür zu allem Guten zu sein.
 
+### S4g — Briefing und Verlauf kommen aus dem Keller (18.08.2026)
+
+✅ _erledigt._ Der zweite Teil des Entwurfs. Aus dem ersten blieben zwei Punkte
+offen; beide sind jetzt zu.
+
+**Das Briefing stand bei y = 1027 px** — 183 px unter dem Bildschirmrand, und
+nur erreichbar, wenn man erst die Hör-Lupe aufmachte und dann wusste, dass man
+scrollen muss. Für den Produktleuchtturm des Hauses (#71) der falsche Ort. Es
+steht jetzt **neben** dem Nachhören, in einer Zeile: zwei gleichwertige zweite
+Wege. Die eine dominante Handlung bleibt „Prüfen".
+
+**Der Verlauf war ein Wort in Kleinschrift** und trotzdem die einzige Tür zu
+allem Guten. Er trägt jetzt seine Zahl — „Verlauf · 7 Prüfungen" —, und die
+letzten Prüfungen stehen als Reihe unter dem Klangbild: **Ein Tipp wechselt,
+was im Bild steht.** Der Verlauf öffnet damit keine neue Welt mehr, sondern
+wechselt den Inhalt des Fensters. Das ist der semantische Zoom, den der
+Auftraggeber gemeint hat — im Bild, nicht in der Navigation.
+
+Die Reihe erscheint erst ab zwei wählbaren Prüfungen (eine Wahl ohne
+Alternative ist keine) und nur für Prüfungen mit gespeichertem Ton.
+
+### Zwei Fehler, die das Messen gefunden hat
+
+**Die untere Hälfte kam zu spät.** Nach dem Einbau fehlten Zweitaktionen und
+Verlauf im Aufmaß — obwohl beide später funktionierten. Kein Seitenfehler, nur
+Zeit: Die Seite wartete auf das Laden der Aufnahmen, bevor sie fertig gebaut
+war. Zwei Ursachen, beide selbst gebaut:
+
+1. **Ein Ladevorgang je Prüfung.** `getRecordingsForMachine` liefert ohnehin
+   alles auf einmal — jetzt einmal laden, dann zuordnen. Das ist auch weniger
+   Arbeit als vorher.
+2. **Ein voller Durchlauf durch alle Diagnosen**, nur um die Zahl im
+   Verlaufs-Etikett zu zeigen. Die Zahl trägt sich jetzt nach, wenn sie da
+   ist; darauf wartet die Seite nicht.
+
+Daraus wurde eine Regel: **Was ohne Ton auskommt, steht sofort.** Der
+tonabhängige Teil bekommt einen reservierten Platz und füllt ihn, wenn er kann.
+Wer schnell tippt, findet die Seite fertig vor.
+
+**„Verlauf · 1 Prüfungen".** Ein eigener Schlüssel für den Einzelfall.
+
+### Gemessen (390 × 844, Maschine in Ruhe)
+
+| | vor S4f | jetzt |
+|---|---|---|
+| ungenutzter Bildschirm | 422 px | **85 px** |
+| Tipps bis zum Gebirge | 4 | **1** |
+| Briefing | y = 1027 px, unter dem Rand | **im Bild, 48 px hoch** |
+| Verlauf | „Verlauf" | **„Verlauf · N Prüfungen"** |
+| Prüfung wechseln | Verlauf → Hören (2 Tipps, neues Fenster) | **1 Tipp, im Bild** |
+
+Alles zusammen 759 px bei 844 px Fenster: **Urteil, Handlung, Klangbild,
+Hörweg, Briefing und Verlauf ohne Scrollen.**
+
+`wow` bewacht in Fall C zusätzlich: Briefing vorhanden, ohne Scrollen im Bild,
+mindestens 44 px hoch — und der Verlauf nennt eine Zahl.
+
 **S4d — Audiodateien als Normalzustand oder Messung importieren.**
 _Vorgemerkt, noch nicht umgesetzt._ Eine vorhandene Tondatei vom Smartphone,
 Rekorder oder Schreibtisch soll denselben Analyseweg benutzen können wie eine

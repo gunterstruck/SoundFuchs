@@ -567,3 +567,72 @@ body.tiefe-arbeit #karte-bestandswege {
 .klangbild.ist-tief .klangbild-buehne {
   min-height: 320px;
 }
+
+/* ── Die letzten Prüfungen: eine Reihe, kein Umweg ──────────────────────────
+
+   Ein Tipp wechselt, was im Klangbild steht. Der Verlauf öffnet damit keine
+   neue Welt mehr, sondern wechselt den Inhalt des Fensters — der semantische
+   Zoom liegt im Bild, nicht in der Navigation. */
+.maschine-pruefungen {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.maschine-pruefungen::-webkit-scrollbar {
+  display: none;
+}
+
+.maschine-pruefung {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.maschine-pruefung.is-aktiv {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+  background: var(--color-surface-2);
+}
+
+/* ── Zwei gleichwertige zweite Wege ─────────────────────────────────────────
+
+   Nachhören und Briefing nebeneinander: Keiner von beiden ist die dominante
+   Handlung — die bleibt „Prüfen" —, und nebeneinander kosten sie eine Zeile
+   statt zwei. Das Briefing stand vorher 183 px unter dem Bildschirmrand. */
+.maschine-zweitaktionen {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.maschine-zweitaktionen > button {
+  flex: 1 1 0;
+  margin-top: 0;
+}
+
+.maschine-briefing {
+  min-height: 48px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.maschine-briefing:hover {
+  border-color: var(--color-primary);
+}
