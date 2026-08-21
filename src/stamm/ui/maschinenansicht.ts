@@ -34,7 +34,11 @@
  */
 
 import type { DiagnosisResult, Machine } from '@data/types.js';
-import { getLatestDiagnosis, getRecording, getRecordingsForMachine } from '@data/db.js';
+import {
+  getDiagnosesForMachine,
+  getLatestDiagnosis,
+  getRecordingsForMachine,
+} from '@data/db.js';
 import { t } from '../../i18n/index.js';
 import { logger } from '@utils/logger.js';
 import { farbeFuerZustand } from '../features/standortmarker.js';
@@ -53,6 +57,7 @@ import { getReferenceIrisVector } from '@ui/phases/referenceIris.js';
 import { getMachine } from '@data/db.js';
 import { ListenPanel } from '@ui/components/ListenPanel.js';
 import { Klangbild } from '@ui/components/Klangbild.js';
+import { openAnalysisPackageDialog } from '@ui/components/AnalysisPackageDialog.js';
 import { holeErgebnis, PRUEFUNG_FERTIG, vergissErgebnis } from '../maschine/ergebnis.js';
 
 export interface MaschinenansichtDeps {
@@ -261,30 +266,35 @@ function zeichneLupe(
 }
 
 /**
- * Die Aufnahmen einer vergangenen Prüfung holen — für „Letzten Unterschied
- * anhören".
+ * Die Aufnahmen einer Maschine — EINMAL geholt.
  *
- * Die Kennung der Aufnahme ist die der Diagnose; deshalb genügt die Diagnose,
- * um an ihren Ton zu kommen. Fehlt er, weil die Aufbewahrung ihn nicht behalten
- * hat, kommt `null` zurück — und der Knopf erscheint gar nicht erst. Ein Knopf,
- * der nichts tut, ist schlimmer als kein Knopf.
+ * Hier stand zuerst eine Funktion je Prüfung. Sobald die Maschinenseite mehr
+ * als eine Prüfung anbieten sollte, wurde daraus ein Ladevorgang je Prüfung,
+ * und die untere Hälfte der Seite erschien messbar später als die obere:
+ * Gemessen am 18.08.2026 fehlten Zweitaktionen und Verlauf noch, als die Seite
+ * längst stand.
+ *
+ * `getRecordingsForMachine` liefert ohnehin alles auf einmal. Also einmal
+ * laden, dann zuordnen: der jüngste Normalzustand als Referenz, und je
+ * Prüfung ihre Messung — die Kennung der Aufnahme ist die der Diagnose.
  */
-async function toeneZurPruefung(
-  maschine: Machine,
-  diagnose: DiagnosisResult
-): Promise<{ referenz: AudioBuffer; messung: AudioBuffer } | null> {
+async function toeneDerMaschine(
+  maschine: Machine
+): Promise<{ referenz: AudioBuffer | null; messungen: Map<string, AudioBuffer> }> {
+  const messungen = new Map<string, AudioBuffer>();
   try {
-    const messungsAufnahme = await getRecording(diagnose.id);
-    if (!messungsAufnahme?.audioBuffer) return null;
     const alle = await getRecordingsForMachine(maschine.id);
-    const referenz = alle
-      .filter((r) => r.type === 'reference' && r.audioBuffer)
-      .sort((a, b) => b.timestamp - a.timestamp)[0]?.audioBuffer;
-    if (!referenz) return null;
-    return { referenz, messung: messungsAufnahme.audioBuffer };
+    const referenz =
+      alle
+        .filter((r) => r.type === 'reference' && r.audioBuffer)
+        .sort((a, b) => b.timestamp - a.timestamp)[0]?.audioBuffer ?? null;
+    for (const r of alle) {
+      if (r.type === 'diagnosis' && r.audioBuffer) messungen.set(r.id, r.audioBuffer);
+    }
+    return { referenz, messungen };
   } catch (fehler) {
-    logger.warn('Maschinenansicht: Ton der letzten Prüfung nicht ladbar', fehler);
-    return null;
+    logger.warn('Maschinenansicht: Aufnahmen nicht ladbar', fehler);
+    return { referenz: null, messungen };
   }
 }
 
@@ -504,20 +514,176 @@ async function zeichne(maschine: Machine): Promise<void> {
    * ist der Beleg der letzten Prüfung. Und es ersetzt „Letzten Unterschied
    * anhören" nicht — es steht daneben, weil Sehen und Hören zwei Sinne sind.
    */
+  /**
+   * ── Die Seite steht, bevor der Ton geladen ist ───────────────────────────
+   *
+   * Klangbild, Prüfungsreihe und die beiden Zweitaktionen brauchen die
+   * Aufnahmen — und deren Laden dauert. Gemessen am 18.08.2026 fehlte die
+   * untere Hälfte der Seite noch, als die obere längst stand: Wer schnell
+   * tippte, fand „Letzten Unterschied anhören" und den Verlauf nicht vor.
+   *
+   * Deshalb bekommt der tonabhängige Teil hier einen Platz, und der Rest der
+   * Seite wird zuerst fertig gebaut. Was ohne Ton auskommt — die eine
+   * Handlung, der Verlauf — steht sofort.
+   */
+  const tonplatz = document.createElement('div');
+  tonplatz.className = 'maschine-tonplatz';
+  if (!frisch && letzte && zustand === 'ready') ziel.appendChild(tonplatz);
+
+  // ── Sekundär: der Verlauf ────────────────────────────────────────────────
+  if (maschine.lastDiagnosisAt) {
+    const verlauf = document.createElement('button');
+    verlauf.type = 'button';
+    verlauf.className = 'linklike maschine-verlauf';
+    verlauf.textContent = t('history.viewHistory');
+    /**
+     * Die Zahl kommt nach.
+     *
+     * „Verlauf" allein war ein Wort in Kleinschrift, hinter dem niemand etwas
+     * vermutete; die Zahl sagt, dass dort etwas liegt. Sie zu zählen heißt
+     * aber, alle Diagnosen dieser Maschine zu lesen — und darauf soll die
+     * Seite nicht warten. Sie trägt sich nach, wenn sie da ist.
+     */
+    void getDiagnosesForMachine(maschine.id).then((alle) => {
+      if (alle.length > 0 && verlauf.isConnected) {
+        // Eine Prüfung ist keine „1 Prüfungen".
+        verlauf.textContent =
+          alle.length === 1
+            ? t('maschine.verlaufEine')
+            : t('maschine.verlaufMitZahl', { anzahl: String(alle.length) });
+      }
+    });
+    verlauf.addEventListener('click', () => deps?.zeigeVerlauf(maschine));
+    ziel.appendChild(verlauf);
+  }
+
   if (!frisch && letzte && zustand === 'ready') {
-    const toene = await toeneZurPruefung(maschine, letzte);
+    const { referenz, messungen } = await toeneDerMaschine(maschine);
+    const klaengeZu = (d: DiagnosisResult) => {
+      const messung = messungen.get(d.id);
+      return referenz && messung ? { referenz, messung } : null;
+    };
+    const toene = klaengeZu(letzte);
     if (toene) {
-      const bild = new Klangbild({
-        reference: toene.referenz,
-        measurement: toene.messung,
-        bildunterschrift: t('maschine.letztePruefung', {
-          wert: String(Math.round(letzte.healthScore)),
-          wann: vorWieLange(letzte.timestamp),
-        }),
-      });
-      if (bild.hasContent) {
+      const zeigePruefung = (
+        diagnose: DiagnosisResult,
+        klaenge: { referenz: AudioBuffer; messung: AudioBuffer },
+        davor: HTMLElement | null
+      ) => {
+        const bild = new Klangbild({
+          reference: klaenge.referenz,
+          measurement: klaenge.messung,
+          bildunterschrift: t('maschine.letztePruefung', {
+            wert: String(Math.round(diagnose.healthScore)),
+            wann: vorWieLange(diagnose.timestamp),
+          }),
+        });
+        if (!bild.hasContent) return null;
+        raeumeKlangbildAb();
         klangbild = bild;
-        ziel.appendChild(bild.element);
+        if (davor) davor.insertAdjacentElement('afterend', bild.element);
+        else tonplatz.appendChild(bild.element);
+        return bild;
+      };
+      const ankerFuerBild: HTMLElement | null = null;
+      zeigePruefung(letzte, toene, ankerFuerBild);
+
+      const zeile = document.createElement('div');
+      zeile.className = 'maschine-zweitaktionen';
+
+      const nachhoeren = document.createElement('button');
+      nachhoeren.type = 'button';
+      nachhoeren.className = 'maschine-nachhoeren';
+      nachhoeren.textContent = t('maschine.letzterUnterschied');
+      nachhoeren.addEventListener('click', () => {
+        zeile.remove();
+        const panel = zeichneLupe(tonplatz, toene.referenz, toene.messung, maschine.name);
+        void panel?.spieleUnterschied();
+      });
+      zeile.appendChild(nachhoeren);
+
+      /**
+       * ── DAS BRIEFING KOMMT AUS DEM KELLER ──────────────────────────────
+       *
+       * Gemessen am 18.08.2026: „Geräusch-Briefing erstellen" stand bei
+       * y = 1027 px — 183 px unter dem Bildschirmrand, erreichbar nur, wenn
+       * man erst die Hör-Lupe aufmachte und dann wusste, dass man scrollen
+       * muss. Für den Produktleuchtturm des Hauses (§ „Geräusch-Briefing",
+       * #71) ist das der falsche Ort.
+       *
+       * Es steht jetzt neben dem Nachhören, in einer Zeile: zwei
+       * gleichwertige zweite Wege, keiner davon der dominante. Die eine
+       * Handlung bleibt „Prüfen".
+       */
+      const briefing = document.createElement('button');
+      briefing.type = 'button';
+      briefing.className = 'maschine-briefing';
+      briefing.textContent = t('maschine.briefing');
+      briefing.addEventListener('click', () => {
+        openAnalysisPackageDialog({
+          reference: toene.referenz,
+          measurement: toene.messung,
+          machineName: maschine.name,
+          getSelection: () => null,
+        });
+      });
+      zeile.appendChild(briefing);
+
+      tonplatz.appendChild(zeile);
+
+      /**
+       * ── DER VERLAUF WECHSELT DAS BILD ──────────────────────────────────
+       *
+       * Bis hierher war der Verlauf ein Wort in Kleinschrift — und trotzdem
+       * die einzige Tür zu allem Guten: Verlauf → Hören → 3D-Ansicht →
+       * Quelle. Vier Tipps für etwas, das man vergleichen will.
+       *
+       * Die letzten Prüfungen stehen jetzt als Reihe unter dem Bild. Ein Tipp
+       * wechselt, was im Klangbild steht — er öffnet keine neue Welt. Das ist
+       * der semantische Zoom, den der Auftraggeber gemeint hat: im Bild, nicht
+       * in der Navigation.
+       *
+       * Nur Prüfungen mit Ton kommen in die Reihe: Die Aufbewahrung ist eine
+       * Einstellung des Nutzers, und ein Knopf, der nichts zeigen kann, ist
+       * schlimmer als kein Knopf. Erst ab zwei wählbaren Prüfungen erscheint
+       * sie überhaupt — eine Wahl ohne Alternative ist keine.
+       */
+      const letzten = await getDiagnosesForMachine(maschine.id, 4);
+      const waehlbar: Array<{
+        diagnose: DiagnosisResult;
+        klaenge: { referenz: AudioBuffer; messung: AudioBuffer };
+      }> = [];
+      for (const d of letzten) {
+        const k = klaengeZu(d);
+        if (k) waehlbar.push({ diagnose: d, klaenge: k });
+      }
+      if (waehlbar.length > 1) {
+        const reihe = document.createElement('div');
+        reihe.className = 'maschine-pruefungen';
+        for (const { diagnose, klaenge } of waehlbar) {
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'maschine-pruefung';
+          chip.textContent = t('maschine.pruefungKurz', {
+            wert: String(Math.round(diagnose.healthScore)),
+            wann: vorWieLange(diagnose.timestamp),
+          });
+          chip.setAttribute('aria-pressed', diagnose.id === letzte.id ? 'true' : 'false');
+          chip.classList.toggle('is-aktiv', diagnose.id === letzte.id);
+          chip.addEventListener('click', () => {
+            for (const anderer of reihe.querySelectorAll('.maschine-pruefung')) {
+              anderer.classList.remove('is-aktiv');
+              anderer.setAttribute('aria-pressed', 'false');
+            }
+            chip.classList.add('is-aktiv');
+            chip.setAttribute('aria-pressed', 'true');
+            zeigePruefung(diagnose, klaenge, ankerFuerBild);
+          });
+          reihe.appendChild(chip);
+        }
+        // Vor die Zweitaktionen: Erst wählen, was man sieht, dann damit
+        // etwas tun.
+        tonplatz.insertBefore(reihe, zeile);
       }
 
       // ── Sekundär: die letzte Prüfung nachhören ────────────────────────────
@@ -526,27 +692,7 @@ async function zeichne(maschine: Machine): Promise<void> {
       // erscheint nur, wenn es den Ton wirklich gibt — die Aufbewahrung ist
       // eine Einstellung des Nutzers, und sie wird hier nicht heimlich
       // umgestellt, nur damit ein Knopf dastehen kann.
-      const nachhoeren = document.createElement('button');
-      nachhoeren.type = 'button';
-      nachhoeren.className = 'maschine-nachhoeren';
-      nachhoeren.textContent = t('maschine.letzterUnterschied');
-      nachhoeren.addEventListener('click', () => {
-        nachhoeren.remove();
-        const panel = zeichneLupe(ziel, toene.referenz, toene.messung, maschine.name);
-        void panel?.spieleUnterschied();
-      });
-      ziel.appendChild(nachhoeren);
     }
-  }
-
-  // ── Sekundär: der Verlauf ────────────────────────────────────────────────
-  if (maschine.lastDiagnosisAt) {
-    const verlauf = document.createElement('button');
-    verlauf.type = 'button';
-    verlauf.className = 'linklike maschine-verlauf';
-    verlauf.textContent = t('history.viewHistory');
-    verlauf.addEventListener('click', () => deps?.zeigeVerlauf(maschine));
-    ziel.appendChild(verlauf);
   }
 }
 

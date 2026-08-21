@@ -802,7 +802,14 @@ try {
         }
       }
       const bildKasten = bild?.getBoundingClientRect();
+      const brief = document.querySelector('.maschine-briefing');
+      const briefKasten = brief?.getBoundingClientRect();
+      const verlaufText = document.querySelector('.maschine-verlauf')?.textContent?.trim() ?? '';
       return {
+        briefing: brief?.textContent?.trim() ?? '',
+        briefingImBild: briefKasten ? briefKasten.bottom <= window.innerHeight : false,
+        briefingHoch: briefKasten ? Math.round(briefKasten.height) : 0,
+        verlaufText,
         urteil: document.querySelector('.maschine-lage')?.textContent?.trim() ?? '',
         aktionsname: document.querySelector('.maschine-aktion')?.textContent?.trim() ?? '',
         nachhoeren: nach?.textContent?.trim() ?? '',
@@ -864,6 +871,30 @@ try {
       `Fall C: ${ruhe.ungenutztUnten} px Bildschirm bleiben ungenutzt (erlaubt ${BUDGET.leerRaum})`
     );
 
+    /**
+     * Das Briefing gehört auf die Seite, nicht in den Keller.
+     *
+     * Gemessen am 18.08.2026 stand „Geräusch-Briefing erstellen" bei
+     * y = 1027 px — 183 px unter dem Rand, und nur erreichbar, wenn man
+     * vorher die Hör-Lupe aufmachte. Für den Produktleuchtturm des Hauses ist
+     * das der falsche Ort.
+     */
+    pruefe(ruhe.briefing.length > 0, 'Fall C: kein Weg zum Geräusch-Briefing auf der Maschinenseite');
+    pruefe(ruhe.briefingImBild, 'Fall C: das Briefing steht nicht ohne Scrollen im Bild');
+    pruefe(
+      ruhe.briefingHoch >= BUDGET.antippgroesse,
+      `Fall C: der Briefing-Knopf ist ${ruhe.briefingHoch} px hoch`
+    );
+
+    /**
+     * Und der Verlauf sagt, wie viel dahinter liegt. „Verlauf" allein war ein
+     * Wort in Kleinschrift, hinter dem niemand etwas vermutete.
+     */
+    pruefe(
+      /\d/.test(ruhe.verlaufText),
+      `Fall C: der Verlauf nennt keine Zahl („${ruhe.verlaufText}")`
+    );
+
     // Ein Tipp auf das Bild → das Gebirge, an Ort und Stelle.
     await page.evaluate(() => document.querySelector('.klangbild-flaeche')?.click());
     await page.waitForTimeout(5000);
@@ -875,6 +906,8 @@ try {
         ebene: document.body.classList.contains('tiefe-maschine'),
       };
     });
+    console.log(`  Briefing                  ${ruhe.briefing || '(fehlt)'}`);
+    console.log(`  Verlauf                   ${ruhe.verlaufText || '(fehlt)'}`);
     console.log(`  ein Tipp auf das Bild     ${tief.leinwand ? 'Gebirge steht' : 'NICHTS'}`);
     pruefe(tief.panel && tief.leinwand, 'Fall C: ein Tipp auf das Klangbild bringt kein Gebirge');
     pruefe(
