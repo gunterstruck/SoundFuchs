@@ -1318,6 +1318,119 @@ der Differenz über Zeit und Frequenz markieren, als gekennzeichnete Hörhilfe
 abspielen und zusammen mit dem Original teilen. Freies Einkreisen bleibt eine
 spätere Bedienvariante desselben Auswahlmodells.
 
+### S4e — Ein Maßstab und eine Richtung (18.08.2026)
+
+✅ _erledigt._ Zwei Fragen des Auftraggebers, die dieselbe Wurzel haben: Was
+heißt beim Vergleichen eigentlich „gleichzeitig", und was heißt „Unterschied"?
+
+**Was vorher wirklich gerechnet wurde.** `isolateDifference()` vergleicht nicht
+zwei Aufnahmen. Es reduziert den Normalzustand auf **ein einziges gemitteltes
+Spektrum** und zieht das von jedem Rahmen der Messung ab:
+
+```
+keep = max(0, |M| − α · g · R)      α = 1,6   N = 2048   hop = 512
+```
+
+Daraus folgt dreierlei, und alle drei waren nirgends aufgeschrieben:
+
+1. Es gibt **keine Zeitzuordnung** — Rahmen 3 der Messung wird gegen dasselbe
+   Mittel gehalten wie Rahmen 300.
+2. Beide Aufnahmen werden bei **12 Sekunden** abgeschnitten, immer ab 0.
+3. `max(0, …)` schneidet **eine ganze Richtung** ab.
+
+### Die Zeit: ein Maßstab für alle Ansichten
+
+Die 3D-Geometrie legt die Zeilen einer Matrix auf eine **feste Tiefe** um
+(`z = r/(rows−1) · 2 − 1`). Gemessen hieß das:
+
+| Ansicht | Dauer | Tiefe im Bild |
+|---|---|---|
+| Normalzustand | 10 s | volle Tiefe |
+| Messung | 25 s | volle Tiefe |
+| Unterschied | 12 s (Kappung) | volle Tiefe |
+
+Dreimal dieselbe Tiefe für drei verschiedene Zeiten. Die Beschriftung stimmte —
+sie kommt aus `durationSec` —, die **Form** nicht: Derselbe Vorgang wanderte
+beim Umschalten und wirkte einmal dichter, einmal gedehnter. Beim
+Intensitätsmaßstab war das längst gelöst (gemeinsame dB-Decke); bei der Zeit
+fehlte es.
+
+`cropSpectrogramMatrix()` schneidet jede Ansicht auf das **gemeinsame Fenster**
+zu — die kürzere der beiden Aufnahmen. Danach sind alle gleich lang, und die
+Streckung auf die volle Tiefe ist für alle dieselbe Abbildung. Ein Chip
+`⏱ Gleiche Zeit` (Vorgabe an) schaltet auf die ganze Aufnahme zurück, wenn man
+sie einzeln ansehen will.
+
+Was **nicht** passiert: Kürzeres wird nie gestreckt. Lieber ein ehrlich
+kürzeres Gebirge als eine erfundene Zeit.
+
+### Die Richtung: „Mehr oder weniger"
+
+`max(0, …)` heißt: Was neu dazugekommen ist, bleibt stehen; was **verschwunden**
+ist, wird zu Null — unsichtbar und unhörbar. Wegen α = 1,6 verschwindet sogar,
+was nur leiser geworden ist.
+
+Für das Ohr ist das richtig: Ein Ton, der fehlt, lässt sich nicht abspielen.
+Für das Auge ist es falsch. „Der Lüfter läuft nicht mehr" ist oft
+aussagekräftiger als „da ist etwas Neues".
+
+`signedDifferenceMatrix()` rechnet je Anzeigeband und Zeitschritt
+
+```
+Δ dB = Pegel(Messung) − Pegel(Normalzustand) − Versatz
+```
+
+Höhe = Betrag, Farbe = Richtung: warm heißt lauter geworden, kalt leiser, in
+der Mitte ein neutrales Grau. Nicht Turbo — ein Regenbogen hat keine Mitte und
+kein Vorzeichen.
+
+**Der Versatz ist ein Median, kein Mittelwert.** Zwei Aufnahmen derselben
+Maschine unterscheiden sich fast immer im Gesamtpegel; ohne Ausgleich wäre das
+Bild einfarbig. Der Median ist unempfindlich gegen wenige stark veränderte
+Bänder — und die sind genau das, was gesucht wird. Ein Mittelwert würde einen
+kräftigen neuen Ton in den Versatz einrechnen und ihn damit teilweise selbst
+wieder wegkürzen. Falsifiziert: Mit Mittelwert statt Median fallen drei der
+17 Prüfungen um, darunter „lässt sich von einem einzelnen starken Band nicht
+den Versatz verbiegen".
+
+**Die Höhe bedeutet hier etwas anderes**, und die Achse sagt das auch: „gleich"
+am Boden, „±N dB" an der Spitze — statt „−50 dB" und „0 dB". Dieselbe Höhe
+bedeutet sonst zweierlei. Aus demselben Grund bleibt die Vorzeichen-Ansicht aus
+der gemeinsamen dB-Decke heraus: Ein Abstand und ein Schalldruck gehören nicht
+auf eine Skala.
+
+### Was gemessen wird
+
+17 Unit-Tests auf reinen Funktionen — unter anderem: ein neues Band gilt als
+„lauter", ein verschwundenes als „leiser", **ein reiner Pegelunterschied gilt
+als keine Veränderung** (Mikrofon 6 dB näher darf nicht rot leuchten), der
+Betrag wird gedeckelt, Zeitachse und Zeilen kommen von der Messung.
+
+Im Browser prüft `durchlauf` Schritt 14 jetzt nicht mehr, ob eine Leinwand
+Maße hat — das war derselbe blinde Fleck wie einst beim Fingerabdruck —,
+sondern ob die **Höhenachse** „gleich" und „±N dB" trägt. Steht das da, ist die
+Vorzeichen-Matrix wirklich durchgelaufen. Falsifiziert: Ohne die Angabe, dass
+die Höhe ein Unterschied ist, meldet Schritt 14 „Richtungsansicht LEER".
+
+### Was offen bleibt
+
+Die **zyklussynchrone** Stufe. Bei einem Motor im Leerlauf steckt das normale
+Tackern in der Referenz nur zeitweise; im Mittelwert wird es verschmiert und
+erscheint mit kleinerem Pegel, als es im Moment des Schlags hat. Rahmenweise
+verglichen überragt es dieses Mittel dann — **das völlig normale Tackern landet
+im „Unterschied"**, und dazwischen wird über-subtrahiert. Die Bausteine dafür
+liegen schon in `core/ml/engine/temporalCycle.ts` (`detectCyclePeriod`,
+`alignPhase`, `buildCycleTemplate`): Statt eines Mittelspektrums ein
+**Phasenprofil**, und jeder Messrahmen gegen das Profil seiner eigenen Phase.
+
+Nicht gebaut, weil es echte Maschinenaufnahmen zum Beurteilen braucht: Ob ein
+Phasenprofil ein normales Tackern wirklich auslöscht, entscheidet das Ohr an
+einer laufenden Maschine, nicht ein synthetischer Testton.
+
+Ebenfalls offen: **„Nicht mehr da" als vierte Hörquelle.** Für das Ohr wäre das
+dieselbe Funktion mit vertauschten Rollen — `resynthesizeResidual(ref,
+measProfile, …)`. Erst zeigt das Bild, ob es sich lohnt.
+
 **S4d — Audiodateien als Normalzustand oder Messung importieren.**
 _Vorgemerkt, noch nicht umgesetzt._ Eine vorhandene Tondatei vom Smartphone,
 Rekorder oder Schreibtisch soll denselben Analyseweg benutzen können wie eine

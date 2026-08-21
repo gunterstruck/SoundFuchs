@@ -637,19 +637,70 @@ try {
     .isVisible()
     .catch(() => false);
   let leinwand = false;
+  let richtung = '';
   if (gebirgePanel) {
     await tippeWennDa('.spectro3d-panel .listen-btn', 3500);
     leinwand = await page.evaluate(() => {
       const c = document.querySelector('.spectro3d canvas');
       return Boolean(c && c.width > 0 && c.height > 0);
     });
+
+    /**
+     * Die vierte Ansicht: der Unterschied MIT Richtung.
+     *
+     * Sie ist das Einzige, was zeigt, wenn im Normalzustand etwas war, das
+     * jetzt fehlt — der Hörpfad schneidet diese Richtung ab (`max(0, …)`).
+     * Geprüft wird nicht, dass ein Chip dasteht, sondern dass nach dem Tipp
+     * wirklich etwas gezeichnet ist.
+     */
+    const chips = await page.evaluate(() =>
+      [...document.querySelectorAll('.spectro3d-panel .listen-btn')].map((b) =>
+        b.textContent.trim()
+      )
+    );
+    const vorzeichenChip = chips.findIndex((x) => /mehr oder weniger/i.test(x));
+    if (vorzeichenChip >= 0) {
+      await page.evaluate((i) => {
+        document.querySelectorAll('.spectro3d-panel .listen-btn')[i]?.click();
+      }, vorzeichenChip);
+      await page.waitForTimeout(3500);
+      /**
+       * Nicht „eine Leinwand ist da", sondern „es ist die richtige".
+       *
+       * Eine Leinwand mit Maßen sagt nichts — beim Fingerabdruck war genau das
+       * schon einmal der blinde Fleck. Die Höhenachse beschriftet sich nach der
+       * BEDEUTUNG der Höhe: Bei einem Pegel steht dort „0 dB", beim
+       * Unterschied „gleich" und „±N dB". Steht das da, ist die
+       * Vorzeichen-Matrix wirklich durchgelaufen.
+       */
+      const gemalt = await page.evaluate(() => {
+        const c = document.querySelector('.spectro3d canvas');
+        if (!(c && c.width > 0 && c.height > 0)) return false;
+        const achse = [...document.querySelectorAll('.spectro3d-label')].map((e) =>
+          e.textContent.trim()
+        );
+        return achse.includes('gleich') && achse.some((x) => /^±\d+ dB$/.test(x));
+      });
+      const zeitChip = chips.some((x) => /gleiche zeit|ganze aufnahme/i.test(x));
+      richtung = `Richtungsansicht ${gemalt ? 'gezeichnet' : 'LEER'}, Zeitfenster ${
+        zeitChip ? 'schaltbar' : 'FEHLT'
+      }`;
+      leinwand = leinwand && gemalt && zeitChip;
+    } else {
+      richtung = 'Richtungsansicht FEHLT';
+      leinwand = false;
+    }
   }
 
   pruefe(
     14,
     '3D-Gebirge',
     gebirgePanel && leinwand,
-    gebirgePanel ? (leinwand ? 'Leinwand steht' : 'Panel da, aber keine Leinwand') : 'kein Panel'
+    gebirgePanel
+      ? leinwand
+        ? `Leinwand steht · ${richtung}`
+        : `Panel da, aber ${richtung || 'keine Leinwand'}`
+      : 'kein Panel'
   );
 
   if (seitenfehler.length) {

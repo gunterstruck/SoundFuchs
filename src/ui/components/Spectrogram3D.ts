@@ -69,6 +69,37 @@ export function turboColor(v: number): [number, number, number] {
   return [stops[stops.length - 1][1], stops[stops.length - 1][2], stops[stops.length - 1][3]];
 }
 
+/**
+ * Zweiseitiger Verlauf für den Unterschied mit Vorzeichen.
+ *
+ * Warm (Orange → Rot) heißt „lauter als im Normalzustand", kalt (Türkis →
+ * Blau) „leiser". In der Mitte, wo sich nichts geändert hat, treffen sich beide
+ * in einem neutralen Grau — sonst sähe „kein Unterschied" nach einer Aussage
+ * aus.
+ *
+ * Nicht Turbo: Ein Regenbogen hat keine Mitte und kein Vorzeichen. Er wäre für
+ * einen Unterschied die falsche Skala, egal wie hübsch er ist.
+ *
+ * Rot/Blau ist zusätzlich die verbreitetste Rot-Grün-Schwäche unbeschadet
+ * lesbar — und die Richtung steht ohnehin nicht nur in der Farbe: Sie steht in
+ * der Beschriftung der Höhenachse.
+ *
+ * Exportiert für Unit-Tests.
+ */
+export function signedColor(v: number, sign: number): [number, number, number] {
+  const x = Math.min(1, Math.max(0, v));
+  const neutral: [number, number, number] = [0.42, 0.44, 0.47];
+  const ziel: [number, number, number] =
+    sign >= 0
+      ? [0.9, 0.28, 0.12] // lauter geworden
+      : [0.1, 0.52, 0.82]; // leiser geworden
+  return [
+    neutral[0] + (ziel[0] - neutral[0]) * x,
+    neutral[1] + (ziel[1] - neutral[1]) * x,
+    neutral[2] + (ziel[2] - neutral[2]) * x,
+  ];
+}
+
 export interface HeightFieldMesh {
   positions: Float32Array; // xyz je Vertex
   colors: Float32Array; // rgb je Vertex
@@ -82,7 +113,7 @@ export interface HeightFieldMesh {
  * (Zeile 0 = hinten), Y = Intensität × HEIGHT_SCALE. Exportiert für Tests.
  */
 export function buildHeightFieldMesh(matrix: SpectrogramMatrix): HeightFieldMesh {
-  const { rows, cols, values } = matrix;
+  const { rows, cols, values, signs } = matrix;
   const vertexCount = rows * cols;
   const positions = new Float32Array(vertexCount * 3);
   const colors = new Float32Array(vertexCount * 3);
@@ -94,7 +125,7 @@ export function buildHeightFieldMesh(matrix: SpectrogramMatrix): HeightFieldMesh
       positions[i * 3] = cols > 1 ? (c / (cols - 1)) * 2 - 1 : 0;
       positions[i * 3 + 1] = v * HEIGHT_SCALE;
       positions[i * 3 + 2] = rows > 1 ? (r / (rows - 1)) * 2 - 1 : 0;
-      const [cr, cg, cb] = turboColor(v);
+      const [cr, cg, cb] = signs ? signedColor(v, signs[i]) : turboColor(v);
       // Leichte Höhen-Abdunklung der Täler → Tiefenwirkung ohne Licht-Shader
       const shade = 0.55 + 0.45 * v;
       colors[i * 3] = cr * shade;
@@ -225,8 +256,15 @@ export function buildAxisGeometry(matrix: SpectrogramMatrix): AxisGeometry {
   // unter dem Maximum der Aufnahme. Zwei Marken genügen, um die Höhe lesbar zu
   // machen: Boden = Fensteruntergrenze, Spitze = lautester Punkt.
   line(-1, 0, -1, -1, HEIGHT_SCALE, -1);
-  labels.push({ text: `−${SPECTROGRAM_DB_RANGE} dB`, x: -1, y: 0, z: -1, axis: 'level' });
-  labels.push({ text: '0 dB', x: -1, y: HEIGHT_SCALE, z: -1, axis: 'level' });
+  if (matrix.hoehe === 'unterschied') {
+    // Hier ist die Höhe ein ABSTAND zum Normalzustand, kein Pegel. Dieselbe
+    // Kante mit derselben Beschriftung wäre an dieser Stelle schlicht falsch.
+    labels.push({ text: 'gleich', x: -1, y: 0, z: -1, axis: 'level' });
+    labels.push({ text: `±${matrix.maxDb} dB`, x: -1, y: HEIGHT_SCALE, z: -1, axis: 'level' });
+  } else {
+    labels.push({ text: `−${SPECTROGRAM_DB_RANGE} dB`, x: -1, y: 0, z: -1, axis: 'level' });
+    labels.push({ text: '0 dB', x: -1, y: HEIGHT_SCALE, z: -1, axis: 'level' });
+  }
 
   const positions = new Float32Array(pos);
   const vertexCount = positions.length / 3;

@@ -21,16 +21,18 @@ import {
 import { DifferenceStrengthIndicator } from './DifferenceStrengthIndicator.js';
 import {
   compensateSpectrogramGain,
+  cropSpectrogramMatrix,
   rescaleSpectrogramMatrix,
   type SpectrogramMatrix,
 } from '@core/dsp/spectrogram.js';
 import { getFineSpectrogramMatrix } from '@core/dsp/fineSpectrogram.js';
 import { DEFAULT_DSP_CONFIG } from '@core/dsp/features.js';
 import { getDifferenceTake } from '@core/audio/differenceTake.js';
+import { signedDifferenceMatrix } from '@core/dsp/signedDifference.js';
 import { t } from '../../i18n/index.js';
 import { logger } from '@utils/logger.js';
 
-export type Spectro3DSource = 'measurement' | 'reference' | 'difference';
+export type Spectro3DSource = 'measurement' | 'reference' | 'difference' | 'signed';
 
 export interface Spectrogram3DPanelOptions {
   reference?: AudioBuffer | null;
@@ -58,6 +60,14 @@ export class Spectrogram3DPanel {
   private cameraState: Spectrogram3DCameraState = { ...DEFAULT_SPECTROGRAM_CAMERA };
   private strength = new DifferenceStrengthIndicator();
   private sharedScale = false;
+  /**
+   * Alle Ansichten auf dieselbe Zeitspanne — Vorgabe an.
+   *
+   * Wer die volle Messung sehen will, schaltet es ab. Beim VERGLEICHEN ist es
+   * die Bedingung dafür, dass einer stattfindet.
+   */
+  private gleicheZeit = true;
+  private zeit: HTMLButtonElement;
   private mountRequest = 0;
 
   /** WebGL vorhanden? Ohne wird die Ansicht gar nicht angeboten. */
@@ -78,6 +88,8 @@ export class Spectrogram3DPanel {
     if (this.reference) sources.push('reference');
     // Differenz braucht beide Aufnahmen.
     if (this.reference && this.measurement) sources.push('difference');
+    // „Mehr oder weniger" — die Richtung, die der Hörpfad nicht zeigen kann.
+    if (this.reference && this.measurement) sources.push('signed');
 
     this.hasContent = sources.length > 0 && Spectrogram3DPanel.isSupported();
 
@@ -117,6 +129,19 @@ export class Spectrogram3DPanel {
     this.scale.style.display = 'none';
     row.appendChild(this.scale);
 
+    this.zeit = this.makeChip(t('spectro3d.sameTime'), () => {
+      this.gleicheZeit = !this.gleicheZeit;
+      this.zeit.setAttribute('aria-pressed', this.gleicheZeit ? 'true' : 'false');
+      this.zeit.textContent = this.gleicheZeit
+        ? t('spectro3d.sameTime')
+        : t('spectro3d.fullTime');
+      if (this.activeKey) this.doMount(this.activeKey);
+    });
+    this.zeit.classList.add('spectro3d-time');
+    this.zeit.setAttribute('aria-pressed', 'true');
+    this.zeit.style.display = 'none';
+    row.appendChild(this.zeit);
+
     root.appendChild(row);
     root.appendChild(this.strength.element);
     root.appendChild(this.host);
@@ -127,6 +152,7 @@ export class Spectrogram3DPanel {
   private labelOf(key: Spectro3DSource): string {
     if (key === 'measurement') return t('spectro3d.sourceMeasurement');
     if (key === 'reference') return t('spectro3d.sourceReference');
+    if (key === 'signed') return t('spectro3d.sourceSigned');
     return t('spectro3d.sourceDifference');
   }
 
@@ -148,6 +174,10 @@ export class Spectrogram3DPanel {
       for (const c of this.chips) c.el.style.display = multi ? '' : 'none';
       this.reset.style.display = '';
       this.scale.style.display = multi ? '' : 'none';
+      // Ein gemeinsames Zeitfenster ergibt nur Sinn, wenn es etwas zu
+      // vergleichen gibt — bei einer einzigen Quelle wäre es eine Kürzung ohne
+      // Gegenüber.
+      this.zeit.style.display = multi ? '' : 'none';
       const key = this.preferredKey ?? this.chips[0]?.key;
       if (key) this.mount(key);
     } else {
@@ -156,6 +186,7 @@ export class Spectrogram3DPanel {
       for (const c of this.chips) c.el.style.display = 'none';
       this.reset.style.display = 'none';
       this.scale.style.display = 'none';
+      this.zeit.style.display = 'none';
       if (this.view) this.cameraState = this.view.cameraState();
       this.view?.destroy();
       this.view = null;
@@ -185,6 +216,21 @@ export class Spectrogram3DPanel {
           take && normalized
             ? compensateSpectrogramGain(normalized, take.metrics.listeningGain)
             : null;
+      } else if (key === 'signed') {
+        /**
+         * Der Unterschied MIT Richtung.
+         *
+         * Gerechnet über denselben Anzeigebändern, aus denen die anderen drei
+         * Ansichten bestehen — eine eigene Frequenzachse wäre nicht
+         * vergleichbar. Höhe = Betrag, Farbe = Richtung.
+         */
+        const refM = this.reference
+          ? getFineSpectrogramMatrix(this.reference, DEFAULT_DSP_CONFIG.hopSize)
+          : null;
+        const measM = this.measurement
+          ? getFineSpectrogramMatrix(this.measurement, DEFAULT_DSP_CONFIG.hopSize)
+          : null;
+        matrix = refM && measM ? signedDifferenceMatrix(refM, measM) : null;
       } else {
         const buffer = key === 'measurement' ? this.measurement : this.reference;
         // Feine Auflösung (2,93 Hz statt 46,875 Hz): unten ein FFT-Bin je Spalte.
@@ -232,14 +278,46 @@ export class Spectrogram3DPanel {
       this.activeKey = null;
       return;
     }
+    /**
+     * Gemeinsames ZEITFENSTER für alle Ansichten.
+     *
+     * Die Geometrie legt die Zeilen auf eine feste Tiefe um. Solange
+     * Normalzustand (10 s), Messung (25 s) und Differenz (auf 12 s gekappt)
+     * verschieden lang sind, füllen alle drei dieselbe Tiefe — derselbe
+     * Vorgang wandert beim Umschalten und wirkt einmal dichter, einmal
+     * gedehnter. Beim dB-Maßstab ist das längst gelöst; bei der Zeit fehlte es.
+     *
+     * Das Fenster kommt aus den Aufnahmen selbst, nicht aus den Matrizen: So
+     * muss nicht jede Ansicht gebaut werden, nur um die kürzeste zu kennen.
+     * Zuschneiden verkürzt nur — eine kürzere Ansicht wird nie gestreckt.
+     */
+    const fenster = Math.min(
+      this.reference?.duration ?? Infinity,
+      this.measurement?.duration ?? Infinity
+    );
+    const imFenster =
+      this.gleicheZeit && Number.isFinite(fenster)
+        ? cropSpectrogramMatrix(sourceMatrix, fenster)
+        : sourceMatrix;
+
+    /**
+     * Der gemeinsame dB-Deckel gilt nur für PEGEL-Ansichten.
+     *
+     * Bei der Ansicht mit Vorzeichen ist die Höhe ein Abstand zum
+     * Normalzustand, kein Schalldruck. Ihren Wert in denselben Topf zu werfen
+     * hieße, zwei verschiedene Größen auf eine Skala zu zwingen.
+     */
     const ceiling = Math.max(
       ...[...this.matrixCache.values()]
         .filter((matrix): matrix is SpectrogramMatrix => Boolean(matrix))
-        .map((matrix) => matrix.maxDb)
+        .filter((matrix) => matrix.hoehe !== 'unterschied')
+        .map((matrix) => matrix.maxDb),
+      -Infinity
     );
-    const matrix = this.sharedScale
-      ? rescaleSpectrogramMatrix(sourceMatrix, ceiling)
-      : sourceMatrix;
+    const matrix =
+      this.sharedScale && imFenster.hoehe !== 'unterschied' && Number.isFinite(ceiling)
+        ? rescaleSpectrogramMatrix(imFenster, ceiling)
+        : imFenster;
     this.host.innerHTML = '';
     if (this.view) this.cameraState = this.view.cameraState();
     this.view?.destroy();
