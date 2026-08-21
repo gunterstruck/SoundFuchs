@@ -59,6 +59,64 @@ export interface SpectrogramMatrix {
    * proportional zur Frequenz ist.
    */
   bandEdgesHz: Float32Array;
+  /**
+   * Richtung je Zelle: +1 lauter, −1 leiser als der Vergleich.
+   *
+   * Nur bei der Unterschiedsansicht mit Vorzeichen belegt
+   * (`dsp/signedDifference.ts`). Bei einer Pegelansicht gibt es keine Richtung
+   * — dort fehlt das Feld, und die Farbe kommt wie bisher aus der Intensität.
+   */
+  signs?: Int8Array;
+  /**
+   * Was die Höhe bedeutet. `pegel` (Vorgabe) ist ein Schalldruck über der
+   * Fenstergrenze, `unterschied` ein Abstand zum Normalzustand. Die Achse muss
+   * das sagen dürfen: Dieselbe Höhe bedeutet sonst zweierlei.
+   */
+  hoehe?: 'pegel' | 'unterschied';
+}
+
+/**
+ * EIN GEMEINSAMES ZEITFENSTER FÜR DEN VERGLEICH
+ *
+ * Die Geometrie legt die Zeilen einer Matrix auf eine FESTE Tiefe um
+ * (`z = r/(rows−1) · 2 − 1`). Solange die drei Ansichten verschieden lang sind,
+ * heißt das: Ein Normalzustand von 10 s, eine Messung von 25 s und eine auf
+ * 12 s gekappte Differenz füllen alle drei dieselbe Tiefe. Die Beschriftung
+ * stimmt — sie kommt aus `durationSec` —, aber die FORM nicht: Derselbe Vorgang
+ * wandert beim Umschalten und wirkt in der einen Ansicht dichter als in der
+ * anderen.
+ *
+ * Beim Intensitätsmaßstab ist das längst gelöst (gemeinsame dB-Decke, siehe
+ * `rescaleSpectrogramMatrix`). Bei der Zeit fehlte es. Ein Vergleich, bei dem
+ * die Achse zwischen den Ansichten den Maßstab wechselt, ist keiner.
+ *
+ * Diese Funktion schneidet eine Matrix auf die ersten `sekunden` zu. Bekommen
+ * alle Ansichten dasselbe Fenster, sind sie danach gleich lang — und die
+ * Streckung auf die volle Tiefe ist keine Verzerrung mehr, sondern für alle
+ * dieselbe Abbildung.
+ *
+ * Kürzer als das Fenster wird nicht gestreckt: Eine Matrix, die weniger Zeit
+ * abdeckt, kommt unverändert zurück. Lieber ein ehrlich kürzeres Gebirge als
+ * eine erfundene Zeit.
+ */
+export function cropSpectrogramMatrix(
+  matrix: SpectrogramMatrix,
+  sekunden: number
+): SpectrogramMatrix {
+  if (!Number.isFinite(sekunden) || sekunden <= 0) return matrix;
+  if (matrix.rows < 2 || matrix.durationSec <= sekunden + 1e-9) return matrix;
+
+  // Zeile r deckt [r · zeilendauer, (r+1) · zeilendauer) ab.
+  const zeilendauer = matrix.durationSec / matrix.rows;
+  const zeilen = Math.max(2, Math.min(matrix.rows, Math.round(sekunden / zeilendauer)));
+  if (zeilen >= matrix.rows) return matrix;
+
+  return {
+    ...matrix,
+    values: matrix.values.slice(0, zeilen * matrix.cols),
+    rows: zeilen,
+    durationSec: zeilen * zeilendauer,
+  };
 }
 
 /**
