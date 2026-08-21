@@ -1665,6 +1665,120 @@ höher.
 | Höhe des Klangbilds | 240 px | **287 px** (Handy) |
 | ungenutzter Bildschirm (Fall C) | 173 px | **126 px** |
 
+### S4i — Die Standortebene bekommt dieselbe Behandlung (21.08.2026)
+
+Die Maschinenebene ist über sieben Schnitte gemessen, korrigiert und bewacht
+worden. Die Ebene davor — die, auf der ein Techniker ankommt — hatte in
+derselben Zeit **keinen einzigen Wächter**. Der Durchlauf ging über sie hinweg
+zur Maschine, und `wow` fing erst dort an zu zählen.
+
+Eine Messung von Hand hat nachgeholt, was seither niemand gefragt hat:
+
+```
+=== handy (390 × 844) ===
+  Antippziele:  4 × Maschinenzeile 42 px, „Neue Maschine anlegen" 37 px
+  Kontrast:     Kachelbeschriftungen 4,3:1 · „Referenz fehlt" 4,2:1
+                „Neue Maschine anlegen" 3,7:1
+  ungenutzt:    310 px von 844
+
+=== handy (dunkel) ===
+  near-name „Kompressor 2"          1:1     ← die berührte Zeile
+  standort-maschine-lage            1,3:1
+```
+
+**Der dunkle Befund ist der interessanteste.** `--color-primary-light`
+(`#ccfbf1`) ist die Fläche, die der Stamm einer Zeile unter dem Finger gibt.
+Sie ist hell gedacht und blieb im Dunkeln hell, während der Text hell wurde:
+Der Maschinenname verschwand **genau in dem Moment, in dem man ihn antippte**.
+Auf einem Bildschirmfoto sieht man das nie — dort hält niemand den Finger.
+
+Der Token wird trotzdem nicht umgebogen: Er ist im Stamm auch der Fokusring von
+Eingabefeldern, und ein Fokusring in Flächenfarbe wäre der nächste unsichtbare
+Zustand. Umgestellt wird nur die Fläche der Zeile. Im Dunkeln sinkt sie unter
+dem Finger ab, statt aufzuleuchten — 9,9:1 für den Nebentext, 13,2:1 für den
+Namen.
+
+### Was die Ebene jetzt sagt
+
+**Ein Satz statt drei Kacheln.** Dort stand „4 Maschinen · 0 auffällig ·
+4 ungeprüft" in drei Kacheln, 66 px hoch, darunter die Überschrift „Maschinen",
+darunter die Maschinen — dasselbe Wort dreimal auf 150 px. Und bei vier
+ungeprüften Maschinen ist „0 auffällig" keine Auskunft, sondern die Folge davon,
+dass noch nichts gemessen wurde. Jetzt: **„4 Maschinen · noch keine geprüft"**.
+
+**Jede Zeile sagt, was mit ihrer Maschine los ist** — und zwar in denselben
+Worten wie die Maschinenseite selbst (`maschine.lage*`). Wer in der Liste
+„Klingt wie der Normalzustand" liest und die Zeile antippt, liest dort denselben
+Satz. Vorher stand an dieser Stelle „Referenz fehlt": die Sprache der Datenbank,
+nicht die der Werkstatt. Die zweite Zeile ist zugleich die Größe — 56 px statt
+42.
+
+**Anlegen ist nicht die Aufgabe.** „➕ Neue Maschine anlegen" war der eine große
+grüne Knopf dieser Seite. Das sagte dem Techniker, der gerade angekommen ist:
+Deine Aufgabe hier ist es, Maschinen anzulegen. Seine Aufgabe ist es, sie zu
+prüfen — und diese Handlung ist die Liste. Anlegen ist jetzt ein gewöhnlicher
+Knopf mit 44 px; die dominante Handlung ist es nur auf einem leeren Standort,
+wo es tatsächlich das Einzige ist, was man tun kann.
+
+**Am Schreibtisch zwei Spalten.** Gemessen bei 1440 × 900 stand dort eine Zeile
+und 502 px Leere darunter.
+
+### Was NICHT gemacht wurde, und warum
+
+Für den ungenutzten Bildschirm gibt es auf dieser Ebene **absichtlich keine
+Grenze**. Auf der Maschinenebene war leerer Platz ein Befund: Dort lag das Beste
+vier Tipps entfernt, während die halbe Seite leer stand. Hier hängt die Höhe an
+der Zahl der Maschinen — ein Standort mit vier Maschinen füllt kein Handy, und
+das ist eine Tatsache über den Standort, keine über den Entwurf. Eine Obergrenze
+würde zum Auffüllen zwingen, und Auffüllen ist genau das, was diese Ebene vorher
+hatte.
+
+### Was das Bauen an den Regeln gefunden hat
+
+Die erste Fassung der Zwei-Spalten-Regel stand als `@media (min-width: 900px)`
+da. `gesichter.test.ts` hat sie abgewiesen, und zu Recht: Eine eigene Schwelle
+bei 900 trifft das Tablet hochkant und sonst niemanden — ein drittes Gesicht,
+entstanden nicht aus Absicht, sondern aus Bequemlichkeit. Jetzt steht dort
+`DESKTOP_FACE_MEDIA`, wortgleich.
+
+### Der Wächter, den es dafür jetzt gibt
+
+`wow` misst die Standortebene, bevor sie verlassen wird — in allen fünf
+Formaten, hell und dunkel: Antippgrößen, Kontrast, dass jede Zeile ihre Lage
+sagt, dass der Standort seine Lage in einem Satz sagt, dass keine Kachel und
+keine Überschrift über einer Liste steht, die sich selbst erklärt, und dass
+neben dieser Liste keine dominante Handlung steht.
+
+Die Lesbarkeitsmessung ist dafür aus der Maschinenmessung herausgelöst worden
+und gilt jetzt für jede Ebene. Dass die Standortebene ihre Befunde so lange
+behalten durfte, lag nicht daran, dass sie schwer zu finden waren.
+
+Alle Prüfungen absichtlich falsifiziert:
+
+```
+✗ handy/Standort: Antippziele unter 44 px — near-row standort-maschine(42×362) …
+✗ handy/Standort: eine Maschinenzeile sagt nicht, was mit ihrer Maschine los ist
+✗ handy/Standort: 1 dominante Handlungen neben einer Liste, die selbst die Handlung ist
+✗ handy-dunkel/Standort: near-name „Kompressor 3" 1:1 statt 4.5:1
+```
+
+| | vor S4i | jetzt |
+|---|---|---|
+| Höhe einer Maschinenzeile | 42 px | **56 px** |
+| „Neue Maschine anlegen" | 37 px (Handy), 33 px (Tisch), dominant | **44 px, sekundär** |
+| Kontrast Maschinenname, berührt (dunkel) | **1:1** | **13,2:1** |
+| Kontrast Nebentext | 4,2–4,3:1 | **7:1** |
+| Kacheln + Überschriften über der Liste | 3 + 1 | **0 + 0** |
+| Was eine Zeile über ihre Maschine sagt | „Referenz fehlt" | **„Noch kein Normalzustand"** |
+| Wächter auf dieser Ebene | **0** | **7, in 5 Formaten** |
+
+**S4j — Die Runde.** _offen, und der nächste naheliegende Schritt._ Ein
+Techniker prüft an einem Standort Maschine für Maschine und kehrt dazwischen
+jedes Mal zur Liste zurück. Nach einer Prüfung könnte die Maschinenseite
+anbieten, was ohnehin als Nächstes drankommt — „Nächste: Kompressor 3". Das ist
+keine neue Ebene, sondern ein Tipp weniger je Maschine, und es gäbe der
+Standortebene ihre eigentliche Bedeutung: die Runde, nicht das Verzeichnis.
+
 **S4d — Audiodateien als Normalzustand oder Messung importieren.**
 _Vorgemerkt, noch nicht umgesetzt._ Eine vorhandene Tondatei vom Smartphone,
 Rekorder oder Schreibtisch soll denselben Analyseweg benutzen können wie eine
