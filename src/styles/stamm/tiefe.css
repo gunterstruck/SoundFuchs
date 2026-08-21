@@ -302,12 +302,24 @@ body.tiefe-arbeit #karte-bestandswege {
   margin: 0 0 4px;
 }
 
-/* Die eine Handlung. Groß, weil sie die einzige ist — nicht, um zu schreien. */
+/* Die eine Handlung. Groß, weil sie die einzige ist — nicht, um zu schreien.
+
+   Der dunklere Grünton ist keine eigene Farbe: Es ist `--color-primary-dark`,
+   der Ton, den der Stamm für dieselbe Fläche beim Überfahren benutzt. Gemessen
+   am 21.08.2026 in allen vier Formaten: Die Beschriftung stand mit **3,7:1**
+   auf `--color-primary` — unter den 4,5:1, die 16,8 px in Halbfett brauchen,
+   und das ausgerechnet auf dem wichtigsten Knopf der Anwendung. Mit dem
+   dunkleren Ton sind es 5,5:1. Die Palette bleibt dieselbe. */
 .maschine-aktion {
   width: 100%;
   margin-top: 18px;
   min-height: 52px;
   font-size: 1.05rem;
+}
+
+.maschine-aktion.primary {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
 }
 
 /* „Stoppen" während der Aufnahme ist der Notausgang, nicht das Ziel. Es sieht
@@ -492,12 +504,19 @@ body.tiefe-arbeit #karte-bestandswege {
 }
 
 /* Das Bild IST der Knopf — deshalb ein echter `button` und kein Kasten mit
-   Klickzuhörer. Wer mit der Tastatur kommt, muss ihn erreichen. */
+   Klickzuhörer. Wer mit der Tastatur kommt, muss ihn erreichen.
+
+   Die Höhe ist nicht fest: Als die Aktionszeile den Rückweg aufnahm und die
+   doppelte Statuszeile verschwand, wurden 88 px frei. Freier Platz auf dieser
+   Seite ist kein Gewinn — die halbe leere Seite war ja der Anlass für das
+   Klangbild. Also bekommt ihn das Bild. Untergrenze bleibt die gemessene
+   Briefmarke, Obergrenze verhindert, dass das flache Bild auf dem Tablet die
+   Handlung aus dem Sichtfeld schiebt. */
 .klangbild-flaeche {
   display: block;
   position: relative;
   width: 100%;
-  height: 240px;
+  height: clamp(240px, 34vh, 320px);
   padding: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -635,4 +654,70 @@ body.tiefe-arbeit #karte-bestandswege {
 
 .maschine-briefing:hover {
   border-color: var(--color-primary);
+}
+
+/* ── Rückweg und Handlung in einer Zeile ────────────────────────────────────
+
+   „Wohin man geht" und „was man tut" nebeneinander. Vorher lag der Rückweg
+   allein ganz oben und darunter kam fast nichts — auf dem Handy rund 60 px
+   Luft an der wertvollsten Stelle der Seite.
+
+   Die Handlung bleibt dominant: gefüllt, höher, und sie nimmt den Rest der
+   Zeile. Der Rückweg behält seine Pillenform und nur seine eigene Breite. */
+.maschine-aktionszeile {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* Der Rückweg gehört dem Scharnier und ist dort oben klebend. In dieser Zeile
+   ist er ein gewöhnliches Element — sonst klebte er beim Scrollen aus ihr
+   heraus. */
+.maschine-aktionszeile > .tiefe-zurueck {
+  position: static;
+  flex: 0 0 auto;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.maschine-aktionszeile > .maschine-aktion {
+  flex: 1 1 auto;
+  width: auto;
+  margin-top: 0;
+}
+
+/* ── Der Dunkelmodus hinter dem Scharnier ───────────────────────────────────
+
+   Gemessen am 21.08.2026 auf dem Handy: Maschinenname und Urteil hatten einen
+   Kontrast von **1:1** — rgb(15,23,42) auf rgb(15,23,42). Der Text stand da
+   und war unsichtbar.
+
+   Die Ursache ist genau die Naht, für die es diese Datei gibt: Der Stamm ist
+   hell und kennt keinen Dunkelmodus, seine Token (`--color-text` und
+   Geschwister) sind fest hell gedacht. SoundFuchs hat einen Dunkelmodus, und
+   dort wird `--bg-primary` zu #0f172a — demselben Wert, den der Stamm für
+   TEXT vorsieht.
+
+   Der Stamm wird deshalb nicht angefasst (§0h). Stattdessen bekommen seine
+   Farbtoken hinter dem Scharnier die Werte der SoundFuchs-Palette. Vor dem
+   Scharnier bleibt der Stamm, wie er ist. */
+@media (prefers-color-scheme: dark) {
+  .zanobo-tiefe {
+    --color-text: var(--text-primary);
+    --color-text-muted: var(--text-secondary);
+    --color-surface: var(--bg-card);
+    --color-surface-2: var(--bg-tertiary);
+    --color-border: var(--border-color);
+    color: var(--text-primary);
+  }
+
+  /* Überschriften und Fließtext erben sonst weiter die Stamm-Farbe aus der
+     alten `style.css`. */
+  .maschinen-ansicht,
+  .maschinen-ansicht h2,
+  .standort-ansicht,
+  .standort-ansicht h2 {
+    color: var(--text-primary);
+  }
 }

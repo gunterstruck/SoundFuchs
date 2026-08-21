@@ -222,6 +222,19 @@ let lupe: ListenPanel | null = null;
  */
 let klangbild: Klangbild | null = null;
 
+/**
+ * Den Rückweg dorthin zurückhängen, wo das Scharnier ihn erwartet.
+ *
+ * Aufzurufen, bevor die Maschinenfläche geleert wird und wenn eine andere
+ * Ebene aufgeht — sonst verschwände er mit der Fläche, die ihn gerade
+ * beherbergt, oder er würde mit ihr ausgeblendet.
+ */
+function rueckwegNachHause(): void {
+  const wurzel = document.getElementById('zanobo-tiefe');
+  const knopf = document.querySelector<HTMLElement>('.tiefe-zurueck');
+  if (wurzel && knopf && knopf.parentElement !== wurzel) wurzel.prepend(knopf);
+}
+
 function raeumeKlangbildAb(): void {
   klangbild?.destroy();
   klangbild?.element.remove();
@@ -303,6 +316,19 @@ async function zeichne(maschine: Machine): Promise<void> {
   if (!ziel) return;
   raeumeLupeAb();
   raeumeKlangbildAb();
+  /**
+   * Den Rückweg retten, bevor die Fläche geleert wird.
+   *
+   * `.tiefe-zurueck` gehört dem Scharnier und liegt normalerweise oben in
+   * `#zanobo-tiefe`. Auf dieser Ebene steht er in einer Zeile mit der einen
+   * Handlung — dafür wird er hierher UMGEHÄNGT, nicht nachgebaut: Ein zweiter
+   * Rückwärtsknopf wäre eine zweite Stelle mit derselben Beschriftung und
+   * demselben Verhalten, und eine davon wäre irgendwann falsch.
+   *
+   * Umgehängt heißt aber auch: Beim nächsten Zeichnen läge er im Bereich, den
+   * diese Zeile gleich leert. Also erst zurück nach Hause, dann leeren.
+   */
+  rueckwegNachHause();
   ziel.textContent = '';
   ziel.classList.remove('maschinen-ansicht-ergebnis');
 
@@ -330,16 +356,33 @@ async function zeichne(maschine: Machine): Promise<void> {
   titel.textContent = maschine.name;
   kopf.appendChild(titel);
 
-  const lageZeile = document.createElement('p');
-  lageZeile.className = 'maschine-lage';
-  const punkt = document.createElement('span');
-  punkt.className = 'maschine-punkt';
-  punkt.style.background = farbeFuerZustand(
-    zustandZuWert(frisch?.wert ?? letzte?.healthScore ?? null)
-  );
-  punkt.setAttribute('aria-hidden', 'true');
-  lageZeile.append(punkt, urteil(zustand));
-  kopf.appendChild(lageZeile);
+  /**
+   * Punkt und Urteil nur dort, wo sie etwas sagen.
+   *
+   * Im Ruhezustand stand hier „● Bereit zum Prüfen" — direkt über „Zuletzt
+   * 87 % · vor 4 Tagen". Zwei Zeilen für dieselbe Auskunft, und die obere ist
+   * die schwächere: Sie sagt nur, dass ein Normalzustand vorliegt, was der
+   * Prüfknopf ohnehin beweist.
+   *
+   * Im Ergebnis ist es umgekehrt — „Deutliche akustische Abweichung" ist die
+   * Nachricht, und der Punkt daneben trägt die Farbe dazu. Dort bleibt beides
+   * stehen: Farbe allein wäre eine reine Farbcodierung. Ebenso in den
+   * Störungsfällen, wo das Urteil sagt, was zu tun ist.
+   */
+  const urteilZeigen =
+    istErgebnis(zustand) || zustand === 'quality-insufficient' || zustand === 'permission-blocked';
+  if (urteilZeigen) {
+    const lageZeile = document.createElement('p');
+    lageZeile.className = 'maschine-lage';
+    const punkt = document.createElement('span');
+    punkt.className = 'maschine-punkt';
+    punkt.style.background = farbeFuerZustand(
+      zustandZuWert(frisch?.wert ?? letzte?.healthScore ?? null)
+    );
+    punkt.setAttribute('aria-hidden', 'true');
+    lageZeile.append(punkt, urteil(zustand));
+    kopf.appendChild(lageZeile);
+  }
 
   /**
    * Erst der Satz, dann die Zahl.
@@ -415,7 +458,24 @@ async function zeichne(maschine: Machine): Promise<void> {
     // verspricht sie etwas, das sie nicht hat.
     knopf.disabled = true;
   }
-  ziel.appendChild(knopf);
+
+  /**
+   * Rückweg und Handlung in einer Zeile: wohin man geht, und was man tut.
+   *
+   * Vorher lag der Rückweg allein ganz oben, und zwischen ihm und der Handlung
+   * stand fast nichts — auf dem Handy rund 60 px Luft an der wertvollsten
+   * Stelle der Seite.
+   *
+   * Die Handlung bleibt dominant: Sie nimmt den Rest der Zeile, ist gefüllt
+   * und höher. Der Rückweg behält seine Pillenform und nur seine eigene
+   * Breite — er ist kein gleichrangiges Angebot.
+   */
+  const aktionszeile = document.createElement('div');
+  aktionszeile.className = 'maschine-aktionszeile';
+  const rueckweg = document.querySelector<HTMLElement>('.tiefe-zurueck');
+  if (rueckweg) aktionszeile.appendChild(rueckweg);
+  aktionszeile.appendChild(knopf);
+  ziel.appendChild(aktionszeile);
 
   /**
    * Der stützende Satz — aber nicht im Ergebnis.
@@ -770,6 +830,7 @@ export function maschinenansichtAufbauen(abhaengigkeiten: MaschinenansichtDeps):
      * merkt. Die Arbeitsebene zählt nicht als Verlassen — dorthin führt der
      * Weg der Prüfung selbst.
      */
+    if (detail.ebene !== 'maschine') rueckwegNachHause();
     if (detail.ebene !== 'maschine' && detail.ebene !== 'arbeit') {
       raeumeLupeAb();
       raeumeKlangbildAb();
