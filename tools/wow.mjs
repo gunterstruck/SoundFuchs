@@ -417,6 +417,34 @@ async function bisZurMaschine(page) {
 }
 
 /**
+ * Warten, bis die eine Handlung wirklich dasteht — sichtbar, ausgelegt,
+ * bedienbar.
+ *
+ * Danach wird sie ausgelöst und nicht angezielt. Ein Koordinatenklick trifft
+ * das, was in genau diesem Augenblick an der Stelle liegt; die Ebene baut sich
+ * aber noch auf, und dann trifft er den Container darunter. Gemessen am
+ * 18.08.2026 blieb der Körper danach auf `tiefe-maschine` stehen — der Tipp
+ * war lautlos verschwunden, und der Lauf meldete anschließend, das PRODUKT
+ * habe kein Ergebnis geliefert.
+ *
+ * Was die Oberfläche leisten muss, steht damit weiterhin als Prüfung da: Der
+ * Knopf muss existieren, Höhe haben und bedienbar sein. Nur das Auslösen
+ * braucht keine Koordinaten.
+ */
+async function warteAufHandlung(page) {
+  await page
+    .waitForFunction(
+      () => {
+        const b = document.querySelector('.maschine-aktion');
+        return Boolean(b) && b.getBoundingClientRect().height > 0 && !b.disabled;
+      },
+      null,
+      { timeout: 40000 }
+    )
+    .catch(() => {});
+}
+
+/**
  * Eine Prüfung von Hand zu Ende bringen.
  *
  * Die Messung läuft, bis der Nutzer sie beendet — das Beenden ist der letzte
@@ -426,17 +454,100 @@ async function bisZurMaschine(page) {
  * @returns Tipps zwischen dem Ende der Messung und dem Ergebnis.
  */
 async function pruefeUndWarte(page) {
-  await page
-    .locator('.maschine-aktion')
-    .first()
-    .click({ force: true })
-    .catch(() => {});
-  await page.waitForTimeout(2600);
-  await page
-    .locator('#diagnose-btn')
-    .first()
-    .click({ force: true })
-    .catch(() => {});
+  // Erst die Tatsachen über die Oberfläche, dann auslösen — siehe unten.
+  await warteAufHandlung(page);
+  await page.evaluate(() => document.querySelector('.maschine-aktion')?.click());
+
+  /**
+   * Auf den Zustand warten, nicht auf die Uhr.
+   *
+   * Hier standen feste 2600 ms. `#diagnose-btn` steht aber schon im Baum,
+   * bevor die Arbeitsebene ihn ausgelegt hat — gemessen am 18.08.2026:
+   * „inline-block, 0 px". Ein erzwungener Klick auf ein Element ohne Höhe
+   * geht ins Leere, und weil der Klick geduldet wird, merkt es niemand.
+   *
+   * Der Lauf stoppte danach eine Messung, die nie lief, und wartete zwei
+   * Minuten auf ein Ergebnis, das es nicht geben konnte. Gemeldet wurde
+   * „kein Ergebnis angekommen" — ein Satz über das Produkt, obwohl der
+   * Fehler beim Messgerät lag. Seit Schnitt 4 bis 6B lädt die App mehr, und
+   * die geratene Zahl war eine Zeitbombe mit Datum.
+   */
+  const knopfBereit = await page
+    .waitForFunction(
+      () => {
+        const b = document.getElementById('diagnose-btn');
+        // Maße UND bedienbar: Der Knopf steht im Baum, bevor seine Phase ihn
+        // verkabelt hat, und ist in dieser Zeit abgeschaltet. Nur auf die
+        // Höhe zu warten hieße, in genau dieses Fenster hineinzutippen.
+        return Boolean(b) && b.getBoundingClientRect().height > 0 && !b.disabled;
+      },
+      null,
+      { timeout: 40000 }
+    )
+    .then(() => true)
+    .catch(() => false);
+  if (!knopfBereit) {
+    /**
+     * Ein Wächter, der nur „ging nicht" sagt, ist ein Wächter, den man
+     * überblättert. Wenn der Knopf nie Maße bekommt, gehört ins Protokoll,
+     * was stattdessen dastand — sonst beginnt die Suche bei null.
+     */
+    const gesehen = await page.evaluate(() => {
+      const sicht = (id) => {
+        const e = document.getElementById(id);
+        if (!e) return 'fehlt';
+        const cs = getComputedStyle(e);
+        return `${cs.display}/${Math.round(e.getBoundingClientRect().height)}px`;
+      };
+      return {
+        koerper: document.body.className.match(/tiefe-\w+/g)?.join(' ') ?? '(keine Ebene)',
+        aufnahme: sicht('record-reference-content'),
+        pruefung: sicht('run-diagnosis-content'),
+        knopf: sicht('diagnose-btn'),
+        fenster: [...document.querySelectorAll('.modal')]
+          .filter((m) => getComputedStyle(m).display !== 'none')
+          .map((m) => m.id)
+          .join(',') || 'keine',
+      };
+    });
+    console.log(`  !! Prüfung ließ sich nicht starten: ${JSON.stringify(gesehen)}`);
+    return -2;
+  }
+
+  /**
+   * Auslösen statt zielen.
+   *
+   * `click({force:true})` tippt auf Koordinaten. Der Abschnitt klappt in
+   * diesem Moment noch auf, der Knopf wandert — gemessen am 18.08.2026 traf
+   * ein Klick auf die Mitte seines eigenen Rechtecks den Container darunter.
+   * Der Tipp verschwand lautlos, und der Lauf meldete danach, das PRODUKT
+   * habe kein Ergebnis geliefert. Zwei Läufe, zwei Ergebnisse: ein Wackler
+   * im Messgerät, der wie ein Befund aussah.
+   *
+   * Dass der Knopf sichtbar, ausgelegt und bedienbar ist, wurde eine Zeile
+   * vorher geprüft — das sind die Tatsachen über die Oberfläche. Das Auslösen
+   * selbst braucht keine Koordinaten.
+   */
+  await page.evaluate(() => document.getElementById('diagnose-btn')?.click());
+
+  /**
+   * Läuft die Messung wirklich? Sonst wäre alles Weitere eine Aussage über
+   * einen Lauf, den es nie gab — und die klänge wie ein Befund über das
+   * Produkt.
+   */
+  const laeuft = await page
+    .waitForFunction(
+      () => {
+        const m = document.getElementById('inspection-modal');
+        return Boolean(m) && getComputedStyle(m).display !== 'none';
+      },
+      null,
+      { timeout: 40000 }
+    )
+    .then(() => true)
+    .catch(() => false);
+  if (!laeuft) return -3;
+
   await page.waitForTimeout(22000);
   await page.evaluate(() => document.getElementById('inspection-stop-btn')?.click());
 
@@ -523,17 +634,21 @@ try {
     const { ctx, page, seitenfehler } = await starteHandy(klangDatei);
     await bisZurMaschine(page);
 
+    await warteAufHandlung(page);
+    await page.evaluate(() => document.querySelector('.maschine-aktion')?.click());
+    // Auch hier auf Maße warten statt auf die Uhr — siehe `pruefeUndWarte`.
     await page
-      .locator('.maschine-aktion')
-      .first()
-      .click({ force: true })
+      .waitForFunction(
+        () => {
+          const b = document.getElementById('record-btn');
+          return Boolean(b) && b.getBoundingClientRect().height > 0 && !b.disabled;
+        },
+        null,
+        { timeout: 40000 }
+      )
       .catch(() => {});
-    await page.waitForTimeout(2600);
-    await page
-      .locator('#record-btn')
-      .first()
-      .click({ force: true })
-      .catch(() => {});
+    // Auslösen statt zielen — dieselbe Begründung wie in `pruefeUndWarte`.
+    await page.evaluate(() => document.getElementById('record-btn')?.click());
     await page
       .waitForFunction(
         () => Boolean(document.querySelector('.maschine-aktion')?.textContent),
@@ -594,6 +709,11 @@ try {
     console.log(`  eine Handlung                  ${gut.aktionsname || '(fehlt)'}`);
     console.log(`  Weg zur Hör-Lupe sichtbar      ${gut.trotzdem ? 'ja' : 'NEIN'}`);
 
+    pruefe(
+      tippsDanach !== -2,
+      'Fall B: der Aufnahmeknopf der Arbeitsebene bekam nie Maße — die Prüfung ließ sich nicht starten'
+    );
+    pruefe(tippsDanach !== -3, 'Fall B: die Messung ist nach dem Tipp gar nicht angelaufen');
     pruefe(
       tippsDanach === BUDGET.tippsBisErgebnis,
       'Fall B: nach dem Ende der Messung kam kein Ergebnis auf der Maschinenebene an'
@@ -705,6 +825,11 @@ try {
     console.log(`  Hör-Lupe im Bild               ${schlecht.lupe ? 'ja' : 'NEIN'}`);
     console.log(`  Quellen                        ${schlecht.quellen.join(' · ') || '(keine)'}`);
 
+    pruefe(
+      tippsDanach !== -2,
+      'Fall A: der Aufnahmeknopf der Arbeitsebene bekam nie Maße — die Prüfung ließ sich nicht starten'
+    );
+    pruefe(tippsDanach !== -3, 'Fall A: die Messung ist nach dem Tipp gar nicht angelaufen');
     pruefe(
       tippsDanach === BUDGET.tippsBisErgebnis,
       'Fall A: nach dem Ende der Messung kam kein Ergebnis auf der Maschinenebene an'

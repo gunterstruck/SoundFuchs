@@ -374,6 +374,24 @@ export class DiagnosePhase {
       // CRITICAL FIX: Store handler reference to enable cleanup in destroy()
       this.diagnoseButtonClickHandler = () => this.startDiagnosis();
       diagnoseBtn.addEventListener('click', this.diagnoseButtonClickHandler);
+      /**
+       * Erst jetzt darf er gedrückt werden.
+       *
+       * `router.onMachineSelected()` startet die Phasen ohne zu warten
+       * (`void initializePhases`). Dazwischen liegt ein Fenster: Die alten
+       * Phasen sind abgeräumt — der Zuhörer dieses Knopfes ist weg —, die
+       * neuen Module werden noch geladen. Der Knopf steht in dieser Zeit
+       * sichtbar, ausgelegt und einladend da und tut **nichts**.
+       *
+       * Gemessen am 18.08.2026 im Wow-Lauf: Direkt nach einer
+       * Referenzaufnahme lief die Gegenprobe mal an und mal nicht — zwei
+       * Läufe, zwei Ergebnisse. Ein Nutzer erlebt dasselbe: tippen, nichts
+       * passiert, noch einmal tippen. Genau die Sorte Reibung, die der
+       * Auftrag mit „genau eine dominante Handlung" ausschließen will.
+       *
+       * Ein abgeschalteter Knopf sagt die Wahrheit: gleich, aber noch nicht.
+       */
+      (diagnoseBtn as HTMLButtonElement).disabled = false;
     }
   }
 
@@ -4331,13 +4349,15 @@ export class DiagnosePhase {
     this.cleanup();
 
     // CRITICAL FIX: Remove event listener to prevent stacking on re-init
+    const diagnoseBtn = document.getElementById('diagnose-btn');
     if (this.diagnoseButtonClickHandler) {
-      const diagnoseBtn = document.getElementById('diagnose-btn');
       if (diagnoseBtn) {
         diagnoseBtn.removeEventListener('click', this.diagnoseButtonClickHandler);
       }
       this.diagnoseButtonClickHandler = null;
     }
+    // Ohne Zuhörer kein Angebot — siehe `init()`.
+    if (diagnoseBtn) (diagnoseBtn as HTMLButtonElement).disabled = true;
 
     // Destroy visualizer
     if (this.visualizer) {

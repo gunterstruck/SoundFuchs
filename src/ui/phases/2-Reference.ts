@@ -183,6 +183,9 @@ export class ReferencePhase {
     const recordBtn = document.getElementById('record-btn');
     if (recordBtn) {
       recordBtn.addEventListener('click', this.recordButtonClickHandler);
+      // Erst mit Zuhörer ein Angebot — dieselbe Begründung wie beim
+      // Prüfknopf in `3-Diagnose.ts`.
+      (recordBtn as HTMLButtonElement).disabled = false;
     }
 
     // ZERO-FRICTION: New record button (State B - no machine, auto-create)
@@ -2325,6 +2328,10 @@ export class ReferencePhase {
 
       this.recordButtonClickHandler = null;
     }
+
+    // Ohne Zuhörer kein Angebot.
+    const stummerKnopf = document.getElementById('record-btn');
+    if (stummerKnopf) (stummerKnopf as HTMLButtonElement).disabled = true;
 
     // Destroy visualizer
     if (this.visualizer) {
