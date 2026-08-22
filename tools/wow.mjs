@@ -1417,6 +1417,19 @@ try {
           el && cs && cs.display !== 'none' && cs.visibility !== 'hidden' && k && k.height > 0
         ),
         schalterHoch: k ? Math.round(k.height) : 0,
+        /**
+         * Was die Leiste hinter dem Scharnier NICHT anbieten soll.
+         *
+         * Der Kartenstil gehört zur Karte. In der Leiste über einer
+         * Maschinenseite ist er eine Bedienung für etwas, das man dort nicht
+         * sieht.
+         */
+        kartenstilSichtbar: (() => {
+          const el = document.querySelector('.basemap-control');
+          if (!el) return false;
+          const s = getComputedStyle(el);
+          return s.display !== 'none' && s.visibility !== 'hidden';
+        })(),
       };
     });
     console.log(
@@ -1433,6 +1446,10 @@ try {
     pruefe(
       leiste.schalterHoch >= BUDGET.antippgroesse,
       `S5d: der Stufenschalter ist ${leiste.schalterHoch} px hoch`
+    );
+    pruefe(
+      !leiste.kartenstilSichtbar,
+      'S5e: die Leiste bietet hinter dem Scharnier den Kartenstil an — eine Bedienung für eine Karte, die man dort nicht sieht'
     );
 
     await page.evaluate(() => {
