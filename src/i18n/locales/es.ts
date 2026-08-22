@@ -35,6 +35,7 @@ export const es: TranslationDict = {
   },
   // Die Maschinen-Arbeitsebene (Zanobot_UI_Nutzerreise, Schnitt 1).
   maschine: {
+    rundeFertig: '✓ Ronda completa — {{anzahl}} máquinas revisadas en esta ubicación',
     naechsteMaschine: '▸ Siguiente: {{name}}',
     lageUntrained: 'Aún sin estado normal',
     lageReady: 'Lista para revisar',

@@ -2464,6 +2464,84 @@ stehen in §7e.
 **S5 — Die Reiter füllen.** _offen._ „Standorte", „Filter" und der
 Nähe-Begleiter im Karten-Reiter; Standort- und Maschinenimport.
 
+### S8 — Die Runde endet (22.08.2026)
+
+S4j gab der Maschinenseite ein Angebot: „▸ Nächste: Rührwerk 2". Welche das
+war, entschied allein die Ablage — was am längsten nicht geprüft wurde, kommt
+dran. Damit war die Runde ein halbes Ding, und ein halb gebautes ist schlechter
+als ein nicht angefangenes.
+
+**Der Befund, gemessen an einem Standort mit zwei Maschinen:**
+
+```
+Nach Maschine 2 (Rührwerk 2):
+  Runde:  „▸ Nächste: Rührwerk 1"
+```
+
+Nach der letzten Maschine zeigte sie wieder auf die erste — die war ja
+inzwischen die mit der ältesten Prüfung. Ein Karussell, keine Runde. Wer eine
+Runde geht, erfährt nie, dass er fertig ist; er tippt „Zum Standort" und zählt
+die Zeilen nach. Ein Ende, das man selbst feststellen muss, ist kein Ende.
+
+**Was fehlte, war ein Gedächtnis.** Der Unterschied zwischen „lange nicht
+geprüft" und „gerade eben von mir geprüft" steht nicht in der Ablage — er ist
+eine Tatsache über DIESEN Besuch. Also steht er in
+`src/stamm/maschine/runde.ts`, für die Dauer des Besuchs, und nicht in der
+Datenbank: Ein „erledigt"-Feld in `machines` wäre eine Buchführung, die über
+Tage weiterläuft und beim nächsten Besuch Maschinen überspringt, die niemand
+geprüft hat.
+
+Drei Entscheidungen dazu:
+
+- **Eine Runde gehört einem Standort.** Beim Betreten eines anderen beginnt
+  eine neue. Beim Betreten desselben läuft die alte weiter — sonst setzte jeder
+  Wechsel zwischen Standort- und Maschinenebene sie zurück, und es gäbe sie
+  nicht.
+- **Sie endet mit dem Verlassen der Tiefe**, vollständig oder nicht. Wer den
+  Standort verlässt, hat aufgehört, ihn durchzugehen.
+- **Das Ende ist eine Auskunft, kein Erfolgsbanner.** „✓ Runde fertig — 2
+  Maschinen an diesem Standort geprüft", in Textfarbe und Textgröße, ohne
+  Rahmen und ohne Fläche. Wer fertig ist, braucht keine Belohnung. Und erst ab
+  zwei: Eine „Runde" von einer Maschine für abgeschlossen zu erklären wäre eine
+  Feier für das Aufstehen.
+
+Die Entscheidung selbst ist rein — `naechsteInDerRunde(kandidaten, erledigt)`
+kennt weder Ablage noch Browser. Elf Tests in
+`src/stamm/maschine/runde.test.ts` halten sie fest, darunter der Anlass:
+„endet, wenn alle dran waren".
+
+**Der Wächter.** Was die Tests nicht sehen, ist die Verdrahtung: ob
+`merkeGeprueft` beim Ergebnis wirklich gerufen wird, ob die Runde den
+Ebenenwechsel überlebt, ob sie beim Verlassen endet. Dafür gibt es
+`npm run runde` (`tools/runde-lauf.mjs`) — er kürzt einen Flottenstandort der
+Beispieldaten auf zwei Maschinen und spielt beide vollständig durch, mit echtem
+Mikrofonsignal. Er steht bewusst NICHT im Standard-Satz: zwei vollständige
+Prüfungen kosten Minuten, und er gehört zu Änderungen an der Runde, nicht zu
+jedem Schnitt.
+
+Absichtlich falsifiziert, indem das Gedächtnis wieder entfernt wurde
+(`naechsteInDerRunde(mitStand, new Set())`):
+
+```
+✗ DER BEFUND: nach der letzten Maschine bietet die Runde weiter an — „▸ Nächste: Rührwerk 1"
+✗ das Ende steht da und nennt die Zahl — „"
+```
+
+Mit dem Gedächtnis:
+
+```
+Nach Maschine 2 (Rührwerk 2):
+  Runde:  „"
+  Fertig: „✓ Runde fertig — 2 Maschinen an diesem Standort geprüft"
+✓ Die Runde endet.
+```
+
+| | vor S8 | jetzt |
+|---|---|---|
+| Angebot nach der letzten Maschine | „▸ Nächste: Rührwerk 1" — die erste wieder | **entfällt** |
+| Auskunft, dass die Runde fertig ist | keine | **„✓ Runde fertig — 2 Maschinen …"** |
+| Gedächtnis über den Besuch hinaus | — | **keins, mit Absicht** |
+
 ### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die

@@ -40,6 +40,7 @@ export const de: TranslationDict = {
   },
   // Die Maschinen-Arbeitsebene (Zanobot_UI_Nutzerreise, Schnitt 1).
   maschine: {
+    rundeFertig: '✓ Runde fertig — {{anzahl}} Maschinen an diesem Standort geprüft',
     naechsteMaschine: '▸ Nächste: {{name}}',
     lageUntrained: 'Noch kein Normalzustand',
     lageReady: 'Bereit zum Prüfen',

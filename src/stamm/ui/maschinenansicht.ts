@@ -51,7 +51,7 @@ import {
   type Lage,
   type Maschinenzustand,
 } from '../maschine/zustand.js';
-import { oeffneTiefe, TIEFE_GEOEFFNET, type TiefeDetail } from './scharnier.js';
+import { oeffneTiefe, TIEFE_GEOEFFNET, TIEFE_GESCHLOSSEN, type TiefeDetail } from './scharnier.js';
 import { NORMALZUSTAND_GESPEICHERT } from '@ui/phases/2-Reference.js';
 import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
 import { getReferenceIrisVector } from '@ui/phases/referenceIris.js';
@@ -60,6 +60,13 @@ import { ListenPanel } from '@ui/components/ListenPanel.js';
 import { Klangbild } from '@ui/components/Klangbild.js';
 import { openAnalysisPackageDialog } from '@ui/components/AnalysisPackageDialog.js';
 import { holeErgebnis, PRUEFUNG_FERTIG, vergissErgebnis } from '../maschine/ergebnis.js';
+import {
+  erledigte,
+  merkeGeprueft,
+  naechsteInDerRunde,
+  rundeBeenden,
+  standortBetreten,
+} from '../maschine/runde.js';
 
 export interface MaschinenansichtDeps {
   /**
@@ -146,11 +153,20 @@ function vorWieLange(zeitpunkt: number): string {
  * und ignoriert ihn. Und wenn es nichts Nächstes gibt, steht dort nichts:
  * Ein Knopf, der zur eigenen Maschine zurückführt, wäre eine Runde von eins.
  */
-async function naechsteMaschine(maschine: Machine): Promise<Machine | null> {
+interface Rundenstand {
+  /** Wer als Nächstes drankommt — oder `null`, wenn niemand mehr offen ist. */
+  naechste: Machine | null;
+  /** Wie viele Maschinen der Standort hat (diese eingeschlossen). */
+  gesamt: number;
+  /** Wie viele davon in diesem Besuch schon geprüft wurden. */
+  erledigt: number;
+}
+
+async function rundenstand(maschine: Machine): Promise<Rundenstand> {
   const standort = maschine.customerId;
-  if (!standort) return null;
-  const geschwister = (await getMachinesForCustomer(standort)).filter((m) => m.id !== maschine.id);
-  if (geschwister.length === 0) return null;
+  if (!standort) return { naechste: null, gesamt: 1, erledigt: 1 };
+  const alle = await getMachinesForCustomer(standort);
+  const geschwister = alle.filter((m) => m.id !== maschine.id);
 
   const mitStand = await Promise.all(
     geschwister.map(async (m) => ({
@@ -158,15 +174,12 @@ async function naechsteMaschine(maschine: Machine): Promise<Machine | null> {
       zuletzt: (await getLatestDiagnosis(m.id))?.timestamp ?? null,
     }))
   );
-  mitStand.sort((a, b) => {
-    if (a.zuletzt === null && b.zuletzt === null)
-      return a.maschine.name.localeCompare(b.maschine.name);
-    if (a.zuletzt === null) return -1;
-    if (b.zuletzt === null) return 1;
-    if (a.zuletzt !== b.zuletzt) return a.zuletzt - b.zuletzt;
-    return a.maschine.name.localeCompare(b.maschine.name);
-  });
-  return mitStand[0]?.maschine ?? null;
+  const schonDran = erledigte(standort);
+  return {
+    naechste: naechsteInDerRunde(mitStand, schonDran),
+    gesamt: alle.length,
+    erledigt: alle.filter((m) => schonDran.has(m.id)).length,
+  };
 }
 
 /**
@@ -633,17 +646,39 @@ async function zeichne(maschine: Machine): Promise<void> {
   rundenplatz.className = 'maschine-rundenplatz';
   ziel.appendChild(rundenplatz);
   if (istErgebnis(zustand)) {
-    void naechsteMaschine(maschine).then((naechste) => {
-      if (!naechste || !rundenplatz.isConnected) return;
-      const weiter = document.createElement('button');
-      weiter.type = 'button';
-      weiter.className = 'maschine-runde';
-      weiter.textContent = t('maschine.naechsteMaschine', { name: naechste.name });
-      weiter.addEventListener('click', () => {
-        vergissErgebnis();
-        deps?.zeigeMaschine(naechste);
-      });
-      rundenplatz.appendChild(weiter);
+    void rundenstand(maschine).then((stand) => {
+      if (!rundenplatz.isConnected) return;
+      if (stand.naechste) {
+        const naechste = stand.naechste;
+        const weiter = document.createElement('button');
+        weiter.type = 'button';
+        weiter.className = 'maschine-runde';
+        weiter.textContent = t('maschine.naechsteMaschine', { name: naechste.name });
+        weiter.addEventListener('click', () => {
+          vergissErgebnis();
+          deps?.zeigeMaschine(naechste);
+        });
+        rundenplatz.appendChild(weiter);
+        return;
+      }
+      /**
+       * Die Runde ist zu Ende — und sagt es.
+       *
+       * Vorher stand hier nichts: Der Knopf verschwand einfach. Wer eine Runde
+       * geht, erfährt so nie, dass er fertig ist; er tippt „Zum Standort" und
+       * zählt die Zeilen nach. Ein Ende, das man selbst feststellen muss, ist
+       * kein Ende.
+       *
+       * Nur, wenn in diesem Besuch überhaupt etwas erledigt wurde und der
+       * Standort mehr als eine Maschine hat: Eine „Runde" von einer Maschine
+       * für abgeschlossen zu erklären, wäre eine Feier für das Aufstehen.
+       */
+      if (stand.erledigt < 2 || stand.gesamt < 2) return;
+      const fertig = document.createElement('p');
+      fertig.className = 'maschine-rundefertig';
+      fertig.setAttribute('role', 'status');
+      fertig.textContent = t('maschine.rundeFertig', { anzahl: String(stand.erledigt) });
+      rundenplatz.appendChild(fertig);
     });
   }
 
@@ -973,13 +1008,31 @@ export function maschinenansichtAufbauen(abhaengigkeiten: MaschinenansichtDeps):
     void (async () => {
       const frisch = await getMachine(machineId);
       if (!frisch) return;
+      // Diese Maschine ist in dieser Runde erledigt. Der Vermerk gehört hierher
+      // und nicht in die Ablage: Er sagt nicht „zuletzt geprüft am", sondern
+      // „von mir, in diesem Besuch" — und gilt nur, solange der Besuch dauert.
+      merkeGeprueft(frisch.customerId ?? null, machineId);
       deps?.uebernimmMaschine(frisch);
       oeffneTiefe(frisch.customerId ?? null, 'maschine');
     })();
   });
 
+  /**
+   * Die Tür ist zu — die Runde ist vorbei.
+   *
+   * Wer den Standort verlässt, hat aufgehört, ihn durchzugehen; ob vollständig
+   * oder nicht, entscheidet er selbst. Eine Runde, die über das Verlassen
+   * hinweg weiterliefe, würde beim nächsten Besuch Maschinen überspringen, die
+   * niemand geprüft hat.
+   */
+  document.addEventListener(TIEFE_GESCHLOSSEN, () => rundeBeenden());
+
   document.addEventListener(TIEFE_GEOEFFNET, (ereignis) => {
     const detail = (ereignis as CustomEvent<TiefeDetail>).detail;
+    // Ein anderer Standort beginnt eine neue Runde; derselbe setzt sie fort.
+    // Deshalb steht das vor allen Abzweigungen: Auch der Weg über die
+    // Standortebene und die Arbeitsebene meldet sich hier.
+    standortBetreten(detail.standortId);
     /**
      * Wer die Maschine verlässt, lässt auch ihr Ergebnis los.
      *
