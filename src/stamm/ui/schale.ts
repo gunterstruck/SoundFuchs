@@ -77,12 +77,9 @@ function istReiter(wert: string | undefined): wert is Reiter {
 const zustand: {
   blattOffen: boolean;
   reiter: Reiter;
-  /** Hat jemand die Leiste über die Tiefe geholt? Siehe `schaleAnwenden`. */
-  absichtlichUeberTiefe: boolean;
 } = {
   blattOffen: !isPhoneUi(),
   reiter: 'daten',
-  absichtlichUeberTiefe: false,
 };
 
 /** Liegt das Panel als Blatt unten statt seitlich? Gleichbedeutend mit „unterwegs". */
@@ -206,21 +203,14 @@ function reiterUmhaengen(): void {
   };
 
   /**
-   * Hinter dem Scharnier gehört der Schalter in die Leiste — auch unterwegs.
+   * Hinter dem Scharnier bleibt alles, wie es ist.
    *
-   * Gemessen am 22.08.2026 auf dem Handy: Sobald die Tiefe offen war, stand er
-   * im Kopfstreifen, und der liegt in `#app`. Der ruht hinter dem Scharnier auf
-   * `visibility: hidden` — der Schalter war also da und für niemanden zu sehen.
-   * Die Leiste dagegen ist der eine Ort, den man von überall aufziehen kann.
-   *
-   * Umgehängt und nicht verdoppelt: Es bleibt derselbe Schalter mit demselben
-   * Zustand. Zwei Schalter für eine Stufe wären zwei Wahrheiten.
+   * Hier stand vom 22.08.2026 an ein dritter Fall: Bei offener Tiefe wanderte
+   * der Schalter in die Leiste, weil der Kopfstreifen dort ruhte. Der
+   * Auftraggeber hat am selben Tag widersprochen — er will den Streifen
+   * **sehen**, nicht in einem Tipp erreichen. Jetzt ruht der Streifen nicht
+   * mehr, und der Schalter bleibt, wo er unterwegs immer steht.
    */
-  if (tiefeIstOffen()) {
-    inDieLeiste();
-    return;
-  }
-
   if (istBlatt()) {
     if (tiefe.parentElement !== topnav) topnav.appendChild(tiefe);
   } else {
@@ -248,21 +238,6 @@ export function schaleAnwenden(): void {
       griff.title = 'Ziehen: ↕ Größe, ↔ verschieben · Doppelklick: zurück';
     }
   }
-
-  /**
-   * Liegt die Leiste ÜBER der Tiefe?
-   *
-   * Als eigene Klasse und nicht als Folgerung aus `blattOffen`: Sie soll dort
-   * nur liegen, wenn jemand sie geholt hat. Der Aufmerksamkeitstest betritt die
-   * Tiefe über Klassen statt über den Weg — dabei blieb `blattOffen` am
-   * Schreibtisch stehen, und die Leiste legte sich ungefragt über die
-   * Arbeitsfläche. Gemessen am 22.08.2026: fünf Bedienelemente mehr im
-   * Erstbild, ohne dass jemand danach gefragt hätte.
-   */
-  document.body.classList.toggle(
-    'leiste-ueber-tiefe',
-    tiefeIstOffen() && zustand.blattOffen && zustand.absichtlichUeberTiefe
-  );
 
   // Ob das Blatt offen ist, entscheidet, ob von der Karte etwas zu sehen ist.
   // Als Klasse am Körper, damit schwebende Kartenelemente per CSS ausweichen
@@ -584,9 +559,6 @@ export function schaleAufbauen(): void {
      * Rückweg gehört dem Inhalt, nicht der Navigation.
      */
     zustand.blattOffen = !zustand.blattOffen;
-    // Genau hier entsteht die Absicht: „☰" ist der einzige Weg, die Leiste über
-    // die Tiefe zu holen.
-    zustand.absichtlichUeberTiefe = zustand.blattOffen;
     schaleAnwenden();
   });
 
@@ -624,15 +596,12 @@ export function schaleAufbauen(): void {
      * Zugezogen, nicht abgeschaltet: „☰" holt sie jederzeit zurück, dann legt
      * sie sich bewusst darüber.
      */
-    zustand.blattOffen = false;
-    zustand.absichtlichUeberTiefe = false;
     schaleAnwenden();
   });
   document.addEventListener(TIEFE_GESCHLOSSEN, () => {
     reiterUmhaengen();
     // Zurück auf der Karte gilt wieder, was das Gesicht vorgibt.
     zustand.blattOffen = !istBlatt();
-    zustand.absichtlichUeberTiefe = false;
     schaleAnwenden();
   });
 

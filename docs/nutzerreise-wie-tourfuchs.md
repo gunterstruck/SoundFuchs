@@ -2179,6 +2179,89 @@ also keine Frage der Platzierung, sondern ein eigenes Vorhaben. Es steht hier
 als offener Punkt und nicht als erfundene Einstellung: Ein Auswahlfeld, hinter
 dem nichts liegt, wäre ein Versprechen ohne Gegenstand.
 
+### S5f — Der Rahmen bleibt stehen (22.08.2026, Korrektur zu S5d/S5e)
+
+Der Auftraggeber, auf ein Bildschirmfoto der Maschinenseite: „Oben sehe ich
+immer noch nicht dieses Hin- und Herschalten zwischen Basis und Profi. Das
+sollte eigentlich da sein, auch darunterliegend. Und auch, wenn man tiefer in
+die ganze Auswertung geht — die Sidebar unten, die fehlt hier an dieser Stelle.
+Die hätte ich auch noch gerne."
+
+**Er hat recht, und §S5d hat die Frage falsch beantwortet.** Dort stand: „er
+will den Schalter erreichen können" — und die Antwort war eine Leiste, die man
+mit „☰" über die Tiefe holt. Gemeint war: **sehen**. Ein Schalter hinter einem
+Tipp ist kein sichtbarer Schalter.
+
+### Die Tiefe ist eine Scheibe, keine Decke
+
+Bis hierher legte sich die Tiefe über alles außer der Kopfleiste; Kopfstreifen,
+Blatt und Seitenleiste ruhten auf `visibility: hidden`. Jetzt ruhen sie nicht
+mehr, und die Tiefe liegt **zwischen ihren Kanten** — genau dort, wo sonst die
+Karte liegt:
+
+```
+Handy, Maschinenebene (390 × 844)
+  Kopfstreifen   y = 52 … 107   🌱 Basis · 🛠️ Profi
+  Tiefe          y = 107 … 744
+  Blatt          ab y = 744     (Guckhöhe)
+```
+
+Auf dem Schreibtisch schiebt die offene Leiste die Tiefe nach rechts, statt sich
+über sie zu legen — auch das wie bei der Karte.
+
+**Gemessen auf jeder Ebene, ohne einen einzigen Tipp:** Kopfstreifen sichtbar
+(390 × 55), Schalter sichtbar (370 × 40), Blatt sichtbar. Vorher: dreimal
+`unsichtbar`.
+
+### Was dabei zurückgenommen wurde
+
+Aus §S5d fallen der dritte Fall in `reiterUmhaengen()` (der Schalter bleibt, wo
+er unterwegs immer steht), das Zur-Seite-Treten der Leiste beim Betreten der
+Tiefe und die Klasse `leiste-ueber-tiefe`. Sie waren Antworten auf ein Problem,
+das es nicht mehr gibt. Was bleibt: „☰" zieht die Leiste auf, ohne die Tiefe zu
+schließen, und ein Reiter ist ein Ortswechsel.
+
+### Zwei Fehler auf dem Weg
+
+**Eine Marke, am falschen Ort gelesen.** Die erste Fassung setzte die drei Maße
+aus JavaScript und las `--mobile-sheet-peek` am `html`. Dort gilt 46 px — die
+100 px des Beispieldatenbetriebs stehen an `body.demo-data-active`. Gemessen
+ragte die Tiefe dadurch **54 px unter das Blatt**, und der Weg zur Hör-Lupe lag
+darunter begraben; `wow` meldete prompt „der Weg zur Hör-Lupe führt nicht zur
+Hör-Lupe". Eine Marke muss man dort lesen, wo sie gilt.
+
+**Ein Rahmen, der vom Ereignis abhing.** Die Maße aus JavaScript zu setzen hieß:
+Wer die Tiefe öffnet, ohne das Ereignis auszulösen, bekommt keinen Rahmen. Genau
+das tut `attention-check` — und meldete daraufhin, die Tür gehe nicht mehr zu
+(auf dem Schreibtisch verdeckte die Leiste den Rückweg). Jetzt steht alles in
+CSS, mit den beiden Gesichtsabfragen wortgleich. Die einzige Zahl darin ist die
+Höhe des Kopfstreifens, und die bewacht `attention-check` ohnehin.
+
+### Die Budgets, angehoben mit Begründung
+
+Der Rahmen zählt jetzt mit. Die Zahlen sind nicht bis zum Grün geschoben,
+sondern um genau das, was er mitbringt:
+
+| | vorher | jetzt | |
+|---|---|---|---|
+| Erstbild | 12 | **16** | Handy +1 (die Pille), Schreibtisch +4 (Pille, zwei Reiter, „Entfernen") |
+| Schritte offen | 16 | **18** | |
+| Einstellungen/Basis | 28 | **31** | |
+| Einstellungen/Experte | 52 | **53** | |
+
+### Der Wächter
+
+`wow` misst in Fall A ohne jeden Tipp: Steht der Schalter da? Beginnt die Tiefe
+**unter** dem Kopfstreifen (sonst scrollt ihr Inhalt unter der Pille durch)?
+Endet sie **über** dem Blatt? Absichtlich falsifiziert, indem der Rahmen wieder
+zur Ruhe gelegt wurde:
+
+```
+✗ S5d: der Basis/Profi-Schalter ist hinter dem Scharnier nicht zu sehen — er soll
+  dastehen, nicht in einem Tipp liegen
+✗ S5d: der Stufenschalter ist 0 px hoch
+```
+
 ### S4j — Eine Auskunft an einer Stelle, und die Runde (22.08.2026)
 
 Der Auftraggeber schickte ein Bildschirmfoto von „Pumpe 1" mit zwei Sätzen:
