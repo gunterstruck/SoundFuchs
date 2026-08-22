@@ -2125,6 +2125,60 @@ den Aufruf hinter die Grenze — der Test schlug an, obwohl sich am Verhalten
 nichts geändert hatte. Er liest jetzt die ganze Funktion. Eine Zeichenzahl ist
 keine Regel; gemeint war „in dieser Funktion".
 
+### S5e — Was in die Leiste gehört (22.08.2026)
+
+Der Auftraggeber: „Darüber hinaus hätte ich gern, dass das Konzept Seitenleiste
+auch hier Verwendung findet — 1:1 von TourFuchs beziehungsweise das, was
+oberhalb des Standorts schon existiert — und dass man überlegt, welche Funktion
+man da hineinlegt. Einstellungen finde ich wichtig, wenn man etwas einstellen
+möchte."
+
+**Die Leiste steht seit §S5d hinter dem Scharnier** — dieselbe wie davor,
+nicht nachgebaut. Bleibt die zweite Hälfte der Frage: Was gehört hinein?
+
+**Gemessen, was sie dort anbietet** (Handy, Tiefe offen, nach „☰"):
+
+```
+inDerLeiste: [ 'Entfernen', '🌱 Basis', '🛠️ Profi', 'Hell · Standard · Satellit' ]
+```
+
+| | gehört hinein? | |
+|---|---|---|
+| Ansichtstiefe (Basis/Profi) | **ja** | gilt für die ganze Anwendung, auch für das darunter |
+| Beispieldaten-Hinweis | **ja** | eine stehende Auskunft, überall gültig |
+| Reiter (Standorte/Filter) | **ja** | der Weg zurück auf die Karte; sie schließen die Tiefe (§S5d) |
+| Kartenstil | **nein** | eine Bedienung für eine Karte, die man dort nicht sieht |
+| Einstellungen | **schon da** | ⓘ in der Kopfleiste, in jedem Zustand sichtbar gemessen |
+
+**Der Kartenstil ist verschwunden**, solange die Tiefe offen ist. Er bleibt im
+Baum stehen — `reiterUmhaengen()` hängt den Stufenschalter davor ein —, aber er
+zeigt sich nicht.
+
+**Einstellungen bekommen keinen zweiten Eingang.** Das war der naheliegende
+Griff, und er wäre falsch gewesen: Gemessen ist `#btn-info` in **jedem** Zustand
+sichtbar — vor dem Scharnier, auf der Standortebene, auf der Maschinenebene,
+Handy wie Schreibtisch. Ein Eintrag in der Leiste wäre eine zweite Tür in
+denselben Raum. Dieselbe Regel, die den Rückweg und den Stufenschalter
+verschiebt statt sie zu verdoppeln, gilt auch hier.
+
+`wow` prüft mit demselben ☰-Schritt wie §S5d, dass der Kartenstil hinter dem
+Scharnier **nicht** zu sehen ist. Absichtlich falsifiziert:
+
+```
+✗ S5e: die Leiste bietet hinter dem Scharnier den Kartenstil an — eine Bedienung
+  für eine Karte, die man dort nicht sieht
+```
+
+### Was aus diesem Auftrag NICHT gebaut wurde
+
+Der Auftraggeber nannte als Beispiel für eine Einstellung: „ein anderes
+Auswertungstool statt Gemini, zum Beispiel Kognitive". Eine solche Wahl gibt es
+nicht — die Anwendung hat keine Anbindung an Gemini oder ein anderes externes
+Werkzeug; die Auswertung läuft vollständig im Gerät (GMIA, `core/ml`). Es ist
+also keine Frage der Platzierung, sondern ein eigenes Vorhaben. Es steht hier
+als offener Punkt und nicht als erfundene Einstellung: Ein Auswahlfeld, hinter
+dem nichts liegt, wäre ein Versprechen ohne Gegenstand.
+
 ### S4j — Eine Auskunft an einer Stelle, und die Runde (22.08.2026)
 
 Der Auftraggeber schickte ein Bildschirmfoto von „Pumpe 1" mit zwei Sätzen:

@@ -116,6 +116,20 @@ body.tiefe-offen.leiste-ueber-tiefe #app > #sidebar.open {
   visibility: visible;
 }
 
+/* Der Kartenstil gehört zur Karte.
+
+   Hinter dem Scharnier steht in der Leiste sonst ein Auswahlfeld für das
+   Aussehen einer Karte, die man dort nicht sieht — gemessen am 22.08.2026:
+   „Hell · Standard · Satellit", direkt unter dem Stufenschalter. Es bleibt im
+   Baum stehen (`reiterUmhaengen` hängt den Schalter davor ein), aber es zeigt
+   sich nicht.
+
+   Was hier stattdessen steht, ist die Ansichtstiefe: Sie gilt für die ganze
+   Anwendung, auch für das, was gerade unter der Leiste liegt. */
+body.tiefe-offen .basemap-control {
+  display: none;
+}
+
 /* Die Rückkehr. Der Stamm hat für so etwas keine eigene Form — er kennt
    Blätter, die man am Griff zuzieht, keine Bildschirme, die man verlässt.
    Deshalb hier die schlichteste Form, die zu ihm passt: dieselbe Pille wie
