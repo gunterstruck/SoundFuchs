@@ -56,7 +56,7 @@ import {
   deleteRecording,
 } from '@data/db.js';
 import { ListenPanel } from '@ui/components/ListenPanel.js';
-import { gehoertDerMaschinenebene, merkeErgebnis } from '../../stamm/maschine/ergebnis.js';
+import { merkeErgebnis } from '../../stamm/maschine/ergebnis.js';
 import { getDiagnosisAudioMode } from '@utils/diagnosisAudioSettings.js';
 import { partitionModels } from '@core/ml/modelCompatibility.js';
 import { resolutionLineState } from './resolutionLine.js';
@@ -326,6 +326,24 @@ export class DiagnosePhase {
       machineName: machine.name,
       numModels: machine.referenceModels?.length || 0,
     });
+  }
+
+  /**
+   * Läuft gerade ein Flottenlauf?
+   *
+   * Entscheidet, wohin das Ergebnis geht: auf die Maschinenseite (der Normalfall,
+   * eine Prüfung, eine Maschine) oder in den kurzen Ergebnisdialog, den die
+   * Reihe nach 1,5 Sekunden selbst weiterschaltet.
+   *
+   * Als ausdrückliche Ansage des Routers und nicht als Rückschluss aus einem
+   * gesetzten Rückruf: Der Router weiß es, also sagt er es. Es aus dem
+   * Vorhandensein eines Rückrufs zu erraten hieße, zwei Dinge zu koppeln, die
+   * nur zufällig zusammenfallen.
+   */
+  private flottenlauf = false;
+
+  public setFlottenlauf(an: boolean): void {
+    this.flottenlauf = an;
   }
 
   /**
@@ -2337,21 +2355,28 @@ export class DiagnosePhase {
 
       /**
        * Zwei Wege, ein Ergebnis — aber nie beide gleichzeitig.
-       *
-       * Wer über die Maschinenebene hereinkam, sieht das Ergebnis dort: als
-       * Zustand derselben Reise, mit der Hör-Lupe darin. Alle anderen Wege
-       * (Flottenlauf, Bestandsliste, Schnellvergleich) führen weiter in den
-       * bisherigen Ergebnisdialog — er ist geprüft und trägt, und ihn in
-       * einem Zug mit umzubauen hieße, zwei Dinge auf einmal zu ändern.
-       *
-       * Entschieden wird an einem Wert (`gehoertDerMaschinenebene`) und nicht
-       * an einer CSS-Klasse am `body`: Der Weg herein ist eine Tatsache über
-       * die Reise, keine über das Aussehen.
        */
-      if (gehoertDerMaschinenebene(this.machine.id)) {
-        await this.veroeffentlicheErgebnis(diagnosis);
-      } else {
+      /**
+       * Ein Ergebnis, ein Ort.
+       *
+       * Hier stand bis zum 22.08.2026 eine Weiche: Wer über die Maschinenebene
+       * hereinkam, sah das Ergebnis dort; alle anderen Wege — Bestandsliste,
+       * Flottenlauf — bekamen den alten Ergebnisdialog. Dieselbe Prüfung, zwei
+       * Darstellungen, und nur eine davon bewacht.
+       *
+       * Die Weiche ist weg. Eine Prüfung betrifft genau eine Maschine, und ihr
+       * Ergebnis gehört auf die Seite dieser Maschine — gleich, wo man
+       * losgegangen ist.
+       *
+       * Die einzige Ausnahme ist der Flottenlauf, und sie ist keine Ausnahme
+       * vom Ort, sondern eine andere Sache: Dort läuft eine Reihe von Prüfungen
+       * ab, die sich selbst weiterschaltet. Wer sie nach jeder Maschine auf
+       * eine Maschinenseite führte, unterbräche genau das, was sie ist.
+       */
+      if (this.flottenlauf) {
         this.showResults(diagnosis);
+      } else {
+        await this.veroeffentlicheErgebnis(diagnosis);
       }
 
       // Sprint 1 UX: Diagnosis completion confirmation

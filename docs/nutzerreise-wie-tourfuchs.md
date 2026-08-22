@@ -2262,6 +2262,75 @@ zur Ruhe gelegt wurde:
 ✗ S5d: der Stufenschalter ist 0 px hoch
 ```
 
+### S6 — Ein Ergebnis, ein Ort (22.08.2026)
+
+Seit §S3 zeigt die Maschinenebene das Ergebnis einer Prüfung: in Alltagssprache,
+mit dem Bildplatz und der Hör-Lupe. Daneben stand die ganze Zeit der alte
+Ergebnisdialog — dieselbe Prüfung, zwei Darstellungen, und nur eine davon
+bewacht.
+
+**Die Weiche stand in `3-Diagnose`:**
+
+```ts
+if (gehoertDerMaschinenebene(this.machine.id)) …  // neue Ebene
+else this.showResults(diagnosis);                  // alter Dialog
+```
+
+Wer über die Maschinenebene hereinkam, sah das Neue; wer über die
+**Bestandsliste** kam, den alten Dialog mit Tacho und „HEALTHY". Das war beim
+Bau von §S3 als Zwischenschritt ausdrücklich so entschieden — „ihn in einem Zug
+mit umzubauen hieße, zwei Dinge auf einmal zu ändern". Dieser Schnitt holt es
+nach.
+
+**Die Weiche ist weg.** Eine Prüfung betrifft genau eine Maschine, und ihr
+Ergebnis gehört auf die Seite dieser Maschine — gleich, wo man losgegangen ist.
+Mit ihr entfallen der Merker `pruefungAngemeldet()` und die Frage
+`gehoertDerMaschinenebene()`: Wenn es nur einen Ort gibt, braucht niemand mehr
+zu wissen, wer gestartet hat.
+
+### Die eine Ausnahme, und warum sie keine ist
+
+Der **Flottenlauf** prüft eine Reihe von Maschinen und schaltet sich nach
+1,5 Sekunden selbst weiter. Ihn nach jeder Maschine auf eine Maschinenseite zu
+führen, unterbräche genau das, was er ist. Er behält deshalb den kurzen Dialog.
+
+Das ist keine Ausnahme vom Ort, sondern eine andere Sache: Der Flottenlauf ist
+kein Blick auf **eine** Prüfung, sondern ein Durchlauf durch viele. Sein
+Ergebnis ist die Zusammenfassung am Ende, nicht das Bild dazwischen.
+
+Gesagt wird es ausdrücklich — `router` → `diagnosePhase.setFlottenlauf(…)` —
+und nicht aus dem Vorhandensein eines Rückrufs erraten. Der Router weiß es,
+also sagt er es.
+
+**Der Schnellvergleich** bleibt ebenfalls unberührt: Er vergleicht mehrere
+Maschinen miteinander und zeigt eine Liste. Das ist von vornherein kein
+Prüfergebnis, sondern eine Gegenüberstellung.
+
+### Was der Durchlauf jetzt misst
+
+`durchlauf` geht ab Schritt 8 genau den Weg, um den es geht: **über die
+Bestandsliste**, nicht über die Maschinenebene. Zwei neue Schritte am Ende:
+
+```
+✓ 15. Ergebnis steht auf der Maschinenseite  →  Die Messung klingt wie der Normalzustand.
+✓ 16. der alte Ergebnisdialog bleibt zu      →  zu
+```
+
+Beides, nicht nur eines: Nur zu prüfen, dass der alte Dialog zubleibt, hieße ein
+Verschwinden zu messen statt eines Orts. Absichtlich falsifiziert, indem die
+alte Verzweigung wiederhergestellt wurde:
+
+```
+✗ 15. Ergebnis steht auf der Maschinenseite  →  nicht auf der Maschinenebene
+✗ 16. der alte Ergebnisdialog bleibt zu      →  er steht offen
+```
+
+### Was der alte Dialog noch trägt
+
+`showResults()` bleibt im Code — für den Flottenlauf. Er verschwindet, wenn auch
+die Reihe ihre eigene Form bekommt; bis dahin ist er kein toter Code, sondern
+der Weg einer anderen Sache.
+
 ### S4j — Eine Auskunft an einer Stelle, und die Runde (22.08.2026)
 
 Der Auftraggeber schickte ein Bildschirmfoto von „Pumpe 1" mit zwei Sätzen:

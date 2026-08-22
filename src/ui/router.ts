@@ -996,6 +996,15 @@ export class Router {
       }
     });
 
+    /**
+     * Der Diagnosephase sagen, ob eine Reihe läuft.
+     *
+     * Sie entscheidet daran, wohin das Ergebnis geht: auf die Maschinenseite
+     * (eine Prüfung, eine Maschine) oder in den kurzen Dialog, den die Reihe
+     * selbst weiterschaltet. Gesagt und nicht erraten — der Router weiß es.
+     */
+    this.diagnosePhase.setFlottenlauf(this.isFleetQueueActive);
+
     // Sprint 5: Register fleet queue callbacks if queue is active
     if (this.isFleetQueueActive) {
       this.diagnosePhase.setOnDiagnosisComplete((diagnosis) => {
