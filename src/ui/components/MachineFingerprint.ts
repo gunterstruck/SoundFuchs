@@ -11,7 +11,7 @@
  */
 
 import { setCanvasSize } from '@utils/canvasUtils.js';
-import { signedColor } from '@core/dsp/klangfarben.js';
+import { turboColor } from '@core/dsp/klangfarben.js';
 
 export interface FingerprintOptions {
   /** Number of points around the circle (the reference vector is averaged into this many). */
@@ -122,10 +122,10 @@ export function renderMachineFingerprint(
 /**
  * DIE IRIS ALS VERGLEICH
  *
- * Dieselbe runde Form, aber zwei Spektren übereinander: der Normalzustand als
- * ruhige Linie, die Messung als kräftige Linie darauf, und der Zwischenraum in
- * der Richtungsfarbe — warm, wo die Messung lauter ist, kühl, wo sie leiser
- * ist.
+ * Dieselbe runde Form wie die Einzel-Iris und dieselbe Aussage ihrer Farben:
+ * Der Körper ist die Messung, Sektor für Sektor nach der STÄRKE der Frequenz
+ * eingefärbt — kalt heißt leise, rot heißt stark. Darüber liegt der
+ * Normalzustand als weiße Umrisslinie.
  *
  * Warum rund und nicht flach: Der Auftraggeber hat es am 22.08.2026 so
  * beschrieben — „man kann direkt schnell erkennen, ob es wenigstens ähnlich
@@ -133,9 +133,14 @@ export function renderMachineFingerprint(
  * Ring heißt gleich, eine Zacke heißt anders, und man braucht dafür weder
  * Achsenbeschriftung noch Übung.
  *
- * Die Farben sind NICHT die der Einzel-Iris, sondern die des Unterschieds
- * (`core/dsp/klangfarben.ts`). Wer im Spektrogramm gelernt hat, dass Warm
- * „mehr geworden" heißt, soll es hier nicht neu lernen müssen.
+ * Die Farbskala ist `turboColor` — dieselbe wie im flachen Spektrogramm und im
+ * Gebirge. Die alte Einzel-Iris hat eine eigene (blau → grün → braun); sie hier
+ * zu übernehmen hieße, im selben Bildplatz zwei Stärkeskalen zu führen.
+ *
+ * Und es bleibt bei EINER Farbbedeutung. Die Richtung des Unterschieds liest
+ * man an der Form: Wo Farbe über die Umrisslinie hinausragt, ist es lauter
+ * geworden; wo die Linie außen liegt, leiser. Die Richtung in Farbe gibt es
+ * eine Quelle weiter, unter „Unterschied".
  */
 export function renderIrisVergleich(
   canvas: HTMLCanvasElement,
@@ -181,45 +186,36 @@ export function renderIrisVergleich(
   ctx.clearRect(0, 0, width, height);
 
   /**
-   * 0. Der Normalzustand als ruhige Fläche.
+   * 1. Der Körper: die Messung, Sektor für Sektor nach STÄRKE eingefärbt.
    *
-   * Ohne sie standen im ersten Aufmaß zwei helle Linien fast deckungsgleich
-   * übereinander, und man sah weder die eine noch die andere. Die Fläche ist
-   * die Form, gegen die verglichen wird — sie muss zu sehen sein, auch da, wo
-   * nichts abweicht.
+   * Kalt heißt leise, rot heißt stark — dieselbe Skala wie im flachen
+   * Spektrogramm und im Gebirge (`turboColor`). Der Auftraggeber hat am
+   * 22.08.2026 genau darauf hingewiesen: Die alte Iris hatte diese Farbe, die
+   * erste Fassung des Vergleichs hatte nur noch eine Linie im Kreis. Damit war
+   * zwar die Form zu sehen, aber nicht mehr, WO die Maschine laut ist.
+   *
+   * Und es bleibt bei EINER Farbbedeutung im Bild. Die erste Fassung färbte
+   * zusätzlich den Zwischenraum nach Richtung ein — zwei Farbsprachen in einem
+   * Kreis, von denen man beim Hinsehen nicht weiß, welche gerade gilt. Die
+   * Richtung liest man an der Form: Wo Farbe über die Umrisslinie des
+   * Normalzustands hinausragt, ist es lauter geworden; wo die Linie außen
+   * liegt, leiser.
    */
-  ctx.beginPath();
-  for (let p = 0; p <= punkte; p++) {
-    const { x, y } = ort(normA[p % punkte], p % punkte);
-    if (p === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(71, 85, 105, 0.55)';
-  ctx.fill();
-
-  // 1. Der Zwischenraum, Sektor für Sektor in der Richtungsfarbe.
   for (let p = 0; p < punkte; p++) {
     const q = (p + 1) % punkte;
-    const abstand = (Math.abs(normB[p] - normA[p]) + Math.abs(normB[q] - normA[q])) / 2;
-    if (abstand < 0.004) continue;
-    const richtung = normB[p] + normB[q] >= normA[p] + normA[q] ? 1 : -1;
-    // Der Abstand ist ein Anteil des Radius; ×3 macht kleine Abweichungen
-    // sichtbar, ohne dass große sofort in die Sättigung laufen.
-    const [r, g, bl] = signedColor(Math.min(1, abstand * 3), richtung);
-    const a1 = ort(normA[p], p);
-    const a2 = ort(normA[q], q);
+    const [r, g, bl] = turboColor((normB[p] + normB[q]) / 2);
+    const farbe = `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(bl * 255)})`;
     const b1 = ort(normB[p], p);
     const b2 = ort(normB[q], q);
     ctx.beginPath();
-    ctx.moveTo(a1.x, a1.y);
-    ctx.lineTo(a2.x, a2.y);
-    ctx.lineTo(b2.x, b2.y);
+    ctx.moveTo(cx, cy);
     ctx.lineTo(b1.x, b1.y);
+    ctx.lineTo(b2.x, b2.y);
     ctx.closePath();
-    const farbe = `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(bl * 255)})`;
     ctx.fillStyle = farbe;
     ctx.fill();
+    // Mit derselben Farbe nachziehen: sonst bleiben Haarlinien zwischen den
+    // Sektoren stehen.
     ctx.strokeStyle = farbe;
     ctx.lineWidth = 1;
     ctx.stroke();
@@ -238,10 +234,16 @@ export function renderIrisVergleich(
     ctx.stroke();
   };
 
-  // 2. Der Normalzustand als ruhige Linie — die Form, gegen die man vergleicht.
-  linie(normA, 'rgba(148, 163, 184, 0.95)', 1.5);
-  // 3. Die Messung darauf, kräftiger: Sie ist das Neue.
-  linie(normB, 'rgba(241, 245, 249, 0.95)', 2);
+  /**
+   * 2. Der Normalzustand als Umrisslinie — der Maßstab, nicht der Inhalt.
+   *
+   * Weiß und gestrichelt: Sie muss über jeder Turbo-Farbe lesbar sein, von
+   * tiefem Blau bis Rot, und sie darf nicht wie ein Teil des Spektrums
+   * aussehen. Ein durchgezogener heller Strich täte beides nicht.
+   */
+  ctx.setLineDash([5, 4]);
+  linie(normA, 'rgba(255, 255, 255, 0.92)', 2);
+  ctx.setLineDash([]);
 }
 
 /** Ein Spektrum in `punkte` Sektoren auf logarithmischer Frequenzachse. */

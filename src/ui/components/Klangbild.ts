@@ -85,6 +85,8 @@ export class Klangbild {
   private auswahlzeile: HTMLElement;
   private auswahlKnopf: HTMLButtonElement;
   private auswahlText: HTMLElement;
+  /** Die eine Zeile unter dem Bild: erklärt die Geste — oder die Iris. */
+  private hinweis: HTMLElement;
   private spieler = new SlowListenPlayer();
   private laeuft = false;
   /** Merker, damit ein Zug nicht als Tipp durchgeht. */
@@ -121,6 +123,8 @@ export class Klangbild {
     this.auswahlKnopf.className = 'klangbild-auswahl-spielen';
     this.auswahlText = document.createElement('span');
     this.auswahlText.className = 'muted small klangbild-auswahl-bereich';
+    this.hinweis = document.createElement('p');
+    this.hinweis.className = 'muted small klangbild-ziehhinweis';
 
     if (!this.hasContent) {
       wurzel.style.display = 'none';
@@ -212,10 +216,7 @@ export class Klangbild {
 
     wurzel.appendChild(this.auswahlzeile);
 
-    const hinweis = document.createElement('p');
-    hinweis.className = 'muted small klangbild-ziehhinweis';
-    hinweis.textContent = t('klangbild.ziehen');
-    wurzel.appendChild(hinweis);
+    wurzel.appendChild(this.hinweis);
 
     this.zeige(this.quelle);
   }
@@ -271,9 +272,14 @@ export class Klangbild {
       // sinnlos. Der Rahmen bleibt liegen, wird aber nicht gezeigt.
       this.auswahlRahmen.hidden = true;
       this.auswahlzeile.hidden = true;
+      // Eine weiße gestrichelte Linie ohne Erklärung ist ein Rätsel. Der
+      // Hinweis wechselt deshalb mit der Quelle statt zu verschwinden — und
+      // die Zeile behält ihre Höhe, sodass das Bild nicht wandert.
+      this.hinweis.textContent = t('klangbild.irisLegende');
       this.zeichneIris();
       return;
     }
+    this.hinweis.textContent = t('klangbild.ziehen');
     this.zeichneFlach();
     // Dieselbe Auswahl, neue Quelle: Das Rechteck bleibt, was gespielt wird,
     // wechselt mit dem Bild.

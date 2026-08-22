@@ -1971,6 +1971,49 @@ Unter Profi bleibt deshalb das **tiefe** Werkzeug in der Hör-Lupe — mit
 Maßstabsvergleich, Quellenwahl und Teilen. Die Geste auf dem Bildplatz gehört zu
 **Basis**.
 
+### S5b-Nachtrag — Die Iris bekommt ihre Farbe zurück (22.08.2026)
+
+Der Auftraggeber, nach dem ersten Blick auf die neue Iris: „Schau da noch mal
+nach. Bei Zanobo haben wir da noch Farben — Farbe für die Stärke der Frequenz,
+und zwar kalt, wenn es leise ist, und rot, wenn die Frequenz stark ausgeprägt
+ist. Jetzt sehe ich hier unter der Iris eigentlich nur den Pfad oder eine Linie
+im Kreis."
+
+**Er hat recht, und der Verlust war hausgemacht.** Die alte Einzel-Iris
+(`renderMachineFingerprint`) färbt jeden Sektor nach der Stärke seines Bandes.
+Der neue Vergleich zeichnete stattdessen zwei Linien und färbte nur den
+Zwischenraum nach Richtung. Damit war die Form zu sehen — aber nicht mehr, **wo**
+die Maschine laut ist. Genau die Auskunft, für die es die Iris gibt.
+
+**Jetzt:** Der Körper ist die Messung, Sektor für Sektor nach Stärke eingefärbt.
+Darüber liegt der Normalzustand als weiße gestrichelte Umrisslinie.
+
+**Warum `turboColor` und nicht die alte Skala.** Die Einzel-Iris hat eine eigene
+Rampe (blau → grün → braun). Im Bildplatz liegen aber Spektrogramm, Gebirge und
+Iris nebeneinander, einen Reiter voneinander entfernt — zwei Stärkeskalen im
+selben Bild wären zwei Antworten auf dieselbe Frage. `turboColor` ist die Skala,
+die dort schon gilt, und sie ist genau die, die der Auftraggeber beschrieben
+hat: kalt für leise, rot für stark.
+
+**Und nur EINE Farbbedeutung.** Die Richtungsfarbe des Zwischenraums ist damit
+weg. Zwei Farbsprachen in einem Kreis heißt, beim Hinsehen nicht zu wissen,
+welche gerade gilt. Die Richtung liest man jetzt an der Form: Wo Farbe über die
+weiße Linie hinausragt, ist es lauter geworden; wo die Linie außen liegt,
+leiser. In Farbe gibt es die Richtung eine Quelle weiter, unter „Unterschied".
+
+**Eine Legende, weil eine weiße gestrichelte Linie sonst ein Rätsel ist.** Unter
+dem Bild steht in der Iris: „Farbe = Stärke der Frequenz · weiße Linie =
+Normalzustand". Sie steht in derselben Zeile, die sonst die Ziehgeste erklärt —
+gleiche Höhe, damit der Bildplatz nicht wandert.
+
+`wow` prüft jetzt nicht mehr nur, DASS die Iris gemalt ist, sondern dass sie
+**kalte und warme** Bildpunkte enthält. Eine einfarbige Fläche oder eine bloße
+Linie fällt damit auf. Absichtlich falsifiziert:
+
+```
+✗ Fall C: die Iris zeigt keine Stärke — kalt für leise, rot für stark fehlt im Bild
+```
+
 ### S4j — Eine Auskunft an einer Stelle, und die Runde (22.08.2026)
 
 Der Auftraggeber schickte ein Bildschirmfoto von „Pumpe 1" mit zwei Sätzen:
