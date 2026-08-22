@@ -564,8 +564,35 @@ body.tiefe-arbeit #karte-bestandswege {
 
    240 px hoch: genug, um ein Spektrogramm zu lesen, und wenig genug, dass
    Urteil, Handlung und Bild zusammen ohne Scrollen ins Bild passen. */
+/* ── Der Bildplatz ──────────────────────────────────────────────────────────
+
+   Er steht in jedem Zustand an derselben Stelle. Über ihm liegt nur, was sich
+   zwischen den Zuständen nicht ändert — Name, letzter Stand, die eine
+   Handlung; alles Zustandsabhängige steht darunter.
+
+   Der Auftraggeber hat am 22.08.2026 den Grund genannt: Kam ein Ergebnis,
+   schoben sich Punkt, Satz und Beleg über das Spektrogramm und drückten es
+   nach unten. Wer zwischen zwei Ansichten hin- und herschaltet, um mit dem Auge
+   zu vergleichen, vergleicht dann zwei Stellen statt zweier Bilder. */
+.maschine-bildplatz {
+  margin-top: 18px;
+}
+
+/* Der Urteilsblock: Punkt, Satz und Beleg — unter dem Bild.
+
+   Er trägt keinen eigenen Abstand nach oben, den bringt der Bildplatz mit. */
+.maschine-urteil:not(:empty) {
+  margin-top: 14px;
+}
+
+/* Ein Platz, der leer bleibt, bis die Runde ihren Namen hat. Ohne ihn würde
+   der Knopf beim Nachreichen ans Ende der Seite rutschen. */
+.maschine-rundenplatz:empty {
+  display: none;
+}
+
 .klangbild {
-  margin-top: 20px;
+  margin-top: 0;
 }
 
 .klangbild-buehne {

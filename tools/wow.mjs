@@ -98,6 +98,8 @@ const BUDGET = {
    * während das Beste vier Tipps entfernt lag.
    */
   leerRaum: 160,
+  /** Um wie viele Pixel der Bildplatz zwischen zwei Zuständen wandern darf. */
+  bildplatzWandert: 2,
 };
 
 async function freierPort() {
@@ -801,6 +803,12 @@ const AUFMASS_ERGEBNIS = () => {
     // Die Runde: Nach einem Ergebnis steht da, was ohnehin als Nächstes
     // drankommt — mit Namen, sonst wäre es ein Sprung ins Ungewisse.
     runde: document.querySelector('.maschine-runde')?.textContent?.trim() ?? '',
+    // Der Bildplatz: Steht das Spektrogramm im Ergebnis dort, wo es auch im
+    // Ruhezustand stand? Nur dann kann das Auge zwei Zustände vergleichen.
+    klangbildOben: (() => {
+      const k = document.querySelector('.klangbild-flach')?.getBoundingClientRect();
+      return k ? Math.round(k.top) : null;
+    })(),
     name: document.querySelector('.maschine-kopf h2')?.textContent?.trim() ?? '',
     zuKlein: [...tiefe.querySelectorAll('button')]
       .filter(sichtbar)
@@ -1022,6 +1030,9 @@ try {
         klangbild: Boolean(bild),
         klangbildGemalt: gemalt,
         klangbildImBild: bildKasten ? bildKasten.bottom <= window.innerHeight : false,
+        // Wo genau das Bild anfängt. Der Vergleich mit derselben Zahl im
+        // Ergebnis ist der ganze Zweck des Bildplatzes.
+        klangbildOben: bildKasten ? Math.round(bildKasten.top) : null,
         klangbildQuellen: document.querySelectorAll('.klangbild-quelle').length,
         ungenutztUnten: Math.round(window.innerHeight - unterste),
       };
@@ -1153,6 +1164,9 @@ try {
     console.log(`  eine Handlung                  ${schlecht.aktionsname || '(fehlt)'}`);
     console.log(`  Hör-Lupe im Bild               ${schlecht.lupe ? 'ja' : 'NEIN'}`);
     console.log(`  Quellen                        ${schlecht.quellen.join(' · ') || '(keine)'}`);
+    console.log(
+      `  Bildplatz (Ruhe → Ergebnis)    ${ruhe.klangbildOben} px → ${schlecht.klangbildOben} px`
+    );
 
     pruefe(
       tippsDanach !== -2,
@@ -1206,6 +1220,32 @@ try {
     pruefe(
       schlecht.zuKlein.length === 0,
       `Fall A: Antippziele unter ${BUDGET.antippgroesse} px — ${schlecht.zuKlein.join(', ')}`
+    );
+    /**
+     * DER BILDPLATZ WANDERT NICHT.
+     *
+     * Dieselbe Maschine, zwei Zustände, ein Bild — und es muss an derselben
+     * Stelle stehen. Der Auftraggeber hat am 22.08.2026 beschrieben, warum:
+     * Wer zwischen zwei Ansichten hin- und herschaltet, um mit dem Auge zu
+     * vergleichen, vergleicht zwei Stellen statt zweier Bilder, sobald sich
+     * die Ansicht dazwischen verschiebt.
+     *
+     * Verglichen wird gegen Fall C — denselben Ruhezustand, dieselbe Maschine,
+     * dasselbe Fenster, nur ein paar Sekunden früher.
+     */
+    pruefe(
+      schlecht.klangbildOben !== null,
+      'Fall A: im Ergebnis steht kein Spektrogramm — es gibt nichts zu vergleichen'
+    );
+    pruefe(
+      ruhe.klangbildOben !== null &&
+        schlecht.klangbildOben !== null &&
+        Math.abs(ruhe.klangbildOben - schlecht.klangbildOben) <= BUDGET.bildplatzWandert,
+      `Fall A: der Bildplatz wandert zwischen Ruhe und Ergebnis um ${
+        ruhe.klangbildOben !== null && schlecht.klangbildOben !== null
+          ? Math.abs(ruhe.klangbildOben - schlecht.klangbildOben)
+          : '?'
+      } px (erlaubt ${BUDGET.bildplatzWandert})`
     );
 
     // Der eine Tipp, um den es geht.
