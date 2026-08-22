@@ -52,27 +52,6 @@ export interface Pruefergebnis {
 let ergebnis: Pruefergebnis | null = null;
 
 /**
- * Die Maschine, deren Prüfung von der Maschinenebene aus gestartet wurde.
- *
- * Daran entscheidet sich, wer das Ergebnis zeigt: Wer über die Maschinenebene
- * hereinkam, bekommt sie auch wieder — und nicht den alten Ergebnisdialog
- * obendrauf. Ein Merker und keine DOM-Abfrage: `document.body.classList` wäre
- * an dieser Stelle Fachlogik im Stylesheet-Zuständigkeitsbereich, und sie wäre
- * schon falsch, sobald jemand eine Klasse umbenennt.
- */
-let angemeldet: string | null = null;
-
-/** Die Maschinenebene schickt den Nutzer in eine Aufnahme oder Prüfung. */
-export function pruefungAngemeldet(maschinenId: string): void {
-  angemeldet = maschinenId;
-}
-
-/** Gehört das Ergebnis dieser Maschine der neuen Ebene? */
-export function gehoertDerMaschinenebene(maschinenId: string): boolean {
-  return angemeldet === maschinenId;
-}
-
-/**
  * Ein Ergebnis hinterlegen und es ansagen.
  *
  * Erst hinterlegen, dann ansagen — in der anderen Reihenfolge käme ein
@@ -100,5 +79,4 @@ export function holeErgebnis(maschinenId: string): Pruefergebnis | null {
  */
 export function vergissErgebnis(): void {
   ergebnis = null;
-  angemeldet = null;
 }

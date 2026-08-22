@@ -394,6 +394,43 @@ try {
     ergebnis ? JSON.stringify(ergebnis) : ''
   );
 
+  /**
+   * ── EIN ERGEBNIS, EIN ORT ──────────────────────────────────────────────
+   *
+   * Dieser Lauf ist genau der Weg, um den es geht: Er kommt NICHT über die
+   * Maschinenebene herein, sondern über die Bestandsliste (Schritt 8). Bis zum
+   * 22.08.2026 landete er deshalb im alten Ergebnisdialog — dieselbe Prüfung,
+   * zwei Darstellungen, und nur eine davon bewacht.
+   *
+   * Geprüft wird beides: dass das Ergebnis auf der Maschinenseite steht (in
+   * ihren Worten, mit ihrem Bild) und dass der alte Dialog NICHT aufgeht. Nur
+   * das zweite zu prüfen hieße, ein Verschwinden zu messen statt eines Orts.
+   */
+  await page.waitForTimeout(3000);
+  const ergebnisort = await page.evaluate(() => {
+    const dialog = document.getElementById('diagnosis-modal');
+    const sichtbar = (el) =>
+      Boolean(el) && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0;
+    return {
+      aufDerMaschine: document.body.classList.contains('tiefe-maschine'),
+      satz: document.querySelector('.maschine-ergebnissatz')?.textContent?.trim() ?? '',
+      bild: Boolean(document.querySelector('.klangbild-flach')),
+      alterDialog: sichtbar(dialog),
+    };
+  });
+  pruefe(
+    15,
+    'Ergebnis steht auf der Maschinenseite',
+    ergebnisort.aufDerMaschine && ergebnisort.satz.length > 0,
+    ergebnisort.satz || (ergebnisort.aufDerMaschine ? 'kein Satz' : 'nicht auf der Maschinenebene')
+  );
+  pruefe(
+    16,
+    'der alte Ergebnisdialog bleibt zu',
+    !ergebnisort.alterDialog,
+    ergebnisort.alterDialog ? 'er steht offen' : 'zu'
+  );
+
   // Hier endet der Hauptweg, und zwar bewusst beim gespeicherten Ergebnis: Das
   // war die Frage. Die Schritte 1–11 bleiben deshalb unverändert und
   // vergleichbar — sie messen die Länge des Weges, und diese Zahl darf beim
