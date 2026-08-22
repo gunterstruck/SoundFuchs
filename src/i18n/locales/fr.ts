@@ -76,6 +76,11 @@ export const fr: TranslationDict = {
   // La loupe d\u2019écoute (coupe 3) : état normal · mesure · différence.
   // L’image sonore sur la page machine.
   klangbild: {
+    auswahlSpielen: '▶ Écouter la sélection',
+    auswahlStoppen: '■ Arrêter',
+    auswahlWeg: 'Annuler la sélection',
+    auswahlBereich: '{{von}}–{{bis}} s · {{tief}}–{{hoch}}',
+    ziehen: 'Toucher pour la vue 3D · glisser pour isoler un endroit.',
     quelleIris: 'Iris',
     irisAlt: 'Comparaison circulaire : état normal et mesure superposés',
     vergroessern: 'Toucher pour la grande vue',

@@ -1802,10 +1802,15 @@ Normalzustand aufnehmen, der Bildplatz mit seinen Quellen (Normalzustand,
 Messung, Unterschied, **Iris**), ein Tipp auf das Gebirge, Unterschied anhören,
 Verlauf, die Runde, das Geräusch-Briefing.
 
-*Profi — die Werkzeuge zum Sezieren:* Auswahl im Spektrogramm und das Abspielen
-der Auswahl, die Hervorhebungsstufen, das Teilen- und Exportpaket, Kennzahlen
-und Debug-Ausgaben, Schnellvergleich und Flotte, die Einstellungen der
-Auswertung.
+*Profi — die Werkzeuge zum Sezieren:* das tiefe Auswahlwerkzeug in der Hör-Lupe
+(Maßstabsvergleich, eigene Quellenwahl, Teilen), die Hervorhebungsstufen, das
+Teilen- und Exportpaket, Kennzahlen und Debug-Ausgaben, Schnellvergleich und
+Flotte, die Einstellungen der Auswertung.
+
+_Korrigiert am 22.08.2026 mit §S5c:_ Das schlichte Aufziehen und Anhören eines
+Ausschnitts stand hier zuerst unter Profi. Das war falsch gedacht — es ist der
+Kern eines akustischen Werkzeugs, nicht sein Zubehör, und der Auftraggeber hat
+es ausdrücklich für die obere Ebene verlangt. Es gehört zu Basis.
 
 Das Gebirge bleibt ausdrücklich in **Basis**. Es war einmal hinter der
 Profi-Stufe versteckt, und genau das hat der Auftraggeber im August als Fehler
@@ -1899,6 +1904,72 @@ große Ansicht verschwunden ist. Absichtlich falsifiziert:
 ```
 ✗ Fall C: die Iris ist leer — eine Leinwand mit Maßen ist kein Bild
 ```
+
+### S5c — Eine Stelle herausgreifen und hören (22.08.2026)
+
+Der Auftraggeber: „Jetzt im Moment sehe ich direkt das zweidimensionale
+Spektrum, aber ich kann da bestimmte Stellen nicht herausnehmen — diese Funktion
+fehlt noch. … Würde auch ganz gerne, dass ich dieses Spektrogramm eben auch
+vorspielen lassen kann. Fände das schon gut, wenn das direkt auf dieser oberen
+Ebene machbar und sichtbar ist."
+
+**Es gab das schon — eine Etage tiefer.** In der Hör-Lupe steckt ein
+vollständiges Werkzeug (`SpectrogramSelectionPanel`) mit eigener Quellenwahl,
+Maßstabsschaltern und aufklappbarem Rahmen. Es dorthin zu kopieren hätte auf der
+Maschinenseite ein zweites Bild mit zweiten Reitern über das erste gelegt.
+
+**Deshalb ist es hier keine Werkzeugkiste, sondern eine Geste:**
+
+> **Tipp** heißt Gebirge. **Zug** heißt Auswahl.
+
+Dieselbe Fläche, zwei Absichten, die man nicht verwechseln kann — und die man
+auch technisch nicht verwechseln darf. Ab 10 px Wegstrecke gilt es als Zug; ein
+Zug unterdrückt anschließend den Klick, sonst öffnete jedes aufgezogene Rechteck
+danach das Gebirge.
+
+Unter dem Bild erscheint dann eine Zeile: **„▶ Auswahl hören"**, daneben der
+Bereich in Klartext — `2,0–7,0 s · 96 Hz–2,5 kHz` — und ein ✕, das sie aufhebt.
+
+**Gespielt wird, was man sieht.** Steht „Messung" im Bild, hört man den
+Ausschnitt der Messung; steht „Unterschied" darin, den des Unterschieds. Etwas
+anderes zu spielen als das Gezeigte wäre die eine Verwechslung, die dieses
+Werkzeug nicht machen darf — das Bild ist der Beleg für das Gehörte. Der
+Rahmen bleibt beim Quellenwechsel stehen: Dieselbe Stelle, andere Aufnahme.
+
+In der Iris gibt es keine Auswahl: Sie hat keine Zeitachse.
+
+### Was `wow` davon misst
+
+Die ganze Kette, mit echten Zeigerereignissen statt gesetzter Zustände — ob Tipp
+und Zug auseinandergehalten werden, ist ja genau die Frage:
+
+```
+Zug auf dem Bild            Rahmen steht
+Bereich                     2.0–7.0 s · 96 Hz–2,5 kHz
+ein Tipp spielt die Auswahl ■ Stoppen
+```
+
+Geprüft wird: Der Rahmen steht und hat Fläche; die Zeile darunter ist da; sie
+nennt Zeit **und** Frequenz; das Gebirge ist **nicht** aufgegangen; und ein Tipp
+auf „Auswahl hören" schaltet den Knopf auf „Stoppen".
+
+Absichtlich falsifiziert, indem die Zug-Sperre entfernt wurde:
+
+```
+✗ Fall C: ein Zug über das Bild hinterlässt keinen Auswahlrahmen
+✗ Fall C: der Zug wurde als Tipp gewertet — das Gebirge steht, statt eine Auswahl zu bestehen
+```
+
+### Eine Korrektur an der Einordnung aus §S5
+
+Im Konzept stand die Auswahl unter **Profi**. Das war falsch gedacht: Der
+Auftraggeber hat sie ausdrücklich als etwas benannt, das ihm auf der *oberen*
+Ebene fehlt. Ein Ausschnitt aufziehen und anhören ist der Kern eines
+akustischen Werkzeugs, nicht sein Zubehör.
+
+Unter Profi bleibt deshalb das **tiefe** Werkzeug in der Hör-Lupe — mit
+Maßstabsvergleich, Quellenwahl und Teilen. Die Geste auf dem Bildplatz gehört zu
+**Basis**.
 
 ### S4j — Eine Auskunft an einer Stelle, und die Runde (22.08.2026)
 
