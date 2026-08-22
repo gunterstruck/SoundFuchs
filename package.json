@@ -21,6 +21,7 @@
     "css-check": "node tools/css-check.mjs",
     "durchlauf": "node tools/durchlauf.mjs",
     "wow": "node tools/wow.mjs",
+    "runde": "node tools/runde-lauf.mjs",
     "stammvergleich": "node tools/stammvergleich.mjs"
   },
   "dependencies": {

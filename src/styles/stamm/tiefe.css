@@ -135,7 +135,8 @@ body.tiefe-offen #app > *:not(.topbar):not(#mobile-topnav):not(#sidebar) {
 
    Die Abfragen sind wortgleich `PHONE_FACE_MEDIA` und `DESKTOP_FACE_MEDIA` aus
    `stamm/core/viewport.ts` — kein drittes Gesicht. */
-@media (max-width: 768px), (max-width: 1200px) and (orientation: portrait),
+@media (max-width: 768px),
+  (max-width: 1200px) and (orientation: portrait),
   (max-width: 900px) and (max-height: 520px) {
   body.tiefe-offen .zanobo-tiefe {
     /* Unter dem Kopfstreifen, über der Guckhöhe des Blatts. */
@@ -144,7 +145,8 @@ body.tiefe-offen #app > *:not(.topbar):not(#mobile-topnav):not(#sidebar) {
   }
 }
 
-@media (min-width: 1201px), (min-width: 901px) and (orientation: landscape),
+@media (min-width: 1201px),
+  (min-width: 901px) and (orientation: landscape),
   (min-width: 769px) and (orientation: landscape) and (min-height: 521px) {
   /* Am Schreibtisch steht die Leiste links. Offen schiebt sie die Tiefe zur
      Seite, statt sich über sie zu legen — wie bei der Karte. */
@@ -228,8 +230,7 @@ body.tiefe-offen:not(.tiefe-maschine):not(.tiefe-arbeit):not(.tiefe-bestand)
 body.tiefe-offen:not(.tiefe-maschine):not(.tiefe-arbeit):not(.tiefe-bestand)
   .zanobo-tiefe
   > .tiefe-grip,
-body.tiefe-offen:not(.tiefe-maschine):not(.tiefe-arbeit):not(.tiefe-bestand)
-  .maschinen-ansicht {
+body.tiefe-offen:not(.tiefe-maschine):not(.tiefe-arbeit):not(.tiefe-bestand) .maschinen-ansicht {
   display: none;
 }
 
@@ -376,7 +377,8 @@ body.tiefe-arbeit #karte-bestandswege {
    `gesichter.test.ts` abgewiesen: Eine eigene Schwelle bei 900 trifft das
    Tablet hochkant und sonst niemanden — das ist ein drittes Gesicht, und
    entstanden wäre es hier nicht aus Absicht, sondern aus Bequemlichkeit. */
-@media (min-width: 1201px), (min-width: 901px) and (orientation: landscape),
+@media (min-width: 1201px),
+  (min-width: 901px) and (orientation: landscape),
   (min-width: 769px) and (orientation: landscape) and (min-height: 521px) {
   .standort-maschinen {
     display: grid;
@@ -384,7 +386,6 @@ body.tiefe-arbeit #karte-bestandswege {
     gap: 8px 12px;
   }
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════
    DIE MASCHINEN-ARBEITSEBENE
@@ -592,7 +593,8 @@ body.tiefe-arbeit #karte-bestandswege {
    stand hier vorher eine 900 px breite Mobilspalte in der Mitte — dieselbe
    Anordnung, nur mit mehr Weiß daneben. Fläche, die man nicht nutzt, muss man
    sich nicht nehmen. */
-@media (min-width: 1201px), (min-width: 901px) and (orientation: landscape),
+@media (min-width: 1201px),
+  (min-width: 901px) and (orientation: landscape),
   (min-width: 769px) and (orientation: landscape) and (min-height: 521px) {
   .maschinen-ansicht-ergebnis {
     max-width: 1120px;
@@ -933,6 +935,30 @@ body.tiefe-arbeit #karte-bestandswege {
 
 .maschine-runde:hover {
   border-color: var(--color-primary);
+}
+
+/* Das Ende der Runde: eine Feststellung, kein Knopf.
+
+   Sie steht an derselben Stelle wie das Angebot weiterzugehen, weil sie
+   dieselbe Frage beantwortet — „was jetzt?". Sie ist kein Erfolgsbanner:
+   dieselbe Schriftgröße wie der Text daneben, kein Rahmen, keine Fläche. Wer
+   fertig ist, braucht keine Belohnung, sondern eine Auskunft.
+
+   Die Farbe ist die Textfarbe und kein Grün: `--color-success` (#16a34a) hat
+   auf Weiß 3,0:1 und wäre in dieser Größe unter der Lesbarkeitsgrenze, und im
+   Dunkelmodus stünde es unverändert auf dunklem Grund. Das Häkchen im Text
+   trägt die Bedeutung, ohne dass die Farbe sie tragen muss. */
+.maschine-rundefertig {
+  margin: 8px 0 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
 }
 
 /* ── Der Dunkelmodus hinter dem Scharnier ───────────────────────────────────

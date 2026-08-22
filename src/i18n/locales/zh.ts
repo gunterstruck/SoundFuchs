@@ -35,6 +35,7 @@ export const zh: TranslationDict = {
   },
   // Die Maschinen-Arbeitsebene (Zanobot_UI_Nutzerreise, Schnitt 1).
   maschine: {
+    rundeFertig: '✓ 巡检完成 — 本地点已检测 {{anzahl}} 台机器',
     naechsteMaschine: '▸ 下一台：{{name}}',
     lageUntrained: '尚无正常状态',
     lageReady: '可以检测',
