@@ -1290,6 +1290,69 @@ try {
     console.log(`  Verlauf                   ${ruhe.verlaufText || '(fehlt)'}`);
     console.log(`  ein Tipp auf das Bild     ${tief.leinwand ? 'Gebirge steht' : 'NICHTS'}`);
     pruefe(tief.panel && tief.leinwand, 'Fall C: ein Tipp auf das Klangbild bringt kein Gebirge');
+
+    /**
+     * ── AUCH DAS GEBIRGE WANDERT NICHT ────────────────────────────────────
+     *
+     * Der Auftraggeber am 22.08.2026: „Jede Kommentarzumessung kommt immer noch
+     * oberhalb von diesem 3D-Gebirge, und deswegen verschiebt sich das. Nun ist
+     * ein Vergleich ziemlich schlecht."
+     *
+     * Gemessen wird dasselbe wie beim Bildplatz, eine Etage tiefer: die
+     * Oberkante der Leinwand, vor und nach einem Wechsel der Quelle. Die
+     * Stärkeanzeige darunter darf sich ändern, wie sie will — das Bild bleibt.
+     */
+    const gebirgeVorher = await page.evaluate(() => {
+      const c = document.querySelector('.spectro3d-panel canvas');
+      return c ? Math.round(c.getBoundingClientRect().top) : null;
+    });
+    const gewechselt = await page.evaluate(() => {
+      const sichtbar = (e) => getComputedStyle(e).display !== 'none';
+      const chips = [...document.querySelectorAll('.spectro3d-toggle-row button')].filter(
+        (b) =>
+          sichtbar(b) &&
+          !b.classList.contains('spectro3d-reset') &&
+          !b.classList.contains('spectro3d-scale') &&
+          !b.classList.contains('spectro3d-time') &&
+          !/🏔️/.test(b.textContent)
+      );
+      /**
+       * Auf „Unterschied" wechseln, nicht irgendwohin.
+       *
+       * Genau dort füllt sich die Stärkeanzeige („Leicht erhöht" samt zwei
+       * Absätzen Erklärung) — bei Messung und Normalzustand bleibt sie leer.
+       * Ein Wechsel zwischen zwei leeren Zuständen verschiebt nichts und wäre
+       * eine Messung, die nie anschlägt: Der erste Versuch dieses Wächters tat
+       * genau das und blieb auch dann grün, als der Fehler absichtlich wieder
+       * eingebaut war.
+       */
+      const ziel = chips.find((b) => /unterschied/i.test(b.textContent)) ?? chips[1] ?? chips[0];
+      if (!ziel) return '';
+      ziel.click();
+      return ziel.textContent.trim();
+    });
+    await page.waitForTimeout(3500);
+    const gebirgeNachher = await page.evaluate(() => {
+      const c = document.querySelector('.spectro3d-panel canvas');
+      return c ? Math.round(c.getBoundingClientRect().top) : null;
+    });
+    console.log(
+      `  Gebirge bei „${gewechselt || '(keine Quelle)'}"   ${gebirgeVorher} px → ${gebirgeNachher} px`
+    );
+    pruefe(
+      gebirgeVorher !== null && gebirgeNachher !== null,
+      'Fall C: die Leinwand des Gebirges ist beim Quellenwechsel verschwunden'
+    );
+    pruefe(
+      gebirgeVorher === null ||
+        gebirgeNachher === null ||
+        Math.abs(gebirgeVorher - gebirgeNachher) <= BUDGET.bildplatzWandert,
+      `Fall C: das Gebirge wandert beim Quellenwechsel um ${
+        gebirgeVorher !== null && gebirgeNachher !== null
+          ? Math.abs(gebirgeVorher - gebirgeNachher)
+          : '?'
+      } px (erlaubt ${BUDGET.bildplatzWandert})`
+    );
     pruefe(
       tief.ebene,
       'Fall C: das Gebirge öffnet eine neue Ebene — es soll an Ort und Stelle wachsen'

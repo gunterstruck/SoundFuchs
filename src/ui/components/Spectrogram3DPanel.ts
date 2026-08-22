@@ -142,9 +142,25 @@ export class Spectrogram3DPanel {
     this.zeit.style.display = 'none';
     row.appendChild(this.zeit);
 
+    /**
+     * Das Gebirge steht ÜBER seiner Beurteilung, nicht darunter.
+     *
+     * Hier lag die Stärkeanzeige zwischen Knopfzeile und Gebirge. Ihre Höhe
+     * hängt am Inhalt — „Leicht erhöht" mit zwei Absätzen Erklärung ist höher
+     * als eine Zeile —, und sie wechselt mit der Quelle. Das Gebirge wanderte
+     * dadurch bei jedem Wechsel.
+     *
+     * Der Auftraggeber hat es am 22.08.2026 angestrichen: „Jede
+     * Kommentarzumessung kommt immer noch oberhalb von diesem 3D-Gebirge, und
+     * deswegen verschiebt sich das. Nun ist ein Vergleich ziemlich schlecht."
+     *
+     * Dieselbe Regel wie auf der Maschinenseite (§S5a): Was man vergleicht,
+     * bleibt stehen; was es beurteilt, steht darunter. Über dem Bild liegt nur
+     * die Knopfzeile, und die hat in jedem Zustand dieselbe Höhe.
+     */
     root.appendChild(row);
-    root.appendChild(this.strength.element);
     root.appendChild(this.host);
+    root.appendChild(this.strength.element);
 
     if (!this.hasContent) root.style.display = 'none';
   }

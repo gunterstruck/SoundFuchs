@@ -2331,6 +2331,55 @@ alte Verzweigung wiederhergestellt wurde:
 die Reihe ihre eigene Form bekommt; bis dahin ist er kein toter Code, sondern
 der Weg einer anderen Sache.
 
+### S7 — Auch das Gebirge wandert nicht (22.08.2026)
+
+Der Auftraggeber, auf ein Bildschirmfoto der 3D-Ansicht: „Jede
+Kommentarzumessung kommt immer noch oberhalb von diesem 3D-Gebirge, und deswegen
+verschiebt sich das. Nun ist ein Vergleich ziemlich schlecht."
+
+**Derselbe Fehler wie §S5a, eine Etage tiefer.** Im `Spectrogram3DPanel` stand:
+
+```ts
+root.appendChild(row);                     // Knopfzeile: Quellen, Maßstab, Zeit
+root.appendChild(this.strength.element);   // „STÄRKE DER AKUSTISCHEN ABWEICHUNG"
+root.appendChild(this.host);               // das Gebirge
+```
+
+Die Stärkeanzeige steht nur beim **Unterschied** — bei Messung und
+Normalzustand ist sie leer. Wer zwischen den Quellen wechselt, um zu
+vergleichen, verschiebt das Bild also genau dann, wenn es am meisten darauf
+ankommt.
+
+**Gemessen:**
+
+```
+Gebirge bei „Unterschied"    471 px → 659 px      = 188 px Versatz
+```
+
+Jetzt steht das Gebirge über seiner Beurteilung: Über dem Bild liegt nur noch
+die Knopfzeile, und die hat in jedem Zustand dieselbe Höhe. Nachher: **471 px →
+471 px**.
+
+Damit gilt die Regel aus §S5a jetzt an beiden Orten, an denen man vergleicht:
+*Was man vergleicht, bleibt stehen; was es beurteilt, steht darunter.*
+
+### Ein Wächter, der zuerst nichts gemessen hat
+
+Der erste Entwurf wechselte auf „die zweite Quelle" — und das war
+„Normalzustand". Dort ist die Stärkeanzeige leer, genau wie bei „Messung": ein
+Wechsel zwischen zwei leeren Zuständen verschiebt nichts. Der Wächter blieb
+deshalb auch dann grün, als der Fehler zur Falsifikation absichtlich wieder
+eingebaut war.
+
+Erst der Wechsel auf **„Unterschied"** misst die Sache. Das ist der vierte Fall
+in dieser Reihe, in dem eine Prüfung erst durch das Falsifizieren zu einer
+Prüfung wurde — und der deutlichste: Sie war nicht zu lasch eingestellt, sie sah
+an der falschen Stelle hin.
+
+```
+✗ Fall C: das Gebirge wandert beim Quellenwechsel um 188 px (erlaubt 2)
+```
+
 ### S4j — Eine Auskunft an einer Stelle, und die Runde (22.08.2026)
 
 Der Auftraggeber schickte ein Bildschirmfoto von „Pumpe 1" mit zwei Sätzen:
