@@ -1772,12 +1772,77 @@ Alle Prüfungen absichtlich falsifiziert:
 | Was eine Zeile über ihre Maschine sagt | „Referenz fehlt" | **„Noch kein Normalzustand"** |
 | Wächter auf dieser Ebene | **0** | **7, in 5 Formaten** |
 
-**S4j — Die Runde.** _offen, und der nächste naheliegende Schritt._ Ein
-Techniker prüft an einem Standort Maschine für Maschine und kehrt dazwischen
-jedes Mal zur Liste zurück. Nach einer Prüfung könnte die Maschinenseite
-anbieten, was ohnehin als Nächstes drankommt — „Nächste: Kompressor 3". Das ist
-keine neue Ebene, sondern ein Tipp weniger je Maschine, und es gäbe der
-Standortebene ihre eigentliche Bedeutung: die Runde, nicht das Verzeichnis.
+### S4j — Eine Auskunft an einer Stelle, und die Runde (22.08.2026)
+
+Der Auftraggeber schickte ein Bildschirmfoto von „Pumpe 1" mit zwei Sätzen:
+„Zuletzt 87 % · vor 3 Tagen" sei **zweimal sichtbar**, besser nur oben — und
+dann „direkt rechts neben den Maschinennamen".
+
+**Beides umgesetzt.** Der letzte Stand steht jetzt in derselben Zeile wie der
+Name; bei einem langen Namen bricht die Zeile um und es steht wieder
+untereinander. Dann entscheidet der Platz, nicht eine feste Regel.
+
+**Die zweite Fundstelle war mehr als eine Dopplung.** Unter dem Klangbild stand
+„Letzte Prüfung · 87 % · vor 4 Tagen". Wer in der Prüfungsreihe darunter auf
+„89 % · vor 5 Tagen" tippte, bekam weiterhin das Wort **„Letzte Prüfung"** über
+einer Prüfung, die nicht die letzte war. Die Beschriftung ist ersatzlos weg:
+Welche Prüfung im Bild steht, sagt die hervorgehobene Kachel in der Reihe — und
+die sagt es richtig. Mit ihr sind die Option `bildunterschrift`, der Schlüssel
+`maschine.letztePruefung` und die Regel `.klangbild-satz` entfallen. Toter Code
+wird nicht aufbewahrt, er wird später falsch wiederverwendet.
+
+Die frei gewordenen 47 px gehen wie beim letzten Mal an das Klangbild
+(`clamp(240px, 38vh, 340px)`). Ungenutzter Bildschirm in Fall C: 173 → **139 px**.
+
+### Die Runde
+
+Der zweite Teil des Auftrags war „weiter mit deiner Idee" — S4j, wie hier
+vorgemerkt.
+
+Ein Techniker prüft an einem Standort nicht eine Maschine, sondern Maschine für
+Maschine. Bisher endete jede Prüfung an derselben Stelle: bei „Fertig", einem
+Knopf, der die Seite neu zeichnet und sonst nichts. Wer weitermachen wollte,
+tippte „Zum Standort", suchte in der Liste die nächste und tippte darauf — zwei
+Tipps und ein Suchvorgang je Maschine, obwohl feststeht, was ohnehin drankommt.
+
+Nach einem Ergebnis steht dort jetzt **„▸ Nächste: Kompressor 2"**.
+
+Drei Entscheidungen dazu, alle bewusst:
+
+- **Ein Angebot, keine Führung.** Die eine dominante Handlung bleibt, was sie
+  war. Die Runde ist ein zweiter, leiserer Knopf; wer sie nicht geht, geht daran
+  vorbei. Die Alternative — „Nächste Maschine" als dominante Handlung statt
+  „Fertig" — wäre eleganter gewesen und hätte einen Techniker in eine Runde
+  gedrängt, auf der er vielleicht gar nicht ist. Sie hätte außerdem die
+  Zustandsmaschine um Standortwissen erweitert, das nicht zu ihr gehört: Sie
+  urteilt über EINE Maschine.
+- **Erst nach einem Ergebnis.** Vorher wäre es ein Drängen — „Nächste Maschine",
+  bevor man diese geprüft hat.
+- **Mit Namen.** „Weiter" ohne Ziel wäre ein Sprung ins Ungewisse. Und gibt es
+  nichts Nächstes, steht dort nichts: Ein Knopf, der zur eigenen Maschine
+  zurückführt, wäre eine Runde von eins.
+
+Welche als Nächstes drankommt, entscheidet dieselbe Frage wie die Sortierung der
+Standortliste: Was noch nie geprüft wurde, kommt zuerst; danach das, was am
+längsten her ist; bei Gleichstand der Name, damit die Reihenfolge zwischen zwei
+Besuchen dieselbe bleibt.
+
+`wow` bewacht in Fall B, dass nach dem Ergebnis dasteht, welche Maschine als
+Nächstes drankommt, und dass es **nicht** die ist, auf der man schon steht.
+Beides absichtlich falsifiziert:
+
+```
+✗ Fall B: nach dem Ergebnis steht nicht, welche Maschine als Nächstes drankommt
+✗ Fall B: die Runde bietet die Maschine an, auf der man schon steht — „▸ Nächste: Kompressor 1"
+```
+
+| | vor S4j | jetzt |
+|---|---|---|
+| „Zuletzt 87 % · vor 4 Tagen" | zweimal, eigene Zeile | **einmal, neben dem Namen** |
+| Bildunterschrift bei alter Prüfung | „Letzte Prüfung" — falsch | **entfällt** |
+| Höhe des Klangbilds (Handy) | 287 px | **321 px** |
+| ungenutzter Bildschirm (Fall C) | 173 px | **139 px** |
+| Tipps zur nächsten Maschine | 2 + Suchen in der Liste | **1, beim Namen genannt** |
 
 **S4d — Audiodateien als Normalzustand oder Messung importieren.**
 _Vorgemerkt, noch nicht umgesetzt._ Eine vorhandene Tondatei vom Smartphone,

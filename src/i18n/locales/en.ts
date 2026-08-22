@@ -35,6 +35,7 @@ export const en: TranslationDict = {
   },
   // Die Maschinen-Arbeitsebene (Zanobot_UI_Nutzerreise, Schnitt 1).
   maschine: {
+    naechsteMaschine: '▸ Next: {{name}}',
     lageUntrained: 'No reference sound yet',
     lageReady: 'Ready to check',
     lageSimilar: 'Sounds like the reference',
@@ -65,7 +66,6 @@ export const en: TranslationDict = {
     aehnlichkeit: 'Similarity {{wert}} % · {{wann}}',
     trotzdemHoeren: 'Listen to the comparison anyway',
     letzterUnterschied: '🔍 Listen to the last difference',
-    letztePruefung: 'Last check · {{wert}} % · {{wann}}',
     briefing: '✨ Sound briefing',
     verlaufMitZahl: 'History · {{anzahl}} checks',
     verlaufEine: 'History · 1 check',

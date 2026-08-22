@@ -745,6 +745,7 @@ class ZanobotApp {
       aktuelleMaschine: () => this.offeneMaschine,
       starteNaechstenSchritt: (machine) => this.starteArbeit(machine),
       zeigeVerlauf: (machine) => this.router?.zeigeVerlauf(machine),
+      zeigeMaschine: (machine) => this.oeffneMaschine(machine),
       uebernimmMaschine: (machine) => {
         this.offeneMaschine = machine;
       },

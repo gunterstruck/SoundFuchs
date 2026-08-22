@@ -37,6 +37,7 @@ import type { DiagnosisResult, Machine } from '@data/types.js';
 import {
   getDiagnosesForMachine,
   getLatestDiagnosis,
+  getMachinesForCustomer,
   getRecordingsForMachine,
 } from '@data/db.js';
 import { t } from '../../i18n/index.js';
@@ -78,6 +79,14 @@ export interface MaschinenansichtDeps {
   /** Den Verlauf dieser Maschine öffnen. */
   zeigeVerlauf: (maschine: Machine) => void;
   /**
+   * Eine andere Maschine desselben Standorts öffnen — die Runde.
+   *
+   * Es ist derselbe Weg, den auch die Standortansicht benutzt. Ein eigener
+   * wäre eine zweite Art, eine Maschine zu öffnen, und damit eine zweite, die
+   * beim nächsten Umbau vergessen wird.
+   */
+  zeigeMaschine: (maschine: Machine) => void;
+  /**
    * Eine frischere Fassung derselben Maschine übernehmen.
    *
    * Nach dem Speichern des Normalzustands trägt die Maschine ein
@@ -115,6 +124,49 @@ function vorWieLange(zeitpunkt: number): string {
   const stunden = Math.round(minuten / 60);
   if (stunden < 24) return t('site.agoHours', { count: String(stunden) });
   return t('site.agoDays', { count: String(Math.round(stunden / 24)) });
+}
+
+/**
+ * DIE RUNDE
+ *
+ * Ein Techniker prüft an einem Standort nicht eine Maschine, sondern Maschine
+ * für Maschine. Bisher endete jede Prüfung an derselben Stelle: bei „Fertig",
+ * einem Knopf, der die Seite neu zeichnet und sonst nichts. Wer weitermachen
+ * wollte, tippte auf „Zum Standort", suchte in der Liste die nächste und tippte
+ * darauf — zwei Tipps und ein Suchvorgang, je Maschine, obwohl feststeht, was
+ * ohnehin drankommt.
+ *
+ * Welche als Nächstes drankommt, entscheidet dieselbe Frage wie die Sortierung
+ * der Standortliste: Was noch nie geprüft wurde, kommt zuerst; danach das, was
+ * am längsten her ist. Bei Gleichstand der Name, damit die Reihenfolge zwischen
+ * zwei Besuchen dieselbe bleibt.
+ *
+ * Sie ist ein **Angebot**, keine Führung. Die eine dominante Handlung bleibt,
+ * was sie war — wer die Runde nicht geht, sieht einen zweiten, leiseren Knopf
+ * und ignoriert ihn. Und wenn es nichts Nächstes gibt, steht dort nichts:
+ * Ein Knopf, der zur eigenen Maschine zurückführt, wäre eine Runde von eins.
+ */
+async function naechsteMaschine(maschine: Machine): Promise<Machine | null> {
+  const standort = maschine.customerId;
+  if (!standort) return null;
+  const geschwister = (await getMachinesForCustomer(standort)).filter((m) => m.id !== maschine.id);
+  if (geschwister.length === 0) return null;
+
+  const mitStand = await Promise.all(
+    geschwister.map(async (m) => ({
+      maschine: m,
+      zuletzt: (await getLatestDiagnosis(m.id))?.timestamp ?? null,
+    }))
+  );
+  mitStand.sort((a, b) => {
+    if (a.zuletzt === null && b.zuletzt === null)
+      return a.maschine.name.localeCompare(b.maschine.name);
+    if (a.zuletzt === null) return -1;
+    if (b.zuletzt === null) return 1;
+    if (a.zuletzt !== b.zuletzt) return a.zuletzt - b.zuletzt;
+    return a.maschine.name.localeCompare(b.maschine.name);
+  });
+  return mitStand[0]?.maschine ?? null;
 }
 
 /**
@@ -352,9 +404,22 @@ async function zeichne(maschine: Machine): Promise<void> {
   const kopf = document.createElement('header');
   kopf.className = 'maschine-kopf';
 
+  /**
+   * Name und letzter Stand in einer Zeile.
+   *
+   * „Zuletzt 87 % · vor 4 Tagen" stand darunter und nahm eine eigene Zeile für
+   * eine Auskunft, die neben den Namen passt: Das ist der Steckbrief dieser
+   * Maschine, nicht ihre Nachricht. Bei einem langen Namen bricht die Zeile um
+   * und es steht wieder untereinander — dann ist es der Platz, der entscheidet,
+   * und nicht eine feste Regel.
+   */
+  const titelzeile = document.createElement('div');
+  titelzeile.className = 'maschine-titelzeile';
+
   const titel = document.createElement('h2');
   titel.textContent = maschine.name;
-  kopf.appendChild(titel);
+  titelzeile.appendChild(titel);
+  kopf.appendChild(titelzeile);
 
   /**
    * Punkt und Urteil nur dort, wo sie etwas sagen.
@@ -412,13 +477,16 @@ async function zeichne(maschine: Machine): Promise<void> {
     });
     kopf.appendChild(beleg);
   } else if (letzte) {
-    const zuletzt = document.createElement('p');
+    // Neben den Namen, nicht darunter: Der letzte Stand gehört zum Steckbrief
+    // der Maschine. Der Beleg eines frischen Ergebnisses gehört dagegen unter
+    // seinen Satz — dort ist er die Begründung und nicht die Kopfzeile.
+    const zuletzt = document.createElement('span');
     zuletzt.className = 'muted small maschine-zuletzt';
     zuletzt.textContent = t('maschine.zuletzt', {
       wert: String(Math.round(letzte.healthScore)),
       wann: vorWieLange(letzte.timestamp),
     });
-    kopf.appendChild(zuletzt);
+    titelzeile.appendChild(zuletzt);
   }
   ziel.appendChild(kopf);
 
@@ -476,6 +544,32 @@ async function zeichne(maschine: Machine): Promise<void> {
   if (rueckweg) aktionszeile.appendChild(rueckweg);
   aktionszeile.appendChild(knopf);
   ziel.appendChild(aktionszeile);
+
+  /**
+   * Die Runde — nur nach einem Ergebnis.
+   *
+   * Vorher wäre sie ein Drängen: „Nächste Maschine", bevor man diese geprüft
+   * hat. Danach ist sie die Antwort auf die Frage, die man ohnehin hat.
+   *
+   * Sie wird nachgereicht, nicht abgewartet: Der Platz steht sofort, die
+   * Beschriftung kommt, sobald der Standort gelesen ist. Wer die Seite mit
+   * einem leeren Knopf sähe, würde auf ihn tippen — deshalb steht er erst da,
+   * wenn er einen Namen hat.
+   */
+  if (istErgebnis(zustand)) {
+    void naechsteMaschine(maschine).then((naechste) => {
+      if (!naechste || !aktionszeile.isConnected) return;
+      const weiter = document.createElement('button');
+      weiter.type = 'button';
+      weiter.className = 'maschine-runde';
+      weiter.textContent = t('maschine.naechsteMaschine', { name: naechste.name });
+      weiter.addEventListener('click', () => {
+        vergissErgebnis();
+        deps?.zeigeMaschine(naechste);
+      });
+      aktionszeile.insertAdjacentElement('afterend', weiter);
+    });
+  }
 
   /**
    * Der stützende Satz — aber nicht im Ergebnis.
@@ -626,17 +720,25 @@ async function zeichne(maschine: Machine): Promise<void> {
     const toene = klaengeZu(letzte);
     if (toene) {
       const zeigePruefung = (
-        diagnose: DiagnosisResult,
         klaenge: { referenz: AudioBuffer; messung: AudioBuffer },
         davor: HTMLElement | null
       ) => {
+        /**
+         * Ohne Bildunterschrift.
+         *
+         * Hier stand „Letzte Prüfung · 87 % · vor 4 Tagen" — dieselbe Auskunft,
+         * die schon neben dem Maschinennamen steht. Der Auftraggeber hat sie am
+         * 22.08.2026 auf einem Bildschirmfoto angestrichen.
+         *
+         * Sie war außerdem nicht immer wahr: Wer in der Reihe darunter auf
+         * „89 % · vor 5 Tagen" tippte, bekam weiterhin das Wort „Letzte
+         * Prüfung" über einer Prüfung, die nicht die letzte war. Welche im Bild
+         * steht, sagt die hervorgehobene Prüfung in der Reihe — und die sagt es
+         * richtig.
+         */
         const bild = new Klangbild({
           reference: klaenge.referenz,
           measurement: klaenge.messung,
-          bildunterschrift: t('maschine.letztePruefung', {
-            wert: String(Math.round(diagnose.healthScore)),
-            wann: vorWieLange(diagnose.timestamp),
-          }),
         });
         if (!bild.hasContent) return null;
         raeumeKlangbildAb();
@@ -646,7 +748,7 @@ async function zeichne(maschine: Machine): Promise<void> {
         return bild;
       };
       const ankerFuerBild: HTMLElement | null = null;
-      zeigePruefung(letzte, toene, ankerFuerBild);
+      zeigePruefung(toene, ankerFuerBild);
 
       const zeile = document.createElement('div');
       zeile.className = 'maschine-zweitaktionen';
@@ -737,7 +839,7 @@ async function zeichne(maschine: Machine): Promise<void> {
             }
             chip.classList.add('is-aktiv');
             chip.setAttribute('aria-pressed', 'true');
-            zeigePruefung(diagnose, klaenge, ankerFuerBild);
+            zeigePruefung(klaenge, ankerFuerBild);
           });
           reihe.appendChild(chip);
         }
