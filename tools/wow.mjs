@@ -1160,6 +1160,79 @@ try {
       'Fall C: die Iris verspricht eine große Ansicht, die es für sie nicht gibt'
     );
 
+    /**
+     * ── EINE STELLE HERAUSGREIFEN UND HÖREN ──────────────────────────────
+     *
+     * Der Auftraggeber am 22.08.2026: Er sieht das flache Spektrum, kann aber
+     * keine Stelle daraus herausnehmen und anhören. Gemessen wird deshalb die
+     * ganze Kette: Zug auf dem Bild → Rahmen steht → Bereich benannt → ein
+     * Tipp spielt.
+     *
+     * Der Zug wird mit echten Zeigerereignissen gefahren, nicht gesetzt: Ob
+     * Tipp und Zug auseinandergehalten werden, ist genau die Frage.
+     */
+    await page.evaluate(() => {
+      const knopf = [...document.querySelectorAll('.klangbild-quelle')].find((b) =>
+        /messung/i.test(b.textContent)
+      );
+      knopf?.click();
+    });
+    await page.waitForTimeout(1200);
+    const flaeche = await page.evaluate(() => {
+      const k = document.querySelector('.klangbild-flaeche')?.getBoundingClientRect();
+      return k ? { x: k.x, y: k.y, w: k.width, h: k.height } : null;
+    });
+    if (flaeche) {
+      await page.mouse.move(flaeche.x + flaeche.w * 0.2, flaeche.y + flaeche.h * 0.3);
+      await page.mouse.down();
+      await page.mouse.move(flaeche.x + flaeche.w * 0.45, flaeche.y + flaeche.h * 0.5, {
+        steps: 6,
+      });
+      await page.mouse.move(flaeche.x + flaeche.w * 0.7, flaeche.y + flaeche.h * 0.75, {
+        steps: 6,
+      });
+      await page.mouse.up();
+      await page.waitForTimeout(1200);
+    }
+    const zug = await page.evaluate(() => {
+      const rahmen = document.querySelector('.klangbild-auswahlrahmen');
+      const zeile = document.querySelector('.klangbild-auswahlzeile');
+      const k = rahmen?.getBoundingClientRect();
+      return {
+        rahmenDa: Boolean(rahmen && !rahmen.hidden && k && k.width > 4 && k.height > 4),
+        zeileDa: Boolean(zeile && !zeile.hidden),
+        bereich: document.querySelector('.klangbild-auswahl-bereich')?.textContent?.trim() ?? '',
+        // Ein Zug darf das Gebirge NICHT geöffnet haben.
+        gebirge: Boolean(document.querySelector('.spectro3d-panel')),
+      };
+    });
+    console.log(`  Zug auf dem Bild          ${zug.rahmenDa ? 'Rahmen steht' : 'NICHTS'}`);
+    console.log(`  Bereich                   ${zug.bereich || '(fehlt)'}`);
+    pruefe(zug.rahmenDa, 'Fall C: ein Zug über das Bild hinterlässt keinen Auswahlrahmen');
+    pruefe(zug.zeileDa, 'Fall C: zur Auswahl gibt es keine Zeile zum Abspielen');
+    pruefe(
+      /\d.*s.*Hz|kHz/i.test(zug.bereich),
+      `Fall C: die Auswahl nennt keinen Zeit- und Frequenzbereich („${zug.bereich}")`
+    );
+    pruefe(
+      !zug.gebirge,
+      'Fall C: der Zug wurde als Tipp gewertet — das Gebirge steht, statt eine Auswahl zu bestehen'
+    );
+
+    // Und sie muss zu hören sein.
+    await page.evaluate(() => document.querySelector('.klangbild-auswahl-spielen')?.click());
+    await page.waitForTimeout(1800);
+    const hoert = await page.evaluate(
+      () => document.querySelector('.klangbild-auswahl-spielen')?.textContent?.trim() ?? ''
+    );
+    console.log(`  ein Tipp spielt die Auswahl ${hoert}`);
+    pruefe(
+      /stopp/i.test(hoert),
+      `Fall C: die Auswahl lässt sich nicht abspielen — der Knopf sagt „${hoert}"`
+    );
+    await page.evaluate(() => document.querySelector('.klangbild-auswahl-weg')?.click());
+    await page.waitForTimeout(600);
+
     // Zurück auf eine flache Quelle — das Gebirge kommt aus dem Spektrogramm.
     await page.evaluate(() => {
       const knopf = [...document.querySelectorAll('.klangbild-quelle')].find((b) =>

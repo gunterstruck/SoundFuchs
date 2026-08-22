@@ -624,6 +624,64 @@ body.tiefe-arbeit #karte-bestandswege {
   overflow: hidden;
 }
 
+/* ── Eine Stelle herausgreifen ──────────────────────────────────────────────
+
+   Der Rahmen liegt über dem Bild und fängt nichts ab: Er ist eine Anzeige,
+   kein Bedienelement. Wer ihn anfasst, fasst das Bild darunter an — und das
+   ist richtig, weil das Ziehen dort stattfindet. */
+.klangbild-auswahlrahmen {
+  position: absolute;
+  pointer-events: none;
+  border: 2px solid rgba(241, 245, 249, 0.95);
+  border-radius: 4px;
+  background: rgba(241, 245, 249, 0.12);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.6);
+}
+
+/* Solange gezogen wird, darf der Finger nicht die Seite scrollen. */
+.klangbild-flaeche {
+  touch-action: none;
+}
+
+.klangbild-auswahlzeile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.klangbild-auswahl-spielen {
+  min-height: 44px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.klangbild-auswahl-bereich {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.klangbild-auswahl-weg {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Der Zughinweis ist die einzige Stelle, an der die Geste erklärt wird — eine
+   Geste, die niemand kennt, gibt es nicht. */
+.klangbild-ziehhinweis {
+  margin: 6px 2px 0;
+  text-align: center;
+}
+
+/* In der runden Ansicht gibt es nichts aufzuziehen. */
+.klangbild.ist-rund .klangbild-ziehhinweis {
+  visibility: hidden;
+}
+
 /* Die runde Ansicht. Sie füllt dieselbe Fläche, bleibt aber ein Kreis: Die
    Leinwand nimmt die volle Größe, gezeichnet wird auf den kleineren der beiden
    Halbmesser. Der dunkle Grund ist derselbe wie im Spektrogramm — die Iris ist
