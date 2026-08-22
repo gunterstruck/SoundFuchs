@@ -1854,6 +1854,52 @@ wurde:
 ✗ Fall A: der Bildplatz wandert zwischen Ruhe und Ergebnis um 88 px (erlaubt 2)
 ```
 
+### S5b — Die Iris kommt zurück, als Vergleich (22.08.2026)
+
+Der Auftraggeber: „Dort gab es eine Funktion, wo eine Iris dargestellt wird —
+einfach nur die Spektralanalyse, nur eben rund. Das würde ich auch gerne wieder
+sehen, weil man kann direkt schnell erkennen, ob der Fingerabdruck wenigstens
+ähnlich ist oder eben nicht."
+
+**Sie kommt als vierte Quelle des Bildplatzes zurück** — neben Normalzustand,
+Messung und Unterschied. Und sie kommt als *Vergleich* zurück, nicht als
+Einzelbild: Der Normalzustand liegt als ruhige Fläche darin, die Messung als
+Linie darauf, und der Zwischenraum trägt die Richtungsfarbe — warm, wo die
+Messung lauter ist, kühl, wo sie leiser ist.
+
+**Drei Entscheidungen:**
+
+*Ein Maßstab für beide.* Jedes Spektrum für sich zu normieren wäre der Fehler,
+der den ganzen Vergleich wertlos macht: Eine durchweg doppelt so laute Messung
+sähe dann genauso aus wie der Normalzustand. Beide werden gegen den gemeinsamen
+Höchstwert in dB gerechnet.
+
+*Die Farben des Unterschieds, nicht die der alten Iris.* Die Einzel-Iris hat
+eine eigene Skala (blau → grün → braun, für „wie stark ist dieses Band"). Für
+den Vergleich zählt die Richtung, und dafür gibt es in diesem Haus schon eine
+Sprache: warm heißt mehr, kühl heißt weniger — dieselbe wie im Spektrogramm und
+im Gebirge. Wer sie einmal gelernt hat, soll sie nicht zweimal lernen müssen.
+
+*Kein Gebirge aus der Iris.* Die runde Ansicht hat keine Zeitachse. Ein Tipp auf
+sie tut deshalb nichts, und der Hinweis „Antippen für die große Ansicht"
+verschwindet, solange sie steht. Ein Versprechen, das die Fläche nicht hält, ist
+schlimmer als keines.
+
+**Was das erste Aufmaß gefunden hat.** Die erste Fassung zeichnete beide Spektren
+nur als Linien. Auf dem Bildschirmfoto lagen zwei helle Linien fast
+deckungsgleich übereinander, und man sah weder die eine noch die andere. Der
+Normalzustand ist jetzt eine gefüllte Fläche: Er ist die Form, gegen die
+verglichen wird, und muss auch da zu sehen sein, wo nichts abweicht.
+
+`wow` tippt in Fall C auf „Iris" und prüft vier Dinge: dass die runde Ansicht
+kommt, dass sie **gezeichnet** ist (gezählte Bildpunkte, nicht Maße), dass das
+flache Spektrogramm nicht darunter stehen bleibt, und dass der Hinweis auf die
+große Ansicht verschwunden ist. Absichtlich falsifiziert:
+
+```
+✗ Fall C: die Iris ist leer — eine Leinwand mit Maßen ist kein Bild
+```
+
 ### S4j — Eine Auskunft an einer Stelle, und die Runde (22.08.2026)
 
 Der Auftraggeber schickte ein Bildschirmfoto von „Pumpe 1" mit zwei Sätzen:

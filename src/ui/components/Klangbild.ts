@@ -42,6 +42,8 @@ import { cropSpectrogramMatrix, type SpectrogramMatrix } from '@core/dsp/spectro
 import { Spectrogram3DPanel } from './Spectrogram3DPanel.js';
 import { t } from '../../i18n/index.js';
 import { logger } from '@utils/logger.js';
+import { renderIrisVergleich } from '@ui/components/MachineFingerprint.js';
+import { averageSpectrum } from '@core/dsp/spectrumSummary.js';
 
 export interface KlangbildOptions {
   reference?: AudioBuffer | null;
@@ -49,7 +51,7 @@ export interface KlangbildOptions {
 }
 
 /** Welche Quelle das Bild gerade zeigt. */
-type Quelle = 'measurement' | 'reference' | 'signed';
+type Quelle = 'measurement' | 'reference' | 'signed' | 'iris';
 
 export class Klangbild {
   public readonly element: HTMLElement;
@@ -63,6 +65,9 @@ export class Klangbild {
   private reiter: Array<{ key: Quelle; el: HTMLButtonElement }> = [];
   private quelle: Quelle;
   private gebirge: Spectrogram3DPanel | null = null;
+  /** Die runde Ansicht. Eigene Leinwand: Ein Kreis in einer gestreckten
+      Fläche wäre eine Ellipse. */
+  private iris: HTMLCanvasElement;
   private tief = false;
 
   constructor(optionen: KlangbildOptions) {
@@ -79,6 +84,9 @@ export class Klangbild {
     this.buehne.className = 'klangbild-buehne';
     this.leinwand = document.createElement('canvas');
     this.leinwand.className = 'klangbild-flach';
+    this.iris = document.createElement('canvas');
+    this.iris.className = 'klangbild-iris';
+    this.iris.hidden = true;
 
     if (!this.hasContent) {
       wurzel.style.display = 'none';
@@ -97,6 +105,7 @@ export class Klangbild {
     flaeche.type = 'button';
     flaeche.className = 'klangbild-flaeche';
     flaeche.appendChild(this.leinwand);
+    flaeche.appendChild(this.iris);
 
     const lupe = document.createElement('span');
     lupe.className = 'klangbild-hinweis';
@@ -123,6 +132,8 @@ export class Klangbild {
     if (this.referenz) anlegen('reference', t('klangbild.quelleNormalzustand'));
     if (this.messung) anlegen('measurement', t('klangbild.quelleMessung'));
     if (this.referenz && this.messung) anlegen('signed', t('klangbild.quelleUnterschied'));
+    // Die Iris braucht beide Spektren: Sie IST der Vergleich.
+    if (this.referenz && this.messung) anlegen('iris', t('klangbild.quelleIris'));
     if (this.reiter.length > 1) wurzel.appendChild(reihe);
 
     this.zeige(this.quelle);
@@ -162,7 +173,35 @@ export class Klangbild {
       // Im Gebirge übernimmt das Panel die Quellenwahl selbst.
       return;
     }
+    /**
+     * Die Iris ist eine stehende Ansicht, kein Spektrogramm.
+     *
+     * Deshalb wird für sie die flache Leinwand ausgeblendet statt überschrieben
+     * — und der Hinweis „Antippen für die große Ansicht" verschwindet mit ihr:
+     * Ein Gebirge aus einer runden Ansicht gibt es nicht, und ein Versprechen,
+     * das die Fläche nicht hält, ist schlimmer als keines.
+     */
+    const rund = key === 'iris';
+    this.iris.hidden = !rund;
+    this.leinwand.hidden = rund;
+    this.element.classList.toggle('ist-rund', rund);
+    if (rund) {
+      this.zeichneIris();
+      return;
+    }
     this.zeichneFlach();
+  }
+
+  /** Die runde Ansicht: Normalzustand und Messung übereinander. */
+  private zeichneIris(): void {
+    if (!this.referenz || !this.messung) return;
+    try {
+      renderIrisVergleich(this.iris, averageSpectrum(this.referenz), averageSpectrum(this.messung));
+      this.iris.setAttribute('role', 'img');
+      this.iris.setAttribute('aria-label', t('klangbild.irisAlt'));
+    } catch (fehler) {
+      logger.warn('Klangbild: Iris nicht zeichenbar', fehler);
+    }
   }
 
   /** Das flache Bild in die Leinwand malen. */
@@ -191,6 +230,9 @@ export class Klangbild {
    * verlangen sie nicht.
    */
   private wechsleTiefe(): void {
+    // Aus der runden Ansicht führt kein Gebirge: Sie hat keine Zeitachse.
+    // Ein Tipp, der nichts tut, ist besser als einer, der etwas Fremdes zeigt.
+    if (!this.tief && this.quelle === 'iris') return;
     this.tief = !this.tief;
     this.element.classList.toggle('ist-tief', this.tief);
 
@@ -198,7 +240,7 @@ export class Klangbild {
       this.gebirge?.destroy();
       this.gebirge = null;
       this.buehne.querySelector('.klangbild-flaeche')?.classList.remove('ist-versteckt');
-      this.zeichneFlach();
+      this.zeige(this.quelle);
       return;
     }
 

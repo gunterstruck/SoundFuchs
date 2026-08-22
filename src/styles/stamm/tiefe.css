@@ -624,6 +624,27 @@ body.tiefe-arbeit #karte-bestandswege {
   overflow: hidden;
 }
 
+/* Die runde Ansicht. Sie füllt dieselbe Fläche, bleibt aber ein Kreis: Die
+   Leinwand nimmt die volle Größe, gezeichnet wird auf den kleineren der beiden
+   Halbmesser. Der dunkle Grund ist derselbe wie im Spektrogramm — die Iris ist
+   dieselbe Sache in anderer Form, nicht eine andere Sache. */
+.klangbild-iris {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #0b1220;
+}
+
+/* Aus der runden Ansicht führt kein Gebirge — dann verspricht der Hinweis auch
+   keines. */
+.klangbild.ist-rund .klangbild-hinweis {
+  display: none;
+}
+
+.klangbild.ist-rund .klangbild-flaeche {
+  cursor: default;
+}
+
 .klangbild-flaeche.ist-versteckt {
   display: none;
 }

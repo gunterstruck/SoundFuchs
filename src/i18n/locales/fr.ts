@@ -76,6 +76,8 @@ export const fr: TranslationDict = {
   // La loupe d\u2019écoute (coupe 3) : état normal · mesure · différence.
   // L’image sonore sur la page machine.
   klangbild: {
+    quelleIris: 'Iris',
+    irisAlt: 'Comparaison circulaire : état normal et mesure superposés',
     vergroessern: 'Toucher pour la grande vue',
     alt: 'Image sonore du dernier contrôle',
     leer: 'Aucune image sonore pour ce contrôle',

@@ -76,6 +76,8 @@ export const en: TranslationDict = {
   // The listening lens (slice 3): normal state · measurement · difference.
   // The sound picture on the machine page.
   klangbild: {
+    quelleIris: 'Iris',
+    irisAlt: 'Round comparison: normal state and measurement overlaid',
     vergroessern: 'Tap for the large view',
     alt: 'Sound picture of the last check',
     leer: 'No sound picture available for this check',

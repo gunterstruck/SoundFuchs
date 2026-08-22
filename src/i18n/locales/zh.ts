@@ -75,6 +75,8 @@ export const zh: TranslationDict = {
   // 听觉放大镜（第 3 刀）：正常状态 · 测量 · 差异。
   // 机器页面上的声音图像。
   klangbild: {
+    quelleIris: '虹膜图',
+    irisAlt: '环形对比：常态与测量叠加显示',
     vergroessern: '点按查看大图',
     alt: '上次检测的声音图像',
     leer: '本次检测没有声音图像',
