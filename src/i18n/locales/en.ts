@@ -76,6 +76,7 @@ export const en: TranslationDict = {
   // The listening lens (slice 3): normal state · measurement · difference.
   // The sound picture on the machine page.
   klangbild: {
+    irisLegende: 'Colour = strength of the frequency · white line = normal state',
     auswahlSpielen: '▶ Play selection',
     auswahlStoppen: '■ Stop',
     auswahlWeg: 'Clear selection',

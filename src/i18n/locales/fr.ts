@@ -76,6 +76,7 @@ export const fr: TranslationDict = {
   // La loupe d\u2019écoute (coupe 3) : état normal · mesure · différence.
   // L’image sonore sur la page machine.
   klangbild: {
+    irisLegende: 'Couleur = intensité de la fréquence · ligne blanche = état normal',
     auswahlSpielen: '▶ Écouter la sélection',
     auswahlStoppen: '■ Arrêter',
     auswahlWeg: 'Annuler la sélection',

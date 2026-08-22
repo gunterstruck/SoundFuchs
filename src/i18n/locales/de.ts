@@ -81,6 +81,7 @@ export const de: TranslationDict = {
   // Die Hör-Lupe (Schnitt 3): Normalzustand · Messung · Unterschied.
   // Das Klangbild auf der Maschinenseite (Schnitt A der Neuordnung).
   klangbild: {
+    irisLegende: 'Farbe = Stärke der Frequenz · weiße Linie = Normalzustand',
     auswahlSpielen: '▶ Auswahl hören',
     auswahlStoppen: '■ Stoppen',
     auswahlWeg: 'Auswahl aufheben',

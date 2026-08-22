@@ -677,11 +677,6 @@ body.tiefe-arbeit #karte-bestandswege {
   text-align: center;
 }
 
-/* In der runden Ansicht gibt es nichts aufzuziehen. */
-.klangbild.ist-rund .klangbild-ziehhinweis {
-  visibility: hidden;
-}
-
 /* Die runde Ansicht. Sie füllt dieselbe Fläche, bleibt aber ein Kreis: Die
    Leinwand nimmt die volle Größe, gezeichnet wird auf den kleineren der beiden
    Halbmesser. Der dunkle Grund ist derselbe wie im Spektrogramm — die Iris ist

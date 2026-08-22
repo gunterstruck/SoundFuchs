@@ -1129,14 +1129,28 @@ try {
     await page.waitForTimeout(2500);
     const rund = await page.evaluate(() => {
       const c = document.querySelector('.klangbild-iris');
-      if (!c || c.hidden) return { da: false, gemalt: false, flachWeg: false, hinweisWeg: false };
+      if (!c || c.hidden)
+        return { da: false, gemalt: false, flachWeg: false, hinweisWeg: false, farbig: false };
       const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
       let gemalt = false;
-      for (let i = 3; i < d.length; i += 4 * 37) {
-        if (d[i] > 0) {
-          gemalt = true;
-          break;
-        }
+      /**
+       * Farbig heißt: kalt UND warm im selben Bild.
+       *
+       * Die Iris färbt nach Stärke ein — kalt leise, rot stark. Eine Iris, die
+       * nur eine Linie zeichnet oder einfarbig füllt, wäre wieder der Zustand,
+       * den der Auftraggeber am 22.08.2026 angemerkt hat: „jetzt sehe ich nur
+       * den Pfad oder eine Linie im Kreis".
+       */
+      let kalt = false;
+      let warm = false;
+      for (let i = 0; i < d.length; i += 4 * 11) {
+        if (d[i + 3] === 0) continue;
+        gemalt = true;
+        const r = d[i];
+        const g = d[i + 1];
+        const b = d[i + 2];
+        if (b > r + 40) kalt = true;
+        if (r > b + 60 && r > g + 40) warm = true;
       }
       const flach = document.querySelector('.klangbild-flach');
       const hinweis = document.querySelector('.klangbild-hinweis');
@@ -1146,14 +1160,21 @@ try {
         // Zwei Bilder übereinander wären zwei Aussagen über dieselbe Fläche.
         flachWeg: Boolean(flach && flach.hidden),
         hinweisWeg: Boolean(hinweis && getComputedStyle(hinweis).display === 'none'),
+        farbig: kalt && warm,
       };
     });
     console.log(`  Quellen im Klangbild      ${ruhe.klangbildQuellenNamen.join(' · ')}`);
     console.log(
-      `  ein Tipp auf „Iris"       ${rund.gemalt ? 'runder Vergleich gemalt' : 'NICHTS'}`
+      `  ein Tipp auf „Iris"       ${rund.gemalt ? 'runder Vergleich gemalt' : 'NICHTS'}${
+        rund.farbig ? ', nach Stärke gefärbt' : ''
+      }`
     );
     pruefe(rund.da, 'Fall C: „Iris" bringt keine runde Ansicht');
     pruefe(rund.gemalt, 'Fall C: die Iris ist leer — eine Leinwand mit Maßen ist kein Bild');
+    pruefe(
+      rund.farbig,
+      'Fall C: die Iris zeigt keine Stärke — kalt für leise, rot für stark fehlt im Bild'
+    );
     pruefe(rund.flachWeg, 'Fall C: das flache Spektrogramm steht noch unter der Iris');
     pruefe(
       rund.hinweisWeg,

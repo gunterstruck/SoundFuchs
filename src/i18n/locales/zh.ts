@@ -75,6 +75,7 @@ export const zh: TranslationDict = {
   // 听觉放大镜（第 3 刀）：正常状态 · 测量 · 差异。
   // 机器页面上的声音图像。
   klangbild: {
+    irisLegende: '颜色＝频率强度 · 白线＝常态',
     auswahlSpielen: '▶ 播放所选',
     auswahlStoppen: '■ 停止',
     auswahlWeg: '取消选择',
