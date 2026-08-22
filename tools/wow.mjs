@@ -798,6 +798,10 @@ const AUFMASS_ERGEBNIS = () => {
       document.querySelector('.hoerlupe-hervorhebung-hinweis')?.textContent?.trim() ?? '',
     teilenVorherSichtbar: !document.querySelector('.hoerlupe-teilen')?.hidden,
     trotzdem: Boolean(document.querySelector('.maschine-trotzdem')),
+    // Die Runde: Nach einem Ergebnis steht da, was ohnehin als Nächstes
+    // drankommt — mit Namen, sonst wäre es ein Sprung ins Ungewisse.
+    runde: document.querySelector('.maschine-runde')?.textContent?.trim() ?? '',
+    name: document.querySelector('.maschine-kopf h2')?.textContent?.trim() ?? '',
     zuKlein: [...tiefe.querySelectorAll('button')]
       .filter(sichtbar)
       .filter((b) => {
@@ -902,6 +906,7 @@ try {
     console.log(`  Beleg                          ${gut.beleg || '(fehlt)'}`);
     console.log(`  eine Handlung                  ${gut.aktionsname || '(fehlt)'}`);
     console.log(`  Weg zur Hör-Lupe sichtbar      ${gut.trotzdem ? 'ja' : 'NEIN'}`);
+    console.log(`  die Runde                      ${gut.runde || '(fehlt)'}`);
 
     pruefe(
       tippsDanach !== -2,
@@ -927,6 +932,18 @@ try {
     pruefe(
       gut.zuKlein.length === 0,
       `Fall B: Antippziele unter ${BUDGET.antippgroesse} px — ${gut.zuKlein.join(', ')}`
+    );
+    // Die Runde. Der Standort der Beispieldaten hat mehrere Maschinen; nach
+    // einer Prüfung muss dastehen, welche als Nächstes drankommt — und sie muss
+    // beim Namen genannt sein. „Weiter" ohne Ziel wäre ein Sprung ins Ungewisse,
+    // und die eigene Maschine als „nächste" wäre eine Runde von eins.
+    pruefe(
+      gut.runde.length > 0,
+      'Fall B: nach dem Ergebnis steht nicht, welche Maschine als Nächstes drankommt'
+    );
+    pruefe(
+      gut.name.length > 0 && !gut.runde.includes(gut.name),
+      `Fall B: die Runde bietet die Maschine an, auf der man schon steht — „${gut.runde}"`
     );
 
     // Ein Tipp auf den sichtbaren Weg → die Hör-Lupe steht da.

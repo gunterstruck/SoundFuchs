@@ -46,8 +46,6 @@ import { logger } from '@utils/logger.js';
 export interface KlangbildOptions {
   reference?: AudioBuffer | null;
   measurement?: AudioBuffer | null;
-  /** Beschriftung unter dem Bild — welche Prüfung hier zu sehen ist. */
-  bildunterschrift?: string;
 }
 
 /** Welche Quelle das Bild gerade zeigt. */
@@ -126,13 +124,6 @@ export class Klangbild {
     if (this.messung) anlegen('measurement', t('klangbild.quelleMessung'));
     if (this.referenz && this.messung) anlegen('signed', t('klangbild.quelleUnterschied'));
     if (this.reiter.length > 1) wurzel.appendChild(reihe);
-
-    if (optionen.bildunterschrift) {
-      const satz = document.createElement('p');
-      satz.className = 'klangbild-satz muted small';
-      satz.textContent = optionen.bildunterschrift;
-      wurzel.appendChild(satz);
-    }
 
     this.zeige(this.quelle);
   }

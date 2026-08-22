@@ -340,6 +340,19 @@ body.tiefe-arbeit #karte-bestandswege {
   padding: 4px 14px calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
+/* Name und letzter Stand nebeneinander.
+
+   `baseline` und nicht `center`: Die beiden Schriftgrößen sollen auf derselben
+   Linie sitzen wie in einem Satz. `wrap` ist die Notausfahrt — bei einem langen
+   Maschinennamen rutscht der Stand wieder in seine eigene Zeile, statt den
+   Namen abzuschneiden. */
+.maschine-titelzeile {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
 .maschine-kopf h2 {
   margin: 8px 0 6px;
   font-size: 1.35rem;
@@ -575,7 +588,7 @@ body.tiefe-arbeit #karte-bestandswege {
   display: block;
   position: relative;
   width: 100%;
-  height: clamp(240px, 34vh, 320px);
+  height: clamp(240px, 38vh, 340px);
   padding: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -634,11 +647,6 @@ body.tiefe-arbeit #karte-bestandswege {
   border-color: var(--color-primary);
   color: var(--color-primary-dark);
   background: var(--color-surface-2);
-}
-
-.klangbild-satz {
-  margin: 8px 0 0;
-  text-align: center;
 }
 
 /* Im Gebirge darf die Bühne wachsen — dort wird gedreht und gezogen. */
@@ -744,6 +752,23 @@ body.tiefe-arbeit #karte-bestandswege {
   flex: 1 1 auto;
   width: auto;
   margin-top: 0;
+}
+
+/* Die Runde: das Angebot, weiterzugehen.
+
+   Voll breit, damit man es nicht sucht — aber ungefüllt, damit es die eine
+   dominante Handlung nicht anficht. Wer die Runde nicht geht, sieht einen
+   zweiten, leiseren Knopf und geht daran vorbei. */
+.maschine-runde {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  min-height: 44px;
+  font-weight: 600;
+}
+
+.maschine-runde:hover {
+  border-color: var(--color-primary);
 }
 
 /* ── Der Dunkelmodus hinter dem Scharnier ───────────────────────────────────

@@ -35,6 +35,7 @@ export const zh: TranslationDict = {
   },
   // Die Maschinen-Arbeitsebene (Zanobot_UI_Nutzerreise, Schnitt 1).
   maschine: {
+    naechsteMaschine: '▸ 下一台：{{name}}',
     lageUntrained: '尚无正常状态',
     lageReady: '可以检测',
     lageSimilar: '与正常状态相似',
@@ -64,7 +65,6 @@ export const zh: TranslationDict = {
     aehnlichkeit: '相似度 {{wert}} % · {{wann}}',
     trotzdemHoeren: '仍然听一下对比',
     letzterUnterschied: '🔍 听上次的差异',
-    letztePruefung: '上次检测 · {{wert}} % · {{wann}}',
     briefing: '✨ 声音简报',
     verlaufMitZahl: '历史 · {{anzahl}} 次检测',
     verlaufEine: '历史 · 1 次检测',
