@@ -100,6 +100,22 @@ body.tiefe-offen #app > *:not(.topbar) {
   visibility: hidden;
 }
 
+/* ── Die Leiste darf über die Tiefe ─────────────────────────────────────────
+
+   Gemessen am 22.08.2026, Handy wie Schreibtisch: Hinter dem Scharnier war die
+   Seitenleiste `unsichtbar` und mit ihr der Basis/Profi-Schalter. „☰" half
+   nicht — es schloss die Tiefe. Wer die Ansichtstiefe umstellen wollte, musste
+   die Maschine verlassen und den ganzen Weg zurückgehen.
+
+   Die Leiste ist im Stamm `z-index: 1050` und liegt damit ohnehin über der
+   Tiefe (900). Es fehlte nur die Erlaubnis, überhaupt sichtbar zu sein — und
+   die gilt genau dann, wenn jemand sie mit „☰" geholt hat (`leiste-ueber-tiefe`).
+   Nicht schon dann, wenn sie zufällig offen steht: Beim Betreten der Tiefe tritt
+   sie zur Seite, und ungefragt legt sie sich nicht wieder darüber. */
+body.tiefe-offen.leiste-ueber-tiefe #app > #sidebar.open {
+  visibility: visible;
+}
+
 /* Die Rückkehr. Der Stamm hat für so etwas keine eigene Form — er kennt
    Blätter, die man am Griff zuzieht, keine Bildschirme, die man verlässt.
    Deshalb hier die schlichteste Form, die zu ihm passt: dieselbe Pille wie

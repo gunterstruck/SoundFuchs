@@ -335,10 +335,19 @@ describe('Kein drittes Gesicht im JavaScript', () => {
     // etwas zeigt, das gerade eingeklappt ist — und der Streifen wäre
     // zweizeilig (gemessene 100 px statt 55).
     const schale = lies('src/stamm/ui/schale.ts');
-    const fn = schale.slice(
-      schale.indexOf('function reiterUmhaengen()'),
-      schale.indexOf('function reiterUmhaengen()') + 700
-    );
+    /**
+     * Die ganze Funktion lesen, nicht ihre ersten 700 Zeichen.
+     *
+     * Hier stand `+ 700`. Am 22.08.2026 kam ein dritter Fall hinzu — hinter dem
+     * Scharnier gehört der Schalter in die Leiste — und mit ihm seine
+     * Begründung; `topnav.appendChild` rutschte dadurch hinter die Grenze, und
+     * der Test schlug an, obwohl sich am Verhalten nichts geändert hatte.
+     *
+     * Eine Zeichenzahl ist keine Regel. Gemeint war „in dieser Funktion", und
+     * genau das steht jetzt da: bis zur schließenden Klammer am Zeilenanfang.
+     */
+    const anfang = schale.indexOf('function reiterUmhaengen()');
+    const fn = schale.slice(anfang, schale.indexOf('\n}', anfang));
     expect(fn).toContain('topnav.appendChild(tiefe)');
     expect(fn).not.toContain("querySelector('.tabs')");
   });

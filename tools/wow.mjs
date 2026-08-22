@@ -793,9 +793,21 @@ const AUFMASS_ERGEBNIS = () => {
       urteilKasten.bottom <= window.innerHeight,
     lupe: Boolean(document.querySelector('.hoerlupe')),
     quellen: [...document.querySelectorAll('.hoerlupe-quelle')].map((b) => b.textContent.trim()),
-    hervorhebung: [...document.querySelectorAll('.hoerlupe-hervorhebung-knopf')].map((b) =>
-      b.textContent.trim()
-    ),
+    hervorhebung: [...document.querySelectorAll('.hoerlupe-hervorhebung-knopf')]
+      .filter(sichtbar)
+      .map((b) => b.textContent.trim()),
+    /**
+     * Was die Stufe verbirgt.
+     *
+     * Gefragt wird nach SICHTBARKEIT, nicht nach Anwesenheit: Die Stufe
+     * versteckt per `display: none`, und ein `querySelectorAll` findet solche
+     * Elemente weiterhin. Ein Wächter, der sie zählt, misst den Baum statt der
+     * Oberfläche.
+     */
+    hervorhebungGruppe: [...document.querySelectorAll('.hoerlupe-hervorhebung')].filter(sichtbar)
+      .length,
+    tiefeAuswahl: [...document.querySelectorAll('.hoerlupe-auswahl')].filter(sichtbar).length,
+    stufe: document.documentElement.getAttribute('data-view-level') ?? '(keine)',
     hervorhebungHinweis:
       document.querySelector('.hoerlupe-hervorhebung-hinweis')?.textContent?.trim() ?? '',
     teilenVorherSichtbar: !document.querySelector('.hoerlupe-teilen')?.hidden,
@@ -1357,17 +1369,103 @@ try {
       schlecht.quellen.length === 3,
       `Fall A: die Hör-Lupe zeigt ${schlecht.quellen.length} Quellen statt Normalzustand, Messung und Unterschied`
     );
-    pruefe(
-      schlecht.hervorhebung.length === 3,
-      `Fall A: die Hervorhebung zeigt ${schlecht.hervorhebung.length} Stufen statt Originalmessung, Deutlich und Stark`
+    /**
+     * ── ZWEI STUFEN, HINTER DEM SCHARNIER ────────────────────────────────
+     *
+     * In BASIS beantwortet die Hör-Lupe die eine Frage: Normalzustand, Messung,
+     * Unterschied. Die Werkzeuge zum Sezieren — die bearbeitete Hörhilfe und
+     * die tiefe Auswahl mit Maßstabsvergleich — stehen dort NICHT.
+     */
+    console.log(`  Stufe                          ${schlecht.stufe}`);
+    console.log(
+      `  in Basis verborgen             Hervorhebung ${schlecht.hervorhebungGruppe === 0 ? 'ja' : 'NEIN'} · tiefe Auswahl ${schlecht.tiefeAuswahl === 0 ? 'ja' : 'NEIN'}`
     );
     pruefe(
-      /bearbeitete hörhilfe/i.test(schlecht.hervorhebungHinweis) &&
-        /unverändert/i.test(schlecht.hervorhebungHinweis),
+      schlecht.stufe === 'basic',
+      `Fall A: die Reise läuft auf Stufe „${schlecht.stufe}" statt auf Basis — der Vergleich der Stufen wäre keiner`
+    );
+    pruefe(
+      schlecht.hervorhebungGruppe === 0,
+      'Fall A/Basis: die bearbeitete Hörhilfe steht in Basis — sie ist ein Profi-Werkzeug'
+    );
+    pruefe(
+      schlecht.tiefeAuswahl === 0,
+      'Fall A/Basis: die tiefe Auswahl mit Maßstabsvergleich steht in Basis'
+    );
+
+    /**
+     * Und jetzt auf Profi — über die Oberfläche, nicht über das Attribut.
+     *
+     * Gemessen am 22.08.2026 war der Basis/Profi-Schalter hinter dem Scharnier
+     * `unsichtbar`: Er lag im Kopfstreifen beziehungsweise in der Leiste, und
+     * beide ruhen dort. „☰" schloss die Tiefe, statt die Leiste aufzuziehen —
+     * wer umschalten wollte, musste die Maschine verlassen.
+     *
+     * Der Weg wird deshalb ganz gegangen: ☰ antippen, Profi drücken, hinsehen.
+     * Ein gesetztes `data-view-level` würde die Stufe prüfen und den Weg zu ihr
+     * gerade auslassen.
+     */
+    await page.evaluate(() => document.getElementById('sidebar-toggle')?.click());
+    await page.waitForTimeout(1200);
+    const leiste = await page.evaluate(() => {
+      const el = document.getElementById('depth-switch');
+      const k = el?.getBoundingClientRect();
+      const cs = el ? getComputedStyle(el) : null;
+      return {
+        tiefeNochOffen: document.body.classList.contains('tiefe-offen'),
+        schalterSichtbar: Boolean(
+          el && cs && cs.display !== 'none' && cs.visibility !== 'hidden' && k && k.height > 0
+        ),
+        schalterHoch: k ? Math.round(k.height) : 0,
+      };
+    });
+    console.log(
+      `  ☰ hinter dem Scharnier         Schalter ${leiste.schalterSichtbar ? `sichtbar (${leiste.schalterHoch} px)` : 'UNSICHTBAR'} · Tiefe ${leiste.tiefeNochOffen ? 'bleibt offen' : 'WEG'}`
+    );
+    pruefe(
+      leiste.schalterSichtbar,
+      'S5d: hinter dem Scharnier ist der Basis/Profi-Schalter nicht zu sehen'
+    );
+    pruefe(
+      leiste.tiefeNochOffen,
+      'S5d: „☰" wirft aus der Tiefe heraus — die Leiste soll sich darüberlegen, nicht die Arbeit beenden'
+    );
+    pruefe(
+      leiste.schalterHoch >= BUDGET.antippgroesse,
+      `S5d: der Stufenschalter ist ${leiste.schalterHoch} px hoch`
+    );
+
+    await page.evaluate(() => {
+      document.querySelector('#depth-switch .view-level-btn[data-level="expert"]')?.click();
+    });
+    await page.waitForTimeout(800);
+    // Leiste wieder zu — der Blick gilt der Arbeitsfläche darunter.
+    await page.evaluate(() => document.getElementById('sidebar-toggle')?.click());
+    await page.waitForTimeout(1200);
+    const profi = await page.evaluate(AUFMASS_ERGEBNIS);
+    console.log(`  nach dem Umschalten            Stufe ${profi.stufe}`);
+    console.log(
+      `  in Profi sichtbar              Hervorhebung ${profi.hervorhebung.length} Stufen · tiefe Auswahl ${profi.tiefeAuswahl}`
+    );
+    pruefe(
+      profi.stufe === 'expert',
+      `S5d: der Schalter stellt die Stufe nicht um — sie steht auf „${profi.stufe}"`
+    );
+    pruefe(
+      profi.hervorhebung.length === 3,
+      `Fall A/Profi: die Hervorhebung zeigt ${profi.hervorhebung.length} Stufen statt Originalmessung, Deutlich und Stark`
+    );
+    pruefe(
+      profi.tiefeAuswahl === 1,
+      'Fall A/Profi: die tiefe Auswahl fehlt, obwohl Profi eingeschaltet ist'
+    );
+    pruefe(
+      /bearbeitete hörhilfe/i.test(profi.hervorhebungHinweis) &&
+        /unverändert/i.test(profi.hervorhebungHinweis),
       'Fall A: die Hervorhebung ist nicht klar als bearbeitete, folgenlose Hörhilfe gekennzeichnet'
     );
     pruefe(
-      !schlecht.teilenVorherSichtbar,
+      !profi.teilenVorherSichtbar,
       'Schnitt 4b: Teilen wird angeboten, bevor feststeht, welche Hörhilfe gemeint ist'
     );
     pruefe(
@@ -1440,7 +1538,10 @@ try {
       const details = document.querySelector('.hoerlupe-fein');
       if (details) details.open = true;
     });
-    await page.locator('.hoerlupe-hervorhebung-knopf[data-highlight-level="clear"]').click();
+    await page
+      .locator('.hoerlupe-hervorhebung-knopf[data-highlight-level="clear"]')
+      .click({ timeout: 15000 })
+      .catch(() => {});
     await page.waitForTimeout(1200);
     const deutlich = await page.evaluate(() => {
       const b = document.querySelector(
@@ -1457,7 +1558,10 @@ try {
       };
     });
 
-    await page.locator('.hoerlupe-hervorhebung-knopf[data-highlight-level="strong"]').click();
+    await page
+      .locator('.hoerlupe-hervorhebung-knopf[data-highlight-level="strong"]')
+      .click({ timeout: 15000 })
+      .catch(() => {});
     await page.waitForTimeout(1200);
     const stark = await page.evaluate(() => {
       const b = document.querySelector(
@@ -1478,7 +1582,10 @@ try {
       };
     });
 
-    await page.locator('.hoerlupe-hervorhebung-knopf[data-highlight-level="off"]').click();
+    await page
+      .locator('.hoerlupe-hervorhebung-knopf[data-highlight-level="off"]')
+      .click({ timeout: 15000 })
+      .catch(() => {});
     await page.waitForTimeout(250);
     const aus = await page.evaluate(() => {
       const b = document.querySelector('.hoerlupe-hervorhebung-knopf[data-highlight-level="off"]');
@@ -1526,8 +1633,11 @@ try {
     });
     await page.waitForTimeout(3500);
     const canvas = page.locator('.hoerlupe-spektrogramm');
-    await canvas.scrollIntoViewIfNeeded();
-    const canvasBox = await canvas.boundingBox();
+    // Melden statt sterben: Steht die tiefe Auswahl nicht da — etwa weil die
+    // Stufe nicht umgeschaltet hat —, ist das ein Befund. Ein Lauf, der hier
+    // in einen Zeitablauf rennt, verschweigt alle Befunde davor.
+    await canvas.scrollIntoViewIfNeeded({ timeout: 15000 }).catch(() => {});
+    const canvasBox = await canvas.boundingBox().catch(() => null);
     if (canvasBox) {
       await page.mouse.move(
         canvasBox.x + canvasBox.width * 0.15,
@@ -1540,7 +1650,10 @@ try {
       );
       await page.mouse.up();
     }
-    await page.locator('.hoerlupe-auswahl-spielen').click();
+    await page
+      .locator('.hoerlupe-auswahl-spielen')
+      .click({ timeout: 15000 })
+      .catch(() => {});
     await page.waitForTimeout(1800);
     const auswahl = await page.evaluate(() => {
       const button = document.querySelector('.hoerlupe-auswahl-spielen');
@@ -1613,7 +1726,10 @@ try {
       !nachVerschieben.shareVisible && !nachVerschieben.selectionPlaying,
       'Schnitt 4c: nach neuer Markierung bleibt der alte Ausschnitt abspielbar oder teilbar'
     );
-    await page.locator('.hoerlupe-auswahl-spielen').click();
+    await page
+      .locator('.hoerlupe-auswahl-spielen')
+      .click({ timeout: 15000 })
+      .catch(() => {});
     await page.waitForTimeout(1200);
     const neuBerechnet = await page.evaluate(() => {
       const button = document.querySelector('.hoerlupe-auswahl-spielen');

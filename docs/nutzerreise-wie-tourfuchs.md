@@ -2014,6 +2014,117 @@ Linie fällt damit auf. Absichtlich falsifiziert:
 ✗ Fall C: die Iris zeigt keine Stärke — kalt für leise, rot für stark fehlt im Bild
 ```
 
+### S5d — Zwei Stufen hinter dem Scharnier (22.08.2026)
+
+Der Auftraggeber: „Auch die Funktion, dass oben Basis und Experte — dass man das
+immer noch sehen kann, dahin und her schalten kann. Es macht auch Sinn, die
+Funktionen darunter in Basis und Experten zu unterscheiden."
+
+**Gemessen, bevor gebaut wurde** (Handy und Schreibtisch, Standort- wie
+Maschinenebene):
+
+```
+schalter:       unsichtbar
+schalterOrt:    mobile-topnav (Handy) / sidebar (Schreibtisch)
+leiste:         unsichtbar
+☰ von dort:     schließt die Tiefe   → man landet auf der Karte
+```
+
+Der Schalter war hinter dem Scharnier **gar nicht erreichbar**. Er lag im
+Kopfstreifen beziehungsweise in der Seitenleiste, und beide liegen in `#app`,
+das dort auf `visibility: hidden` ruht. „☰" half nicht: Es schloss die Tiefe.
+Wer die Ansichtstiefe umstellen wollte, musste die Maschine verlassen und
+danach den ganzen Weg zurückgehen.
+
+### Drei Änderungen, eine Idee
+
+Die Idee: **Es bleibt derselbe Schalter am selben Ort — die Leiste kommt zu
+ihm.**
+
+1. **„☰" zieht die Leiste auf, auch hinter dem Scharnier.** Sie legt sich über
+   die Tiefe; die Tiefe bleibt stehen. Wer die Leiste zuzieht, steht wieder da,
+   wo er war. Zurück auf die Karte führt weiterhin der Rückweg im Inhalt — der
+   gehört dem Inhalt, nicht der Navigation.
+2. **Der Schalter zieht mit um.** `reiterUmhaengen()` bekommt einen dritten
+   Fall: Ist die Tiefe offen, gehört er in die Leiste — auch unterwegs, wo er
+   sonst im Kopfstreifen liegt. Umgehängt, nicht verdoppelt: Zwei Schalter für
+   eine Stufe wären zwei Wahrheiten.
+3. **Beim Betreten der Tiefe tritt die Navigation zur Seite.** Am Schreibtisch
+   stand die Leiste sonst offen und legte sich über die Arbeitsfläche — 400 px
+   über einer Maschinenseite, die 1120 px breit mittig steht. Über der Karte ist
+   das richtig, die kann man darunter weiterschieben; über einer Arbeitsfläche
+   ist es eine Verdeckung.
+
+### Was der Aufmerksamkeitstest gefunden hat
+
+Die erste Fassung knüpfte die Sichtbarkeit an „Leiste ist offen". Der
+Aufmerksamkeitstest betritt die Tiefe aber über Klassen statt über den Weg —
+dabei blieb `blattOffen` am Schreibtisch stehen, und die Leiste legte sich
+ungefragt über die Arbeitsfläche:
+
+```
+✗ desktop: Erstbild 17 > Budget 12
+✗ desktop: Schritte offen 19 > Budget 16
+✗ desktop: Einstellungen/Basis 32 > Budget 28
+✗ desktop: Einstellungen/Experte 54 > Budget 52
+```
+
+Das war kein Fehler des Messgeräts, sondern eine Schwäche des Entwurfs: Eine
+Leiste, die *zufällig* offen steht, soll nicht über einer Arbeitsfläche liegen.
+Jetzt entsteht die Absicht genau an einer Stelle — beim Tipp auf „☰" — und trägt
+einen eigenen Namen (`leiste-ueber-tiefe`). Ohne diese Absicht ruht die Leiste.
+
+### Die Einordnung
+
+*Basis* ist alles, was die Frage „klingt sie anders?" beantwortet: Prüfen,
+Normalzustand aufnehmen, der Bildplatz mit seinen vier Quellen, ein Tipp aufs
+Gebirge, die Auswahl-Geste mit Abspielen, Unterschied anhören, Verlauf, die
+Runde, das Geräusch-Briefing.
+
+*Profi* sind die Werkzeuge zum Sezieren. In diesem Schnitt umgestellt:
+
+| | vorher | jetzt |
+|---|---|---|
+| Bearbeitete Hörhilfe (Deutlich/Stark) | immer | **Profi** |
+| Tiefe Auswahl mit Maßstabsvergleich und Teilen | immer | **Profi** |
+
+Beides ist bearbeitetes Material, dessen Verstärkung man verstehen muss, um es
+nicht für die Aufnahme zu halten. Wer es sucht, findet es; wer es nicht sucht,
+wird nicht von ihm befragt. Das Gebirge bleibt ausdrücklich in Basis.
+
+### Der Wächter
+
+`wow` geht den Weg jetzt ganz: Es misst in Fall A auf **Basis**, dass die beiden
+Profi-Werkzeuge nicht zu sehen sind, tippt dann auf „☰", prüft, dass der
+Schalter dasteht (44 px) und die Tiefe **offen bleibt**, drückt „Profi" und
+misst noch einmal — jetzt müssen beide da sein.
+
+Gefragt wird nach **Sichtbarkeit**, nicht nach Anwesenheit: Die Stufe versteckt
+per `display: none`, und ein `querySelectorAll` findet solche Elemente weiter.
+Ein Wächter, der sie zählt, misst den Baum statt der Oberfläche.
+
+Absichtlich falsifiziert, indem „☰" wieder die Tiefe schloss:
+
+```
+✗ S5d: „☰" wirft aus der Tiefe heraus — die Leiste soll sich darüberlegen, nicht die Arbeit beenden
+✗ S5d: der Stufenschalter ist 40 px hoch
+✗ Fall A/Profi: die Hervorhebung zeigt 0 Stufen statt Originalmessung, Deutlich und Stark
+✗ Fall A/Profi: die tiefe Auswahl fehlt, obwohl Profi eingeschaltet ist
+```
+
+Dabei fiel zum vierten Mal derselbe Mangel am Messgerät auf: Der Lauf **starb**,
+statt zu berichten — die Klicks nach der Stufenumschaltung liefen in einen
+Zeitablauf, und alle Befunde davor gingen verloren. Sie sind jetzt geduldig
+(`.catch`), und der falsifizierte Lauf meldet elf Befunde, statt abzustürzen.
+
+### Ein Stamm-Test, der eine Zeichenzahl für eine Regel hielt
+
+`gesichter.test.ts` las die ersten **700 Zeichen** von `reiterUmhaengen()` und
+suchte darin `topnav.appendChild(tiefe)`. Der dritte Fall samt Begründung schob
+den Aufruf hinter die Grenze — der Test schlug an, obwohl sich am Verhalten
+nichts geändert hatte. Er liest jetzt die ganze Funktion. Eine Zeichenzahl ist
+keine Regel; gemeint war „in dieser Funktion".
+
 ### S4j — Eine Auskunft an einer Stelle, und die Runde (22.08.2026)
 
 Der Auftraggeber schickte ein Bildschirmfoto von „Pumpe 1" mit zwei Sätzen:
