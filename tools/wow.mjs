@@ -1398,66 +1398,71 @@ try {
      *
      * Gemessen am 22.08.2026 war der Basis/Profi-Schalter hinter dem Scharnier
      * `unsichtbar`: Er lag im Kopfstreifen beziehungsweise in der Leiste, und
-     * beide ruhen dort. „☰" schloss die Tiefe, statt die Leiste aufzuziehen —
-     * wer umschalten wollte, musste die Maschine verlassen.
+     * beide ruhten dort.
      *
-     * Der Weg wird deshalb ganz gegangen: ☰ antippen, Profi drücken, hinsehen.
-     * Ein gesetztes `data-view-level` würde die Stufe prüfen und den Weg zu ihr
-     * gerade auslassen.
+     * Der erste Versuch holte ihn mit „☰" in einer aufziehbaren Leiste hervor.
+     * Der Auftraggeber hat widersprochen: Er will den Streifen **sehen**, nicht
+     * in einem Tipp erreichen. Gemessen wird deshalb genau das — der Schalter
+     * steht da, **ohne** dass irgendetwas angetippt wurde.
      */
-    await page.evaluate(() => document.getElementById('sidebar-toggle')?.click());
-    await page.waitForTimeout(1200);
-    const leiste = await page.evaluate(() => {
-      const el = document.getElementById('depth-switch');
-      const k = el?.getBoundingClientRect();
-      const cs = el ? getComputedStyle(el) : null;
+    const rahmen = await page.evaluate(() => {
+      const sicht = (el) => {
+        if (!el) return null;
+        const cs = getComputedStyle(el);
+        const k = el.getBoundingClientRect();
+        return cs.display !== 'none' && cs.visibility !== 'hidden' && k.height > 0 ? k : null;
+      };
+      const schalter = sicht(document.getElementById('depth-switch'));
+      const streifen = sicht(document.getElementById('mobile-topnav'));
+      const leiste = sicht(document.getElementById('sidebar'));
+      const tiefe = document.getElementById('zanobo-tiefe')?.getBoundingClientRect();
       return {
-        tiefeNochOffen: document.body.classList.contains('tiefe-offen'),
-        schalterSichtbar: Boolean(
-          el && cs && cs.display !== 'none' && cs.visibility !== 'hidden' && k && k.height > 0
-        ),
-        schalterHoch: k ? Math.round(k.height) : 0,
-        /**
-         * Was die Leiste hinter dem Scharnier NICHT anbieten soll.
-         *
-         * Der Kartenstil gehört zur Karte. In der Leiste über einer
-         * Maschinenseite ist er eine Bedienung für etwas, das man dort nicht
-         * sieht.
-         */
-        kartenstilSichtbar: (() => {
-          const el = document.querySelector('.basemap-control');
-          if (!el) return false;
-          const s = getComputedStyle(el);
-          return s.display !== 'none' && s.visibility !== 'hidden';
-        })(),
+        schalterHoch: schalter ? Math.round(schalter.height) : 0,
+        schalterUnten: schalter ? Math.round(schalter.bottom) : 0,
+        streifenUnten: streifen ? Math.round(streifen.bottom) : 0,
+        leisteOben: leiste ? Math.round(leiste.top) : 0,
+        tiefeOben: tiefe ? Math.round(tiefe.top) : 0,
+        tiefeUnten: tiefe ? Math.round(tiefe.bottom) : 0,
+        kartenstilSichtbar: Boolean(sicht(document.querySelector('.basemap-control'))),
       };
     });
     console.log(
-      `  ☰ hinter dem Scharnier         Schalter ${leiste.schalterSichtbar ? `sichtbar (${leiste.schalterHoch} px)` : 'UNSICHTBAR'} · Tiefe ${leiste.tiefeNochOffen ? 'bleibt offen' : 'WEG'}`
+      `  Rahmen um die Tiefe            Streifen bis ${rahmen.streifenUnten} px · Tiefe ${rahmen.tiefeOben}–${rahmen.tiefeUnten} px · Blatt ab ${rahmen.leisteOben} px`
+    );
+    console.log(
+      `  Stufenschalter ohne Tipp       ${rahmen.schalterHoch > 0 ? `sichtbar (${rahmen.schalterHoch} px)` : 'UNSICHTBAR'}`
     );
     pruefe(
-      leiste.schalterSichtbar,
-      'S5d: hinter dem Scharnier ist der Basis/Profi-Schalter nicht zu sehen'
+      rahmen.schalterHoch > 0,
+      'S5d: der Basis/Profi-Schalter ist hinter dem Scharnier nicht zu sehen — er soll dastehen, nicht in einem Tipp liegen'
     );
     pruefe(
-      leiste.tiefeNochOffen,
-      'S5d: „☰" wirft aus der Tiefe heraus — die Leiste soll sich darüberlegen, nicht die Arbeit beenden'
+      rahmen.schalterHoch >= 40,
+      `S5d: der Stufenschalter ist ${rahmen.schalterHoch} px hoch`
+    );
+    /**
+     * Die Tiefe liegt IM Rahmen, nicht darüber.
+     *
+     * Beginnt sie über der Unterkante des Streifens, scrollt ihr Inhalt unter
+     * der Basis/Profi-Pille durch — dann steht der Schalter zwar da, aber die
+     * Arbeitsfläche schiebt sich unter ihn.
+     */
+    pruefe(
+      rahmen.tiefeOben >= rahmen.streifenUnten - 2,
+      `S5d: die Tiefe beginnt bei ${rahmen.tiefeOben} px, der Kopfstreifen endet erst bei ${rahmen.streifenUnten} px — der Inhalt läuft darunter durch`
     );
     pruefe(
-      leiste.schalterHoch >= BUDGET.antippgroesse,
-      `S5d: der Stufenschalter ist ${leiste.schalterHoch} px hoch`
+      rahmen.leisteOben === 0 || rahmen.tiefeUnten <= rahmen.leisteOben + 2,
+      `S5d: die Tiefe endet bei ${rahmen.tiefeUnten} px, das Blatt beginnt schon bei ${rahmen.leisteOben} px`
     );
     pruefe(
-      !leiste.kartenstilSichtbar,
+      !rahmen.kartenstilSichtbar,
       'S5e: die Leiste bietet hinter dem Scharnier den Kartenstil an — eine Bedienung für eine Karte, die man dort nicht sieht'
     );
 
     await page.evaluate(() => {
       document.querySelector('#depth-switch .view-level-btn[data-level="expert"]')?.click();
     });
-    await page.waitForTimeout(800);
-    // Leiste wieder zu — der Blick gilt der Arbeitsfläche darunter.
-    await page.evaluate(() => document.getElementById('sidebar-toggle')?.click());
     await page.waitForTimeout(1200);
     const profi = await page.evaluate(AUFMASS_ERGEBNIS);
     console.log(`  nach dem Umschalten            Stufe ${profi.stufe}`);

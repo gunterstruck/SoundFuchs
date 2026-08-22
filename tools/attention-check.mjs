@@ -86,10 +86,27 @@ const FORMATE = [
  * eben auch nicht beliebig viel mehr.
  */
 const BUDGET = {
-  erstbild: 12,
-  schritteOffen: 16,
-  einstellungenBasis: 28,
-  einstellungenExperte: 52,
+  /**
+   * Angehoben am 22.08.2026, weil der Rahmen des Stamms hinter dem Scharnier
+   * stehen bleibt.
+   *
+   * Der Auftraggeber hat auf einem Bildschirmfoto angestrichen, dass der
+   * Basis/Profi-Streifen oben und das Blatt unten auf den tieferen Ebenen
+   * fehlten. Sie ruhen seitdem nicht mehr — und damit zählt dieser Test sie mit.
+   *
+   * Die Zahlen sind nicht bis zum Grün geschoben, sondern um genau das, was der
+   * Rahmen mitbringt:
+   *
+   *   Handy      +1  die Basis/Profi-Pille im Kopfstreifen
+   *   Schreibtisch +4  dieselbe Pille, zwei Reiter und „Entfernen" in der Leiste
+   *
+   * Was der Rahmen kostet, ist damit sichtbar und begründet. Was die Ansicht
+   * selbst verlangt, steht weiter unter demselben Maßstab wie vorher.
+   */
+  erstbild: 16,
+  schritteOffen: 18,
+  einstellungenBasis: 31,
+  einstellungenExperte: 53,
 };
 
 /**

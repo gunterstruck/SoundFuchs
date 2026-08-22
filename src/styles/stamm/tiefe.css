@@ -37,6 +37,9 @@
      davon heran, und „Einstellungen" in der Fußzeile steht nur auf Profi —
      also auf der Stufe, die man dort erst hätte einschalten wollen.
      Die Kopfleiste bleibt deshalb stehen. Sie ist das Dach über beiden. */
+  /* Die Tiefe ist eine Scheibe IM Rahmen des Stamms, keine Decke darüber.
+     Der Grundwert gilt, wo es keinen Rahmen gibt; die beiden Gesichter setzen
+     ihre Kanten weiter unten. */
   inset: var(--topbar-height) 0 0;
   /* Zwischen den festen Elementen der alten Oberfläche (--z-fixed: 500) und
      ihren Dialogen (--z-modal-backdrop: 1000, --z-modal: 1100).
@@ -96,36 +99,66 @@
    Zurückgehen als graues Viertel wieder. `visibility` behält die Geometrie und
    nimmt nur das Bild; nebenbei nimmt sie auch die Klickbarkeit, sodass nichts
    Verborgenes unter der Tiefe Tipps abfängt. */
-body.tiefe-offen #app > *:not(.topbar) {
+body.tiefe-offen #app > *:not(.topbar):not(#mobile-topnav):not(#sidebar) {
   visibility: hidden;
 }
 
-/* ── Die Leiste darf über die Tiefe ─────────────────────────────────────────
+/* ── Der Rahmen bleibt stehen ───────────────────────────────────────────────
 
-   Gemessen am 22.08.2026, Handy wie Schreibtisch: Hinter dem Scharnier war die
-   Seitenleiste `unsichtbar` und mit ihr der Basis/Profi-Schalter. „☰" half
-   nicht — es schloss die Tiefe. Wer die Ansichtstiefe umstellen wollte, musste
-   die Maschine verlassen und den ganzen Weg zurückgehen.
+   Erster Versuch am 22.08.2026: Kopfstreifen und Leiste ruhten hinter dem
+   Scharnier, und „☰" holte die Leiste über die Tiefe. Der Auftraggeber hat es
+   auf dem Bildschirmfoto angestrichen — er will den Basis/Profi-Streifen
+   **sehen**, nicht in einem Tipp erreichen, und die Leiste unten soll auch auf
+   den tieferen Ebenen da sein.
 
-   Die Leiste ist im Stamm `z-index: 1050` und liegt damit ohnehin über der
-   Tiefe (900). Es fehlte nur die Erlaubnis, überhaupt sichtbar zu sein — und
-   die gilt genau dann, wenn jemand sie mit „☰" geholt hat (`leiste-ueber-tiefe`).
-   Nicht schon dann, wenn sie zufällig offen steht: Beim Betreten der Tiefe tritt
-   sie zur Seite, und ungefragt legt sie sich nicht wieder darüber. */
-body.tiefe-offen.leiste-ueber-tiefe #app > #sidebar.open {
-  visibility: visible;
+   Sie ruhen deshalb nicht mehr. Die Tiefe legt sich nicht über sie, sie liegt
+   zwischen ihnen — wie die Karte. Damit ist auch die Sonderregel überflüssig,
+   die die Leiste zeitweise über die Tiefe holte: Sie steht ohnehin. */
+
+/* ── Die Tiefe liegt IM Rahmen ──────────────────────────────────────────────
+
+   Der Auftraggeber am 22.08.2026, auf ein Bildschirmfoto der Maschinenseite:
+   Oben fehlt der Basis/Profi-Streifen, unten fehlt das Blatt. Beides soll auch
+   auf den tieferen Ebenen dastehen.
+
+   Also legt sich die Tiefe nicht mehr über den Rahmen des Stamms, sondern
+   zwischen seine Kanten — genau dorthin, wo sonst die Karte liegt. Die Maße
+   stehen als Marken bereit; nur die Höhe des Kopfstreifens ist eine Zahl, und
+   sie ist keine geratene: `attention-check` bewacht sie („der Kopfstreifen ist
+   55 px hoch statt … — er nimmt der Karte den Platz oben").
+
+   Ein erster Versuch setzte die drei Maße aus JavaScript, sobald sich die
+   Tiefe öffnet. Das war einmal falsch gemessen (`--mobile-sheet-peek` gilt am
+   `body`, nicht am `html`: 46 statt 100 px, die Tiefe ragte 54 px unter das
+   Blatt) und einmal grundsätzlich zu zerbrechlich — wer die Tiefe öffnet, ohne
+   das Ereignis auszulösen, bekam gar keinen Rahmen. In CSS gilt es immer.
+
+   Die Abfragen sind wortgleich `PHONE_FACE_MEDIA` und `DESKTOP_FACE_MEDIA` aus
+   `stamm/core/viewport.ts` — kein drittes Gesicht. */
+@media (max-width: 768px), (max-width: 1200px) and (orientation: portrait),
+  (max-width: 900px) and (max-height: 520px) {
+  body.tiefe-offen .zanobo-tiefe {
+    /* Unter dem Kopfstreifen, über der Guckhöhe des Blatts. */
+    top: calc(var(--topbar-height) + 55px);
+    bottom: calc(var(--mobile-sheet-peek, 46px) + var(--safe-bottom, 0px));
+  }
+}
+
+@media (min-width: 1201px), (min-width: 901px) and (orientation: landscape),
+  (min-width: 769px) and (orientation: landscape) and (min-height: 521px) {
+  /* Am Schreibtisch steht die Leiste links. Offen schiebt sie die Tiefe zur
+     Seite, statt sich über sie zu legen — wie bei der Karte. */
+  body.tiefe-offen:has(#sidebar.open) .zanobo-tiefe {
+    left: var(--sidebar-width);
+  }
 }
 
 /* Der Kartenstil gehört zur Karte.
 
    Hinter dem Scharnier steht in der Leiste sonst ein Auswahlfeld für das
    Aussehen einer Karte, die man dort nicht sieht — gemessen am 22.08.2026:
-   „Hell · Standard · Satellit", direkt unter dem Stufenschalter. Es bleibt im
-   Baum stehen (`reiterUmhaengen` hängt den Schalter davor ein), aber es zeigt
-   sich nicht.
-
-   Was hier stattdessen steht, ist die Ansichtstiefe: Sie gilt für die ganze
-   Anwendung, auch für das, was gerade unter der Leiste liegt. */
+   „Hell · Standard · Satellit". Es bleibt im Baum stehen, aber es zeigt sich
+   nicht. */
 body.tiefe-offen .basemap-control {
   display: none;
 }
