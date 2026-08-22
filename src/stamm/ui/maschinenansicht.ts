@@ -436,6 +436,21 @@ async function zeichne(maschine: Machine): Promise<void> {
    */
   const urteilZeigen =
     istErgebnis(zustand) || zustand === 'quality-insufficient' || zustand === 'permission-blocked';
+  /**
+   * Das Urteil steht UNTER dem Bild, nicht über ihm.
+   *
+   * Der Auftraggeber hat am 22.08.2026 beschrieben, warum: Kommt ein Ergebnis,
+   * schoben sich Punkt, Satz und Beleg über das Spektrogramm und drückten es
+   * nach unten. Wer zwischen zwei Zuständen hin- und herschaltet, um mit dem
+   * Auge zu vergleichen, vergleicht dann zwei Bilder an zwei verschiedenen
+   * Stellen — und genau das kann das Auge nicht.
+   *
+   * Es wird hier gebaut, weil hier alles beisammen ist, was es braucht, und
+   * weiter unten eingehängt. Über dem Bild steht nur noch, was in JEDEM
+   * Zustand dasteht: Name, letzter Stand, die eine Handlung.
+   */
+  const urteilsblock = document.createElement('div');
+  urteilsblock.className = 'maschine-urteil';
   if (urteilZeigen) {
     const lageZeile = document.createElement('p');
     lageZeile.className = 'maschine-lage';
@@ -446,7 +461,7 @@ async function zeichne(maschine: Machine): Promise<void> {
     );
     punkt.setAttribute('aria-hidden', 'true');
     lageZeile.append(punkt, urteil(zustand));
-    kopf.appendChild(lageZeile);
+    urteilsblock.appendChild(lageZeile);
   }
 
   /**
@@ -467,7 +482,7 @@ async function zeichne(maschine: Machine): Promise<void> {
       zustand === 'result-deviating'
         ? t('maschine.ergebnisAbweichung')
         : t('maschine.ergebnisAehnlich');
-    kopf.appendChild(satz);
+    urteilsblock.appendChild(satz);
 
     const beleg = document.createElement('p');
     beleg.className = 'muted small maschine-zuletzt';
@@ -475,7 +490,7 @@ async function zeichne(maschine: Machine): Promise<void> {
       wert: String(Math.round(frisch.wert)),
       wann: vorWieLange(frisch.zeitpunkt),
     });
-    kopf.appendChild(beleg);
+    urteilsblock.appendChild(beleg);
   } else if (letzte) {
     // Neben den Namen, nicht darunter: Der letzte Stand gehört zum Steckbrief
     // der Maschine. Der Beleg eines frischen Ergebnisses gehört dagegen unter
@@ -546,30 +561,41 @@ async function zeichne(maschine: Machine): Promise<void> {
   ziel.appendChild(aktionszeile);
 
   /**
-   * Die Runde — nur nach einem Ergebnis.
+   * ── DER BILDPLATZ ────────────────────────────────────────────────────────
    *
-   * Vorher wäre sie ein Drängen: „Nächste Maschine", bevor man diese geprüft
-   * hat. Danach ist sie die Antwort auf die Frage, die man ohnehin hat.
+   * Ab hier steht das Bild — und zwar in JEDEM Zustand an derselben Stelle.
    *
-   * Sie wird nachgereicht, nicht abgewartet: Der Platz steht sofort, die
-   * Beschriftung kommt, sobald der Standort gelesen ist. Wer die Seite mit
-   * einem leeren Knopf sähe, würde auf ihn tippen — deshalb steht er erst da,
-   * wenn er einen Namen hat.
+   * Über ihm liegt nur, was sich zwischen den Zuständen nicht ändert: Name und
+   * letzter Stand, dann die eine Handlung. Alles, was ein Zustand mitbringt —
+   * Urteil, Ergebnissatz, Beleg, Hinweis, die Runde, die Hör-Lupe — steht
+   * darunter.
+   *
+   * Der Grund ist ein optischer: Zwei Spektrogramme vergleicht das Auge, indem
+   * es hin- und herschaltet. Wandert das Bild dabei um drei Zeilen, vergleicht
+   * es zwei Stellen statt zweier Bilder.
    */
-  if (istErgebnis(zustand)) {
-    void naechsteMaschine(maschine).then((naechste) => {
-      if (!naechste || !aktionszeile.isConnected) return;
-      const weiter = document.createElement('button');
-      weiter.type = 'button';
-      weiter.className = 'maschine-runde';
-      weiter.textContent = t('maschine.naechsteMaschine', { name: naechste.name });
-      weiter.addEventListener('click', () => {
-        vergissErgebnis();
-        deps?.zeigeMaschine(naechste);
-      });
-      aktionszeile.insertAdjacentElement('afterend', weiter);
-    });
+  const bildplatz = document.createElement('div');
+  bildplatz.className = 'maschine-bildplatz';
+  ziel.appendChild(bildplatz);
+
+  /**
+   * Im Ergebnis steht dasselbe Bild wie im Ruhezustand.
+   *
+   * Bis hierher gab es das Klangbild nur in Ruhe; im Ergebnis stand an seiner
+   * Stelle die Hör-Lupe. Wer nach einer Prüfung sehen wollte, was sich geändert
+   * hat, musste also erst „Fertig" drücken. Die Aufnahmen liegen im Ergebnis
+   * ohnehin im Speicher — es aus ihnen zu zeichnen kostet keinen Ladevorgang.
+   */
+  if (frisch) {
+    const bild = new Klangbild({ reference: frisch.referenz, measurement: frisch.messung });
+    if (bild.hasContent) {
+      raeumeKlangbildAb();
+      klangbild = bild;
+      bildplatz.appendChild(bild.element);
+    }
   }
+
+  ziel.appendChild(urteilsblock);
 
   /**
    * Der stützende Satz — aber nicht im Ergebnis.
@@ -589,6 +615,36 @@ async function zeichne(maschine: Machine): Promise<void> {
     if (geradeGelernt) hinweis.textContent = t('maschine.hinweisGegenprobe');
     if (zustand === 'processing') hinweis.textContent = t('maschine.rechnetHinweis');
     ziel.appendChild(hinweis);
+  }
+
+  /**
+   * Die Runde — nur nach einem Ergebnis.
+   *
+   * Vorher wäre sie ein Drängen: „Nächste Maschine", bevor man diese geprüft
+   * hat. Danach ist sie die Antwort auf die Frage, die man ohnehin hat.
+   *
+   * Sie wird nachgereicht, nicht abgewartet: Der Platz steht sofort, die
+   * Beschriftung kommt, sobald der Standort gelesen ist. Wer die Seite mit
+   * einem leeren Knopf sähe, würde auf ihn tippen — deshalb steht er erst da,
+   * wenn er einen Namen hat. Und er steht unter dem Bild: Ein Knopf, der nur
+   * im Ergebnis auftaucht, würde das Bild sonst um seine eigene Höhe schieben.
+   */
+  const rundenplatz = document.createElement('div');
+  rundenplatz.className = 'maschine-rundenplatz';
+  ziel.appendChild(rundenplatz);
+  if (istErgebnis(zustand)) {
+    void naechsteMaschine(maschine).then((naechste) => {
+      if (!naechste || !rundenplatz.isConnected) return;
+      const weiter = document.createElement('button');
+      weiter.type = 'button';
+      weiter.className = 'maschine-runde';
+      weiter.textContent = t('maschine.naechsteMaschine', { name: naechste.name });
+      weiter.addEventListener('click', () => {
+        vergissErgebnis();
+        deps?.zeigeMaschine(naechste);
+      });
+      rundenplatz.appendChild(weiter);
+    });
   }
 
   // ── Das Ergebnis: die Hör-Lupe ───────────────────────────────────────────
@@ -744,7 +800,7 @@ async function zeichne(maschine: Machine): Promise<void> {
         raeumeKlangbildAb();
         klangbild = bild;
         if (davor) davor.insertAdjacentElement('afterend', bild.element);
-        else tonplatz.appendChild(bild.element);
+        else bildplatz.appendChild(bild.element);
         return bild;
       };
       const ankerFuerBild: HTMLElement | null = null;
@@ -845,7 +901,7 @@ async function zeichne(maschine: Machine): Promise<void> {
         }
         // Vor die Zweitaktionen: Erst wählen, was man sieht, dann damit
         // etwas tun.
-        tonplatz.insertBefore(reihe, zeile);
+        bildplatz.appendChild(reihe);
       }
 
       // ── Sekundär: die letzte Prüfung nachhören ────────────────────────────

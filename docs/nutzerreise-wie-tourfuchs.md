@@ -1772,6 +1772,88 @@ Alle Prüfungen absichtlich falsifiziert:
 | Was eine Zeile über ihre Maschine sagt | „Referenz fehlt" | **„Noch kein Normalzustand"** |
 | Wächter auf dieser Ebene | **0** | **7, in 5 Formaten** |
 
+### S5 — Das Konzept „Ein Bildplatz, zwei Stufen, eine Leiste" (22.08.2026)
+
+Der Auftraggeber hat am 22.08.2026 fünf Dinge benannt. Sie hängen zusammen, und
+deshalb steht hier zuerst, was sie zusammen ergeben — und danach, in welcher
+Reihenfolge sie gebaut werden.
+
+**Die Klammer.** Die Maschinenseite hat eine Mitte: das Bild. Alles, was ein
+Techniker dort tut, dreht sich darum — hinsehen, vergleichen, hineinhören,
+hineinzoomen. Bisher war dieses Bild ein Element unter anderen, das je nach
+Zustand mal da war, mal nicht, und das verrutschte. Es wird zum **Bildplatz**:
+ein fester Ort auf der Seite, mit wechselndem Inhalt und wachsendem Werkzeug.
+
+Die fünf Schnitte:
+
+| | was | warum |
+|---|---|---|
+| **S5a** | Der Bildplatz wandert nicht | Das Auge vergleicht nur, was an derselben Stelle steht |
+| **S5b** | Die Iris als vierte Quelle | „Ähnlich oder nicht?" in einem Blick, rund statt flach |
+| **S5c** | Auswählen und Abspielen im Bild | Eine Stelle im Spektrogramm herausgreifen und hören |
+| **S5d** | Basis und Profi hinter dem Scharnier | Zwei Stufen wie im Stamm — und eine Einordnung, was wohin gehört |
+| **S5e** | Die Seitenleiste hinter dem Scharnier | Dieselbe Leiste wie vor dem Scharnier, mit den Einstellungen darin |
+
+**Die Einordnung in Basis und Profi** (S5d), als Entscheidung des Produktleiters
+vorweggenommen, damit S5b und S5c wissen, wohin sie gehören:
+
+*Basis — alles, was zur Frage „klingt sie anders?" gehört:* Prüfen,
+Normalzustand aufnehmen, der Bildplatz mit seinen Quellen (Normalzustand,
+Messung, Unterschied, **Iris**), ein Tipp auf das Gebirge, Unterschied anhören,
+Verlauf, die Runde, das Geräusch-Briefing.
+
+*Profi — die Werkzeuge zum Sezieren:* Auswahl im Spektrogramm und das Abspielen
+der Auswahl, die Hervorhebungsstufen, das Teilen- und Exportpaket, Kennzahlen
+und Debug-Ausgaben, Schnellvergleich und Flotte, die Einstellungen der
+Auswertung.
+
+Das Gebirge bleibt ausdrücklich in **Basis**. Es war einmal hinter der
+Profi-Stufe versteckt, und genau das hat der Auftraggeber im August als Fehler
+benannt: Das Eindrucksvollste lag vier Tipps entfernt und hinter einem Schalter.
+
+### S5a — Der Bildplatz wandert nicht (22.08.2026)
+
+Der Auftraggeber: „Wenn dann Ergebnis kommt, dann rutscht das Bild runter und
+die Interpretation rutscht da rein. Das ist blöd, weil dann kann ich das direkt
+mit dem Auge nicht mehr vergleichen. Bitte einfach die Position tauschen, dass
+das Ergebnis darunter läuft — mit dem Vorteil, dass das Spektrogramm immer noch
+an der gleichen Stelle ist."
+
+**Gemessen, bevor gebaut wurde** (390 × 844, dieselbe Maschine, zwei Zustände):
+
+```
+Bildplatz (Ruhe → Ergebnis)    179 px → 267 px      = 88 px Versatz
+```
+
+Die 88 px sind Punkt, Ergebnissatz und Beleg, die sich zwischen Kopf und Bild
+schoben.
+
+**Jetzt steht über dem Bild nur noch, was in JEDEM Zustand dasteht:** Name,
+letzter Stand, die eine Handlung. Alles Zustandsabhängige — Urteil,
+Ergebnissatz, Beleg, Hinweis, die Runde, die Hör-Lupe — steht darunter.
+
+```
+Bildplatz (Ruhe → Ergebnis)    179 px → 179 px      = 0 px
+```
+
+**Und im Ergebnis steht jetzt überhaupt ein Bild.** Bis hierher gab es das
+Klangbild nur im Ruhezustand; im Ergebnis stand an seiner Stelle die Hör-Lupe.
+Wer nach einer Prüfung sehen wollte, was sich geändert hat, musste erst
+„Fertig" drücken. Die Aufnahmen liegen im Ergebnis ohnehin im Speicher — es aus
+ihnen zu zeichnen kostet keinen Ladevorgang.
+
+Die Prüfungsreihe ist mit ins Bild gewandert: Sie steuert, was im Bild steht,
+und gehört deshalb zu ihm und nicht zu den Zweitaktionen.
+
+`wow` misst den Versatz zwischen Fall C (Ruhe) und Fall A (Ergebnis) — dieselbe
+Maschine, dasselbe Fenster, wenige Sekunden auseinander — und erlaubt 2 px.
+Absichtlich falsifiziert, indem der Urteilsblock wieder über das Bild gehängt
+wurde:
+
+```
+✗ Fall A: der Bildplatz wandert zwischen Ruhe und Ergebnis um 88 px (erlaubt 2)
+```
+
 ### S4j — Eine Auskunft an einer Stelle, und die Runde (22.08.2026)
 
 Der Auftraggeber schickte ein Bildschirmfoto von „Pumpe 1" mit zwei Sätzen:
