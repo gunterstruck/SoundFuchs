@@ -479,6 +479,16 @@ export class ListenPanel {
     const gruppe = document.createElement('section');
     gruppe.className = 'hoerlupe-hervorhebung';
     gruppe.setAttribute('aria-label', t('hoerlupe.hervorhebungTitel'));
+    /**
+     * Profi-Sache.
+     *
+     * Die drei Quellen — Normalzustand, Messung, Unterschied — beantworten die
+     * Frage „klingt sie anders?" und bleiben in Basis. Die Hervorhebung ist
+     * etwas anderes: eine bearbeitete Hörhilfe, deren Verstärkung man verstehen
+     * muss, um sie nicht für die Aufnahme zu halten. Wer sie sucht, findet sie
+     * unter Profi; wer sie nicht sucht, wird nicht von ihr befragt.
+     */
+    gruppe.setAttribute('data-view-level', 'expert');
 
     const titel = document.createElement('p');
     titel.className = 'hoerlupe-hervorhebung-titel';
@@ -675,6 +685,16 @@ export class ListenPanel {
         if (this.playingButton !== panel.playButton) panel.playButton.textContent = entry.label;
       },
     });
+    /**
+     * Profi-Sache — das TIEFE Auswahlwerkzeug.
+     *
+     * Auf dem Bildplatz gibt es seit dem 22.08.2026 die schlichte Geste: Zug
+     * heißt Auswahl, ein Tipp spielt sie. Das ist Basis und bleibt es. Dieses
+     * Werkzeug hier ist die Werkbank dazu — eigene Quellenwahl,
+     * Maßstabsvergleich, Teilen. Beides gleichzeitig in Basis wären zwei
+     * Auswahlen, von denen man nicht weiß, welche gemeint ist.
+     */
+    panel.element.setAttribute('data-view-level', 'expert');
     this.auswahlPanel = panel;
     const entry = { key: 'selection' as const, el: panel.playButton, label: panel.playLabel() };
     this.buttons.push(entry);

@@ -25,7 +25,12 @@
  */
 
 import { isPhoneUi, onFaceChange } from '../core/viewport.js';
-import { tiefeIstOffen, schliesseTiefe } from './scharnier.js';
+import {
+  tiefeIstOffen,
+  schliesseTiefe,
+  TIEFE_GEOEFFNET,
+  TIEFE_GESCHLOSSEN,
+} from './scharnier.js';
 
 /** Schmalste Breite der Seitenleiste am Schreibtisch. Aus dem Stamm. */
 const SIDEBAR_MIN = 340;
@@ -69,9 +74,15 @@ function istReiter(wert: string | undefined): wert is Reiter {
  * Im Stamm steht das als `sidebarOpen: !isPhoneUi()` (core/state.js). Ohne
  * diese Zeile stand die Leiste am Schreibtisch bei x = −400 — also draußen.
  */
-const zustand: { blattOffen: boolean; reiter: Reiter } = {
+const zustand: {
+  blattOffen: boolean;
+  reiter: Reiter;
+  /** Hat jemand die Leiste über die Tiefe geholt? Siehe `schaleAnwenden`. */
+  absichtlichUeberTiefe: boolean;
+} = {
   blattOffen: !isPhoneUi(),
   reiter: 'daten',
+  absichtlichUeberTiefe: false,
 };
 
 /** Liegt das Panel als Blatt unten statt seitlich? Gleichbedeutend mit „unterwegs". */
@@ -188,12 +199,32 @@ function reiterUmhaengen(): void {
   const tiefe = document.getElementById('depth-switch');
   if (!topnav || !sidebar || !tiefe) return;
 
-  if (istBlatt()) {
-    if (tiefe.parentElement !== topnav) topnav.appendChild(tiefe);
-  } else {
+  const inDieLeiste = (): void => {
     // Zurück in die Seitenleiste an den ursprünglichen Ankerpunkt.
     const kartenstil = sidebar.querySelector('.basemap-control');
     if (tiefe.parentElement !== sidebar && kartenstil) sidebar.insertBefore(tiefe, kartenstil);
+  };
+
+  /**
+   * Hinter dem Scharnier gehört der Schalter in die Leiste — auch unterwegs.
+   *
+   * Gemessen am 22.08.2026 auf dem Handy: Sobald die Tiefe offen war, stand er
+   * im Kopfstreifen, und der liegt in `#app`. Der ruht hinter dem Scharnier auf
+   * `visibility: hidden` — der Schalter war also da und für niemanden zu sehen.
+   * Die Leiste dagegen ist der eine Ort, den man von überall aufziehen kann.
+   *
+   * Umgehängt und nicht verdoppelt: Es bleibt derselbe Schalter mit demselben
+   * Zustand. Zwei Schalter für eine Stufe wären zwei Wahrheiten.
+   */
+  if (tiefeIstOffen()) {
+    inDieLeiste();
+    return;
+  }
+
+  if (istBlatt()) {
+    if (tiefe.parentElement !== topnav) topnav.appendChild(tiefe);
+  } else {
+    inDieLeiste();
   }
 }
 
@@ -217,6 +248,21 @@ export function schaleAnwenden(): void {
       griff.title = 'Ziehen: ↕ Größe, ↔ verschieben · Doppelklick: zurück';
     }
   }
+
+  /**
+   * Liegt die Leiste ÜBER der Tiefe?
+   *
+   * Als eigene Klasse und nicht als Folgerung aus `blattOffen`: Sie soll dort
+   * nur liegen, wenn jemand sie geholt hat. Der Aufmerksamkeitstest betritt die
+   * Tiefe über Klassen statt über den Weg — dabei blieb `blattOffen` am
+   * Schreibtisch stehen, und die Leiste legte sich ungefragt über die
+   * Arbeitsfläche. Gemessen am 22.08.2026: fünf Bedienelemente mehr im
+   * Erstbild, ohne dass jemand danach gefragt hätte.
+   */
+  document.body.classList.toggle(
+    'leiste-ueber-tiefe',
+    tiefeIstOffen() && zustand.blattOffen && zustand.absichtlichUeberTiefe
+  );
 
   // Ob das Blatt offen ist, entscheidet, ob von der Karte etwas zu sehen ist.
   // Als Klasse am Körper, damit schwebende Kartenelemente per CSS ausweichen
@@ -509,20 +555,38 @@ export function schaleAufbauen(): void {
   document.querySelectorAll<HTMLElement>('.tab-button').forEach((knopf) => {
     knopf.addEventListener('click', () => {
       const ziel = knopf.dataset.tab;
-      if (istReiter(ziel)) reiterOeffnen(ziel);
+      if (!istReiter(ziel)) return;
+      /**
+       * Ein Reiter ist ein Ortswechsel.
+       *
+       * Die Leiste kann jetzt über der Tiefe liegen. Wer dort „Standorte"
+       * wählt, will zur Karte — nicht einen Reiter hinter einer Maschinenseite
+       * umschalten, die er nicht sieht. Die Tiefe geht deshalb mit.
+       */
+      if (tiefeIstOffen()) schliesseTiefe();
+      reiterOeffnen(ziel);
     });
   });
 
   document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
-    // Aus der Tiefe heraus bedeutet „☰" zuerst: zeig mir die Navigation. Die
-    // liegt auf der Kartenebene. Ohne diesen Fall schaltete der Knopf eine
-    // Leiste um, die gerade gar nicht zu sehen ist — ein Knopf, der scheinbar
-    // nichts tut.
-    if (tiefeIstOffen()) {
-      schliesseTiefe();
-      return;
-    }
+    /**
+     * „☰" zieht die Leiste auf — auch hinter dem Scharnier.
+     *
+     * Hier stand bis zum 22.08.2026 `schliesseTiefe()`: Aus der Tiefe heraus
+     * warf der Knopf einen zurück auf die Karte. Das war die Notlösung dafür,
+     * dass die Leiste hinter dem Scharnier gar nicht zu sehen war — wer die
+     * Ansichtstiefe umstellen wollte, musste die Maschine verlassen und danach
+     * den ganzen Weg zurückgehen.
+     *
+     * Jetzt legt sich die Leiste über die Tiefe. Die Tiefe bleibt stehen; wer
+     * die Leiste zuzieht, steht wieder da, wo er war. Zurück auf die Karte
+     * führt weiterhin „‹ Zum Standort" beziehungsweise „‹ Zur Karte" — der
+     * Rückweg gehört dem Inhalt, nicht der Navigation.
+     */
     zustand.blattOffen = !zustand.blattOffen;
+    // Genau hier entsteht die Absicht: „☰" ist der einzige Weg, die Leiste über
+    // die Tiefe zu holen.
+    zustand.absichtlichUeberTiefe = zustand.blattOffen;
     schaleAnwenden();
   });
 
@@ -538,6 +602,40 @@ export function schaleAufbauen(): void {
    * Was der Nutzer gerade tut, bleibt: offener Standort, gewählte Maschine,
    * offener Reiter. Umgehängt wird nur, was am neuen Ort anders steht.
    */
+  /**
+   * Beim Öffnen und Schließen der Tiefe zieht der Schalter mit um.
+   *
+   * Ohne diese beiden Zeilen blieb er unterwegs im Kopfstreifen liegen und war
+   * hinter dem Scharnier unsichtbar — der Fall, den die Messung vom 22.08.2026
+   * gezeigt hat. `reiterUmhaengen` weiß selbst, wohin er gehört; es muss nur
+   * jemand fragen, wenn sich der Ort ändert.
+   */
+  document.addEventListener(TIEFE_GEOEFFNET, () => {
+    reiterUmhaengen();
+    /**
+     * Beim Betreten der Tiefe tritt die Navigation zur Seite.
+     *
+     * Am Schreibtisch steht die Leiste sonst offen und legt sich über die
+     * Arbeitsfläche — gemessen am 22.08.2026: 400 px über einer Maschinenseite,
+     * die 1120 px breit mittig steht. Über der Karte ist das richtig, die kann
+     * man darunter weiterschieben; über einer Arbeitsfläche ist es eine
+     * Verdeckung.
+     *
+     * Zugezogen, nicht abgeschaltet: „☰" holt sie jederzeit zurück, dann legt
+     * sie sich bewusst darüber.
+     */
+    zustand.blattOffen = false;
+    zustand.absichtlichUeberTiefe = false;
+    schaleAnwenden();
+  });
+  document.addEventListener(TIEFE_GESCHLOSSEN, () => {
+    reiterUmhaengen();
+    // Zurück auf der Karte gilt wieder, was das Gesicht vorgibt.
+    zustand.blattOffen = !istBlatt();
+    zustand.absichtlichUeberTiefe = false;
+    schaleAnwenden();
+  });
+
   onFaceChange(() => {
     reiterUmhaengen();
     sidebarPositionFuersGesicht();
