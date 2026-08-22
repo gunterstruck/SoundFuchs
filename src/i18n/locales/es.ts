@@ -76,6 +76,8 @@ export const es: TranslationDict = {
   // La lupa auditiva (corte 3): estado normal · medición · diferencia.
   // La imagen sonora en la página de la máquina.
   klangbild: {
+    quelleIris: 'Iris',
+    irisAlt: 'Comparación circular: estado normal y medición superpuestos',
     vergroessern: 'Toca para la vista grande',
     alt: 'Imagen sonora de la última prueba',
     leer: 'No hay imagen sonora para esta prueba',

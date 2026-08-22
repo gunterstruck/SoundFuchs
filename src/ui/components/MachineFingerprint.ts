@@ -11,6 +11,7 @@
  */
 
 import { setCanvasSize } from '@utils/canvasUtils.js';
+import { signedColor } from '@core/dsp/klangfarben.js';
 
 export interface FingerprintOptions {
   /** Number of points around the circle (the reference vector is averaged into this many). */
@@ -116,6 +117,173 @@ export function renderMachineFingerprint(
     ctx.lineWidth = 1;
     ctx.stroke();
   }
+}
+
+/**
+ * DIE IRIS ALS VERGLEICH
+ *
+ * Dieselbe runde Form, aber zwei Spektren übereinander: der Normalzustand als
+ * ruhige Linie, die Messung als kräftige Linie darauf, und der Zwischenraum in
+ * der Richtungsfarbe — warm, wo die Messung lauter ist, kühl, wo sie leiser
+ * ist.
+ *
+ * Warum rund und nicht flach: Der Auftraggeber hat es am 22.08.2026 so
+ * beschrieben — „man kann direkt schnell erkennen, ob es wenigstens ähnlich
+ * ist". Ein Spektrogramm muss man lesen; einen Ring sieht man. Ein glatter
+ * Ring heißt gleich, eine Zacke heißt anders, und man braucht dafür weder
+ * Achsenbeschriftung noch Übung.
+ *
+ * Die Farben sind NICHT die der Einzel-Iris, sondern die des Unterschieds
+ * (`core/dsp/klangfarben.ts`). Wer im Spektrogramm gelernt hat, dass Warm
+ * „mehr geworden" heißt, soll es hier nicht neu lernen müssen.
+ */
+export function renderIrisVergleich(
+  canvas: HTMLCanvasElement,
+  referenz: ArrayLike<number>,
+  messung: ArrayLike<number>,
+  options: FingerprintOptions = {}
+): void {
+  const ctx = canvas.getContext('2d');
+  if (!ctx || referenz.length === 0 || messung.length === 0) return;
+
+  setCanvasSize(canvas, ctx);
+  const dpr = window.devicePixelRatio || 1;
+  const width = canvas.width / dpr;
+  const height = canvas.height / dpr;
+  if (width <= 0 || height <= 0) return;
+
+  const punkte = Math.max(16, options.points ?? 180);
+  const cx = width / 2;
+  const cy = height / 2;
+  const maxRadius = Math.min(width, height) / 2 - 4;
+  const baseRadius = maxRadius * (options.baseRadiusRatio ?? 0.52);
+  const ampRadius = maxRadius - baseRadius;
+
+  /**
+   * Beide Spektren auf DENSELBEN Maßstab.
+   *
+   * Jedes für sich zu normieren wäre der Fehler, der den ganzen Vergleich
+   * wertlos macht: Eine durchweg doppelt so laute Messung sähe dann genauso
+   * aus wie der Normalzustand. Der gemeinsame Höchstwert ist der Maßstab.
+   */
+  const a = irisStufen(referenz, punkte);
+  const b = irisStufen(messung, punkte);
+  const gemeinsam = Math.max(a.max, b.max);
+  const normA = irisNormieren(a.werte, gemeinsam);
+  const normB = irisNormieren(b.werte, gemeinsam);
+
+  const ort = (norm: number, p: number): { x: number; y: number } => {
+    const r = baseRadius + norm * ampRadius;
+    const winkel = (p / punkte) * Math.PI * 2 - Math.PI / 2;
+    return { x: cx + Math.cos(winkel) * r, y: cy + Math.sin(winkel) * r };
+  };
+
+  ctx.clearRect(0, 0, width, height);
+
+  /**
+   * 0. Der Normalzustand als ruhige Fläche.
+   *
+   * Ohne sie standen im ersten Aufmaß zwei helle Linien fast deckungsgleich
+   * übereinander, und man sah weder die eine noch die andere. Die Fläche ist
+   * die Form, gegen die verglichen wird — sie muss zu sehen sein, auch da, wo
+   * nichts abweicht.
+   */
+  ctx.beginPath();
+  for (let p = 0; p <= punkte; p++) {
+    const { x, y } = ort(normA[p % punkte], p % punkte);
+    if (p === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(71, 85, 105, 0.55)';
+  ctx.fill();
+
+  // 1. Der Zwischenraum, Sektor für Sektor in der Richtungsfarbe.
+  for (let p = 0; p < punkte; p++) {
+    const q = (p + 1) % punkte;
+    const abstand = (Math.abs(normB[p] - normA[p]) + Math.abs(normB[q] - normA[q])) / 2;
+    if (abstand < 0.004) continue;
+    const richtung = normB[p] + normB[q] >= normA[p] + normA[q] ? 1 : -1;
+    // Der Abstand ist ein Anteil des Radius; ×3 macht kleine Abweichungen
+    // sichtbar, ohne dass große sofort in die Sättigung laufen.
+    const [r, g, bl] = signedColor(Math.min(1, abstand * 3), richtung);
+    const a1 = ort(normA[p], p);
+    const a2 = ort(normA[q], q);
+    const b1 = ort(normB[p], p);
+    const b2 = ort(normB[q], q);
+    ctx.beginPath();
+    ctx.moveTo(a1.x, a1.y);
+    ctx.lineTo(a2.x, a2.y);
+    ctx.lineTo(b2.x, b2.y);
+    ctx.lineTo(b1.x, b1.y);
+    ctx.closePath();
+    const farbe = `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(bl * 255)})`;
+    ctx.fillStyle = farbe;
+    ctx.fill();
+    ctx.strokeStyle = farbe;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  const linie = (norm: Float32Array, farbe: string, breite: number): void => {
+    ctx.beginPath();
+    for (let p = 0; p <= punkte; p++) {
+      const { x, y } = ort(norm[p % punkte], p % punkte);
+      if (p === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = farbe;
+    ctx.lineWidth = breite;
+    ctx.stroke();
+  };
+
+  // 2. Der Normalzustand als ruhige Linie — die Form, gegen die man vergleicht.
+  linie(normA, 'rgba(148, 163, 184, 0.95)', 1.5);
+  // 3. Die Messung darauf, kräftiger: Sie ist das Neue.
+  linie(normB, 'rgba(241, 245, 249, 0.95)', 2);
+}
+
+/** Ein Spektrum in `punkte` Sektoren auf logarithmischer Frequenzachse. */
+function irisStufen(
+  vector: ArrayLike<number>,
+  punkte: number
+): { werte: Float32Array; max: number } {
+  const werte = new Float32Array(punkte);
+  let max = 0;
+  const iMin = 1;
+  const iMax = vector.length - 1;
+  const logMin = Math.log(iMin);
+  const logMax = Math.log(Math.max(iMin + 1, iMax));
+  for (let p = 0; p < punkte; p++) {
+    const start = Math.max(iMin, Math.floor(Math.exp(logMin + ((logMax - logMin) * p) / punkte)));
+    const ende = Math.max(
+      start + 1,
+      Math.ceil(Math.exp(logMin + ((logMax - logMin) * (p + 1)) / punkte))
+    );
+    let summe = 0;
+    let anzahl = 0;
+    for (let i = start; i < ende && i < vector.length; i++) {
+      summe += Math.max(0, vector[i]);
+      anzahl++;
+    }
+    const v = anzahl > 0 ? summe / anzahl : 0;
+    werte[p] = v;
+    if (v > max) max = v;
+  }
+  return { werte, max };
+}
+
+/** dB gegen einen gemeinsamen Höchstwert, auf 0..1 gestaucht. */
+function irisNormieren(werte: Float32Array, max: number): Float32Array {
+  const DB_RANGE = 45;
+  const bezug = max > 0 ? max : 1;
+  const raus = new Float32Array(werte.length);
+  for (let p = 0; p < werte.length; p++) {
+    const db = 20 * Math.log10((werte[p] + 1e-9) / (bezug + 1e-9));
+    raus[p] = Math.min(1, Math.max(0, 1 + db / DB_RANGE));
+  }
+  return raus;
 }
 
 /**

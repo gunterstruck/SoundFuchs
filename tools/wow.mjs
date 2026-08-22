@@ -1034,6 +1034,9 @@ try {
         // Ergebnis ist der ganze Zweck des Bildplatzes.
         klangbildOben: bildKasten ? Math.round(bildKasten.top) : null,
         klangbildQuellen: document.querySelectorAll('.klangbild-quelle').length,
+        klangbildQuellenNamen: [...document.querySelectorAll('.klangbild-quelle')].map((b) =>
+          b.textContent.trim()
+        ),
         ungenutztUnten: Math.round(window.innerHeight - unterste),
       };
     });
@@ -1078,8 +1081,8 @@ try {
     );
     pruefe(ruhe.klangbildImBild, 'Fall C: das Klangbild steht nicht ohne Scrollen im Bild');
     pruefe(
-      ruhe.klangbildQuellen === 3,
-      `Fall C: das Klangbild bietet ${ruhe.klangbildQuellen} Quellen statt Normalzustand, Messung und Unterschied`
+      ruhe.klangbildQuellen === 4,
+      `Fall C: das Klangbild bietet ${ruhe.klangbildQuellen} Quellen statt Normalzustand, Messung, Unterschied und Iris`
     );
     pruefe(
       ruhe.ungenutztUnten <= BUDGET.leerRaum,
@@ -1109,6 +1112,62 @@ try {
       /\d/.test(ruhe.verlaufText),
       `Fall C: der Verlauf nennt keine Zahl („${ruhe.verlaufText}")`
     );
+
+    /**
+     * Ein Tipp auf „Iris" → der runde Vergleich, und zwar gezeichnet.
+     *
+     * Gezählt werden gesetzte Bildpunkte, nicht Maße: Eine leere Leinwand mit
+     * 340 px Höhe ist genau der Fehler, den man auf einem Bildschirmfoto nicht
+     * sieht. Dieselbe Lehre wie beim Fingerabdruck und beim Gebirge.
+     */
+    await page.evaluate(() => {
+      const knopf = [...document.querySelectorAll('.klangbild-quelle')].find((b) =>
+        /iris/i.test(b.textContent)
+      );
+      knopf?.click();
+    });
+    await page.waitForTimeout(2500);
+    const rund = await page.evaluate(() => {
+      const c = document.querySelector('.klangbild-iris');
+      if (!c || c.hidden) return { da: false, gemalt: false, flachWeg: false, hinweisWeg: false };
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let gemalt = false;
+      for (let i = 3; i < d.length; i += 4 * 37) {
+        if (d[i] > 0) {
+          gemalt = true;
+          break;
+        }
+      }
+      const flach = document.querySelector('.klangbild-flach');
+      const hinweis = document.querySelector('.klangbild-hinweis');
+      return {
+        da: true,
+        gemalt,
+        // Zwei Bilder übereinander wären zwei Aussagen über dieselbe Fläche.
+        flachWeg: Boolean(flach && flach.hidden),
+        hinweisWeg: Boolean(hinweis && getComputedStyle(hinweis).display === 'none'),
+      };
+    });
+    console.log(`  Quellen im Klangbild      ${ruhe.klangbildQuellenNamen.join(' · ')}`);
+    console.log(
+      `  ein Tipp auf „Iris"       ${rund.gemalt ? 'runder Vergleich gemalt' : 'NICHTS'}`
+    );
+    pruefe(rund.da, 'Fall C: „Iris" bringt keine runde Ansicht');
+    pruefe(rund.gemalt, 'Fall C: die Iris ist leer — eine Leinwand mit Maßen ist kein Bild');
+    pruefe(rund.flachWeg, 'Fall C: das flache Spektrogramm steht noch unter der Iris');
+    pruefe(
+      rund.hinweisWeg,
+      'Fall C: die Iris verspricht eine große Ansicht, die es für sie nicht gibt'
+    );
+
+    // Zurück auf eine flache Quelle — das Gebirge kommt aus dem Spektrogramm.
+    await page.evaluate(() => {
+      const knopf = [...document.querySelectorAll('.klangbild-quelle')].find((b) =>
+        /messung/i.test(b.textContent)
+      );
+      knopf?.click();
+    });
+    await page.waitForTimeout(1200);
 
     // Ein Tipp auf das Bild → das Gebirge, an Ort und Stelle.
     await page.evaluate(() => document.querySelector('.klangbild-flaeche')?.click());
