@@ -496,8 +496,26 @@ try {
       })
       .catch(() => {});
 
-    const angebot = await page.evaluate(() => {
-      const k = document.querySelector('.mitbringen-normal-knopf');
+    /**
+     * WELCHER KNOPF FÜHRT ZUM NORMALZUSTAND — das hängt davon ab, ob es schon
+     * einen gibt.
+     *
+     * Solange die Maschine keinen Maßstab hat, ist „Als Normalzustand
+     * speichern" die eine Handlung und steht im gefüllten Knopf. Sobald einer
+     * da ist, hat die Vorschau etwas Besseres anzubieten — die bewertete
+     * Prüfung — und der Normalzustand rückt auf den leisen Weg darunter.
+     *
+     * Ein Wächter, der stur nach `.mitbringen-normal-knopf` greift, misst nach
+     * diesem Wechsel den falschen Knopf: Er klickt „Als Prüfung auswerten" und
+     * wundert sich, dass keine Ersetzen-Frage kommt. Deshalb wird hier gewählt.
+     */
+    const hatteSchonEinen = (vorher.modelle ?? 0) > 0;
+    const zumNormalzustand = hatteSchonEinen
+      ? '.mitbringen-normal-leise'
+      : '.mitbringen-normal-knopf';
+
+    const angebot = await page.evaluate((wahl) => {
+      const k = document.querySelector(wahl);
       const kk = k?.getBoundingClientRect();
       const haupt = document.querySelector('.mitbringen-nehmen')?.getBoundingClientRect();
       return {
@@ -506,7 +524,7 @@ try {
         hoch: kk ? Math.round(kk.height) : 0,
         unterHaupt: kk && haupt ? kk.top >= haupt.top : false,
       };
-    });
+    }, zumNormalzustand);
     console.log(`  Satz                      ${angebot.satz || '(keiner)'}`);
     console.log(`  Knopf                     ${angebot.knopf || 'FEHLT'} (${angebot.hoch} px)`);
     pruefe(angebot.knopf.length > 0, 'die Vorschau bietet den Normalzustand gar nicht an');
@@ -527,10 +545,9 @@ try {
      * FALSIFIZIERT: erst gefragt, dann abgebrochen, dann nachgesehen, ob in der
      * Ablage wirklich nichts passiert ist.
      */
-    const hatteSchonEinen = (vorher.modelle ?? 0) > 0;
     if (hatteSchonEinen) {
       await page
-        .locator('.mitbringen-normal-knopf')
+        .locator(zumNormalzustand)
         .click({ timeout: 6000 })
         .catch(() => {});
       await page.waitForTimeout(600);
@@ -575,7 +592,7 @@ try {
       pruefe(zurueckInVorschau, 'nach „Abbrechen" steht die Vorschau nicht wieder da');
 
       await page
-        .locator('.mitbringen-normal-knopf')
+        .locator(zumNormalzustand)
         .click({ timeout: 6000 })
         .catch(() => {});
       await page.waitForTimeout(600);
@@ -585,7 +602,7 @@ try {
         .catch(() => {});
     } else {
       await page
-        .locator('.mitbringen-normal-knopf')
+        .locator(zumNormalzustand)
         .click({ timeout: 6000 })
         .catch(() => {});
     }
@@ -674,6 +691,252 @@ try {
   // zweiten hat sie einen — und nur dann ist die Ersetzen-Frage messbar.
   await messeNormalzustand();
   await messeNormalzustand();
+
+  /**
+   * ── 1c. DIE MITGEBRACHTE AUFNAHME ALS BEWERTETE PRÜFUNG ─────────────────
+   *
+   * Nach 1b hat die Maschine einen Normalzustand. Damit wechselt der zweite
+   * Ausgang der Vorschau: Statt „Als Normalzustand speichern" steht dort jetzt
+   * „Als Prüfung auswerten" — die Frage, die jemand mit einem Maßstab wirklich
+   * mitbringt.
+   *
+   * Gemessen wird nicht der Knopf, sondern sein Ergebnis: Liegt hinterher eine
+   * Prüfung in der Ablage, steht sie im Verlauf, und sagt die Maschinenseite
+   * einen Satz darüber?
+   */
+  console.log('\n=== Der mitgebrachte Ton als bewertete Prüfung ===');
+  await blattZuziehen();
+
+  const pruefungenVorher = await page.evaluate(
+    () =>
+      new Promise((fertig) => {
+        const a = indexedDB.open('zanobot-db');
+        a.onerror = () => fertig(-1);
+        a.onsuccess = () => {
+          const q = a.result.transaction('diagnoses', 'readonly').objectStore('diagnoses').getAll();
+          q.onsuccess = () => fertig((q.result ?? []).length);
+          q.onerror = () => fertig(-1);
+        };
+      })
+  );
+
+  const wahl4 = page.waitForEvent('filechooser');
+  await page
+    .locator('.maschine-mitbringen')
+    .click({ timeout: 8000 })
+    .catch(() => {});
+  (await wahl4).setFiles(WAV).catch(() => {});
+  await page
+    .waitForFunction(() => Boolean(document.querySelector('.mitbringen-nehmen')), null, {
+      timeout: 30000,
+    })
+    .catch(() => {});
+
+  const angebot2 = await page.evaluate(() => {
+    const k = document.querySelector('.mitbringen-normal-knopf');
+    const leise = document.querySelector('.mitbringen-normal-leise');
+    return {
+      knopf: k?.textContent?.trim() ?? '',
+      hoch: k ? Math.round(k.getBoundingClientRect().height) : 0,
+      satz: document.querySelector('.mitbringen-normal-text')?.textContent?.trim() ?? '',
+      leiserWeg: leise?.textContent?.trim() ?? '',
+      leiseHoch: leise ? Math.round(leise.getBoundingClientRect().height) : 0,
+    };
+  });
+  console.log(`  Satz                      ${angebot2.satz || '(keiner)'}`);
+  console.log(`  Knopf                     ${angebot2.knopf || 'FEHLT'} (${angebot2.hoch} px)`);
+  console.log(`  leiser Weg                ${angebot2.leiserWeg || '(keiner)'} (${angebot2.leiseHoch} px)`);
+  /**
+   * Mit Normalzustand ist die Prüfung das Angebot, nicht das Ersetzen.
+   *
+   * Wer einen Maßstab hat, will fast immer wissen, wie das Geräusch dazu
+   * steht. Den Maßstab zu ersetzen ist die Ausnahme — sie bleibt erreichbar,
+   * aber leiser.
+   */
+  pruefe(
+    /Prüfung/i.test(angebot2.knopf),
+    `mit Normalzustand bietet die Vorschau „${angebot2.knopf}" statt der Prüfung an`
+  );
+  pruefe(
+    angebot2.hoch >= 44,
+    `„${angebot2.knopf}" ist ${angebot2.hoch} px hoch`
+  );
+  pruefe(
+    /Normalzustand/i.test(angebot2.leiserWeg),
+    'das Ersetzen des Normalzustands ist nicht mehr erreichbar'
+  );
+  pruefe(
+    angebot2.leiseHoch >= 44,
+    `der leise Weg ist ${angebot2.leiseHoch} px hoch`
+  );
+
+  await page
+    .locator('.mitbringen-normal-knopf')
+    .click({ timeout: 6000 })
+    .catch(() => {});
+  await page
+    .waitForFunction(
+      () =>
+        document.querySelectorAll('.mitbringen-dialog').length === 0 ||
+        Boolean(document.querySelector('.mitbringen-normal-fehler')),
+      null,
+      { timeout: 60000 }
+    )
+    .catch(() => {});
+  await page.waitForTimeout(3000);
+
+  const nachPruefung = await page.evaluate(
+    () =>
+      new Promise((fertig) => {
+        const a = indexedDB.open('zanobot-db');
+        a.onerror = () => fertig({ ok: false });
+        a.onsuccess = () => {
+          const tx = a.result.transaction(['diagnoses', 'recordings'], 'readonly');
+          const d = tx.objectStore('diagnoses').getAll();
+          const r = tx.objectStore('recordings').getAll();
+          tx.oncomplete = () => {
+            const alle = d.result ?? [];
+            const juengste = [...alle].sort((x, y) => y.timestamp - x.timestamp)[0] ?? null;
+            fertig({
+              ok: true,
+              anzahl: alle.length,
+              juengste: juengste
+                ? {
+                    wert: Math.round(juengste.healthScore),
+                    status: juengste.status,
+                    herkunft: juengste.metadata?.processingMode ?? '(keine)',
+                    tonDa: (r.result ?? []).some((x) => x.id === juengste.id),
+                  }
+                : null,
+            });
+          };
+          tx.onerror = () => fertig({ ok: false });
+        };
+      })
+  );
+  const seite = await page.evaluate(() => ({
+    dialogWeg: document.querySelectorAll('.mitbringen-dialog').length === 0,
+    fehler: document.querySelector('.mitbringen-normal-fehler')?.textContent?.trim() ?? '',
+    satz: document.querySelector('.maschine-ergebnissatz')?.textContent?.trim() ?? '',
+    ebene: document.body.className.match(/tiefe-\w+/g)?.join(' ') ?? '(karte)',
+  }));
+  console.log(`  Prüfungen                 ${pruefungenVorher} → ${nachPruefung.anzahl}`);
+  console.log(
+    `  jüngste                   ${nachPruefung.juengste ? `${nachPruefung.juengste.wert} % · ${nachPruefung.juengste.status} · Herkunft ${nachPruefung.juengste.herkunft} · Ton ${nachPruefung.juengste.tonDa}` : '(keine)'}`
+  );
+  console.log(`  Maschinenseite            ${seite.ebene} · „${seite.satz || '(kein Satz)'}"`);
+  if (!seite.dialogWeg) console.log(`  Fehlersatz                ${seite.fehler || '(keiner)'}`);
+
+  pruefe(
+    nachPruefung.anzahl === pruefungenVorher + 1,
+    `aus ${pruefungenVorher} Prüfungen wurden ${nachPruefung.anzahl} statt ${pruefungenVorher + 1}`
+  );
+  /**
+   * Die Herkunft steht mit drin.
+   *
+   * Eine Prüfung aus einer Datei ist so gültig wie eine am Gerät — aber sie
+   * ist nicht dieselbe Sache, und das muss man ihr später ansehen können.
+   */
+  pruefe(
+    nachPruefung.juengste?.herkunft === 'file',
+    `der Verlauf verrät nicht, dass diese Prüfung aus einer Datei kam — „${nachPruefung.juengste?.herkunft}"`
+  );
+  pruefe(
+    nachPruefung.juengste?.tonDa === true,
+    'der Ton der Prüfung wurde nicht aufbewahrt — dann lässt sie sich nie wieder anhören'
+  );
+  pruefe(
+    seite.satz.length > 0,
+    'nach der Prüfung sagt die Maschinenseite nichts über das Ergebnis'
+  );
+  /**
+   * Und sie stellt keine Diagnose.
+   *
+   * Dieselbe Regel wie überall: „klingt anders als der Normalzustand" ist eine
+   * Beobachtung, „Lager defekt" wäre eine Behauptung.
+   */
+  pruefe(
+    !/defekt|kaputt|schaden|verschlei|fehlerhaft/i.test(seite.satz),
+    `der Ergebnissatz stellt eine Diagnose — „${seite.satz}"`
+  );
+
+  /**
+   * ── 1d. DIE BETRIEBSPUNKTE IM REITER „DETAILS" ──────────────────────────
+   *
+   * Der Durchlauf misst diesen Reiter auch — aber dort greift jedes Mal der
+   * Sonderfall: Das Modell hat am Mikrofon bei 48 000 Hz gelernt, die
+   * aufbewahrte Messung liegt bei 44 100 Hz, und GMIA weist den Vergleich
+   * zurück. Der Reiter sagt das dann sauber, und das ist auch richtig — nur
+   * ist die RANGLISTE damit nirgends gemessen.
+   *
+   * Hier passen die Raten: Normalzustand und Prüfung kommen aus derselben
+   * Datei, durch denselben AudioContext. Also ist dies die Stelle, an der der
+   * Weg mit Ergebnis wirklich einmal durchläuft.
+   */
+  console.log('\n=== Die Betriebspunkte im Reiter „Details" ===');
+  await page
+    .locator('#depth-switch .view-level-btn[data-level="expert"]')
+    .click({ force: true, timeout: 6000 })
+    .catch(() => {});
+  await page.waitForTimeout(900);
+  // Aufziehen, dann wählen: Auf Guckhöhe ist der Inhalt 0 px hoch, und eine
+  // Leinwand, die beim Zeichnen 0 px misst, bleibt leer.
+  await page.locator('#sheet-grip').click({ force: true, timeout: 6000 }).catch(() => {});
+  await page.waitForTimeout(800);
+  await page
+    .locator('.tab-button[data-tab="details"]')
+    .click({ force: true, timeout: 6000 })
+    .catch(() => {});
+  await page.waitForTimeout(1600);
+
+  const detail = await page.evaluate(() => {
+    const feld = document.getElementById('tab-details');
+    const c = feld?.querySelector('.blatt-details-canvas');
+    return {
+      offen: Boolean(feld?.classList.contains('active')),
+      hoch: c ? Math.round(c.getBoundingClientRect().height) : 0,
+      leer: feld?.querySelector('.blatt-leer')?.textContent?.trim() ?? '',
+      punkte: [...(feld?.querySelectorAll('.ranking-item') ?? [])].map((z) => ({
+        name: z.querySelector('.ranking-name')?.textContent?.trim() ?? '',
+        wert: z.querySelector('.ranking-score')?.textContent?.trim() ?? '',
+        balken: Math.round(z.querySelector('.ranking-bar')?.getBoundingClientRect().width ?? 0),
+      })),
+    };
+  });
+  console.log(`  Reiter offen              ${detail.offen}`);
+  console.log(`  Leinwand                  ${detail.hoch} px`);
+  console.log(`  Betriebspunkte            ${detail.punkte.length}`);
+  for (const p of detail.punkte) {
+    console.log(`    ${p.name || '(ohne Namen)'} — ${p.wert || '(ohne Wert)'} · Balken ${p.balken} px`);
+  }
+  if (detail.leer) console.log(`  statt Liste               ${detail.leer}`);
+
+  pruefe(
+    detail.punkte.length > 0,
+    `keine Rangliste, obwohl die Raten zusammenpassen${detail.leer ? ` — „${detail.leer}"` : ''}`
+  );
+  /**
+   * `[].every(...)` ist wahr.
+   *
+   * Beim Falsifizieren am 23.08.2026 hat genau das zugeschlagen: Die Rangliste
+   * kam nicht zustande, der erste Befund stand da — und diese beiden Zusagen
+   * blieben grün, weil sie über eine leere Liste urteilten. Zwei Wächter, die
+   * nichts gemessen haben. Deshalb steht die Länge jetzt in der Bedingung.
+   */
+  pruefe(
+    detail.punkte.length > 0 && detail.punkte.every((p) => p.name && p.wert),
+    'ein Betriebspunkt steht ohne Namen oder ohne Wert da'
+  );
+  /**
+   * Der Balken ist die Aussage, nicht die Zahl daneben.
+   *
+   * Ein Balken der Breite 0 neben „100 %" wäre ein Widerspruch auf demselben
+   * Bildschirm — und der Balken ist das, was man zuerst sieht.
+   */
+  pruefe(
+    detail.punkte.length > 0 && detail.punkte.every((p) => p.balken > 0),
+    'ein Betriebspunkt hat einen Balken der Breite 0 — dann sagt das Bild etwas anderes als die Zahl'
+  );
 
   // ── 2. Das echte Telefonvideo ───────────────────────────────────────────
   if (VIDEO && existsSync(VIDEO)) {

@@ -34,6 +34,35 @@ export const zh: TranslationDict = {
     gebirgeBrauchtBeide: '3D 视图显示差异——这需要一份正常状态和一次测量。',
     briefingErklaerung:
       '一个包含两段录音、听觉辅助和工作说明的数据包，完全在您的浏览器中生成。SoundFuchs 不会上传任何内容。',
+    tabDetails: '详情',
+    detailsKurve: '频率偏差',
+    detailsKurveErklaerung: '测量曲线叠加在正常状态曲线之上。两个最强峰值标注了各自的频率。',
+    detailsKurveOhneReferenz: '测量曲线。没有正常状态，就没有可供叠加的基准。',
+    detailsBrauchtMessung: '尚无测量。完成检查后，这里会显示曲线和工作点。',
+    detailsBrauchtNormalzustand: '尚未学习任何工作点。排行榜至少需要一个正常状态。',
+    detailsRatenPassenNicht:
+      '这段录音为 {{messung}} kHz，正常状态为 {{modell}} kHz。频率分档的含义不再相同，因此 SoundFuchs 不做比较。',
+  },
+  filter: {
+    titelZustand: '状态',
+    titelAlter: '最近检查',
+    titelFlotte: '机群',
+    zustand: {
+      kritisch: '严重',
+      warnung: '偏差',
+      gesund: '无异常',
+      ungeprueft: '未检查',
+    },
+    alter: {
+      nie: '从未',
+      ab30: '超过 30 天',
+      ab90: '超过 90 天',
+    },
+    trefferVon: '{{gesamt}} 个地点中的 {{treffer}} 个',
+    aufheben: '清除筛选',
+    aktiv: '筛选：{{filter}}',
+    alleZeigen: '显示全部',
+    keinTreffer: '没有地点符合此筛选。',
   },
   liste: {
     nochKeiner: '还没有机器地点。新建机器时会自动出现。',
@@ -42,7 +71,6 @@ export const zh: TranslationDict = {
     eineMaschine: '1 台机器',
     nochNichtGeprueft: '尚未检测',
     schlechteste: '最差 {{wert}} %',
-    filterNochNicht: '这里还没有筛选功能。',
   },
   schnellcheck: {
     knopf: '检查一段声音',
@@ -69,6 +97,12 @@ export const zh: TranslationDict = {
     fehlerLeer: '文件为空。',
     fehlerUnlesbar: '无法打开该文件。',
     alsNormalzustand: '保存为正常状态',
+    alsPruefung: '作为检测评估',
+    pruefungErklaerung: '这台机器有正常状态。SoundFuchs 可以用它来比较并给这一段打分。',
+    pruefungLaeuft: '正在将这一段与正常状态比较 …',
+    pruefungOhneNormalzustand: '没有正常状态就无从比较。请先建立一个。',
+    pruefungZuKurz: '检测至少需要 {{mindest}} 秒；这一段只有 {{dauer}} 秒。',
+    pruefungGingNicht: '无法评估这一段。',
     normalNochKeiner:
       '这台机器还没有正常状态。若把这一段设为正常状态，SoundFuchs 之后的每次检测都会与它比较。',
     normalSchonEiner: '这台机器已有正常状态。这一段可以取代它。',

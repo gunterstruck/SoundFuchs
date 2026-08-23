@@ -35,6 +35,35 @@ export const en: TranslationDict = {
       'The 3D view shows the difference — that needs both a baseline and a measurement.',
     briefingErklaerung:
       'A package with both recordings, the listening aids and a work order — built entirely here in your browser. SoundFuchs uploads nothing.',
+    tabDetails: 'Details',
+    detailsKurve: 'Frequency deviation',
+    detailsKurveErklaerung: 'The measured curve over the baseline. The two strongest peaks carry their frequency.',
+    detailsKurveOhneReferenz: 'The measured curve. Without a baseline there is nothing for it to lie over.',
+    detailsBrauchtMessung: 'No measurement yet. After a check, the curve and the work points appear here.',
+    detailsBrauchtNormalzustand: 'No work point trained yet. The ranking needs at least a baseline.',
+    detailsRatenPassenNicht:
+      'This recording is at {{messung}} kHz, the baseline at {{modell}} kHz. The frequency bins then do not mean the same thing — so SoundFuchs does not compare them.',
+  },
+  filter: {
+    titelZustand: 'Condition',
+    titelAlter: 'Last checked',
+    titelFlotte: 'Fleet',
+    zustand: {
+      kritisch: 'critical',
+      warnung: 'deviation',
+      gesund: 'unremarkable',
+      ungeprueft: 'not checked',
+    },
+    alter: {
+      nie: 'never',
+      ab30: 'over 30 days',
+      ab90: 'over 90 days',
+    },
+    trefferVon: '{{treffer}} of {{gesamt}} sites',
+    aufheben: 'Clear filter',
+    aktiv: 'Filter: {{filter}}',
+    alleZeigen: 'Show all',
+    keinTreffer: 'No site matches this filter.',
   },
   liste: {
     nochKeiner: 'No site yet. Sites appear when you add a machine.',
@@ -43,7 +72,6 @@ export const en: TranslationDict = {
     eineMaschine: '1 machine',
     nochNichtGeprueft: 'not checked yet',
     schlechteste: 'worst {{wert}} %',
-    filterNochNicht: 'There are no filters here yet.',
   },
   schnellcheck: {
     knopf: 'Check a sound',
@@ -71,6 +99,14 @@ export const en: TranslationDict = {
     fehlerLeer: 'The file is empty.',
     fehlerUnlesbar: 'The file could not be opened.',
     alsNormalzustand: 'Save as normal state',
+    alsPruefung: 'Run as a check',
+    pruefungErklaerung:
+      'This machine has a normal state. SoundFuchs can compare the section against it and score it.',
+    pruefungLaeuft: 'Comparing the section against the normal state …',
+    pruefungOhneNormalzustand: 'Without a normal state there is nothing to compare. Create one first.',
+    pruefungZuKurz:
+      'A check needs at least {{mindest}} seconds; this section has {{dauer}} s.',
+    pruefungGingNicht: 'The section could not be scored.',
     normalNochKeiner:
       'This machine has no normal state yet. If this section becomes one, SoundFuchs compares every later check against it.',
     normalSchonEiner: 'This machine already has a normal state. This section can replace it.',

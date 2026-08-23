@@ -582,7 +582,13 @@ Jedes Bauteil von TourFuchs, in der Reihenfolge des Quelltexts. Marken siehe
 | Tourplanung, Routen, Google Maps | **S** | entfällt   | zwischen Maschinen desselben Kunden gibt es kein Wegeproblem — genau dafür ist TourFuchs da, und dort entsteht die Brücke |
 | Nominatim-Adressgenauigkeit      | A     | entfällt   | ohne Straße keine Hausnummer; PLZ-Mitte genügt                                                                            |
 
-**Nur die beiden mit S sind Abweichungen aus eigenem Urteil.** Alles andere ist
+### Geometrie
+
+| TourFuchs                     |       | SoundFuchs                | Grund                                                                                                                                                                                                                                                                                                             |
+| ----------------------------- | ----- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Knopfzeile über der Karte     | **S** | 44 px statt 38–41 px hoch | `.map-fab` misst im Stamm je nach Format 38, 39 oder 41 px. Das sind Fingerziele unter 44 px, und die Knopfzeile ist unterwegs der einzige Weg zu „In der Nähe" und „Geräusch prüfen". Übernommen wäre hier ein Maß, das SoundFuchs an jeder anderen Stelle als Befund meldet — der eigene 44-px-Maßstab gilt auch für den Stamm. Gemessen in allen sechs Formaten; `stammvergleich` weist die Abweichung aus, und sie ist gewollt. |
+
+**Nur die drei mit S sind Abweichungen aus eigenem Urteil.** Alles andere ist
 übernommen, gefüllt, ausdrücklich bestellt, inhaltlich leer oder zurückgestellt.
 
 ---
@@ -4431,7 +4437,105 @@ bricht.
    Der zweite ist einfacher, der erste ist näher an dem, was jemand tut, der
    gerade ein Video von seinem eigenen Auto gemacht hat.
 
+## 7i. Gebaut — Die Prüfung aus der Datei, die Details, der Filter (23.08.2026)
+
+_Drei Punkte, vom Auftraggeber in dieser Reihenfolge bestellt. Alle drei
+umgesetzt, gemessen und falsifiziert._
+
+### 1. Die mitgebrachte Aufnahme wird bewertet
+
+Bis hierher konnte ein mitgebrachtes Geräusch dreierlei: angesehen, gehört und
+zum Normalzustand gemacht werden. Was fehlte, war der Vergleich mit einem
+Urteil — ein Prozentwert, eine Ampel, ein Eintrag im Verlauf.
+
+`pruefeMitgebrachtenTon` geht denselben Weg, den das Mess-Labor seit jeher
+geht: Merkmale ziehen, Fenster für Fenster bewerten, mitteln. Dieselbe Engine
+wie am Mikrofon — `classifyWithEngines` schaltet nach dem Modell, nicht nach
+dem Aufrufer. Neu ist nicht die Rechnung, sondern dass ihr Ergebnis im Produkt
+ankommt.
+
+Die Vorschau bietet an, was zur Lage passt: ohne Normalzustand „Als
+Normalzustand speichern", mit Normalzustand „Als Prüfung auswerten" und der
+Maßstab auf dem leisen Weg darunter. Beides gleichrangig nebeneinander wäre
+eine Wahl, die man nur treffen kann, wenn man beide Begriffe schon kennt.
+
+### 2. Die beiden Expertenansichten sind zurück
+
+Frequenzabweichung und Betriebspunkt-Rangliste gingen mit dem Abriss des alten
+Ergebnisdialogs (§7f). Sie liegen jetzt dort, wo der Abriss sie schon
+hingewiesen hat: als vierter Reiter „Details" im Analyseblatt, hinter Profi.
+Der Reiter beantwortet eine Frage, die auf Basis nicht gestellt wird — nicht
+„klingt es anders?", sondern „bei welcher Frequenz, und welchem bekannten
+Zustand ähnelt es sonst noch?".
+
+**Ein Befund, der dabei aufgefallen ist und NICHT behoben wurde:** Das Modell
+speichert die Abtastrate des Mikrofons, die aufbewahrte Messung die des
+AudioContext. Gemessen im Durchlauf: Modell 48 000 Hz, Messung 44 100 Hz. Ein
+Merkmalsfeld bedeutet dann bei beiden eine andere Frequenz, und GMIA weist den
+Vergleich zurück — je Modell still, sodass die Rangliste leer blieb und
+behauptete, es gebe keinen angelernten Betriebspunkt. Der Reiter nennt den Fall
+jetzt beim Namen und zeigt beide Zahlen. Umgerechnet wird nicht: Merkmale auf
+eine andere Achse zu schieben ist eine Signalverarbeitungs-Entscheidung, die
+man begründet, nicht eine, die man einbaut, damit ein Reiter voll aussieht.
+**Ob die beiden Raten überhaupt auseinanderlaufen dürfen, ist eine offene
+Frage an den Prüfweg — sie steht in §8.**
+
+### 3. Der Filter: Chips, kein Pulldown
+
+Gefiltert wird nach **Zustand** und **zuletzt geprüft**; nach **Flotte** nur,
+wenn mindestens eine Gruppe über mehreren Standorten liegt. Der Auftraggeber
+hatte ein Pulldown vorgeschlagen; es sind Chips geworden, weil der Stamm so
+spricht, weil „kritisch ODER Abweichung" Mehrfachauswahl braucht, und weil ein
+Pulldown seinen Stand hinter einem Wort verbirgt. Ein vergessener Filter ist
+schlimmer als keiner — deshalb steht über der gefilterten Liste, was gilt.
+
+Jeder Chip trägt seine Zahl, bevor man tippt. Eine Sackgasse soll man vorher
+sehen, nicht danach.
+
+### Die Karte filtert nicht mit
+
+Bewusst. Ihre Punkte kommen aus der Markerschicht des Stamms, und eine
+halbleere Karte ohne sichtbaren Grund wäre die schlechtere Auskunft. Wenn sich
+das ändern soll, ist es ein eigener Schnitt mit eigener Messung.
+
+### Was die Wächter dazugelernt haben
+
+| Prüfung                        | Wo                | Falsifiziert mit                                  |
+| ------------------------------ | ----------------- | -------------------------------------------------- |
+| Prüfung aus Datei mit Ergebnis | mitbringen 1c     | —                                                  |
+| Rangliste mit Namen und Wert   | mitbringen 1d     | Rangliste unterdrückt                              |
+| „Details" auf Basis verborgen  | durchlauf 21      | `data-view-level` entfernt                         |
+| Kurve wirklich gezeichnet      | durchlauf 22      | Zeichnen ausgehängt → 1 Farbstufe                  |
+| Auskunft statt Stille          | durchlauf 23      | Zahlen aus dem Satz entfernt                       |
+| ein sichtbarer Reiter, der offene | durchlauf 24   | `data-view-level` am Feld wieder eingebaut         |
+| Filter hält, was der Chip verspricht | schnellcheck 1b | Zahl am Chip um eins erhöht                    |
+| der Weg zurück aus dem Filter  | schnellcheck 1b   | Filterzeile entfernt                               |
+
+Zwei Lehren, die über diesen Schnitt hinausgehen:
+
+1. **`[].every(...)` ist wahr.** Zwei Zusagen über die Rangliste blieben beim
+   Falsifizieren grün, weil sie über eine leere Liste urteilten. Die Länge
+   gehört in die Bedingung.
+2. **Ein Wächter kann zum falschen Zeitpunkt hinsehen.** Prüfung 24 maß,
+   während „Details" selbst offen stand — dort ist die Zusage gar nicht zu
+   verletzen. Sie misst jetzt nach dem Wechsel zurück auf 2D.
+
 ## 8. Risiken, offen benannt
+
+**Die Abtastrate des Modells und die der aufbewahrten Aufnahme können
+auseinanderlaufen.** Gemessen am 23.08.2026: Modell 48 000 Hz, gespeicherte
+Messung derselben Prüfung 44 100 Hz. Das Modell übernimmt die Rate des
+Aufnahmegeräts, die Aufnahme die des AudioContext, und auf einem Gerät, wo
+beide verschieden sind, beschreiben dieselben 512 Merkmalsfelder zwei
+verschiedene Frequenzachsen. GMIA erkennt das und weist den Vergleich zurück —
+sichtbar wurde es erst, als der Reiter „Details" die Modelle nachträglich
+gegen die aufbewahrte Aufnahme hielt (§7i).
+
+Für die laufende Prüfung ist die Frage offen und ernst: Sie extrahiert ihre
+Merkmale mit der Rate, die sie vom Gerät meldet bekommt. Stimmt die nicht mit
+der Rate der Abtastung überein, liegt die ganze Prüfung auf einer leicht
+verschobenen Achse. Zu klären ist, welche der beiden Zahlen die wahre ist —
+und das ist eine Messung am Prüfweg, kein Umbau der Oberfläche.
 
 **Die Reise wird länger statt kürzer.** Das größte Risiko, und der Grund für
 die Messung in §7. Ein Blatt, das man erst hochziehen muss, kostet eine Geste,

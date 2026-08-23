@@ -112,11 +112,30 @@ const BUDGET = {
    * eine dritte Seite führt: Die Frage hat genau zwei Antworten, und ein
    * Auswahlfeld ist die kürzeste Form, sie zu stellen. Angehoben wird um
    * genau eins — nicht bis zum Grün, sondern um das, was dazugekommen ist.
+   *
+   * ── 23.08.2026: +1 für den Reiter „Details" ─────────────────────────────
+   *
+   * Der vierte Reiter des Analyseblatts, der die beiden Expertenansichten
+   * trägt: Frequenzabweichung und Betriebspunkte. Am Schreibtisch steht das
+   * Blatt als Seitenleiste, seine Reiter zählen also mit — gemessen 55 gegen
+   * das Budget 54, und genau darum ist das Budget da.
+   *
+   * Warum es trotzdem steigt: Der Reiter trägt `data-view-level="expert"` und
+   * ist auf Basis gar nicht im Bild. Er kostet also NUR auf der Stufe, auf der
+   * jemand ausdrücklich mehr sehen wollte — `einstellungenBasis` bleibt
+   * deshalb bei 32 und wurde nicht angefasst.
+   *
+   * Und er ersetzt einen Weg, statt einen hinzuzufügen: Vor dem 23.08. lagen
+   * dieselben zwei Ansichten in einem Fenster, das über einen eigenen Knopf
+   * aufging. Das Fenster ist abgerissen (#100), der Knopf mit ihm.
+   *
+   * Angehoben um genau eins. Wer den nächsten Reiter anhängt, sieht wieder rot
+   * und muss wieder begründen — das ist die einzige Aufgabe dieser Zahl.
    */
   erstbild: 16,
   schritteOffen: 18,
   einstellungenBasis: 32,
-  einstellungenExperte: 54,
+  einstellungenExperte: 55,
 };
 
 /**

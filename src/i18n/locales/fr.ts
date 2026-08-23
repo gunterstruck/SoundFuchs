@@ -35,6 +35,35 @@ export const fr: TranslationDict = {
       "La vue 3D montre l'écart : il faut pour cela un état normal et une mesure.",
     briefingErklaerung:
       "Un paquet avec les deux enregistrements, les aides à l'écoute et un ordre de travail, créé entièrement dans votre navigateur. SoundFuchs n'envoie rien.",
+    tabDetails: 'Détails',
+    detailsKurve: 'Écart de fréquence',
+    detailsKurveErklaerung: 'La courbe mesurée par-dessus celle de l’état normal. Les deux pics les plus forts portent leur fréquence.',
+    detailsKurveOhneReferenz: 'La courbe mesurée. Sans état normal, elle n’a rien à recouvrir.',
+    detailsBrauchtMessung: 'Pas encore de mesure. Après un contrôle, la courbe et les points de fonctionnement s’affichent ici.',
+    detailsBrauchtNormalzustand: 'Aucun point de fonctionnement appris. Le classement a besoin d’au moins un état normal.',
+    detailsRatenPassenNicht:
+      'Cet enregistrement est à {{messung}} kHz, l’état normal à {{modell}} kHz. Les bandes de fréquence ne signifient alors plus la même chose — SoundFuchs ne les compare donc pas.',
+  },
+  filter: {
+    titelZustand: 'État',
+    titelAlter: 'Dernier contrôle',
+    titelFlotte: 'Flotte',
+    zustand: {
+      kritisch: 'critique',
+      warnung: 'écart',
+      gesund: 'sans particularité',
+      ungeprueft: 'non contrôlé',
+    },
+    alter: {
+      nie: 'jamais',
+      ab30: 'plus de 30 jours',
+      ab90: 'plus de 90 jours',
+    },
+    trefferVon: '{{treffer}} sur {{gesamt}} sites',
+    aufheben: 'Effacer le filtre',
+    aktiv: 'Filtre : {{filter}}',
+    alleZeigen: 'Tout afficher',
+    keinTreffer: 'Aucun site ne correspond à ce filtre.',
   },
   liste: {
     nochKeiner: "Aucun site pour l'instant. Les sites naissent en créant une machine.",
@@ -43,7 +72,6 @@ export const fr: TranslationDict = {
     eineMaschine: '1 machine',
     nochNichtGeprueft: 'pas encore contrôlé',
     schlechteste: 'pire {{wert}} %',
-    filterNochNicht: "Il n'y a pas encore de filtres ici.",
   },
   schnellcheck: {
     knopf: 'Contrôler un bruit',
@@ -71,6 +99,14 @@ export const fr: TranslationDict = {
     fehlerLeer: 'Le fichier est vide.',
     fehlerUnlesbar: "Le fichier n'a pas pu être ouvert.",
     alsNormalzustand: 'Enregistrer comme état normal',
+    alsPruefung: 'Évaluer comme contrôle',
+    pruefungErklaerung:
+      "Cette machine a un état normal. SoundFuchs peut comparer l'extrait avec lui et le noter.",
+    pruefungLaeuft: "Comparaison de l'extrait avec l'état normal …",
+    pruefungOhneNormalzustand: "Sans état normal, rien à comparer. Créez-en un d'abord.",
+    pruefungZuKurz:
+      "Un contrôle demande au moins {{mindest}} secondes ; cet extrait en a {{dauer}}.",
+    pruefungGingNicht: "L'extrait n'a pas pu être évalué.",
     normalNochKeiner:
       "Cette machine n'a pas encore d'état normal. Si cet extrait le devient, SoundFuchs comparera chaque contrôle ultérieur avec lui.",
     normalSchonEiner: 'Cette machine a déjà un état normal. Cet extrait peut le remplacer.',

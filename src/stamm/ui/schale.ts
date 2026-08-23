@@ -60,7 +60,15 @@ const SIDEBAR_POS_KEY = 'sf_sidebar_position';
  * Zur Karte kommt man über den Griff oder über ☰ — beides Wege, die das Blatt
  * zuziehen, statt einen Inhalt zu wechseln.
  */
-export const REITER = ['daten', 'filter', 'standortblatt', 'zweid', 'dreid', 'briefing'] as const;
+export const REITER = [
+  'daten',
+  'filter',
+  'standortblatt',
+  'zweid',
+  'dreid',
+  'briefing',
+  'details',
+] as const;
 export type Reiter = (typeof REITER)[number];
 
 /**

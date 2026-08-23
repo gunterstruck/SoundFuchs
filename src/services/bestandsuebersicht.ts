@@ -40,6 +40,16 @@ export interface StandortStand {
    * wären bei hundert Standorten hundert zusätzliche Lesevorgänge.
    */
   befunde: Map<string, number | null>;
+  /**
+   * Wann hier zuletzt geprüft wurde — oder `null` für „noch nie".
+   *
+   * Der jüngste Zeitpunkt über alle Maschinen des Standorts, nicht der älteste:
+   * Die Frage, die er beantwortet, lautet „wann war jemand zuletzt hier?".
+   *
+   * Er kostet nichts extra. Die Befunde werden ohnehin gelesen; bisher wurde
+   * nur ihr Wert behalten und ihr Zeitpunkt weggeworfen.
+   */
+  zuletzt: number | null;
 }
 
 export function zustandZuWert(wert: number | null): Zustand {
@@ -55,9 +65,11 @@ export async function ladeBestandsuebersicht(): Promise<StandortStand[]> {
   return Promise.all(
     kunden.map(async (kunde) => {
       const maschinen = await getMachinesForCustomer(kunde.id);
-      const werte = await Promise.all(
-        maschinen.map(async (m) => (await getLatestDiagnosis(m.id))?.healthScore ?? null)
-      );
+      const letzte = await Promise.all(maschinen.map((m) => getLatestDiagnosis(m.id)));
+      const werte = letzte.map((d) => d?.healthScore ?? null);
+      const zeitpunkte = letzte
+        .map((d) => d?.timestamp)
+        .filter((z): z is number => typeof z === 'number');
       const gemessen = werte.filter((w): w is number => w !== null);
       const schlechtester = gemessen.length > 0 ? Math.min(...gemessen) : null;
       const flotten = [
@@ -71,6 +83,7 @@ export async function ladeBestandsuebersicht(): Promise<StandortStand[]> {
         zustand: zustandZuWert(schlechtester),
         flotten,
         befunde: new Map(maschinen.map((m, i) => [m.id, werte[i] ?? null])),
+        zuletzt: zeitpunkte.length > 0 ? Math.max(...zeitpunkte) : null,
       };
     })
   );

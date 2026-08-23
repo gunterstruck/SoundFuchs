@@ -43,6 +43,14 @@ import {
   offenerReiter,
   type Reiter,
 } from './schale.js';
+import {
+  FILTER_GEAENDERT,
+  filterAktiv,
+  filterAufheben,
+  filterInWorten,
+  filterreiterBauen,
+  standortPasst,
+} from './standortfilter.js';
 import { t } from '../../i18n/index.js';
 import { logger } from '@utils/logger.js';
 
@@ -152,13 +160,27 @@ export async function standortelisteFuellen(): Promise<void> {
       leerzustand(ziel, t('liste.nochKeiner'));
       return;
     }
-    const sortiert = [...bestand].sort(
+    /**
+     * Der Filter steht ÜBER der Liste, nicht nur in seinem Reiter.
+     *
+     * Wer filtert, wechselt danach hierher — und sieht dann eine kurze Liste.
+     * Ohne diese Zeile wäre nicht zu unterscheiden, ob es wirklich nur zwölf
+     * Standorte gibt oder ob ein Filter läuft, den man vor zehn Minuten
+     * gesetzt hat. Ein vergessener Filter ist schlimmer als keiner.
+     */
+    if (filterAktiv()) ziel.appendChild(filterzeile());
+
+    const sortiert = [...bestand].filter((s) => standortPasst(s)).sort(
       (a, b) =>
         (RANG[a.zustand] ?? 9) - (RANG[b.zustand] ?? 9) ||
         standortname(a.kunde.name, { demo: a.kunde.demo }).localeCompare(
           standortname(b.kunde.name, { demo: b.kunde.demo })
         )
     );
+    if (sortiert.length === 0) {
+      leerzustand(ziel, t('filter.keinTreffer'));
+      return;
+    }
     for (const stand of sortiert) ziel.appendChild(zeile(stand));
   } catch (fehler) {
     logger.warn('Standortliste: Bestand nicht ladbar', fehler);
@@ -170,30 +192,78 @@ export async function standortelisteFuellen(): Promise<void> {
 }
 
 /**
+ * Die Zeile über der gefilterten Liste: was gilt, und der Weg zurück.
+ *
+ * Der Weg zurück ist ein Knopf und kein Verweis auf den Filterreiter: „Alle
+ * zeigen" ist eine Handlung, und wer sie will, will sie hier — nicht nach
+ * einem Reiterwechsel.
+ */
+function filterzeile(): HTMLElement {
+  const zeile = document.createElement('div');
+  zeile.className = 'standorteliste-filterzeile';
+
+  const text = document.createElement('span');
+  text.className = 'standorteliste-filtertext';
+  text.textContent = t('filter.aktiv', { filter: filterInWorten() });
+
+  const alle = document.createElement('button');
+  alle.type = 'button';
+  alle.className = 'standorteliste-filter-aus';
+  alle.textContent = t('filter.alleZeigen');
+  alle.addEventListener('click', () => filterAufheben());
+
+  zeile.append(text, alle);
+  return zeile;
+}
+
+/**
  * Und der Reiter daneben.
  *
- * „Filter" bleibt in diesem Schnitt ohne Funktion — er gehört dem Stamm und
- * hätte hier eigene Fachlichkeit zu tragen, die noch nicht entschieden ist.
- * Was er nicht bleiben darf, ist **stumm**: Zwei Zeilen Auskunft kosten
- * nichts und machen aus „sieht kaputt aus" ein „gibt es noch nicht".
+ * Bis zum 23.08.2026 stand hier ein Satz: „Filter gibt es noch nicht." Er war
+ * ehrlich und die halbe Miete — ein leerer Reiter sieht aus wie ein Fehler,
+ * ein benannter nicht. Jetzt trägt er, wonach man bei hundert Standorten
+ * wirklich sucht (siehe standortfilter.ts).
+ *
+ * Er holt denselben Abzug wie die Liste und merkt sich nichts: Die Zahlen an
+ * den Chips müssen zum Bestand von JETZT passen, nicht zu dem von vorhin.
  */
-function filterreiterFuellen(): void {
+async function filterreiterFuellen(): Promise<void> {
   const ziel = document.getElementById(FILTERPLATZ);
-  if (!ziel || ziel.childElementCount > 0) return;
-  leerzustand(ziel, t('liste.filterNochNicht'));
+  if (!ziel) return;
+  try {
+    filterreiterBauen(ziel, await ladeBestandsuebersicht());
+  } catch (fehler) {
+    logger.warn('Filter: Bestand nicht ladbar', fehler);
+    ziel.replaceChildren();
+    leerzustand(ziel, t('liste.nichtLadbar'));
+  }
 }
 
 export function standortelisteAufbauen(): void {
   /** Nachziehen, sooft der Reiter wirklich zu sehen ist. */
   const wennSichtbar = () => {
-    filterreiterFuellen();
-    if (blattIstOffen() && offenerReiter() === 'daten') void standortelisteFuellen();
+    if (!blattIstOffen()) return;
+    if (offenerReiter() === 'filter') void filterreiterFuellen();
+    if (offenerReiter() === 'daten') void standortelisteFuellen();
   };
 
   document.addEventListener(REITER_GEWECHSELT, (ereignis) => {
     const reiter = (ereignis as CustomEvent<Reiter>).detail;
-    if (reiter === 'filter') filterreiterFuellen();
+    if (reiter === 'filter') void filterreiterFuellen();
     if (reiter === 'daten') void standortelisteFuellen();
+  });
+
+  /**
+   * Ein Tipp auf einen Chip ändert beide Reiter.
+   *
+   * Den Filterreiter, weil dort „12 von 130" steht und „Alle zeigen"
+   * dazukommt oder verschwindet — und die Liste, weil sie das Ergebnis ist.
+   * Gebaut wird trotzdem nur, was offen ist: Der andere Reiter holt sich
+   * seinen Stand, wenn jemand hinsieht.
+   */
+  document.addEventListener(FILTER_GEAENDERT, () => {
+    if (offenerReiter() === 'filter') void filterreiterFuellen();
+    if (offenerReiter() === 'daten') void standortelisteFuellen();
   });
 
   /**

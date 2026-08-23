@@ -1996,57 +1996,336 @@ body {
   margin-bottom: var(--spacing-md);
 }
 
-/* Diagnosis Modal Specific */
+/* Hier stand `#analysis-canvas` — die Leinwand der Frequenzabweichung im alten
+   Ergebnisdialog. Der Dialog ist am 23.08.2026 abgerissen worden (#100), die
+   Regel blieb als Waise stehen.
 
-#analysis-canvas {
-  width: 100%;
-  height: 100px;
-  margin-bottom: var(--spacing-sm);
-  border-radius: var(--radius-sm);
-  background: var(--bg-tertiary);
-}
+   Sie ist nicht harmlos: Die zurückgeholte Kurve liegt jetzt im Analyseblatt
+   und ist dort 160 px hoch. Hätte sie denselben Bezeichner getragen, hätte
+   diese Regel mit `height: 100px` gewonnen — ein Bezeichner schlägt jede
+   Klasse — und die neue Höhe wäre wirkungslos gewesen, ohne dass irgendetwas
+   kaputt ausgesehen hätte. Die Leinwand im Blatt trägt deshalb nur eine Klasse
+   (`.blatt-details-canvas`, tiefe.css), und die Waise ist weg. */
 
 /* ===================================
    WORK POINT RANKING COMPONENT
    Industrial Dashboard - "Fieberthermometer" Design
    =================================== */
 
+/* ZURÜCKGEHOLT AM 23.08.2026.
+
+   Der Abriss (#100) hat hier die Regeln entfernt und die Gliederungs-
+   kommentare stehen lassen — ein Gerippe aus Überschriften ohne Inhalt.
+   Es stand hier, weil die Rangliste in einem Fenster lag, das nicht mehr
+   aufging.
+
+   Sie liegt jetzt im Analyseblatt, Reiter „Details", hinter Profi. Die
+   Regeln sind unverändert übernommen; nur ihr Leser ist ein anderer. */
+
+.work-point-ranking {
+  padding: var(--spacing-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
 /* Header */
+.ranking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--divider-color);
+}
+
+.ranking-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.ranking-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
 
 /* List container */
+.ranking-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
 
 /* Single ranking item */
+.ranking-item {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-tertiary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.ranking-item:hover {
+  border-color: var(--border-color);
+  transform: translateX(4px);
+}
 
 /* Rank 1 special styling */
+.ranking-item[data-rank='1'] {
+  background: linear-gradient(
+    135deg,
+    var(--bg-tertiary) 0%,
+    rgba(var(--status-healthy-rgb, 0, 230, 118), 0.08) 100%
+  );
+  border-color: rgba(var(--status-healthy-rgb, 0, 230, 118), 0.2);
+}
+
+.ranking-item[data-rank='1'].status-faulty {
+  background: linear-gradient(
+    135deg,
+    var(--bg-tertiary) 0%,
+    rgba(var(--status-error-rgb, 255, 82, 82), 0.08) 100%
+  );
+  border-color: rgba(var(--status-error-rgb, 255, 82, 82), 0.2);
+}
 
 /* Item header (Info line) */
+.ranking-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.ranking-item-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.ranking-item-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
 
 /* Rank number */
+.ranking-rank {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 2em;
+  text-align: center;
+}
+
+.ranking-item[data-rank='1'] .ranking-rank {
+  color: var(--primary-color);
+}
 
 /* State name */
+.ranking-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
 
 /* Status badge */
+.ranking-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ranking-badge.status-healthy {
+  background: rgba(var(--status-healthy-rgb, 0, 230, 118), 0.15);
+  color: var(--status-healthy);
+  border: 1px solid rgba(var(--status-healthy-rgb, 0, 230, 118), 0.3);
+}
+
+.ranking-badge.status-faulty {
+  background: rgba(var(--status-error-rgb, 255, 82, 82), 0.15);
+  color: var(--status-error);
+  border: 1px solid rgba(var(--status-error-rgb, 255, 82, 82), 0.3);
+}
+
+.ranking-badge svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.ranking-badge-text {
+  display: none;
+}
 
 @media (min-width: 400px) {
+  .ranking-badge-text {
+    display: inline;
+  }
 }
 
 /* Score display */
+.ranking-score {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 3.5em;
+  text-align: right;
+}
 
 /* Progress bar container (Thermometer) */
+.ranking-bar-container {
+  position: relative;
+  height: 6px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin-top: 4px;
+}
 
 /* Progress bar */
+.ranking-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0;
+  border-radius: var(--radius-pill);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ranking-bar.animate {
+  width: var(--bar-width);
+}
 
 /* Bar glow effect */
+.ranking-bar-glow {
+  position: absolute;
+  top: -2px;
+  left: 0;
+  height: calc(100% + 4px);
+  width: 0;
+  border-radius: var(--radius-pill);
+  filter: blur(4px);
+  opacity: 0.4;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.ranking-bar.animate + .ranking-bar-glow {
+  width: var(--bar-width);
+}
 
 /* Bar color variants - Healthy states */
+.ranking-bar.bar-healthy-high {
+  background: linear-gradient(90deg, var(--status-healthy) 0%, #00ff88 100%);
+}
+
+.ranking-bar-glow.bar-healthy-high {
+  background: var(--status-healthy);
+}
+
+.ranking-bar.bar-healthy-mid {
+  background: linear-gradient(90deg, var(--status-warning) 0%, var(--status-healthy) 100%);
+}
+
+.ranking-bar-glow.bar-healthy-mid {
+  background: var(--status-warning);
+}
+
+.ranking-bar.bar-healthy-low {
+  background: linear-gradient(90deg, var(--text-muted) 0%, var(--status-warning) 100%);
+}
+
+.ranking-bar-glow.bar-healthy-low {
+  background: var(--text-muted);
+}
 
 /* Bar color variants - Faulty states */
+.ranking-bar.bar-error-high {
+  background: linear-gradient(90deg, var(--status-error) 0%, #ff6666 100%);
+}
+
+.ranking-bar-glow.bar-error-high {
+  background: var(--status-error);
+}
+
+.ranking-bar.bar-error-low {
+  background: linear-gradient(90deg, var(--status-warning) 30%, var(--status-error) 100%);
+}
+
+.ranking-bar-glow.bar-error-low {
+  background: var(--status-warning);
+}
 
 /* Empty state */
+.ranking-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl) var(--spacing-md);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.ranking-empty svg {
+  opacity: 0.4;
+  margin-bottom: var(--spacing-sm);
+}
+
+.ranking-empty p {
+  font-size: 0.875rem;
+  margin: 0;
+}
 
 /* Responsive adjustments */
 @media (max-width: 360px) {
+  .ranking-item {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
 
+  .ranking-name {
+    font-size: 0.8rem;
+  }
+
+  .ranking-score {
+    font-size: 0.8rem;
+  }
+
+  .ranking-badge {
+    padding: 1px 6px;
+    font-size: 0.6rem;
+  }
+
+  .ranking-bar-container {
+    height: 5px;
+  }
 }
 
 /* Theme: Neon specific enhancements */
@@ -2065,6 +2344,11 @@ body {
     opacity: 1;
     transform: translateX(0);
   }
+}
+
+.ranking-item {
+  animation: ranking-slide-in 0.3s ease forwards;
+  animation-delay: var(--animation-delay, 0ms);
 }
 
 /* CSS Variables for RGB values (needed for rgba) */
@@ -11971,4 +12255,21 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
 
 .maschine-mitbringen:hover {
   border-color: var(--color-primary);
+}
+
+/* Der seltene zweite Ausgang: den Maßstab ersetzen, während die Prüfung
+   angeboten wird. Leiser als der Knopf darüber — er ist die Ausnahme, nicht
+   die Frage, die der Nutzer mitgebracht hat. */
+.mitbringen-normal-leise {
+  min-height: 44px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.mitbringen-normal-leise:hover {
+  color: var(--text-primary);
 }

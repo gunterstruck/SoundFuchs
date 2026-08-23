@@ -35,6 +35,35 @@ export const es: TranslationDict = {
       'La vista 3D muestra la diferencia: para eso hacen falta un estado normal y una medición.',
     briefingErklaerung:
       'Un paquete con ambas grabaciones, las ayudas de escucha y una orden de trabajo, creado íntegramente en su navegador. SoundFuchs no sube nada.',
+    tabDetails: 'Detalles',
+    detailsKurve: 'Desviación de frecuencia',
+    detailsKurveErklaerung: 'La curva medida sobre la del estado normal. Los dos picos más fuertes llevan su frecuencia.',
+    detailsKurveOhneReferenz: 'La curva medida. Sin estado normal no hay nada sobre lo que superponerla.',
+    detailsBrauchtMessung: 'Aún sin medición. Tras una comprobación aparecen aquí la curva y los puntos de trabajo.',
+    detailsBrauchtNormalzustand: 'Aún sin punto de trabajo aprendido. La clasificación necesita al menos un estado normal.',
+    detailsRatenPassenNicht:
+      'Esta grabación está a {{messung}} kHz y el estado normal a {{modell}} kHz. Las bandas de frecuencia ya no significan lo mismo, por eso SoundFuchs no las compara.',
+  },
+  filter: {
+    titelZustand: 'Estado',
+    titelAlter: 'Última comprobación',
+    titelFlotte: 'Flota',
+    zustand: {
+      kritisch: 'crítico',
+      warnung: 'desviación',
+      gesund: 'sin novedad',
+      ungeprueft: 'sin comprobar',
+    },
+    alter: {
+      nie: 'nunca',
+      ab30: 'más de 30 días',
+      ab90: 'más de 90 días',
+    },
+    trefferVon: '{{treffer}} de {{gesamt}} ubicaciones',
+    aufheben: 'Quitar filtro',
+    aktiv: 'Filtro: {{filter}}',
+    alleZeigen: 'Mostrar todo',
+    keinTreffer: 'Ninguna ubicación coincide con este filtro.',
   },
   liste: {
     nochKeiner: 'Aún no hay ubicaciones. Aparecen al crear una máquina.',
@@ -43,7 +72,6 @@ export const es: TranslationDict = {
     eineMaschine: '1 máquina',
     nochNichtGeprueft: 'aún sin revisar',
     schlechteste: 'peor {{wert}} %',
-    filterNochNicht: 'Aquí todavía no hay filtros.',
   },
   schnellcheck: {
     knopf: 'Revisar un sonido',
@@ -71,6 +99,14 @@ export const es: TranslationDict = {
     fehlerLeer: 'El archivo está vacío.',
     fehlerUnlesbar: 'No se pudo abrir el archivo.',
     alsNormalzustand: 'Guardar como estado normal',
+    alsPruefung: 'Evaluar como revisión',
+    pruefungErklaerung:
+      'Esta máquina tiene un estado normal. SoundFuchs puede comparar el fragmento con él y puntuarlo.',
+    pruefungLaeuft: 'Comparando el fragmento con el estado normal …',
+    pruefungOhneNormalzustand: 'Sin estado normal no hay con qué comparar. Cree uno primero.',
+    pruefungZuKurz:
+      'Una revisión necesita al menos {{mindest}} segundos; este fragmento tiene {{dauer}} s.',
+    pruefungGingNicht: 'No se pudo evaluar el fragmento.',
     normalNochKeiner:
       'Esta máquina aún no tiene estado normal. Si este fragmento lo es, SoundFuchs comparará con él cada revisión posterior.',
     normalSchonEiner: 'Esta máquina ya tiene un estado normal. Este fragmento puede sustituirlo.',

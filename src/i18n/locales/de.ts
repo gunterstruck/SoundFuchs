@@ -37,6 +37,39 @@ export const de: TranslationDict = {
       'Das Gebirge zeigt den Unterschied — dafür braucht es einen Normalzustand und eine Messung.',
     briefingErklaerung:
       'Ein Paket mit beiden Aufnahmen, den Hörhilfen und einem Arbeitsauftrag — vollständig hier im Browser erzeugt. SoundFuchs lädt nichts hoch.',
+    tabDetails: 'Details',
+    detailsKurve: 'Frequenzabweichung',
+    detailsKurveErklaerung:
+      'Die gemessene Kurve über der des Normalzustands. Beziffert sind die zwei stärksten Spitzen.',
+    detailsKurveOhneReferenz:
+      'Die gemessene Kurve. Ohne Normalzustand gibt es nichts, worüber sie liegen könnte.',
+    detailsBrauchtMessung:
+      'Noch keine Messung. Nach einer Prüfung stehen hier Kurve und Betriebspunkte.',
+    detailsBrauchtNormalzustand:
+      'Noch kein angelernter Betriebspunkt. Die Rangliste braucht mindestens einen Normalzustand.',
+    detailsRatenPassenNicht:
+      'Diese Aufnahme liegt bei {{messung}} kHz, der Normalzustand bei {{modell}} kHz. Die Frequenzfelder bedeuten dann nicht dasselbe — SoundFuchs vergleicht sie deshalb nicht.',
+  },
+  filter: {
+    titelZustand: 'Zustand',
+    titelAlter: 'Zuletzt geprüft',
+    titelFlotte: 'Flotte',
+    zustand: {
+      kritisch: 'kritisch',
+      warnung: 'Abweichung',
+      gesund: 'unauffällig',
+      ungeprueft: 'ungeprüft',
+    },
+    alter: {
+      nie: 'nie',
+      ab30: 'über 30 Tage',
+      ab90: 'über 90 Tage',
+    },
+    trefferVon: '{{treffer}} von {{gesamt}} Standorten',
+    aufheben: 'Filter aufheben',
+    aktiv: 'Filter: {{filter}}',
+    alleZeigen: 'Alle zeigen',
+    keinTreffer: 'Kein Standort passt zu diesem Filter.',
   },
   liste: {
     nochKeiner: 'Noch kein Standort. Standorte entstehen beim Anlegen einer Maschine.',
@@ -45,7 +78,6 @@ export const de: TranslationDict = {
     eineMaschine: '1 Maschine',
     nochNichtGeprueft: 'noch nicht geprüft',
     schlechteste: 'schlechteste {{wert}} %',
-    filterNochNicht: 'Filter gibt es hier noch nicht.',
   },
   schnellcheck: {
     knopf: 'Geräusch prüfen',
@@ -73,6 +105,15 @@ export const de: TranslationDict = {
     fehlerLeer: 'Die Datei ist leer.',
     fehlerUnlesbar: 'Die Datei ließ sich nicht öffnen.',
     alsNormalzustand: 'Als Normalzustand speichern',
+    alsPruefung: 'Als Prüfung auswerten',
+    pruefungErklaerung:
+      'Diese Maschine hat einen Normalzustand. SoundFuchs kann den Ausschnitt damit vergleichen und bewerten.',
+    pruefungLaeuft: 'Der Ausschnitt wird mit dem Normalzustand verglichen …',
+    pruefungOhneNormalzustand:
+      'Ohne Normalzustand gibt es nichts zu vergleichen. Lege zuerst einen an.',
+    pruefungZuKurz:
+      'Eine Prüfung braucht mindestens {{mindest}} Sekunden; dieser Ausschnitt hat {{dauer}} s.',
+    pruefungGingNicht: 'Der Ausschnitt ließ sich nicht bewerten.',
     normalNochKeiner:
       'Diese Maschine hat noch keinen Normalzustand. Wird dieser Ausschnitt einer, vergleicht SoundFuchs jede spätere Prüfung damit.',
     normalSchonEiner:
