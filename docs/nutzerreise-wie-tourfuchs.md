@@ -3488,7 +3488,17 @@ Ergebnis ein Rechteck und weist nach, dass ein kürzerer Buffer mit plausiblen
 Frequenzgrenzen, eigenem Fingerabdruck und höchstens 0,90 Peak entsteht und
 anschließend als `selection` teilbar ist.
 
-### 7e. Vorgemerkt — Audiodatei importieren
+### 7e. Umgesetzt in S13 und S14 — Audiodatei importieren
+
+> **Stand 23.08.2026.** Die Abnahmekriterien am Ende dieses Abschnitts sind
+> abgehakt bis auf zwei: **(6)** eine importierte Aufnahme als _bewertete
+> Prüfung_ durchlaufen zu lassen ist noch offen — sie liegt im Analyseblatt und
+> lässt sich hören, sehen und briefen, bekommt aber keinen Prozentwert; und
+> **(5)** AAC-LC lässt sich in diesem Testbrowser nicht nachweisen (siehe S13).
+> Kriterium **(4)** — „ein bestehender Normalzustand wird niemals ohne
+> ausdrückliche Bestätigung ersetzt" — ist in S14 gebaut und gegen die
+> Datenbank falsifiziert. Der Text darunter ist das ursprüngliche Konzept und
+> bleibt als solches stehen.
 
 **Produktziel:** Ein bereits aufgenommenes Geräusch soll nicht erst über den
 Lautsprecher eines zweiten Geräts erneut aufgenommen werden müssen. SoundFuchs
