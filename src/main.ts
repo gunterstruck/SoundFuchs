@@ -64,6 +64,8 @@ import { beispieldatenAnbieten } from './stamm/ui/beispieldaten.js';
 import { standortansichtAufbauen } from './stamm/ui/standortansicht.js';
 import { standortblattAufbauen } from './stamm/ui/standortblatt.js';
 import { maschinenansichtAufbauen } from './stamm/ui/maschinenansicht.js';
+import { standortelisteAufbauen } from './stamm/ui/standorteliste.js';
+import { schnellcheckAufbauen } from './stamm/ui/schnellcheck.js';
 import type { Machine } from '@data/types.js';
 import { escapeHtml } from '@utils/sanitize.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
@@ -745,6 +747,23 @@ class ZanobotApp {
     // Das Blatt der Standortebene: Verlauf und Reihenbefund. Es öffnet
     // Maschinen über denselben Weg wie die Liste darüber.
     standortblattAufbauen({ zeigeMaschine: (machine) => this.oeffneMaschine(machine) });
+
+    /**
+     * Der Reiter „Standorte" auf der Kartenebene.
+     *
+     * Er stand bis zum 23.08.2026 leer da — gemessen: 0 Kinder, wie der Reiter
+     * „Filter" daneben. Er ist der einzige Weg zu einem Standort ohne
+     * Kartenposition, und den legt der Schnellcheck darunter gerade an.
+     */
+    standortelisteAufbauen();
+
+    /**
+     * Der Schnellcheck über der Karte.
+     *
+     * Er braucht keine Abhängigkeiten: Die Maschine, die er anlegt, gibt er
+     * der Maschinenebene mit, und die weiß selbst, wie sie aufgeht.
+     */
+    schnellcheckAufbauen();
 
     maschinenansichtAufbauen({
       aktuelleMaschine: () => this.offeneMaschine,

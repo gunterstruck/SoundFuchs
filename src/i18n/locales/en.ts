@@ -36,6 +36,20 @@ export const en: TranslationDict = {
     briefingErklaerung:
       'A package with both recordings, the listening aids and a work order — built entirely here in your browser. SoundFuchs uploads nothing.',
   },
+  liste: {
+    nochKeiner: 'No site yet. Sites appear when you add a machine.',
+    nichtLadbar: 'The sites could not be loaded just now.',
+    maschinen: '{{count}} machines',
+    eineMaschine: '1 machine',
+    nochNichtGeprueft: 'not checked yet',
+    schlechteste: 'worst {{wert}} %',
+    filterNochNicht: 'There are no filters here yet.',
+  },
+  schnellcheck: {
+    knopf: 'Check a sound',
+    standortname: 'My sounds',
+    ohneNamen: 'Sound brought along',
+  },
   mitbringen: {
     knopf: '🎞 Bring a sound',
     titel: 'Bring a sound',

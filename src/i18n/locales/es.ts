@@ -36,6 +36,20 @@ export const es: TranslationDict = {
     briefingErklaerung:
       'Un paquete con ambas grabaciones, las ayudas de escucha y una orden de trabajo, creado íntegramente en su navegador. SoundFuchs no sube nada.',
   },
+  liste: {
+    nochKeiner: 'Aún no hay ubicaciones. Aparecen al crear una máquina.',
+    nichtLadbar: 'No se pudieron cargar las ubicaciones en este momento.',
+    maschinen: '{{count}} máquinas',
+    eineMaschine: '1 máquina',
+    nochNichtGeprueft: 'aún sin revisar',
+    schlechteste: 'peor {{wert}} %',
+    filterNochNicht: 'Aquí todavía no hay filtros.',
+  },
+  schnellcheck: {
+    knopf: 'Revisar un sonido',
+    standortname: 'Mis sonidos',
+    ohneNamen: 'Sonido traído',
+  },
   mitbringen: {
     knopf: '🎞 Traer un sonido',
     titel: 'Traer un sonido',
