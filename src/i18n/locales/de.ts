@@ -73,6 +73,15 @@ export const de: TranslationDict = {
     fehlerLeer: 'Die Datei ist leer.',
     fehlerUnlesbar: 'Die Datei ließ sich nicht öffnen.',
     alsNormalzustand: 'Als Normalzustand speichern',
+    alsPruefung: 'Als Prüfung auswerten',
+    pruefungErklaerung:
+      'Diese Maschine hat einen Normalzustand. SoundFuchs kann den Ausschnitt damit vergleichen und bewerten.',
+    pruefungLaeuft: 'Der Ausschnitt wird mit dem Normalzustand verglichen …',
+    pruefungOhneNormalzustand:
+      'Ohne Normalzustand gibt es nichts zu vergleichen. Lege zuerst einen an.',
+    pruefungZuKurz:
+      'Eine Prüfung braucht mindestens {{mindest}} Sekunden; dieser Ausschnitt hat {{dauer}} s.',
+    pruefungGingNicht: 'Der Ausschnitt ließ sich nicht bewerten.',
     normalNochKeiner:
       'Diese Maschine hat noch keinen Normalzustand. Wird dieser Ausschnitt einer, vergleicht SoundFuchs jede spätere Prüfung damit.',
     normalSchonEiner:

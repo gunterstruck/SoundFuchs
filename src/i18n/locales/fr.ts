@@ -71,6 +71,14 @@ export const fr: TranslationDict = {
     fehlerLeer: 'Le fichier est vide.',
     fehlerUnlesbar: "Le fichier n'a pas pu être ouvert.",
     alsNormalzustand: 'Enregistrer comme état normal',
+    alsPruefung: 'Évaluer comme contrôle',
+    pruefungErklaerung:
+      "Cette machine a un état normal. SoundFuchs peut comparer l'extrait avec lui et le noter.",
+    pruefungLaeuft: "Comparaison de l'extrait avec l'état normal …",
+    pruefungOhneNormalzustand: "Sans état normal, rien à comparer. Créez-en un d'abord.",
+    pruefungZuKurz:
+      "Un contrôle demande au moins {{mindest}} secondes ; cet extrait en a {{dauer}}.",
+    pruefungGingNicht: "L'extrait n'a pas pu être évalué.",
     normalNochKeiner:
       "Cette machine n'a pas encore d'état normal. Si cet extrait le devient, SoundFuchs comparera chaque contrôle ultérieur avec lui.",
     normalSchonEiner: 'Cette machine a déjà un état normal. Cet extrait peut le remplacer.',

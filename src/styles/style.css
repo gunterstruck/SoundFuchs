@@ -11972,3 +11972,20 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
 .maschine-mitbringen:hover {
   border-color: var(--color-primary);
 }
+
+/* Der seltene zweite Ausgang: den Maßstab ersetzen, während die Prüfung
+   angeboten wird. Leiser als der Knopf darüber — er ist die Ausnahme, nicht
+   die Frage, die der Nutzer mitgebracht hat. */
+.mitbringen-normal-leise {
+  min-height: 44px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.mitbringen-normal-leise:hover {
+  color: var(--text-primary);
+}

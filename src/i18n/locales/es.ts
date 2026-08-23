@@ -71,6 +71,14 @@ export const es: TranslationDict = {
     fehlerLeer: 'El archivo está vacío.',
     fehlerUnlesbar: 'No se pudo abrir el archivo.',
     alsNormalzustand: 'Guardar como estado normal',
+    alsPruefung: 'Evaluar como revisión',
+    pruefungErklaerung:
+      'Esta máquina tiene un estado normal. SoundFuchs puede comparar el fragmento con él y puntuarlo.',
+    pruefungLaeuft: 'Comparando el fragmento con el estado normal …',
+    pruefungOhneNormalzustand: 'Sin estado normal no hay con qué comparar. Cree uno primero.',
+    pruefungZuKurz:
+      'Una revisión necesita al menos {{mindest}} segundos; este fragmento tiene {{dauer}} s.',
+    pruefungGingNicht: 'No se pudo evaluar el fragmento.',
     normalNochKeiner:
       'Esta máquina aún no tiene estado normal. Si este fragmento lo es, SoundFuchs comparará con él cada revisión posterior.',
     normalSchonEiner: 'Esta máquina ya tiene un estado normal. Este fragmento puede sustituirlo.',

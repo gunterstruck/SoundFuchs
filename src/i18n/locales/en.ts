@@ -71,6 +71,14 @@ export const en: TranslationDict = {
     fehlerLeer: 'The file is empty.',
     fehlerUnlesbar: 'The file could not be opened.',
     alsNormalzustand: 'Save as normal state',
+    alsPruefung: 'Run as a check',
+    pruefungErklaerung:
+      'This machine has a normal state. SoundFuchs can compare the section against it and score it.',
+    pruefungLaeuft: 'Comparing the section against the normal state …',
+    pruefungOhneNormalzustand: 'Without a normal state there is nothing to compare. Create one first.',
+    pruefungZuKurz:
+      'A check needs at least {{mindest}} seconds; this section has {{dauer}} s.',
+    pruefungGingNicht: 'The section could not be scored.',
     normalNochKeiner:
       'This machine has no normal state yet. If this section becomes one, SoundFuchs compares every later check against it.',
     normalSchonEiner: 'This machine already has a normal state. This section can replace it.',

@@ -69,6 +69,12 @@ export const zh: TranslationDict = {
     fehlerLeer: '文件为空。',
     fehlerUnlesbar: '无法打开该文件。',
     alsNormalzustand: '保存为正常状态',
+    alsPruefung: '作为检测评估',
+    pruefungErklaerung: '这台机器有正常状态。SoundFuchs 可以用它来比较并给这一段打分。',
+    pruefungLaeuft: '正在将这一段与正常状态比较 …',
+    pruefungOhneNormalzustand: '没有正常状态就无从比较。请先建立一个。',
+    pruefungZuKurz: '检测至少需要 {{mindest}} 秒；这一段只有 {{dauer}} 秒。',
+    pruefungGingNicht: '无法评估这一段。',
     normalNochKeiner:
       '这台机器还没有正常状态。若把这一段设为正常状态，SoundFuchs 之后的每次检测都会与它比较。',
     normalSchonEiner: '这台机器已有正常状态。这一段可以取代它。',

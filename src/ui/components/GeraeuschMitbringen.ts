@@ -63,6 +63,14 @@ export interface MitbringenOptions {
     vorhanden: boolean;
     /** Speichern — der Befund sagt, ob der Dialog zugehen darf. */
     speichern: (ton: AudioBuffer, dateiname: string) => Promise<NormalzustandBefund>;
+    /**
+     * Den Ausschnitt als bewertete Prüfung durchlaufen lassen.
+     *
+     * Nur sinnvoll, wenn es einen Normalzustand gibt — ohne Maßstab kein
+     * Urteil. Deshalb hängt es hier mit drin statt als eigenes Feld: Wo der
+     * eine Fall gilt, gilt der andere nicht.
+     */
+    pruefen?: (ton: AudioBuffer) => Promise<{ ok: boolean; satz?: string }>;
   };
 }
 
@@ -316,23 +324,82 @@ class Vorschau {
     const block = document.createElement('div');
     block.className = 'mitbringen-normal';
 
+    /**
+     * Ein zweiter Ausgang, nicht zwei.
+     *
+     * Was hier steht, hängt davon ab, was die Maschine schon hat:
+     *
+     *   ohne Normalzustand  →  „Als Normalzustand speichern"
+     *   mit  Normalzustand  →  „Als Prüfung auswerten"
+     *
+     * Der Grund ist die Frage, die der Nutzer mitbringt. Wer noch keinen
+     * Maßstab hat, will einen. Wer einen hat, will fast immer wissen: Wie
+     * steht dieses Geräusch dazu? Beides gleichrangig nebeneinander wäre eine
+     * Wahl, die man nur treffen kann, wenn man beide Begriffe schon kennt.
+     *
+     * Der seltene Fall — den Maßstab ersetzen — bleibt erreichbar, aber leiser.
+     */
+    const pruefbar = angebot.vorhanden && Boolean(angebot.pruefen);
     const satz = document.createElement('p');
     satz.className = 'muted small mitbringen-normal-text';
-    satz.textContent = angebot.vorhanden
-      ? t('mitbringen.normalSchonEiner')
-      : t('mitbringen.normalNochKeiner');
+    satz.textContent = pruefbar
+      ? t('mitbringen.pruefungErklaerung')
+      : angebot.vorhanden
+        ? t('mitbringen.normalSchonEiner')
+        : t('mitbringen.normalNochKeiner');
     block.appendChild(satz);
 
     const knopf = document.createElement('button');
     knopf.type = 'button';
     knopf.className = 'mitbringen-normal-knopf';
-    knopf.textContent = t('mitbringen.alsNormalzustand');
+    knopf.textContent = pruefbar ? t('mitbringen.alsPruefung') : t('mitbringen.alsNormalzustand');
     knopf.onclick = () => {
-      if (angebot.vorhanden) this.frageErsetzen();
+      if (pruefbar) void this.werteAlsPruefungAus();
+      else if (angebot.vorhanden) this.frageErsetzen();
       else void this.speichereNormalzustand();
     };
     block.appendChild(knopf);
+
+    if (pruefbar) {
+      const ersetzen = document.createElement('button');
+      ersetzen.type = 'button';
+      ersetzen.className = 'mitbringen-normal-leise';
+      ersetzen.textContent = t('mitbringen.alsNormalzustand');
+      ersetzen.onclick = () => this.frageErsetzen();
+      block.appendChild(ersetzen);
+    }
     return block;
+  }
+
+  /**
+   * Den Ausschnitt als Prüfung durchlaufen lassen.
+   *
+   * Bei Erfolg geht der Dialog zu — das Ergebnis steht dann auf der
+   * Maschinenebene, wo jede Prüfung steht. Ein zweiter Ort dafür wäre eine
+   * zweite Wahrheit über dieselbe Messung.
+   */
+  private async werteAlsPruefungAus(): Promise<void> {
+    const pruefen = this.optionen.normalzustand?.pruefen;
+    const ton = this.ton;
+    if (!pruefen || !ton) return;
+
+    this.spieler.stop();
+    this.laeuft = false;
+    this.fuss.replaceChildren();
+    const warten = document.createElement('p');
+    warten.className = 'mitbringen-warten';
+    warten.setAttribute('role', 'status');
+    warten.textContent = t('mitbringen.pruefungLaeuft');
+    this.fuss.appendChild(warten);
+
+    const teil = ausschnitt(ton, this.start, Math.min(FENSTER, ton.duration));
+    const befund = await pruefen(teil);
+    if (this.zu) return;
+    if (befund.ok) {
+      this.schliesse();
+      return;
+    }
+    this.zeigeNormalFehler(befund.satz ?? t('mitbringen.pruefungGingNicht'));
   }
 
   /**

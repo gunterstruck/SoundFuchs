@@ -59,6 +59,7 @@ import { getMachine } from '@data/db.js';
 import { Klangbild } from '@ui/components/Klangbild.js';
 import { geraeuschMitbringen } from '@ui/components/GeraeuschMitbringen.js';
 import { holeErgebnis, PRUEFUNG_FERTIG, vergissErgebnis } from '../maschine/ergebnis.js';
+import { pruefeMitgebrachtenTon } from '../maschine/pruefungAusDatei.js';
 import {
   analyseblattFuellen,
   analyseblattLeeren,
@@ -642,6 +643,15 @@ async function zeichne(maschine: Machine): Promise<void> {
       normalzustand: {
         vorhanden: (maschine.referenceModels?.length ?? 0) > 0,
         speichern: (ton) => new ReferencePhase(maschine).normalzustandAusTon(ton),
+        /**
+         * Und der Vergleich selbst — wofür SoundFuchs gebaut ist.
+         *
+         * Er rechnet mit derselben Engine, mit der der Normalzustand angelernt
+         * wurde; das entscheidet das Modell, nicht der Aufrufer. Das Ergebnis
+         * landet über `merkeErgebnis` auf der Maschinenebene, wo jede Prüfung
+         * landet — ein zweiter Ort wäre eine zweite Wahrheit.
+         */
+        pruefen: (ton) => pruefeMitgebrachtenTon(maschine, ton),
       },
     });
   });
