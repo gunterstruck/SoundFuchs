@@ -2907,6 +2907,24 @@ export class Router {
     document.getElementById('fleet-progress')?.remove();
     // Sprint 6: Remove guided prompt if visible
     document.getElementById('fleet-guided-prompt')?.remove();
+    /**
+     * ── DER ALTE ERGEBNISDIALOG BLEIBT NICHT STEHEN ───────────────────────
+     *
+     * Im Flottenlauf zeigt jede einzelne Prüfung weiterhin den alten Dialog —
+     * dort ist er der Takt des Laufs. Nach der letzten blieb er offen liegen
+     * und legte sich hinter das Reihenergebnis.
+     *
+     * Gemessen am 23.08.2026 auf der Standortebene NACH einem Flottenlauf:
+     * Am Griff des Blatts lag `modal-actions shell-footer`, im Baum stand
+     * `diagnosis-modal`. Das Blatt ließ sich nicht mehr aufziehen — die Fußzeile
+     * eines Dialogs, den niemand mehr sah, fing jeden Zug ab.
+     *
+     * Es ist derselbe Dialog, den §S6 für Einzelprüfungen abgelöst hat. Auf
+     * diesem Weg lebt er noch; dann muss er wenigstens gehen, wenn der Lauf
+     * vorbei ist.
+     */
+    const alterDialog = document.getElementById('diagnosis-modal');
+    if (alterDialog) alterDialog.style.display = 'none';
     // Remove visibility listener
     if (this.boundVisibilityHandler) {
       document.removeEventListener('visibilitychange', this.boundVisibilityHandler);

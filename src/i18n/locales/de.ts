@@ -38,6 +38,12 @@ export const de: TranslationDict = {
     briefingErklaerung:
       'Ein Paket mit beiden Aufnahmen, den Hörhilfen und einem Arbeitsauftrag — vollständig hier im Browser erzeugt. SoundFuchs lädt nichts hoch.',
   },
+  standortblatt: {
+    reihen: 'Die Reihen hier',
+    verlauf: 'Zuletzt geprüft',
+    nochNichts: 'An diesem Standort wurde noch nichts geprüft.',
+    undMehr: 'und {{count}} weitere Prüfungen',
+  },
 
   // ============================================================================
   // DIE SCHALE (Schnitt 2 — docs/nutzerreise-wie-tourfuchs.md)

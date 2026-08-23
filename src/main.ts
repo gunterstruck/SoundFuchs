@@ -62,6 +62,7 @@ import {
 import { MASCHINENFENSTER_ABGEBROCHEN } from '@ui/phases/MachineDetailModal.js';
 import { beispieldatenAnbieten } from './stamm/ui/beispieldaten.js';
 import { standortansichtAufbauen } from './stamm/ui/standortansicht.js';
+import { standortblattAufbauen } from './stamm/ui/standortblatt.js';
 import { maschinenansichtAufbauen } from './stamm/ui/maschinenansicht.js';
 import type { Machine } from '@data/types.js';
 import { escapeHtml } from '@utils/sanitize.js';
@@ -740,6 +741,10 @@ class ZanobotApp {
       neueMaschine: (standortId) => this.neueMaschineAmStandort(standortId),
       starteReihe: (ids, name) => this.starteReihe(ids, name),
     });
+
+    // Das Blatt der Standortebene: Verlauf und Reihenbefund. Es öffnet
+    // Maschinen über denselben Weg wie die Liste darüber.
+    standortblattAufbauen({ zeigeMaschine: (machine) => this.oeffneMaschine(machine) });
 
     maschinenansichtAufbauen({
       aktuelleMaschine: () => this.offeneMaschine,

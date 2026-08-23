@@ -50,6 +50,7 @@ import { zustandZuWert } from '../../services/bestandsuebersicht.js';
 import { oeffneTiefe, TIEFE_GEOEFFNET, type TiefeDetail } from './scharnier.js';
 import { t } from '../../i18n/index.js';
 import { logger } from '@utils/logger.js';
+import { standortblattFuellen, standortblattLeeren } from './standortblatt.js';
 import type { Machine } from '@data/types.js';
 
 export interface StandortansichtDeps {
@@ -406,6 +407,18 @@ export function standortansichtAufbauen(abhaengigkeiten: StandortansichtDeps): v
 
   document.addEventListener(TIEFE_GEOEFFNET, (ereignis) => {
     const detail = (ereignis as CustomEvent<TiefeDetail>).detail;
+    /**
+     * Das Blatt gehört zur Ebene, nicht zur Ansicht.
+     *
+     * Auf der Standortebene trägt es Verlauf und Reihenbefund; überall sonst
+     * hätte es dort nichts zu suchen. Geräumt wird deshalb auch dann, wenn
+     * diese Ansicht selbst gar nicht gezeichnet wird.
+     */
+    if (detail.ebene === 'standort' && detail.standortId) {
+      void standortblattFuellen(detail.standortId);
+    } else {
+      standortblattLeeren();
+    }
     if (detail.ebene !== 'standort' || !detail.standortId) return;
     void (async () => {
       const stand = (await ladeBestandsuebersicht()).find((e) => e.kunde.id === detail.standortId);
