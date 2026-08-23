@@ -335,6 +335,17 @@
           >
             3D
           </button>
+          <!-- „Details" gibt es nur auf Profi.
+
+               Was darin liegt — eine Frequenzkurve mit dB- und Hz-Achse und
+               eine Rangliste aller angelernten Betriebspunkte — beantwortet
+               eine Frage, die auf Basis gar nicht gestellt wird. Auf Basis
+               lautet die Auskunft „klingt wie der Normalzustand" oder „klingt
+               anders"; wer wissen will, BEI WELCHER FREQUENZ, ist auf Profi.
+
+               Das Verstecken macht `data-view-level` (style.css) — dieselbe
+               Mechanik, mit der die Hör-Lupe ihre Bereichsauswahl verbirgt.
+               Ein zweiter Weg dafür wäre ein zweiter Ort zum Nachsehen. -->
           <button
             class="tab-button"
             data-tab="briefing"
@@ -343,6 +354,16 @@
             data-i18n="blatt.tabBriefing"
           >
             Briefing
+          </button>
+          <button
+            class="tab-button"
+            data-tab="details"
+            data-ebene="maschine"
+            data-view-level="expert"
+            role="tab"
+            data-i18n="blatt.tabDetails"
+          >
+            Details
           </button>
         </nav>
 
@@ -359,6 +380,12 @@
         <section id="tab-zweid" class="tab-panel" data-ebene="maschine"></section>
         <section id="tab-dreid" class="tab-panel" data-ebene="maschine"></section>
         <section id="tab-briefing" class="tab-panel" data-ebene="maschine"></section>
+        <section
+          id="tab-details"
+          class="tab-panel"
+          data-ebene="maschine"
+          data-view-level="expert"
+        ></section>
 
       </aside>
 

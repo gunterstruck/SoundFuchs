@@ -37,6 +37,18 @@ export const de: TranslationDict = {
       'Das Gebirge zeigt den Unterschied — dafür braucht es einen Normalzustand und eine Messung.',
     briefingErklaerung:
       'Ein Paket mit beiden Aufnahmen, den Hörhilfen und einem Arbeitsauftrag — vollständig hier im Browser erzeugt. SoundFuchs lädt nichts hoch.',
+    tabDetails: 'Details',
+    detailsKurve: 'Frequenzabweichung',
+    detailsKurveErklaerung:
+      'Die gemessene Kurve über der des Normalzustands. Beziffert sind die zwei stärksten Spitzen.',
+    detailsKurveOhneReferenz:
+      'Die gemessene Kurve. Ohne Normalzustand gibt es nichts, worüber sie liegen könnte.',
+    detailsBrauchtMessung:
+      'Noch keine Messung. Nach einer Prüfung stehen hier Kurve und Betriebspunkte.',
+    detailsBrauchtNormalzustand:
+      'Noch kein angelernter Betriebspunkt. Die Rangliste braucht mindestens einen Normalzustand.',
+    detailsRatenPassenNicht:
+      'Diese Aufnahme liegt bei {{messung}} kHz, der Normalzustand bei {{modell}} kHz. Die Frequenzfelder bedeuten dann nicht dasselbe — SoundFuchs vergleicht sie deshalb nicht.',
   },
   liste: {
     nochKeiner: 'Noch kein Standort. Standorte entstehen beim Anlegen einer Maschine.',

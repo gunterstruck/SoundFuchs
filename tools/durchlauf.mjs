@@ -589,6 +589,199 @@ try {
     fotoDa ? `${foto.groesse}, geladen ${foto.geladen}` : 'keine Quelle „Foto"'
   );
 
+  /**
+   * Der Reiter „Details" auf BASIS — hier gemessen, unten geprüft.
+   *
+   * Gemessen wird jetzt, weil jetzt Basis gilt: Wenige Zeilen weiter stellt
+   * der Lauf auf Profi um und kommt nie wieder zurück. Wer diese Messung
+   * dorthin verschöbe, prüfte eine Zusage über einen Zustand, den es an der
+   * Stelle nicht mehr gibt.
+   */
+  const detailsAufBasis = await page.evaluate(() => {
+    const knopf = document.querySelector('.tab-button[data-tab="details"]');
+    return {
+      da: Boolean(knopf),
+      sichtbar: Boolean(knopf) && knopf.getBoundingClientRect().height > 0,
+    };
+  });
+
+  /**
+   * ── DIE BEIDEN EXPERTENANSICHTEN IM ANALYSEBLATT ────────────────────────
+   *
+   * Sie gingen mit dem Abriss des alten Ergebnisdialogs (#100) und sind am
+   * 23.08.2026 zurückgeholt worden — als Reiter „Details" neben 2D und
+   * Gebirge, hinter Profi.
+   *
+   * Was hier gemessen wird, ist nicht „steht ein Reiter da", sondern ob in ihm
+   * wirklich etwas ist:
+   *
+   *   Kurve       die Leinwand ist hoch UND es sind verschiedene Farben
+   *               darauf. Eine leere Leinwand ist genauso hoch wie eine
+   *               bemalte — wer nur die Höhe misst, misst nichts.
+   *   Rangliste   mindestens ein Betriebspunkt mit Namen und Wert.
+   *
+   * Und die Gegenprobe: Auf Basis darf der Reiter gar nicht dastehen.
+   */
+  /**
+   * Auf Profi umstellen, OHNE die Maschine zu verlassen.
+   *
+   * Der erste Versuch hat den Reiter dort gemessen, wo der Lauf ohnehin schon
+   * auf Profi war — nach `.tiefe-zurueck` und `inDieTiefe()`. Nur landet
+   * `inDieTiefe()` auf der BESTANDSEBENE, nicht auf der Maschinenseite: Der
+   * Reiter stand da, war offen, und dahinter lag nichts, weil das Blatt beim
+   * Verlassen der Maschine geleert wird. Zwei Befunde, die nichts über die
+   * Sache aussagten.
+   *
+   * Der Schalter liegt unterwegs im Kopfstreifen, und genau dafür liegt er
+   * dort: Basis/Profi gilt für die ganze Anwendung und soll erreichbar sein,
+   * ohne dass man seine Arbeit verlässt. Also wird hier gemessen, was ein
+   * Mensch täte — umschalten und hinsehen.
+   */
+  await page
+    .locator('#depth-switch .view-level-btn[data-level="expert"]')
+    .click({ force: true, timeout: 6000 })
+    .catch(() => {});
+  await page.waitForTimeout(1200);
+  /**
+   * Erst das Blatt aufziehen, dann den Reiter wählen.
+   *
+   * Auf Guckhöhe sind die Reiter zwar sichtbar, ihr Inhalt aber 0 px hoch —
+   * und eine Leinwand, die beim Zeichnen 0 px misst, bleibt leer, auch wenn
+   * man das Blatt danach aufzieht. Der erste Versuch hat genau das gemessen
+   * und als Befund gemeldet: „0 px hoch, 0 Farbstufen" unter einer sauber
+   * gesetzten Überschrift.
+   *
+   * Ein Mensch zieht auf und tippt dann. Der Griff ist der Weg dorthin.
+   */
+  await page.locator('#sheet-grip').click({ force: true, timeout: 6000 }).catch(() => {});
+  await page.waitForTimeout(900);
+  await page.locator('.tab-button[data-tab="details"]').click({ force: true }).catch(() => {});
+  await page.waitForTimeout(1600);
+
+  /** Was wirklich in der Ablage steht — damit ein leerer Reiter erklärbar ist. */
+  const ablageModelle = await page.evaluate(
+    () =>
+      new Promise((fertig) => {
+        const a = indexedDB.open('zanobot-db');
+        a.onerror = () => fertig(-1);
+        a.onsuccess = () => {
+          const tx = a.result.transaction(['machines'], 'readonly');
+          const alle = tx.objectStore('machines').getAll();
+          tx.oncomplete = () =>
+            fertig(
+              (alle.result ?? []).reduce((n, m) => n + (m.referenceModels?.length ?? 0), 0)
+            );
+          tx.onerror = () => fertig(-1);
+        };
+      })
+  );
+  const details = await page.evaluate(() => {
+    const feld = document.getElementById('tab-details');
+    const c = feld?.querySelector('.blatt-details-canvas');
+    const erg = {
+      knopfSichtbar:
+        (document.querySelector('.tab-button[data-tab="details"]')?.getBoundingClientRect()
+          .height ?? 0) > 0,
+      feldOffen: Boolean(feld?.classList.contains('active')),
+      leer: feld?.querySelector('.blatt-leer')?.textContent?.trim() ?? '',
+      ueberschrift: feld?.querySelector('.blatt-details-kurve h4')?.textContent?.trim() ?? '',
+      hoch: c ? Math.round(c.getBoundingClientRect().height) : 0,
+      punkte: [...(feld?.querySelectorAll('.ranking-item') ?? [])].map((z) => ({
+        name: z.querySelector('.ranking-name')?.textContent?.trim() ?? '',
+        wert: z.querySelector('.ranking-score')?.textContent?.trim() ?? '',
+        breit: Math.round(z.querySelector('.ranking-bar')?.getBoundingClientRect().width ?? 0),
+      })),
+      farben: 0,
+    };
+    if (c && c.width && c.height) {
+      /**
+       * Wie viele verschiedene Farben liegen auf der Leinwand?
+       *
+       * Eine leergeräumte Leinwand ist durchsichtig — ein einziger Wert.
+       * Achsen, Gitter, Kurve und Spitzen sind mehrere. Gezählt wird grob
+       * (auf 32er-Stufen gerundet), damit Kantenglättung nicht als Vielfalt
+       * durchgeht.
+       */
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      const gesehen = new Set();
+      for (let i = 0; i < d.length; i += 4 * 7) {
+        gesehen.add(
+          `${d[i] >> 5},${d[i + 1] >> 5},${d[i + 2] >> 5},${d[i + 3] >> 5}`
+        );
+      }
+      erg.farben = gesehen.size;
+    }
+    return erg;
+  });
+  console.log('\n  — Der Reiter „Details" —');
+  console.log(`  auf Basis                 ${detailsAufBasis.sichtbar ? 'SICHTBAR' : 'verborgen'} (im Baum: ${detailsAufBasis.da})`);
+  console.log(`  auf Profi                 ${details.knopfSichtbar ? 'sichtbar' : 'VERBORGEN'} · Feld offen ${details.feldOffen}`);
+  console.log(`  Überschrift               ${details.ueberschrift || '(keine)'}`);
+  console.log(`  Leinwand                  ${details.hoch} px · ${details.farben} Farbstufen`);
+  console.log(`  Betriebspunkte            ${details.punkte.length} (Modelle in der Ablage: ${ablageModelle})`);
+  for (const p of details.punkte.slice(0, 4)) {
+    console.log(`    ${p.name || '(ohne Namen)'} — ${p.wert || '(ohne Wert)'} · Balken ${p.breit} px`);
+  }
+  if (details.leer) console.log(`  leerer Zustand            ${details.leer}`);
+
+  pruefe(
+    21,
+    '„Details" steht auf Basis nicht im Weg',
+    detailsAufBasis.da && !detailsAufBasis.sichtbar,
+    detailsAufBasis.da
+      ? `sichtbar: ${detailsAufBasis.sichtbar}`
+      : 'der Reiter fehlt ganz — dann kann er auf Profi auch nicht auftauchen'
+  );
+  pruefe(
+    22,
+    'die Frequenzkurve ist wirklich gezeichnet',
+    details.hoch > 100 && details.farben >= 4,
+    `${details.hoch} px hoch, ${details.farben} Farbstufen${details.leer ? ` — „${details.leer}"` : ''}`
+  );
+  /**
+   * Der Reiter steht nie stumm da.
+   *
+   * Zwei Ausgänge sind ehrlich, und beide zählen:
+   *
+   *   entweder  jeder Betriebspunkt mit Namen und Wert
+   *   oder      ein Satz, der sagt, warum nicht — und der die Zahlen nennt
+   *
+   * Der zweite Fall ist kein Notausgang, sondern der Regelfall dieses Laufs:
+   * Das Modell hat bei 48 000 Hz gelernt, die aufbewahrte Messung liegt bei
+   * 44 100 Hz. Ein Merkmalsfeld bedeutet dann bei beiden eine andere Frequenz,
+   * und GMIA weist den Vergleich zu Recht zurück.
+   *
+   * Vor dem 23.08.2026 fiel das niemandem auf: Die Wertungen wurden einzeln
+   * verworfen, die Liste blieb leer, und der Reiter behauptete „noch kein
+   * angelernter Betriebspunkt" — bei einem vorhandenen Normalzustand. Ein
+   * stiller Ausfall, der wie eine Auskunft aussah.
+   *
+   * Geprüft wird deshalb nicht „die Liste ist voll", sondern „es steht etwas
+   * da, das trägt". Falsifizierbar bleibt es: Ein leerer Reiter fällt durch,
+   * und ein Satz ohne Zahlen ebenfalls.
+   */
+  const ratenSatz = /\d[\d,.]*\s*kHz[\s\S]*\d[\d,.]*\s*kHz/.test(details.leer);
+  pruefe(
+    23,
+    'die Betriebspunkte stehen mit Namen und Wert da — oder es steht da, warum nicht',
+    (details.punkte.length > 0 && details.punkte.every((p) => p.name && p.wert)) || ratenSatz,
+    details.punkte.length > 0
+      ? details.punkte.map((p) => `${p.name}: ${p.wert}`).join(' · ')
+      : ratenSatz
+        ? `benannt: „${details.leer}"`
+        : `weder Liste noch Begründung${details.leer ? ` — „${details.leer}"` : ''}`
+  );
+
+  // Zurück auf Basis und auf den 2D-Reiter: Was danach kommt, misst den
+  // Hauptweg weiter und soll ihn so vorfinden, wie er ihn immer vorfand —
+  // einschließlich der Stufe, auf der der Lauf steht.
+  await page.locator('.tab-button[data-tab="zweid"]').click({ force: true }).catch(() => {});
+  await page
+    .locator('#depth-switch .view-level-btn[data-level="basic"]')
+    .click({ force: true, timeout: 6000 })
+    .catch(() => {});
+  await page.waitForTimeout(900);
+
   // Hier endet der Hauptweg, und zwar bewusst beim gespeicherten Ergebnis: Das
   // war die Frage. Die Schritte 1–11 bleiben deshalb unverändert und
   // vergleichbar — sie messen die Länge des Weges, und diese Zahl darf beim
@@ -700,6 +893,7 @@ try {
   await page.waitForTimeout(1200);
   await inDieTiefe();
   await page.waitForTimeout(800);
+
 
   /**
    * Tippen, wenn es etwas zu tippen gibt — sonst weitergehen.

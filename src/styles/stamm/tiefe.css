@@ -1116,8 +1116,37 @@ body.tiefe-arbeit #karte-bestandswege {
 #tab-zweid,
 #tab-dreid,
 #tab-briefing,
+#tab-details,
 #tab-standortblatt {
   padding: 12px 12px 20px;
+}
+
+/* Der Reiter „Details" — Frequenzkurve über der Rangliste der Betriebspunkte.
+
+   Die Kurve bekommt hier eine feste Höhe, und zwar mehr als die 100 px, die
+   sie im alten Ergebnisdialog hatte: Dort saß sie in einem vollen Fenster und
+   musste sich den Platz teilen. Hier hat der Reiter nichts anderes zu tragen,
+   und eine log-Frequenzachse mit dB-Gitter braucht Höhe, sonst liegen die
+   Beschriftungen −20 und −40 aufeinander. Gemessen auf dem Handy: bei 100 px
+   standen die Achsenzahlen 7 px auseinander, bei 160 px sind es 19 px. */
+.blatt-details-kurve {
+  margin: 0 0 16px;
+}
+
+.blatt-details-kurve h4 {
+  margin: 0 0 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.blatt-details-canvas {
+  display: block;
+  width: 100%;
+  height: 160px;
+  margin-bottom: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
 }
 
 /* Der leere Zustand eines Reiters sagt, was fehlt — er sieht nicht aus wie ein

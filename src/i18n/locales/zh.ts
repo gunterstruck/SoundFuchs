@@ -34,6 +34,14 @@ export const zh: TranslationDict = {
     gebirgeBrauchtBeide: '3D 视图显示差异——这需要一份正常状态和一次测量。',
     briefingErklaerung:
       '一个包含两段录音、听觉辅助和工作说明的数据包，完全在您的浏览器中生成。SoundFuchs 不会上传任何内容。',
+    tabDetails: '详情',
+    detailsKurve: '频率偏差',
+    detailsKurveErklaerung: '测量曲线叠加在正常状态曲线之上。两个最强峰值标注了各自的频率。',
+    detailsKurveOhneReferenz: '测量曲线。没有正常状态，就没有可供叠加的基准。',
+    detailsBrauchtMessung: '尚无测量。完成检查后，这里会显示曲线和工作点。',
+    detailsBrauchtNormalzustand: '尚未学习任何工作点。排行榜至少需要一个正常状态。',
+    detailsRatenPassenNicht:
+      '这段录音为 {{messung}} kHz，正常状态为 {{modell}} kHz。频率分档的含义不再相同，因此 SoundFuchs 不做比较。',
   },
   liste: {
     nochKeiner: '还没有机器地点。新建机器时会自动出现。',

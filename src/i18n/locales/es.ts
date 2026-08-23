@@ -35,6 +35,14 @@ export const es: TranslationDict = {
       'La vista 3D muestra la diferencia: para eso hacen falta un estado normal y una medición.',
     briefingErklaerung:
       'Un paquete con ambas grabaciones, las ayudas de escucha y una orden de trabajo, creado íntegramente en su navegador. SoundFuchs no sube nada.',
+    tabDetails: 'Detalles',
+    detailsKurve: 'Desviación de frecuencia',
+    detailsKurveErklaerung: 'La curva medida sobre la del estado normal. Los dos picos más fuertes llevan su frecuencia.',
+    detailsKurveOhneReferenz: 'La curva medida. Sin estado normal no hay nada sobre lo que superponerla.',
+    detailsBrauchtMessung: 'Aún sin medición. Tras una comprobación aparecen aquí la curva y los puntos de trabajo.',
+    detailsBrauchtNormalzustand: 'Aún sin punto de trabajo aprendido. La clasificación necesita al menos un estado normal.',
+    detailsRatenPassenNicht:
+      'Esta grabación está a {{messung}} kHz y el estado normal a {{modell}} kHz. Las bandas de frecuencia ya no significan lo mismo, por eso SoundFuchs no las compara.',
   },
   liste: {
     nochKeiner: 'Aún no hay ubicaciones. Aparecen al crear una máquina.',

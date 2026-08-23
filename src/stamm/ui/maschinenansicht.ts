@@ -60,6 +60,7 @@ import { Klangbild } from '@ui/components/Klangbild.js';
 import { geraeuschMitbringen } from '@ui/components/GeraeuschMitbringen.js';
 import { holeErgebnis, PRUEFUNG_FERTIG, vergissErgebnis } from '../maschine/ergebnis.js';
 import { pruefeMitgebrachtenTon } from '../maschine/pruefungAusDatei.js';
+import { classifyHealthStatus } from '@core/ml/scoring.js';
 import {
   analyseblattFuellen,
   analyseblattLeeren,
@@ -402,6 +403,14 @@ async function legeMitgebrachtesInsBlatt(
     referenz,
     messung: ton,
     maschinenname: `${maschine.name} · ${dateiname}`,
+    modelle: maschine.referenceModels ?? [],
+    /**
+     * Ohne Status.
+     *
+     * Ein mitgebrachter Ton ist hier noch nichts beurteilt worden — die
+     * Prüfung ist ein eigener Knopf. Die Kurve bleibt darum neutral gefärbt,
+     * statt eine Farbe zu tragen, die niemand gerechnet hat.
+     */
   });
   analyseblattOeffnen('zweid');
   blattAufziehen();
@@ -708,6 +717,15 @@ async function zeichne(maschine: Machine): Promise<void> {
       referenz: frisch.referenz,
       messung: frisch.messung,
       maschinenname: maschine.name,
+      /**
+       * Die Betriebspunkte und die Farbe der Kurve — für den Reiter „Details".
+       *
+       * Der Status wird durchgereicht und nicht im Blatt neu gerechnet: Oben
+       * steht bereits eine Zahl zu dieser Messung, und zwei Urteile über
+       * dieselbe Messung wären eines zu viel.
+       */
+      modelle: maschine.referenceModels ?? [],
+      status: classifyHealthStatus(frisch.wert),
     });
   }
 
@@ -951,6 +969,10 @@ async function zeichne(maschine: Machine): Promise<void> {
         referenz: toene.referenz,
         messung: toene.messung,
         maschinenname: maschine.name,
+        modelle: maschine.referenceModels ?? [],
+        // Hier liegt der Status schon fertig in der Prüfung — er muss nicht
+        // aus dem Wert zurückgerechnet werden.
+        status: letzte.status,
       });
 
       const zeile = document.createElement('div');

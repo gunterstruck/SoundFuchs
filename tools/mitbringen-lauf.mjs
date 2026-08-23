@@ -860,6 +860,84 @@ try {
     `der Ergebnissatz stellt eine Diagnose — „${seite.satz}"`
   );
 
+  /**
+   * ── 1d. DIE BETRIEBSPUNKTE IM REITER „DETAILS" ──────────────────────────
+   *
+   * Der Durchlauf misst diesen Reiter auch — aber dort greift jedes Mal der
+   * Sonderfall: Das Modell hat am Mikrofon bei 48 000 Hz gelernt, die
+   * aufbewahrte Messung liegt bei 44 100 Hz, und GMIA weist den Vergleich
+   * zurück. Der Reiter sagt das dann sauber, und das ist auch richtig — nur
+   * ist die RANGLISTE damit nirgends gemessen.
+   *
+   * Hier passen die Raten: Normalzustand und Prüfung kommen aus derselben
+   * Datei, durch denselben AudioContext. Also ist dies die Stelle, an der der
+   * Weg mit Ergebnis wirklich einmal durchläuft.
+   */
+  console.log('\n=== Die Betriebspunkte im Reiter „Details" ===');
+  await page
+    .locator('#depth-switch .view-level-btn[data-level="expert"]')
+    .click({ force: true, timeout: 6000 })
+    .catch(() => {});
+  await page.waitForTimeout(900);
+  // Aufziehen, dann wählen: Auf Guckhöhe ist der Inhalt 0 px hoch, und eine
+  // Leinwand, die beim Zeichnen 0 px misst, bleibt leer.
+  await page.locator('#sheet-grip').click({ force: true, timeout: 6000 }).catch(() => {});
+  await page.waitForTimeout(800);
+  await page
+    .locator('.tab-button[data-tab="details"]')
+    .click({ force: true, timeout: 6000 })
+    .catch(() => {});
+  await page.waitForTimeout(1600);
+
+  const detail = await page.evaluate(() => {
+    const feld = document.getElementById('tab-details');
+    const c = feld?.querySelector('.blatt-details-canvas');
+    return {
+      offen: Boolean(feld?.classList.contains('active')),
+      hoch: c ? Math.round(c.getBoundingClientRect().height) : 0,
+      leer: feld?.querySelector('.blatt-leer')?.textContent?.trim() ?? '',
+      punkte: [...(feld?.querySelectorAll('.ranking-item') ?? [])].map((z) => ({
+        name: z.querySelector('.ranking-name')?.textContent?.trim() ?? '',
+        wert: z.querySelector('.ranking-score')?.textContent?.trim() ?? '',
+        balken: Math.round(z.querySelector('.ranking-bar')?.getBoundingClientRect().width ?? 0),
+      })),
+    };
+  });
+  console.log(`  Reiter offen              ${detail.offen}`);
+  console.log(`  Leinwand                  ${detail.hoch} px`);
+  console.log(`  Betriebspunkte            ${detail.punkte.length}`);
+  for (const p of detail.punkte) {
+    console.log(`    ${p.name || '(ohne Namen)'} — ${p.wert || '(ohne Wert)'} · Balken ${p.balken} px`);
+  }
+  if (detail.leer) console.log(`  statt Liste               ${detail.leer}`);
+
+  pruefe(
+    detail.punkte.length > 0,
+    `keine Rangliste, obwohl die Raten zusammenpassen${detail.leer ? ` — „${detail.leer}"` : ''}`
+  );
+  /**
+   * `[].every(...)` ist wahr.
+   *
+   * Beim Falsifizieren am 23.08.2026 hat genau das zugeschlagen: Die Rangliste
+   * kam nicht zustande, der erste Befund stand da — und diese beiden Zusagen
+   * blieben grün, weil sie über eine leere Liste urteilten. Zwei Wächter, die
+   * nichts gemessen haben. Deshalb steht die Länge jetzt in der Bedingung.
+   */
+  pruefe(
+    detail.punkte.length > 0 && detail.punkte.every((p) => p.name && p.wert),
+    'ein Betriebspunkt steht ohne Namen oder ohne Wert da'
+  );
+  /**
+   * Der Balken ist die Aussage, nicht die Zahl daneben.
+   *
+   * Ein Balken der Breite 0 neben „100 %" wäre ein Widerspruch auf demselben
+   * Bildschirm — und der Balken ist das, was man zuerst sieht.
+   */
+  pruefe(
+    detail.punkte.length > 0 && detail.punkte.every((p) => p.balken > 0),
+    'ein Betriebspunkt hat einen Balken der Breite 0 — dann sagt das Bild etwas anderes als die Zahl'
+  );
+
   // ── 2. Das echte Telefonvideo ───────────────────────────────────────────
   if (VIDEO && existsSync(VIDEO)) {
     console.log('\n=== Das echte Telefonvideo (MP4, HEVC + AAC-LC, 23,9 MB) ===');

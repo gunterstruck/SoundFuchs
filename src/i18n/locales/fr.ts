@@ -35,6 +35,14 @@ export const fr: TranslationDict = {
       "La vue 3D montre l'écart : il faut pour cela un état normal et une mesure.",
     briefingErklaerung:
       "Un paquet avec les deux enregistrements, les aides à l'écoute et un ordre de travail, créé entièrement dans votre navigateur. SoundFuchs n'envoie rien.",
+    tabDetails: 'Détails',
+    detailsKurve: 'Écart de fréquence',
+    detailsKurveErklaerung: 'La courbe mesurée par-dessus celle de l’état normal. Les deux pics les plus forts portent leur fréquence.',
+    detailsKurveOhneReferenz: 'La courbe mesurée. Sans état normal, elle n’a rien à recouvrir.',
+    detailsBrauchtMessung: 'Pas encore de mesure. Après un contrôle, la courbe et les points de fonctionnement s’affichent ici.',
+    detailsBrauchtNormalzustand: 'Aucun point de fonctionnement appris. Le classement a besoin d’au moins un état normal.',
+    detailsRatenPassenNicht:
+      'Cet enregistrement est à {{messung}} kHz, l’état normal à {{modell}} kHz. Les bandes de fréquence ne signifient alors plus la même chose — SoundFuchs ne les compare donc pas.',
   },
   liste: {
     nochKeiner: "Aucun site pour l'instant. Les sites naissent en créant une machine.",
