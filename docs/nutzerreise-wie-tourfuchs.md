@@ -3458,6 +3458,63 @@ mitzunehmen hieße, einen Umbau und einen Abriss in einem Zug zu prüfen.
 | Was zu tun ist | einen Dialog schließen | **nichts** |
 | Diagnose-Verbot in der Reihe | eingehalten | **bewacht** |
 
+### S18 — Grün hier, rot dort (23.08.2026)
+
+Der Auftraggeber hat eine CI-Mail weitergeleitet: **„CI: All jobs have
+failed."** Drei Zusammenführungen lang, seit S15.
+
+#### Was passiert war
+
+```
+hier   Node v22.22.2   npm run test:run   →  774 bestanden
+CI     Node 20         npm run test:run   →  ReferenceError: navigator is not defined
+```
+
+Derselbe Befehl, derselbe Quelltext, dasselbe Vitest — zwei Ergebnisse.
+**Node 21 hat ein globales `navigator` eingeführt**, Node 20 hat keines. Und
+`audioHelper.ts` wertet auf **Modulebene** aus:
+
+```ts
+signalThreshold: isIOS() ? 0.002 : 0.01,
+```
+
+`isIOS()` liest `navigator.platform`. Damit stürzt nicht ein Aufruf ab, sondern
+das **Laden** des Moduls — und mit ihm jede Importkette, die dorthin führt. Der
+Test aus S15 (`schnellcheck.test.ts` → `schnellcheck.ts` → `ReferencePhase` →
+`audioHelper`) war die erste, die das tat.
+
+#### Zwei Fehler, beide meine
+
+1. **Der Sachfehler.** Eine Funktion, die beim Import eines Moduls
+   Browser-Globals liest, ist in jeder Umgebung ohne Browser eine Zeitbombe.
+   `isIOS()` gibt jetzt `false` zurück, wenn es weder `navigator` noch
+   `document` gibt.
+2. **Der schwerere.** Ich habe drei Zusammenführungen durchgewinkt, ohne die CI
+   anzusehen — ich hielt meine eigenen Wächter für die ganze Wahrheit. Sie
+   waren grün, und sie konnten es gar nicht anders sein: Sie liefen auf einer
+   anderen Node-Fassung.
+
+#### Die Vorkehrung — und ihre Falsifikation
+
+`src/test-setup.ts` nimmt dem Testlauf die Globals weg, die die CI-Fassung
+auch nicht hat. Damit ist `npm run test:run` hier **dieselbe Prüfung** wie
+dort. Der Beweis ist die Zahlengleichheit:
+
+```
+CI (vorher)             1 failed | 63 passed (64)  ·  767 passed
+hier, Absicherung weg   1 failed | 63 passed (64)  ·  767 passed
+hier, Absicherung da    0 failed | 64 passed (64)  ·  774 passed
+```
+
+Die ganze Suite läuft unter diesen Bedingungen durch — es war genau diese eine
+Stelle, keine zweite.
+
+| | vor S18 | jetzt |
+|---|---|---|
+| `isIOS()` ohne Browser | wirft beim Laden des Moduls | **gibt `false` zurück** |
+| `npm run test:run` hier | Node des Rechners | **Bedingungen der CI** |
+| Nach dem Zusammenführen | Wächter gelesen | **auch die CI gelesen** |
+
 ### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die
