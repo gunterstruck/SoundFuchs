@@ -35,6 +35,20 @@ export const zh: TranslationDict = {
     briefingErklaerung:
       '一个包含两段录音、听觉辅助和工作说明的数据包，完全在您的浏览器中生成。SoundFuchs 不会上传任何内容。',
   },
+  liste: {
+    nochKeiner: '还没有机器地点。新建机器时会自动出现。',
+    nichtLadbar: '暂时无法加载机器地点。',
+    maschinen: '{{count}} 台机器',
+    eineMaschine: '1 台机器',
+    nochNichtGeprueft: '尚未检测',
+    schlechteste: '最差 {{wert}} %',
+    filterNochNicht: '这里还没有筛选功能。',
+  },
+  schnellcheck: {
+    knopf: '检查一段声音',
+    standortname: '我的声音',
+    ohneNamen: '带来的声音',
+  },
   mitbringen: {
     knopf: '🎞 带来一段声音',
     titel: '带来一段声音',

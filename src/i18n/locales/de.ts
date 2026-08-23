@@ -38,6 +38,20 @@ export const de: TranslationDict = {
     briefingErklaerung:
       'Ein Paket mit beiden Aufnahmen, den Hörhilfen und einem Arbeitsauftrag — vollständig hier im Browser erzeugt. SoundFuchs lädt nichts hoch.',
   },
+  liste: {
+    nochKeiner: 'Noch kein Standort. Standorte entstehen beim Anlegen einer Maschine.',
+    nichtLadbar: 'Die Standorte ließen sich gerade nicht laden.',
+    maschinen: '{{count}} Maschinen',
+    eineMaschine: '1 Maschine',
+    nochNichtGeprueft: 'noch nicht geprüft',
+    schlechteste: 'schlechteste {{wert}} %',
+    filterNochNicht: 'Filter gibt es hier noch nicht.',
+  },
+  schnellcheck: {
+    knopf: 'Geräusch prüfen',
+    standortname: 'Meine Geräusche',
+    ohneNamen: 'Mitgebrachtes Geräusch',
+  },
   mitbringen: {
     knopf: '🎞 Geräusch mitbringen',
     titel: 'Geräusch mitbringen',

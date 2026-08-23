@@ -125,6 +125,33 @@ let deps: MaschinenansichtDeps | null = null;
  */
 let fingerabdruckZeigen = false;
 
+/**
+ * Ein Geräusch, das von außen mitgebracht wurde und noch keinen Platz hat.
+ *
+ * Der Schnellcheck liest eine Datei, bevor es die Maschine gibt. Er kann den
+ * Ton also nicht in die Ablage legen und die Ebene ihn von dort holen lassen —
+ * er reicht ihn hier durch. Beim nächsten Zeichnen genau dieser Maschine wird
+ * er ins Blatt gelegt und danach vergessen.
+ */
+let mitgebracht: { maschinenId: string; ton: AudioBuffer; dateiname: string } | null = null;
+
+/**
+ * Eine Maschine öffnen und ein mitgebrachtes Geräusch mitgeben.
+ *
+ * Der Weg des Schnellchecks. Er öffnet die Tiefe nicht selbst: Diese Ebene
+ * weiß, wie sie aufgeht, und zwei Stellen, die dasselbe tun, laufen
+ * auseinander.
+ */
+export function zeigeMitgebrachtesGeraeusch(
+  maschine: Machine,
+  ton: AudioBuffer,
+  dateiname: string
+): void {
+  mitgebracht = { maschinenId: maschine.id, ton, dateiname };
+  deps?.uebernimmMaschine(maschine);
+  oeffneTiefe(maschine.customerId ?? null, 'maschine');
+}
+
 function behaelter(): HTMLElement | null {
   return document.getElementById(BEHAELTER_ID);
 }
@@ -1003,6 +1030,25 @@ async function zeichne(maschine: Machine): Promise<void> {
       // eine Einstellung des Nutzers, und sie wird hier nicht heimlich
       // umgestellt, nur damit ein Knopf dastehen kann.
     }
+  }
+
+  /**
+   * ── ZULETZT: EIN VON AUSSEN MITGEBRACHTES GERÄUSCH ───────────────────────
+   *
+   * Es kommt aus dem Schnellcheck — dort gab es die Maschine noch nicht, als
+   * die Datei gelesen wurde. Es steht ganz am Ende dieser Methode, weil jeder
+   * Weg darüber selbst ins Blatt schreiben kann: Ein frisches Ergebnis, eine
+   * gespeicherte letzte Prüfung, und ganz oben `analyseblattFuellen(null)`.
+   * Stünde es weiter oben, wäre der mitgebrachte Ton wieder weg, bevor ihn
+   * jemand sieht.
+   *
+   * Und es gilt nur einmal: Beim nächsten Zeichnen derselben Maschine ist er
+   * nicht mehr die Nachricht.
+   */
+  if (mitgebracht && mitgebracht.maschinenId === maschine.id) {
+    const { ton, dateiname } = mitgebracht;
+    mitgebracht = null;
+    await legeMitgebrachtesInsBlatt(maschine, ton, dateiname);
   }
 }
 

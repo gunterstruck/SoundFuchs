@@ -36,6 +36,20 @@ export const fr: TranslationDict = {
     briefingErklaerung:
       "Un paquet avec les deux enregistrements, les aides à l'écoute et un ordre de travail, créé entièrement dans votre navigateur. SoundFuchs n'envoie rien.",
   },
+  liste: {
+    nochKeiner: "Aucun site pour l'instant. Les sites naissent en créant une machine.",
+    nichtLadbar: "Les sites n'ont pas pu être chargés pour le moment.",
+    maschinen: '{{count}} machines',
+    eineMaschine: '1 machine',
+    nochNichtGeprueft: 'pas encore contrôlé',
+    schlechteste: 'pire {{wert}} %',
+    filterNochNicht: "Il n'y a pas encore de filtres ici.",
+  },
+  schnellcheck: {
+    knopf: 'Contrôler un bruit',
+    standortname: 'Mes bruits',
+    ohneNamen: 'Bruit apporté',
+  },
   mitbringen: {
     knopf: '🎞 Apporter un bruit',
     titel: 'Apporter un bruit',

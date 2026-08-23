@@ -3169,6 +3169,132 @@ Dateidialog. Er zieht das Blatt jetzt mit einer echten Zeigergeste zu.
 | Mitgebrachtes Geräusch im Blatt | allein | **neben dem Normalzustand** |
 | Was der Wächter glaubt | dem Knopf | **der IndexedDB** |
 
+### S15 — Der Schnellcheck: ein Geräusch ohne Maschine (23.08.2026)
+
+Der Auftraggeber: „Ich habe hier einfach einen Film gemacht von einer
+Motorhaube, wo vielleicht ein komisches Geräusch ist. Und ich glaube, das ist
+sehr allgemein." Wer das tut, hat keine Maschine angelegt, keinen Standort
+erfasst und keine Postleitzahl im Kopf. Er hat eine Datei.
+
+Auf die Frage, was in diesem Fall geschehen soll, hat der Auftraggeber
+entschieden: **„Schnellcheck, App legt Maschine an."**
+
+#### Der Befund, der den Schnitt zuerst aufhielt
+
+Eine Maschine muss irgendwo stehen. Die ganze Ebenenfolge hängt an
+`getAllCustomers()` → `getMachinesForCustomer()`; eine Maschine ohne Standort
+ist im Baum unsichtbar. Und ein Standort ohne Postleitzahl hat keinen Punkt auf
+der Karte — `geo: 'none'`, ein Zustand, den `CustomerField` seit jeher kennt.
+
+Gemessen auf der Kartenebene (Handy 390 × 844), Blatt aufgezogen:
+
+```
+Reiter        „📄 Standorte"  ·  „Filter"
+tab-daten     ""  — 0 Kinder
+tab-filter    ""  — 0 Kinder
+```
+
+Beide Reiter der Kartenebene waren **vollständig leer** — derselbe Befund, der
+eine Ebene tiefer zum Analyseblatt geführt hat. Damit war die Karte der einzige
+Weg zu einem Standort, und ein Standort ohne Koordinaten damit unerreichbar.
+
+**Ohne diese Reparatur hätte der Schnellcheck etwas angelegt, das niemand je
+wiedersieht** — das genaue Gegenteil von „heute filmen und in vier Wochen
+vergleichen". Der Reiter „Standorte" trägt deshalb seit diesem Schnitt eine
+Liste aller Standorte, sortiert nach Zustand (kritisch zuerst, „ungeprüft"
+zuletzt — Nichtwissen ist kein Alarm). „Filter" bleibt ohne Funktion, sagt das
+aber jetzt, statt stumm zu bleiben.
+
+#### Was der Schnellcheck tut
+
+Ein zweiter Knopf über der Karte, neben „In der Nähe": **🎞 Geräusch prüfen.**
+Er nimmt eine Datei entgegen — dieselbe Vorschau, derselbe Ausschnitt, dieselben
+benannten Fehlerfälle wie auf der Maschinenebene. Danach entsteht
+
+- beim ersten Mal ein Standort **„Meine Geräusche"** (`geo: 'none'`, kein Punkt
+  auf der Karte, aber eine Zeile in der Liste),
+- darin eine Maschine, die **nach der Datei heißt**. `createAutoMachine()`
+  nummeriert durch („Maschine 01"); bei drei Geräuschen aus drei Filmen sagt
+  eine Nummer nichts. Beim Beispielvideo des Auftraggebers ist der Dateiname ein
+  Datum mit Uhrzeit.
+
+Dann geht die Maschinenebene auf, der Ton liegt im Blatt — und dort steht seit
+S14 „Als Normalzustand speichern". **Punkt 1 und Punkt 2 greifen hier
+ineinander:** aus dem einmaligen Blick wird der Maßstab für vier Wochen später.
+
+#### Zwei Dinge, die absichtlich nicht passieren
+
+*Es wird nichts bewertet.* Ein einzelner Ton ohne Normalzustand hat keinen
+Prozentwert; das Briefing nennt diesen Fall `single-recording` und behauptet
+keine Abweichung.
+
+*Es entsteht nichts beim bloßen Ansehen.* Standort und Maschine entstehen erst,
+wenn ein Ausschnitt gewählt ist. Und pro Dialog nur **einmal**: Ein abgelehnter
+Normalzustand führt zurück in dieselbe Vorschau, und ohne dieses Merken wäre
+„Meine Geräusche" nach drei Anläufen eine Liste aus drei gleichen Namen.
+
+#### Eine bewusste Abweichung vom Stamm
+
+`.map-fab` ist im Vorbild **37 px** hoch. Die Pillen schweben 20 px über dem
+unteren Rand über einer Karte, die man mit demselben Daumen verschiebt — die
+schwerste Sorte Ziel, die es in dieser App gibt. Überall sonst gilt 44 px, und
+die Wächter messen es.
+
+Der Anlass ist der Schnellcheck: Er ist für den Menschen da, der noch nichts
+angelegt hat. Ausgerechnet sein erster Knopf darf nicht der kleinste sein. Zwei
+Fingerregeln — eine für den Stamm, eine für den Rest — wären schlimmer als
+sieben Pixel Abweichung. Die Überschreibung steht in `tiefe.css`, der einzigen
+Datei im Stamm-Ordner, die nicht Stamm ist; keine Stamm-Datei ist angefasst.
+
+#### Der Wächter — und drei Fehler, die er gefunden hat
+
+`npm run schnellcheck` liest die IndexedDB der Seite, nicht die Oberfläche.
+Seine Prüfdatei heißt `Motor_2.5 Liter.wav`: ein Unterstrich (wird ein
+Leerzeichen), ein Punkt mitten im Namen (ist **keine** Endung) und eine echte
+Endung am Schluss. `ton.wav` hätte nichts gemessen.
+
+```
+Reiter „Standorte"   100 Zeilen · 52 px hoch
+                     „Brauerei 0005 · 1 Maschine · noch nicht geprüft"
+Schnellcheck-Knopf   🎞 Geräusch prüfen (44 px, frei anfassbar)
+beim Ansehen         100 Standorte — unverändert
+nach dem Übernehmen  „Meine Geräusche" · geo none · „Motor 2.5 Liter"
+                     Ebene tiefe-maschine · Blatt offen · 2D · Klangbild gemalt
+Weg zurück           Zeile „Meine Geräusche · 1 Maschine" → Standortebene
+```
+
+Gefunden hat er drei Fehler, alle drei bei mir:
+
+1. **Die Namensbildung fraß den Namen.** `/\.[^.]{1,8}$/` hielt „.5 Liter" für
+   eine Endung; aus „Motor 2.5 Liter" wurde „Motor 2". Ein Test hat es gefunden,
+   bevor der Browser lief. Eine Endung hat kein Leerzeichen.
+2. **Die Standortliste veraltete sofort.** Sie merkte sich, dass sie gebaut war.
+   Beim Start lief sie, bevor die Beispieldaten geladen waren, schrieb „Noch
+   kein Standort" — und blieb dabei. Hundert Standorte lagen da. Sie holt jetzt
+   jedes Mal neu, wenn jemand hinsieht (`BLATT_GEAENDERT`).
+3. **Der Knopf über der Karte war 37 px hoch** — siehe oben.
+
+Und einen bei sich selbst: Er suchte nach einer Klasse `tiefe-standort` und
+meldete „führt nirgendwohin", während die Maschinen dieses Standorts längst
+danebenstanden. Die Tiefe trägt eine Klasse je **Unter**ebene; der Standort ist
+die Ebene ohne Zusatz. Ein Wächter, der eine Klasse erfindet, misst seine eigene
+Erfindung.
+
+Zwei Falsifikationen haben ihn bestätigt: das Auffrischen der Liste entfernt →
+4 Befunde („der Reiter steht leer da — 0 Kinder, wie vorher"); das Nachlegen des
+mitgebrachten Tons entfernt → 3 Befunde („der 2D-Reiter zeigt seinen
+Leerzustand — der Ton ging verloren").
+
+| | vor S15 | jetzt |
+|---|---|---|
+| Geräusch ohne Maschine | ging gar nicht | **ein Knopf über der Karte** |
+| Standort und Maschine | von Hand, zwei Formulare | **die App legt sie an** |
+| Reiter „Standorte" | leer, 0 Kinder | **alle Standorte, 52 px je Zeile** |
+| Reiter „Filter" | leer, 0 Kinder | **sagt, dass es ihn noch nicht gibt** |
+| Standort ohne Koordinaten | unerreichbar | **steht in der Liste** |
+| Maschinenname | „Maschine 01" | **der Dateiname** |
+| Fingerziel über der Karte | 37 px | **44 px, wie überall sonst** |
+
 ### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die

@@ -1210,3 +1210,46 @@ body.tiefe-arbeit #karte-bestandswege {
   color: var(--text-secondary);
   text-align: center;
 }
+
+/* ── DIE STANDORTLISTE IM REITER „STANDORTE" ─────────────────────────────────
+   Sie liegt im selben Raster wie der Verlauf eine Ebene tiefer: `.near-row`,
+   Punkt · Text, zwei Zeilen. Ein eigenes Formenvokabular für dieselbe Sache
+   wäre der Anfang der zwei Programme, die es nicht geben soll (§0h).
+
+   Ausnahmsweise steht sie NICHT hinter `.zanobo-tiefe`: Der Reiter gehört der
+   Kartenebene, also dem Blatt, das vor dem Scharnier liegt. */
+.standorteliste-zeile {
+  width: 100%;
+  min-height: 52px;
+  text-align: left;
+}
+
+.standorteliste-zeile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.standorteliste-zeile-lage {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+/* ── EINE ÜBERSCHREIBUNG AM STAMM: DIE PILLEN ÜBER DER KARTE ─────────────────
+   Keine Grenzregel, sondern eine bewusste Abweichung vom Vorbild — sie steht
+   hier, weil eine Stamm-Datei zu ändern den Vergleich mit TourFuchs zerstören
+   würde (siehe Kopf dieser Datei).
+
+   Gemessen am 23.08.2026 (Handy 390 × 844): `.map-fab` ist 37 px hoch. Die
+   Pillen schweben 20 px über dem unteren Rand ÜBER einer Karte, die man mit
+   demselben Daumen verschiebt — das ist die schwerste Sorte Ziel, die es in
+   dieser App gibt. Überall sonst gilt 44 px, und die Wächter messen es.
+
+   Der Anlass ist der Schnellcheck: Er ist für den Menschen da, der noch nichts
+   angelegt hat. Ausgerechnet sein erster Knopf darf nicht der kleinste sein.
+   Zwei Fingerregeln — eine für den Stamm, eine für den Rest — wären schlimmer
+   als sieben Pixel Abweichung vom Vorbild. */
+.map-fab {
+  min-height: 44px;
+}
