@@ -251,6 +251,22 @@ export const de: TranslationDict = {
     agoMinutes: 'vor {{count}} Min',
     agoHours: 'vor {{count}} Std',
     agoDays: 'vor {{count}} Tagen',
+    compareRow: '⇄ {{name}}: {{count}} Maschinen vergleichen',
+  },
+  reihe: {
+    faelltAuf: '{{name}} fällt aus der Reihe.',
+    fallenAuf: '{{name}} fallen aus der Reihe.',
+    keineFaelltAuf: 'Keine der {{count}} geprüften Maschinen fällt aus der Reihe.',
+    bedeutung: 'Sie weicht stärker von ihrem eigenen Normalzustand ab als die anderen.',
+    bedeutungMehrere: 'Sie weichen stärker von ihrem eigenen Normalzustand ab als die anderen.',
+    belegGeprueft: '{{checked}} von {{total}} geprüft',
+    belegSpanne: 'Ähnlichkeit {{von}}–{{bis}} %',
+    und: 'und',
+    undWeitere: 'und {{count}} weitere',
+    fertig: 'Fertig',
+    zuWenige: 'Für einen Vergleich braucht es mindestens {{count}} geprüfte Maschinen.',
+    zuWenigeBedeutung:
+      'Bei zweien sagt der Vergleich nicht, welche der beiden abweicht — jede steht auf ihrer eigenen Seite mit ihrem eigenen Ergebnis.',
   },
   stamm: {
     depthBasic: '🌱 Basis',

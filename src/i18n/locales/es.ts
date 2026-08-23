@@ -240,6 +240,22 @@ export const es: TranslationDict = {
     agoMinutes: 'hace {{count}} min',
     agoHours: 'hace {{count}} h',
     agoDays: 'hace {{count}} días',
+    compareRow: '⇄ {{name}}: comparar {{count}} máquinas',
+  },
+  reihe: {
+    faelltAuf: '{{name}} se sale de la serie.',
+    fallenAuf: '{{name}} se salen de la serie.',
+    keineFaelltAuf: 'Ninguna de las {{count}} máquinas comprobadas se sale de la serie.',
+    bedeutung: 'Se aleja de su propio estado normal más que las demás.',
+    bedeutungMehrere: 'Se alejan de su propio estado normal más que las demás.',
+    belegGeprueft: '{{checked}} de {{total}} comprobadas',
+    belegSpanne: 'similitud {{von}}–{{bis}} %',
+    und: 'y',
+    undWeitere: 'y {{count}} más',
+    fertig: 'Listo',
+    zuWenige: 'Una comparación necesita al menos {{count}} máquinas comprobadas.',
+    zuWenigeBedeutung:
+      'Con dos, la comparación no dice cuál se desvía: cada una tiene su propio resultado en su propia página.',
   },
   stamm: {
     depthBasic: '🌱 Básico',

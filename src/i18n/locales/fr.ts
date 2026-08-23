@@ -243,6 +243,22 @@ export const fr: TranslationDict = {
     agoMinutes: 'il y a {{count}} min',
     agoHours: 'il y a {{count}} h',
     agoDays: 'il y a {{count}} jours',
+    compareRow: '⇄ {{name}} : comparer {{count}} machines',
+  },
+  reihe: {
+    faelltAuf: '{{name}} sort du lot.',
+    fallenAuf: '{{name}} sortent du lot.',
+    keineFaelltAuf: 'Aucune des {{count}} machines contrôlées ne sort du lot.',
+    bedeutung: "Elle s'écarte davantage de son propre état normal que les autres.",
+    bedeutungMehrere: "Elles s'écartent davantage de leur propre état normal que les autres.",
+    belegGeprueft: '{{checked}} sur {{total}} contrôlées',
+    belegSpanne: 'similarité {{von}}–{{bis}} %',
+    und: 'et',
+    undWeitere: 'et {{count}} autres',
+    fertig: 'Terminé',
+    zuWenige: 'Une comparaison exige au moins {{count}} machines contrôlées.',
+    zuWenigeBedeutung:
+      "Avec deux, la comparaison ne dit pas laquelle s'écarte : chacune a son propre résultat sur sa propre page.",
   },
   stamm: {
     depthBasic: '🌱 Base',
