@@ -36,6 +36,27 @@ export const en: TranslationDict = {
     briefingErklaerung:
       'A package with both recordings, the listening aids and a work order — built entirely here in your browser. SoundFuchs uploads nothing.',
   },
+  mitbringen: {
+    knopf: '🎞 Bring a sound',
+    titel: 'Bring a sound',
+    liest: 'Extracting the audio track …',
+    dauer: '{{dauer}} s · {{rate}} kHz',
+    schieben: 'Move the section — with a video the picture follows.',
+    ganzKurz: 'The whole recording will be used.',
+    hoeren: '▶ Play section',
+    stoppen: '■ Stop',
+    verwenden: 'Use this section',
+    andereDatei: 'Choose another file',
+    abbrechen: 'Cancel',
+    fehlerKeineTonspur: 'This video has no audio track.',
+    fehlerFormat:
+      'This browser cannot read this format. On a phone, or in Chrome, Edge and Safari it usually works; otherwise a WAV or WebM recording helps.',
+    fehlerZuGross:
+      'The file is too large ({{zusatz}}). It has to fit into memory in one piece — trim the film or use a smaller resolution.',
+    fehlerZuKurz: 'The recording is too short ({{zusatz}}).',
+    fehlerLeer: 'The file is empty.',
+    fehlerUnlesbar: 'The file could not be opened.',
+  },
   standortblatt: {
     reihen: 'The rows here',
     verlauf: 'Recently checked',

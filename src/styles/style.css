@@ -12364,3 +12364,174 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
 
    Was das Popup zusätzlich braucht — den klickbaren Namen und die
    Maschinenzeilen — steht in `scharnier.css`. */
+
+/* ═══ EIN GERÄUSCH MITBRINGEN ═════════════════════════════════════════════
+
+   Die Vorschau einer Datei: Bild (bei einem Video), Wellenform des ganzen
+   Stücks und ein Fenster darin, das man verschiebt. Dieselben Formen wie beim
+   Geräusch-Briefing — dort steht der andere Übergang zwischen SoundFuchs und
+   der Welt draußen. */
+.mitbringen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 1100);
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.mitbringen-dialog {
+  width: min(520px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: 0 24px 64px -24px rgba(15, 23, 42, 0.6);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mitbringen-kopf {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mitbringen-kopf h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.mitbringen-dateiname {
+  margin: 2px 0 0;
+  word-break: break-all;
+}
+
+.mitbringen-schliessen {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mitbringen-buehne {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Das Bild ist der Wegweiser zur Stelle — stumm und ohne Bedienleiste. Gehört
+   wird über den Knopf darunter, und zwar die Tonspur, die auch ausgewertet
+   wird. */
+.mitbringen-video {
+  width: 100%;
+  max-height: 34vh;
+  border-radius: var(--radius-md, 12px);
+  background: #000;
+  object-fit: contain;
+}
+
+.mitbringen-warten,
+.mitbringen-fehler p {
+  margin: 0;
+  padding: 18px 4px;
+  text-align: center;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.mitbringen-fehler p {
+  text-align: left;
+  color: var(--text-primary);
+}
+
+.mitbringen-dauer {
+  margin: 0;
+}
+
+/* Die Wellenform ist eine Landkarte, kein Messgerät: Sie soll zeigen, wo etwas
+   los ist, damit man das Fenster dorthin schiebt. */
+.mitbringen-welle {
+  position: relative;
+  border-radius: var(--radius-md, 12px);
+  background: var(--bg-secondary);
+  overflow: hidden;
+  touch-action: none;
+  cursor: pointer;
+  color: var(--color-primary-dark);
+}
+
+.mitbringen-wellenbild {
+  display: block;
+  width: 100%;
+}
+
+.mitbringen-fenster {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border: 2px solid var(--color-primary-dark);
+  border-radius: 4px;
+  background: rgba(13, 148, 136, 0.14);
+  pointer-events: none;
+}
+
+.mitbringen-fuss {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mitbringen-hinweis {
+  margin: 0;
+}
+
+.mitbringen-knoepfe {
+  display: flex;
+  gap: 10px;
+}
+
+.mitbringen-knoepfe button {
+  flex: 1 1 0;
+  min-height: 48px;
+  font-weight: 600;
+}
+
+.mitbringen-hoeren {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md, 12px);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* Der Weg hinein, auf der Maschinenseite: unter der einen Handlung und
+   ungefüllt. Aufnehmen bzw. Prüfen bleibt der Hauptweg. */
+.maschine-mitbringen {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.maschine-mitbringen:hover {
+  border-color: var(--color-primary);
+}

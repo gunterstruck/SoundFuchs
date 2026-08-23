@@ -2935,6 +2935,129 @@ darunter „das Blatt ließ sich auf der Standortebene nicht aufziehen".
 | Was dahinter steht | nichts | **Reihenbefund + die letzten Prüfungen** |
 | Alter Dialog nach einem Flottenlauf | blieb offen und fing Gesten ab | **geht zu** |
 
+### S13 — Ein Geräusch mitbringen (23.08.2026, §7e und §7h umgesetzt)
+
+Der Auftraggeber: „Ich glaube, das ist sehr allgemein, dass die Menschen einen
+Film machen von etwas, wo sie denken, das hört sich aber komisch an."
+
+#### Eine Entscheidung zum Zuschnitt
+
+§7e (Audiodatei) und §7h (Video) sind **zusammen** gebaut, nicht nacheinander.
+Der Grund kam aus S11: Die Analysemethoden — 2D, Gebirge, Stelle greifen und
+hören, Briefing — liegen seit dem Umzug alle im Analyseblatt und brauchen nur
+zwei Puffer. **Keine davon braucht die Prüf-Pipeline.**
+
+Damit ist der kurze Weg vollständig, ohne die beiden großen Aufnahmephasen
+anzufassen:
+
+```
+Datei wählen (Audio ODER Video)
+  → Tonspur herauslösen
+  → Vorschau: Bild (bei Video), Wellenform, Ausschnitt
+  → „Diesen Ausschnitt verwenden"
+  → das Analyseblatt geht auf, Reiter 2D
+```
+
+Was **nicht** dazugehört und einen eigenen Schnitt bekommt: die mitgebrachte
+Aufnahme als Normalzustand speichern oder als bewertete Prüfung durchlaufen
+lassen. Beides verlangt Eingriffe in `2-Reference` und `3-Diagnose`, und beide
+sind um eine ganze Klasse riskanter als das hier.
+
+#### Die Machbarkeit — und ihre Grenze, gemessen
+
+`decodeAudioData` liest die Tonspur direkt aus dem Video-Container; die
+Bildspur wird ignoriert. Keine Bibliothek, kein Demuxer, kein Server.
+
+Das Beispielvideo des Auftraggebers ist ein echtes Telefonvideo: **MP4 mit
+HEVC-Bild und AAC-LC-Ton, 13,7 s, Stereo 48 kHz, 23,9 MB, `moov` am Ende.** Im
+Testbrowser scheitert es — nicht an der Datei:
+
+```
+audio/mp4; codecs="mp4a.40.2"   (nein)
+video/mp4; codecs="avc1…"       (nein)
+WebCodecs AudioDecoder mp4a…    false
+```
+
+Ein Chromium ohne proprietäre Codecs. Jedes Telefon, Chrome, Edge und Safari
+haben AAC-LC — **nachweisen lässt es sich hier nicht.** Die frühere Messung in
+§7h („video/mp4 → ok") war deshalb zu optimistisch: Sie bewies den Container,
+nicht AAC. Das ist im Konzept korrigiert.
+
+**Daraus folgt der wichtigste Teil dieses Schnitts.** „Dieser Browser kann
+dieses Format nicht lesen" ist ein **benannter Fall** mit einem Satz, der sagt,
+was zu tun ist. Gemessen mit der echten Datei:
+
+```
+Satz        Dieser Browser kann dieses Format nicht lesen. Auf dem Telefon oder
+            in Chrome, Edge und Safari geht es meistens; sonst hilft eine
+            Aufnahme als WAV oder WebM.
+Weg weiter  Andere Datei wählen
+```
+
+Unterschieden wird dabei zwischen „kein Ton im Video" und „Format unlesbar":
+Kann ein `<video>` die Datei öffnen, liegt es nicht am Container. Die
+Unterscheidung ist nötig, weil sie zu zwei verschiedenen Handlungen führt —
+ein anderes Video gegen einen anderen Browser.
+
+#### Das Bild ist der Wegweiser
+
+Ein Film ist lang, das Interessante darin kurz. Bei einer Audiodatei hilft nur
+die Wellenform; bei einem Video gibt es etwas, das es sonst nicht gibt: Wer
+gefilmt hat, weiß, wann er die Haube aufgemacht hat. Deshalb springt das Bild
+mit, wenn man den Ausschnitt verschiebt — stumm und ohne Bedienleiste, denn
+gehört wird die Tonspur, die auch ausgewertet wird.
+
+Vorgeschlagen wird die **gleichmäßigste** Stelle — nicht die lauteste und nicht
+die leiseste: Ein Übersteuern verdirbt die Analyse ebenso wie eine Pause. Neun
+Tests halten das fest, darunter „meidet Übersteuern, auch wenn es gleichmäßig
+ist".
+
+**Danach ist das Video zu Ende.** Übergeben wird die Tonspur des gewählten
+Ausschnitts, nicht der Film.
+
+#### Der Wächter, und zwei Falsifikationen, die ihn geschärft haben
+
+`npm run mitbringen` erzeugt seine Prüfdatei selbst — 0–2 s laut, 2–4 s fast
+still, ab 4 s gleichmäßig. Bei einem gleichförmigen Ton wäre jede Antwort
+richtig, und der Lauf hätte nichts gemessen. Das echte Telefonvideo kommt über
+`BEISPIELVIDEO=/pfad npm run mitbringen` dazu; es gehört dem Auftraggeber und
+liegt nicht im Bestand.
+
+Gemessen:
+
+```
+Geräusch mitbringen   🎞 Geräusch mitbringen (44 px)
+Dauer                 14.0 s · 44 kHz
+Wellenform            gemalt
+Ausschnitt            69 % breit, beginnt bei 28 %
+nach dem Übernehmen   Blatt offen · 2D · Klangbild gemalt
+Reiter „3D"           „Das Gebirge zeigt den Unterschied — dafür braucht es …"
+Reiter „Briefing"     ✨ Geräusch-Briefing
+```
+
+Zwei Fehler lagen beim Wächter:
+
+1. Er verlangte **Quellenknöpfe** im 2D-Reiter und meldete „der Ton liegt nicht
+   im Blatt", obwohl er dalag. Ein mitgebrachtes Geräusch kommt ohne
+   Normalzustand — zwischen „Normalzustand", „Unterschied" und „Iris" gäbe es
+   nichts zu wählen, und das Klangbild lässt die Reihe dann zu Recht weg.
+2. Er prüfte den Fehlersatz auf das **Fehlen** der Wörter „Fehler" und „ging
+   nicht". Bei der Falsifikation stand „Die Datei ließ sich nicht öffnen." da —
+   kein verbotenes Wort, und trotzdem eine Sackgasse. Er fragt jetzt nach dem
+   Gegenteil: Kommt im Satz etwas vor, das man TUN kann?
+
+Und einer bei seiner Ablage: Die Prüfdatei lag zuerst unter `dist/__probe/`.
+Der Build räumt `dist/` und nahm dem Lauf beim nächsten Mal seine Grundlage.
+
+| | vor S13 | jetzt |
+|---|---|---|
+| Ein vorhandenes Geräusch verwenden | gar nicht | **Audio oder Video, ein Knopf** |
+| Video → Tonspur | — | **`decodeAudioData`, ohne neues Werkzeug** |
+| Stelle im Film finden | — | **Wellenform + Bild, das mitspringt** |
+| Datei, die der Browser nicht lesen kann | — | **benannter Satz mit Ausweg** |
+| Video ohne Tonspur | — | **eigener Satz, nicht „ging nicht"** |
+| Was gespeichert wird | — | **die Tonspur des Ausschnitts, nie der Film** |
+
 ### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die

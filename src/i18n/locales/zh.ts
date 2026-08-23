@@ -35,6 +35,26 @@ export const zh: TranslationDict = {
     briefingErklaerung:
       '一个包含两段录音、听觉辅助和工作说明的数据包，完全在您的浏览器中生成。SoundFuchs 不会上传任何内容。',
   },
+  mitbringen: {
+    knopf: '🎞 带来一段声音',
+    titel: '带来一段声音',
+    liest: '正在提取音轨 …',
+    dauer: '{{dauer}} 秒 · {{rate}} kHz',
+    schieben: '拖动选段——视频的画面会跟随。',
+    ganzKurz: '将使用整段录音。',
+    hoeren: '▶ 播放选段',
+    stoppen: '■ 停止',
+    verwenden: '使用这一段',
+    andereDatei: '选择其他文件',
+    abbrechen: '取消',
+    fehlerKeineTonspur: '这个视频没有音轨。',
+    fehlerFormat:
+      '此浏览器无法读取该格式。在手机上，或在 Chrome、Edge 和 Safari 中通常可以；否则请改用 WAV 或 WebM 录音。',
+    fehlerZuGross: '文件过大（{{zusatz}}）。它必须整体载入内存——请缩短影片或降低分辨率。',
+    fehlerZuKurz: '录音太短（{{zusatz}}）。',
+    fehlerLeer: '文件为空。',
+    fehlerUnlesbar: '无法打开该文件。',
+  },
   standortblatt: {
     reihen: '此处的机组',
     verlauf: '最近检测',
