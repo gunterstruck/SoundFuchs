@@ -2368,14 +2368,27 @@ export class DiagnosePhase {
        * Ergebnis gehört auf die Seite dieser Maschine — gleich, wo man
        * losgegangen ist.
        *
-       * Die einzige Ausnahme ist der Flottenlauf, und sie ist keine Ausnahme
-       * vom Ort, sondern eine andere Sache: Dort läuft eine Reihe von Prüfungen
-       * ab, die sich selbst weiterschaltet. Wer sie nach jeder Maschine auf
-       * eine Maschinenseite führte, unterbräche genau das, was sie ist.
+       * Im Flottenlauf steht das Ergebnis an KEINEM der beiden Orte.
+       *
+       * Bis zum 23.08.2026 bekam die Reihe hier den alten Ergebnisdialog. Der
+       * Gedanke war richtig — wer nach jeder Maschine auf eine Maschinenseite
+       * geführt wird, dem bricht die Reihe unter den Füßen weg. Nur war die
+       * gewählte Lösung ein **modaler Dialog**, und der bricht sie genauso.
+       *
+       * Gemessen im Reihenlauf, Handy 390 × 844:
+       *
+       *     nach Prüfung 1   alter Dialog flex · nächste Ansage da
+       *
+       * Beides gleichzeitig, der Dialog obenauf. Der Takt einer Reihe war
+       * damit: ansagen — aufnehmen — **wegtippen** — ansagen. Der Schritt in
+       * der Mitte hat niemand angefordert.
+       *
+       * Das Ergebnis ist deshalb nicht verschwunden, es ist umgezogen: Es steht
+       * jetzt oben in der Ansage der nächsten Maschine (`showGuidedPrompt`).
+       * Ein Satz, kein Fenster — und nichts zum Wegtippen. Die letzte Maschine
+       * bringt es ins Ergebnis der ganzen Reihe, das ohnehin kommt.
        */
-      if (this.flottenlauf) {
-        this.showResults(diagnosis);
-      } else {
+      if (!this.flottenlauf) {
         await this.veroeffentlicheErgebnis(diagnosis);
       }
 

@@ -103,6 +103,19 @@ export class Router {
   /** Track diagnosis IDs created during fleet queue for discard functionality */
   private fleetQueueDiagnosisIds: string[] = [];
 
+  /**
+   * Was die vorige Maschine der Reihe ergeben hat — für die nächste Ansage.
+   *
+   * In einer Reihe gibt es nach jeder Maschine ein Ergebnis, aber keinen Ort
+   * dafür: Die Maschinenseite unterbräche die Reihe, ein Dialog auch (gemessen
+   * am 23.08.2026: „nach Prüfung 1 — alter Dialog flex · nächste Ansage da").
+   *
+   * Also reist es mit. Die nächste Ansage trägt es oben als einen Satz, und
+   * damit ist es gesagt, ohne dass jemand etwas wegtippen muss. Danach ist es
+   * verbraucht — beim übernächsten Mal ist es nicht mehr die Nachricht.
+   */
+  private fleetLetztesErgebnis: { name: string; wert: number; auffaellig: boolean } | null = null;
+
   /** Sprint 7: Quick Compare Controller */
   private quickCompareController: QuickCompareController;
 
@@ -1013,6 +1026,19 @@ export class Router {
       this.diagnosePhase.setOnDiagnosisComplete((diagnosis) => {
         if (diagnosis?.id) {
           this.fleetQueueDiagnosisIds.push(diagnosis.id);
+        }
+        /**
+         * Das Ergebnis für die nächste Ansage aufheben.
+         *
+         * Der Name kommt aus der Maschine, die gerade geprüft wurde — der
+         * Zähler steht noch auf ihr, er wird erst weiter unten erhöht.
+         */
+        if (diagnosis?.healthScore !== undefined) {
+          this.fleetLetztesErgebnis = {
+            name: this.currentMachine?.name ?? '',
+            wert: Math.round(diagnosis.healthScore),
+            auffaellig: String(diagnosis.status).toLowerCase() !== 'healthy',
+          };
         }
         // Welle 1 UX: Haptic feedback after each fleet diagnosis
         if (diagnosis?.healthScore !== undefined) {
@@ -2031,6 +2057,30 @@ export class Router {
     const prompt = document.createElement('div');
     prompt.id = 'fleet-guided-prompt';
     prompt.className = 'fleet-guided-prompt';
+
+    /**
+     * ── ZUERST: WAS DIE VORIGE MASCHINE ERGEBEN HAT ────────────────────────
+     *
+     * Ein Satz über dem „Geh zu", nicht ein Fenster davor. Er sagt, wie die
+     * Maschine geklungen hat, die man gerade verlassen hat — und nie, was ihr
+     * fehlt: „klingt anders als der Normalzustand" ist eine Beobachtung,
+     * „Lager defekt" wäre eine Behauptung.
+     *
+     * Er steht oben, weil er zur Vergangenheit gehört; darunter beginnt die
+     * Zukunft mit dem Namen der nächsten Maschine. Und er steht nur einmal:
+     * Beim übernächsten Mal ist er nicht mehr die Nachricht.
+     */
+    const vorher = this.fleetLetztesErgebnis;
+    this.fleetLetztesErgebnis = null;
+    if (vorher && vorher.name) {
+      const rueckblick = document.createElement('div');
+      rueckblick.className = `fleet-guided-rueckblick${vorher.auffaellig ? ' ist-auffaellig' : ''}`;
+      rueckblick.textContent = t(
+        vorher.auffaellig ? 'fleet.queue.guided.vorherAnders' : 'fleet.queue.guided.vorherWie',
+        { name: vorher.name, wert: String(vorher.wert) }
+      );
+      prompt.appendChild(rueckblick);
+    }
 
     // Machine name (large, prominent)
     const goToLabel = document.createElement('div');

@@ -1887,6 +1887,8 @@ export const zh: TranslationDict = {
       cancelled: 'Fleet check cancelled.',
       resumed: 'Fleet check resumed.',
       guided: {
+        vorherWie: '{{name}}：听起来与正常状态一致 · {{wert}} %',
+        vorherAnders: '{{name}}：听起来与正常状态不同 · {{wert}} %',
         goTo: 'Go to:',
         startRecording: '▶ Start recording',
         skip: 'Skip',

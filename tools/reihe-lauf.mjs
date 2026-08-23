@@ -341,21 +341,110 @@ try {
   pruefe(start.length > 0, 'der Flottenlauf lässt sich nirgends starten');
 
   // Zwei Maschinen durchspielen: Ansage → Aufnahme → Stopp.
+  let vorigeMaschine = '';
   for (let i = 0; i < 2; i += 1) {
     await page
       .waitForFunction(() => Boolean(document.querySelector('.fleet-guided-start-btn')), null, {
         timeout: 60000,
       })
       .catch(() => {});
-    const ansage = await page.evaluate(() => {
+    /**
+     * DER TAKT — nicht nur, DASS eine Ansage kommt, sondern WIE sie dasteht.
+     *
+     * Der Flottenlauf sagt an, zu welcher Maschine man gehen soll. Die Ansage
+     * liegt als Blatt von unten über der Seite. Gemessen wird, wie viel vom
+     * Bildschirm sie nimmt und was dahinter überhaupt noch zu sehen ist:
+     * Wer „Geh zu: Rührwerk 1" liest, muss sehen können, wo er ist.
+     */
+    const takt = await page.evaluate(() => {
       const p = document.getElementById('fleet-guided-prompt');
-      return p ? p.textContent.replace(/\s+/g, ' ').trim() : '';
+      const k = p?.getBoundingClientRect();
+      const btn = p?.querySelector('.fleet-guided-start-btn')?.getBoundingClientRect();
+      const zahl = (el) => {
+        const w = el ? Number.parseInt(getComputedStyle(el).zIndex, 10) : NaN;
+        return Number.isFinite(w) ? w : 0;
+      };
+      return {
+        text: p ? p.textContent.replace(/\s+/g, ' ').trim() : '',
+        hoch: k ? Math.round(k.height) : 0,
+        anteil: k ? Math.round((k.height / window.innerHeight) * 100) : 0,
+        knopfHoch: btn ? Math.round(btn.height) : 0,
+        zPrompt: zahl(p),
+        zKopfleiste: zahl(document.querySelector('.topbar')),
+        // Was bleibt sichtbar? Der Rest des Bildschirms über der Ansage.
+        freiOben: k ? Math.round(k.top) : 0,
+        ebene: document.body.className.match(/tiefe-\w+/g)?.join(' ') ?? '(karte)',
+        rueckblick: p?.querySelector('.fleet-guided-rueckblick')?.textContent?.trim() ?? '',
+      };
     });
-    console.log(`  Ansage ${i + 1}                 ${ansage || '(fehlt)'}`);
+    console.log(`  Ansage ${i + 1}                 ${takt.text || '(fehlt)'}`);
+    console.log(
+      `  Ansage ${i + 1}: Blatt          ${takt.hoch} px (${takt.anteil} % des Bildschirms) · frei darüber ${takt.freiOben} px · Ebene ${takt.ebene}`
+    );
+    console.log(
+      `  Ansage ${i + 1}: Startknopf     ${takt.knopfHoch} px · Ebenen Ansage ${takt.zPrompt} / Kopfleiste ${takt.zKopfleiste}`
+    );
+    console.log(`  Ansage ${i + 1}: Rückblick      ${takt.rueckblick || '(keiner)'}`);
+    /**
+     * Ab der zweiten Ansage MUSS das Ergebnis der vorigen Maschine dastehen.
+     *
+     * Es hat sonst keinen Ort: Die Maschinenseite unterbräche die Reihe, ein
+     * Dialog auch. Steht es hier nicht, ist es verschwunden — und der Nutzer
+     * hat eine Maschine geprüft, ohne je zu erfahren, wie sie klang.
+     *
+     * Geprüft wird auf den NAMEN der vorigen Maschine, nicht auf irgendeinen
+     * Text: Ein Rückblick, der die falsche Maschine nennt, wäre schlimmer als
+     * keiner.
+     */
+    if (i > 0) {
+      pruefe(
+        takt.rueckblick.length > 0,
+        'ab der zweiten Ansage fehlt das Ergebnis der vorigen Maschine — es hat keinen anderen Ort'
+      );
+      pruefe(
+        takt.rueckblick.includes(vorigeMaschine),
+        `der Rückblick nennt nicht „${vorigeMaschine}" — „${takt.rueckblick}"`
+      );
+      /**
+       * Und er behauptet keinen Defekt.
+       *
+       * „Klingt anders als der Normalzustand" ist eine Beobachtung. Wörter wie
+       * „defekt", „kaputt" oder „Schaden" wären eine Diagnose, die SoundFuchs
+       * nicht stellt — dieselbe Regel wie auf der Maschinenseite.
+       */
+      pruefe(
+        !/defekt|kaputt|schaden|verschlei|fehlerhaft/i.test(takt.rueckblick),
+        `der Rückblick stellt eine Diagnose statt einer Beobachtung — „${takt.rueckblick}"`
+      );
+    }
+    // Für die nächste Runde merken, um wen es gerade ging.
+    vorigeMaschine = takt.text.replace(/^Geh zu:/, '').split('Bereit?')[0].trim();
     await page.evaluate(() => document.querySelector('.fleet-guided-start-btn')?.click());
     await page.waitForTimeout(9000);
     await page.evaluate(() => document.getElementById('inspection-stop-btn')?.click());
     await page.waitForTimeout(9000);
+    /**
+     * Und was steht NACH der einzelnen Prüfung da?
+     *
+     * Der Takt ist erst dann einer, wenn zwischen zwei Maschinen nichts
+     * dazwischenkommt: kein alter Ergebnisdialog, kein Zwischenschritt, den
+     * niemand angefordert hat.
+     */
+    const dazwischen = await page.evaluate(() => {
+      const d = document.getElementById('diagnosis-modal');
+      return {
+        alterDialog: d ? getComputedStyle(d).display : '(keiner)',
+        naechsteAnsage: Boolean(document.querySelector('.fleet-guided-start-btn')),
+        ergebnisFenster: Boolean(document.querySelector('.fleet-result-modal')),
+      };
+    });
+    console.log(
+      `  nach Prüfung ${i + 1}            alter Dialog ${dazwischen.alterDialog} · nächste Ansage ${dazwischen.naechsteAnsage ? 'da' : 'nein'} · Ergebnis ${dazwischen.ergebnisFenster ? 'da' : 'nein'}`
+    );
+    pruefe(
+      dazwischen.alterDialog === 'none' || dazwischen.alterDialog === '(keiner)',
+      `nach Prüfung ${i + 1} steht der alte Ergebnisdialog offen und unterbricht den Takt`
+    );
   }
 
   // ── Was am Ende dasteht ────────────────────────────────────────────────

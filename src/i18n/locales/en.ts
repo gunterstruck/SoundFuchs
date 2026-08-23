@@ -2314,6 +2314,8 @@ export const en: TranslationDict = {
       resumed: 'Fleet check resumed.',
       // Sprint 6: Guided fleet check
       guided: {
+        vorherWie: '{{name}}: sounds like the normal state · {{wert}} %',
+        vorherAnders: '{{name}}: sounds different from the normal state · {{wert}} %',
         goTo: 'Go to:',
         startRecording: '\u25B6 Start recording',
         skip: 'Skip',

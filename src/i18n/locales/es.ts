@@ -2005,6 +2005,8 @@ export const es: TranslationDict = {
       cancelled: 'Fleet check cancelled.',
       resumed: 'Fleet check resumed.',
       guided: {
+        vorherWie: '{{name}}: suena como el estado normal · {{wert}} %',
+        vorherAnders: '{{name}}: suena distinto al estado normal · {{wert}} %',
         goTo: 'Go to:',
         startRecording: '▶ Start recording',
         skip: 'Skip',

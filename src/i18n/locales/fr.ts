@@ -2023,6 +2023,8 @@ export const fr: TranslationDict = {
       cancelled: 'Fleet check cancelled.',
       resumed: 'Fleet check resumed.',
       guided: {
+        vorherWie: "{{name}} : sonne comme l'état normal · {{wert}} %",
+        vorherAnders: "{{name}} : sonne autrement que l'état normal · {{wert}} %",
         goTo: 'Go to:',
         startRecording: '▶ Start recording',
         skip: 'Skip',
