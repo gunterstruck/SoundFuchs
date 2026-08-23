@@ -9777,6 +9777,71 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ── Was die Reihe gefunden hat ────────────────────────────────────────────
+
+   An der Stelle, an der bis zum 23.08.2026 ein Banner und drei
+   Kennzahlkacheln standen. Der Satz ist die Aussage, die Zahlen darunter der
+   Beleg — dieselbe Rangfolge wie im Ergebnis einer einzelnen Maschine, wo
+   „Die Messung klingt wie der Normalzustand." oben steht und
+   „Ähnlichkeit 100 %" darunter.
+
+   Kein Ampelgrün und kein Warndreieck: Ob eine Maschine aus der Reihe fällt,
+   ist ein Befund und kein Alarm. Unterschieden wird über einen Streifen an
+   der Kante — sichtbar genug, um beim Blättern aufzufallen, leise genug, um
+   nicht zu behaupten, es sei etwas kaputt. */
+.reihe-urteil {
+  padding: 16px 16px 16px 20px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-md, 12px);
+  border-left: 4px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+/* Die Farbe des Streifens kommt aus `standortmarker.ts` und nicht von hier:
+   Dort steht die eine Zustandsfarbenlehre der App (gesund/warnung/kritisch/
+   ungeprüft). Eine zweite Definition in CSS wäre eine zweite Stelle, an der
+   dieselbe Farbe auseinanderlaufen kann. */
+
+.reihe-satz {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+
+/* Wovon abgewichen wird — vom eigenen Normalzustand, nicht von den
+   Nachbarmaschinen. Ohne diese Zeile bliebe der Satz zweideutig. */
+.reihe-bedeutung {
+  margin: 6px 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.reihe-beleg {
+  margin: 10px 0 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Der Weg in die Reihe, auf der Standortseite.
+
+   Unter der Liste und über „Neue Maschine anlegen": Die Liste bleibt die
+   Handlung dieser Ebene, die Reihe ist ein Angebot daneben. Deshalb ungefüllt
+   und in derselben Form wie „Anlegen" — kein zweites Formenvokabular. */
+.standort-reihe {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  min-height: 48px;
+  font-weight: 600;
+}
+
+.standort-reihe:hover {
+  border-color: var(--color-primary);
+}
+
 /* Status Banner */
 .fleet-result-status {
   text-align: center;

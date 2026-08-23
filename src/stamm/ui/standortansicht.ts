@@ -64,6 +64,45 @@ export interface StandortansichtDeps {
    * nach etwas, das man gerade gesagt hat.
    */
   neueMaschine: (standortId: string) => void;
+  /**
+   * Eine Reihe gleichartiger Maschinen nacheinander prüfen — der Flottenlauf.
+   *
+   * Er lag bis zum 23.08.2026 hinter der Bestandsebene, und die öffnete nur,
+   * wer eine Maschine anlegen wollte. Die eine Funktion, die „welche dieser
+   * vier fällt auf?" beantwortet, war an dem Ort, an dem diese vier stehen,
+   * nicht startbar.
+   */
+  starteReihe: (maschinenIds: string[], flottenname: string) => void;
+}
+
+/** Eine Reihe: gleichartige Maschinen an einem Standort, bereit zum Vergleich. */
+interface Reihe {
+  name: string;
+  maschinen: Machine[];
+}
+
+/**
+ * Welche Reihen lassen sich an diesem Standort vergleichen?
+ *
+ * Zwei Bedingungen, beide notwendig: eine gemeinsame Flottengruppe (vier
+ * Pumpen in derselben Halle, nicht vier Pumpen in vier Städten) und
+ * mindestens zwei Maschinen mit Normalzustand. Ohne Normalzustand gibt es
+ * keinen Abstand, den man vergleichen könnte; mit nur einer gibt es keine
+ * Reihe, aus der jemand fallen kann.
+ */
+function reihenAmStandort(maschinen: readonly Machine[]): Reihe[] {
+  const gruppen = new Map<string, Machine[]>();
+  for (const m of maschinen) {
+    if (!m.fleetGroup || !hatNormalzustand(m)) continue;
+    gruppen.set(m.fleetGroup, [...(gruppen.get(m.fleetGroup) ?? []), m]);
+  }
+  return [...gruppen.entries()]
+    .filter(([, ms]) => ms.length >= 2)
+    .map(([name, ms]) => ({
+      name,
+      maschinen: [...ms].sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 const BEHAELTER_ID = 'standort-ansicht';
@@ -177,9 +216,12 @@ function maschinenzeile(
  * hoch, um zu sagen: „Hier wurde noch nichts geprüft."
  */
 function lageDesStandorts(anzahl: number, auffaellig: number, ohneMessung: number): string {
-  const maschinen = anzahl === 1 ? t('site.countMachineOne') : t('site.countMachines', {
-    n: String(anzahl),
-  });
+  const maschinen =
+    anzahl === 1
+      ? t('site.countMachineOne')
+      : t('site.countMachines', {
+          n: String(anzahl),
+        });
   let lage: string;
   if (ohneMessung === anzahl) {
     lage = t('site.stateNoneChecked');
@@ -291,9 +333,45 @@ async function zeichne(stand: StandortStand): Promise<void> {
   //
   // Steht noch keine Maschine da, ist Anlegen tatsächlich das Einzige, was man
   // hier tun kann. Dann, und nur dann, ist es die dominante Handlung.
+  /**
+   * ── DER WEG IN DIE REIHE ─────────────────────────────────────────────────
+   *
+   * Stehen an diesem Standort mehrere gleichartige Maschinen mit
+   * Normalzustand, gibt es eine zweite Frage: nicht „wie geht es dieser
+   * Maschine?", sondern „**welche von diesen fällt auf?**". Sie zu
+   * beantworten war bis zum 23.08.2026 nur über einen Weg möglich, den
+   * niemand findet — die Bestandsebene, die sich nur beim Anlegen öffnet.
+   *
+   * Er steht ÜBER „Neue Maschine anlegen" und unter der Liste: Die Liste
+   * bleibt die Handlung dieser Ebene, die Reihe ist ein Angebot daneben. Und
+   * er steht nur da, wenn es ihn zu geben lohnt — ein Knopf „vergleichen" bei
+   * einer einzigen Maschine wäre ein Vergleich mit nichts.
+   */
+  for (const reihe of reihenAmStandort(stand.maschinen)) {
+    const vergleich = document.createElement('button');
+    vergleich.type = 'button';
+    vergleich.className = 'standort-reihe';
+    // Der Ort steht im Flottennamen („Rührwerk · Windbergen"), und man steht
+    // gerade dort. Ihn auf dem Knopf zu wiederholen wäre eine Auskunft über
+    // etwas, das man sieht.
+    const art = reihe.name.split(' · ')[0] || reihe.name;
+    vergleich.textContent = t('site.compareRow', {
+      count: String(reihe.maschinen.length),
+      name: art,
+    });
+    vergleich.addEventListener('click', () =>
+      deps?.starteReihe(
+        reihe.maschinen.map((m) => m.id),
+        reihe.name
+      )
+    );
+    ziel.appendChild(vergleich);
+  }
+
   const anlegen = document.createElement('button');
   anlegen.type = 'button';
-  anlegen.className = befunde.length === 0 ? 'primary standort-neue-maschine' : 'standort-neue-maschine';
+  anlegen.className =
+    befunde.length === 0 ? 'primary standort-neue-maschine' : 'standort-neue-maschine';
   anlegen.textContent = `➕ ${t('site.newMachine')}`;
   anlegen.addEventListener('click', () => deps?.neueMaschine(kunde.id));
   ziel.appendChild(anlegen);

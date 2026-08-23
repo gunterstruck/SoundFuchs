@@ -22,6 +22,7 @@
     "durchlauf": "node tools/durchlauf.mjs",
     "wow": "node tools/wow.mjs",
     "runde": "node tools/runde-lauf.mjs",
+    "reihe": "node tools/reihe-lauf.mjs",
     "stammvergleich": "node tools/stammvergleich.mjs"
   },
   "dependencies": {

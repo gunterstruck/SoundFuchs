@@ -241,6 +241,22 @@ export const en: TranslationDict = {
     agoMinutes: '{{count}} min ago',
     agoHours: '{{count}} h ago',
     agoDays: '{{count}} days ago',
+    compareRow: '⇄ {{name}}: compare {{count}} machines',
+  },
+  reihe: {
+    faelltAuf: '{{name}} stands out from the group.',
+    fallenAuf: '{{name}} stand out from the group.',
+    keineFaelltAuf: 'None of the {{count}} machines checked stands out.',
+    bedeutung: 'It deviates further from its own baseline than the others do.',
+    bedeutungMehrere: 'They deviate further from their own baselines than the others do.',
+    belegGeprueft: '{{checked}} of {{total}} checked',
+    belegSpanne: 'similarity {{von}}–{{bis}}%',
+    und: 'and',
+    undWeitere: 'and {{count}} more',
+    fertig: 'Done',
+    zuWenige: 'A comparison needs at least {{count}} machines checked.',
+    zuWenigeBedeutung:
+      'With two, the comparison cannot say which one deviates — each has its own result on its own page.',
   },
   stamm: {
     depthBasic: '🌱 Basic',

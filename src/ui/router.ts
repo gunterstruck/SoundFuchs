@@ -37,6 +37,9 @@ import { QuickCompareController } from './QuickCompareController.js';
 import { exportAsPrintablePDF, type ReportData, type ReportEntry } from '@utils/reportExport.js';
 import { hapticForScore } from '@utils/haptics.js';
 import { MASCHINE_GEWAEHLT, type MaschineGewaehltDetail } from './shell/ereignisse.js';
+import { oeffneTiefe } from '../stamm/ui/scharnier.js';
+import { nameNennen, reihenbefund, VERGLEICHBAR_AB } from '../stamm/maschine/reihe.js';
+import { farbeFuerZustand } from '../stamm/features/standortmarker.js';
 
 /**
  * Lazy-load the heavy phase modules on demand and cache the module promise.
@@ -2321,8 +2324,9 @@ export class Router {
     // Calculate statistics
     const scores = ranked.map((r) => r.score).filter((s): s is number => s !== null);
     const stats = calculateFleetStats(scores);
-    const outlierCount = stats ? scores.filter((s) => s < stats.outlierThreshold).length : 0;
-    const hasOutliers = outlierCount > 0;
+    // Wer heraussticht, entscheidet jetzt `reihenbefund` weiter unten — an
+    // einer Stelle, mit Namen statt einer Anzahl. Zwei Zählungen desselben
+    // wären zwei Stellen, an denen die Schwelle auseinanderlaufen kann.
 
     // Detect gold standard machine
     let goldStandardId: string | null = null;
@@ -2370,63 +2374,96 @@ export class Router {
     const body = document.createElement('div');
     body.className = 'fleet-result-body';
 
-    // Status banner
-    const statusBanner = document.createElement('div');
-    statusBanner.className = `fleet-result-status ${hasOutliers ? 'fleet-result-status-warning' : 'fleet-result-status-ok'}`;
+    /**
+     * ── WAS DIE REIHE GEFUNDEN HAT — IN EINEM SATZ ────────────────────────
+     *
+     * Hier stand bis zum 23.08.2026 ein Banner („Flottencheck abgeschlossen")
+     * und darunter drei Kacheln: „100 % Median · 0 % Spannweite · 100 %
+     * Schlechteste". Das ist eine Armaturentafel und keine Auskunft — sie
+     * sagt nicht, was der Techniker wissen will, sondern woraus man es
+     * ausrechnen könnte.
+     *
+     * Die Frage einer Reihe ist: **Fällt eine aus der Reihe?** Also steht die
+     * Antwort darauf als Satz, in denselben Worten wie auf der Maschinenseite,
+     * und die Zahlen darunter als Beleg — nicht als Aussage.
+     *
+     * Nie eine Ursache: „fällt aus der Reihe", nicht „Lager defekt". Und auch
+     * nicht „klingt anders als die anderen" — verglichen werden nicht die
+     * Maschinen miteinander, sondern ihre Abstände zum jeweils eigenen
+     * Normalzustand. Eine Maschine darf bauartbedingt anders klingen und
+     * trotzdem völlig unverändert sein.
+     */
+    const befund = reihenbefund(
+      ranked.map((r) => ({ id: r.machine.id, name: r.machine.name, wert: r.score }))
+    );
+    const auffaellig = befund.auffaellige.length > 0;
 
-    const statusIcon = document.createElement('div');
-    statusIcon.className = 'fleet-result-status-icon';
-    statusIcon.textContent = hasOutliers ? '\u26A0\uFE0F' : '\u2705';
-    statusBanner.appendChild(statusIcon);
+    const urteil = document.createElement('div');
+    urteil.className = `reihe-urteil ${auffaellig ? 'reihe-urteil-auffaellig' : 'reihe-urteil-ruhig'}`;
+    // Kein Ampelgrün und kein Warndreieck: „fällt aus der Reihe" ist ein
+    // Befund, kein Alarm. Ein Streifen an der Kante, in der Farbe, die die
+    // App für genau diesen Zustand ohnehin führt.
+    if (auffaellig) urteil.style.borderLeftColor = farbeFuerZustand('warnung');
 
-    const statusTitle = document.createElement('div');
-    statusTitle.className = 'fleet-result-status-title';
-    statusTitle.textContent = hasOutliers
-      ? t('fleet.result.completeWithOutliers')
-      : t('fleet.result.complete');
-    statusBanner.appendChild(statusTitle);
+    const satz = document.createElement('p');
+    satz.className = 'reihe-satz';
+    satz.setAttribute('role', 'status');
+    /**
+     * Drei Sätze, und der dritte ist der wichtigste.
+     *
+     * Bei genau zwei geprüften Maschinen kann `Median − 2·MAD` rechnerisch
+     * niemanden finden: Der Median liegt zwischen beiden, beide weichen gleich
+     * weit ab, die Schwelle fällt unter beide. „Keine fällt aus der Reihe"
+     * wäre dort ein wahrer Satz, der nichts gemessen hat — und bei 40 % gegen
+     * 92 % legte er das Gegenteil dessen nahe, was dasteht.
+     *
+     * Gefunden beim absichtlichen Falsifizieren: Ein erzwungener Ausreißer
+     * erschien nicht, weil er bei zweien gar nicht erscheinen kann.
+     */
+    satz.textContent = auffaellig
+      ? t(befund.auffaellige.length === 1 ? 'reihe.faelltAuf' : 'reihe.fallenAuf', {
+          name: nameNennen(
+            befund.auffaellige.map((g) => g.name),
+            t('reihe.und'),
+            (n) => t('reihe.undWeitere', { count: String(n) })
+          ),
+        })
+      : befund.vergleichbar
+        ? t('reihe.keineFaelltAuf', { count: String(befund.geprueft) })
+        : t('reihe.zuWenige', { count: String(VERGLEICHBAR_AB) });
+    urteil.appendChild(satz);
 
-    const statusSubtitle = document.createElement('div');
-    statusSubtitle.className = 'fleet-result-status-subtitle';
-    statusSubtitle.textContent = t('fleet.result.summary', {
-      name: groupName,
-      checked: String(checked),
-      total: String(total),
-    });
-    if (skipped > 0) {
-      statusSubtitle.textContent +=
-        ' · ' +
-        t('fleet.result.summarySkipped', {
-          skipped: String(skipped),
-        });
+    // Was „fällt aus der Reihe" heißt — einmal, unter dem Satz. Ohne diese
+    // Zeile bliebe offen, wovon abgewichen wird: vom eigenen Normalzustand,
+    // nicht von den Nachbarmaschinen.
+    const bedeutungstext = auffaellig
+      ? t(befund.auffaellige.length === 1 ? 'reihe.bedeutung' : 'reihe.bedeutungMehrere')
+      : befund.vergleichbar
+        ? ''
+        : t('reihe.zuWenigeBedeutung');
+    if (bedeutungstext) {
+      const bedeutung = document.createElement('p');
+      bedeutung.className = 'reihe-bedeutung';
+      bedeutung.textContent = bedeutungstext;
+      urteil.appendChild(bedeutung);
     }
-    statusBanner.appendChild(statusSubtitle);
 
-    body.appendChild(statusBanner);
-
-    // Statistics row (only if we have stats)
-    if (stats) {
-      const statsRow = document.createElement('div');
-      statsRow.className = 'fleet-result-stats';
-
-      const medianStat = this.createStatBlock(
-        t('fleet.result.statsMedian'),
-        `${stats.median.toFixed(0)}%`
+    const beleg = document.createElement('p');
+    beleg.className = 'reihe-beleg';
+    const teile = [t('reihe.belegGeprueft', { checked: String(checked), total: String(total) })];
+    if (befund.spanne) {
+      teile.push(
+        t('reihe.belegSpanne', {
+          von: String(Math.round(befund.spanne.von)),
+          bis: String(Math.round(befund.spanne.bis)),
+        })
       );
-      const spreadStat = this.createStatBlock(
-        t('fleet.result.statsSpread'),
-        `${stats.spread.toFixed(0)}%`
-      );
-      const worstStat = this.createStatBlock(
-        t('fleet.result.statsWorst'),
-        `${stats.min.toFixed(0)}%`
-      );
-
-      statsRow.appendChild(medianStat);
-      statsRow.appendChild(spreadStat);
-      statsRow.appendChild(worstStat);
-      body.appendChild(statsRow);
     }
+    if (skipped > 0) teile.push(t('fleet.result.summarySkipped', { skipped: String(skipped) }));
+    beleg.textContent = `${groupName} · ${teile.join(' · ')}`;
+    urteil.appendChild(beleg);
+
+    body.appendChild(urteil);
 
     // Ranking list
     const rankingSection = document.createElement('div');
@@ -2453,9 +2490,33 @@ export class Router {
     body.appendChild(rankingSection);
     modal.appendChild(body);
 
-    // --- Action buttons ---
+    /**
+     * ── DREI WEGE HINAUS, DIE DASSELBE TATEN ──────────────────────────────
+     *
+     * Hier standen fünf Knöpfe: „Verlauf anzeigen", „Bericht exportieren",
+     * „Weiter", „Ergebnisse speichern" und „Verwerfen". Von diesen fünf taten
+     * drei praktisch dasselbe — das Fenster schließen. „Speichern" speicherte
+     * nichts: Die Ergebnisse liegen längst in der Ablage, der Knopf schloss
+     * nur; „Weiter" schloss ebenfalls und landete woanders; das × oben rechts
+     * schloss zum dritten Mal. Drei Namen für eine Handlung sind drei
+     * Entscheidungen, die niemand treffen muss.
+     *
+     * Übrig bleiben vier: einer, der hinausführt, zwei, die etwas mit dem
+     * Ergebnis tun, und einer, der es wegwirft — der als Einziger nicht
+     * dasselbe tut wie das ×.
+     */
     const actions = document.createElement('div');
     actions.className = 'fleet-result-actions';
+
+    // Wohin „fertig" führt: zurück auf den Standort, von dem die Reihe
+    // ausging. Dort steht die Liste, in der jede geprüfte Maschine jetzt
+    // ihren neuen Stand trägt — und der Weg in dieselbe Reihe noch einmal.
+    const standortDerReihe = ranked[0]?.machine.customerId ?? null;
+    const hinaus = () => {
+      overlay.remove();
+      if (standortDerReihe) oeffneTiefe(standortDerReihe, 'standort');
+      else this.identifyPhase.showFleetRanking();
+    };
 
     const historyBtn = document.createElement('button');
     historyBtn.className = 'fleet-result-btn-history';
@@ -2474,27 +2535,15 @@ export class Router {
     });
     actions.appendChild(reportBtn);
 
-    const closeAndContinueBtn = document.createElement('button');
-    closeAndContinueBtn.className = 'fleet-result-btn-close';
-    closeAndContinueBtn.textContent = t('fleet.result.closeAndContinue');
-    closeAndContinueBtn.setAttribute('aria-label', t('fleet.result.closeAndContinue'));
-    closeAndContinueBtn.addEventListener('click', () => {
-      overlay.remove();
-      this.resetToGrundansicht();
-    });
-    actions.appendChild(closeAndContinueBtn);
-
     const btnRow = document.createElement('div');
     btnRow.className = 'fleet-result-btn-row';
 
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'fleet-result-btn-save';
-    saveBtn.textContent = '\u2705 ' + t('fleet.result.save');
-    saveBtn.addEventListener('click', () => {
-      overlay.remove();
-      this.identifyPhase.showFleetRanking();
-    });
-    btnRow.appendChild(saveBtn);
+    const fertigBtn = document.createElement('button');
+    fertigBtn.className = 'fleet-result-btn-save';
+    fertigBtn.textContent = t('reihe.fertig');
+    fertigBtn.setAttribute('aria-label', t('reihe.fertig'));
+    fertigBtn.addEventListener('click', hinaus);
+    btnRow.appendChild(fertigBtn);
 
     const discardBtn = document.createElement('button');
     discardBtn.className = 'fleet-result-btn-discard';
@@ -2503,8 +2552,7 @@ export class Router {
       if (!confirm(t('fleet.result.discardConfirm'))) return;
       await this.discardFleetResults(diagnosisIds);
       notify.info(t('fleet.result.discardDone', { count: String(diagnosisIds.length) }));
-      overlay.remove();
-      this.identifyPhase.showFleetRanking();
+      hinaus();
     });
     btnRow.appendChild(discardBtn);
 
@@ -2514,11 +2562,9 @@ export class Router {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    // Close handlers (implicit save)
-    const closeModal = () => {
-      overlay.remove();
-      this.identifyPhase.showFleetRanking();
-    };
+    // Das × und der Hintergrund tun dasselbe wie „Fertig" — und heißen
+    // deshalb nicht anders.
+    const closeModal = hinaus;
 
     closeBtn.addEventListener('click', closeModal);
 
@@ -2537,7 +2583,7 @@ export class Router {
     document.addEventListener('keydown', escHandler);
 
     // Focus the save button for keyboard accessibility
-    requestAnimationFrame(() => saveBtn.focus());
+    requestAnimationFrame(() => fertigBtn.focus());
   }
 
   /**

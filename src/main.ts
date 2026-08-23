@@ -56,6 +56,7 @@ import {
   oeffneTiefe,
   eineStufeZurueck,
   offeneEbene,
+  offenerStandortId,
   TIEFE_GESCHLOSSEN,
 } from './stamm/ui/scharnier.js';
 import { MASCHINENFENSTER_ABGEBROCHEN } from '@ui/phases/MachineDetailModal.js';
@@ -737,6 +738,7 @@ class ZanobotApp {
     standortansichtAufbauen({
       zeigeMaschine: (machine) => this.oeffneMaschine(machine),
       neueMaschine: (standortId) => this.neueMaschineAmStandort(standortId),
+      starteReihe: (ids, name) => this.starteReihe(ids, name),
     });
 
     maschinenansichtAufbauen({
@@ -822,6 +824,23 @@ class ZanobotApp {
     this.offeneMaschine = machine;
     oeffneTiefe(machine.customerId ?? null, 'arbeit');
     this.router?.waehleMaschine(machine);
+  }
+
+  /**
+   * Eine Reihe gleichartiger Maschinen nacheinander prüfen.
+   *
+   * Der Flottenlauf lebt in der bisherigen Oberfläche: Er sagt an, zu welcher
+   * Maschine man gehen soll, löst dort die Prüfung aus und zählt mit. Deshalb
+   * geht zuerst die Arbeitsebene auf — läge die Standortansicht noch davor,
+   * würde er auf Knöpfe tippen, die hinter ihr stehen.
+   *
+   * Die Reihenfolge und wer überhaupt dazugehört, entscheidet die
+   * Standortansicht; hier wird nur der Weg freigemacht und übergeben.
+   */
+  private starteReihe(maschinenIds: string[], flottenname: string): void {
+    if (maschinenIds.length < 2) return;
+    oeffneTiefe(offenerStandortId(), 'arbeit');
+    this.router?.startFleetQueue(maschinenIds, flottenname);
   }
 
   /**

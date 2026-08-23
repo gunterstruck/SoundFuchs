@@ -2628,6 +2628,134 @@ Und ohne die Tür überhaupt:
 | Bedienelemente in den Einstellungen | 31 / 53                       | **32 / 54** (+1, das Auswahlfeld) |
 | Hochgeladen wird                    | nichts                        | **weiterhin nichts**              |
 
+### S10 — Die Reihe (23.08.2026)
+
+Nach S6 hat jede **einzelne** Prüfung genau einen Ergebnisort. Eine **Reihe**
+hatte gar keinen — und, wie sich beim Nachmessen zeigte, nicht einmal einen
+Eingang.
+
+**Zwei Befunde, gemessen am 23.08.2026.**
+
+Der erste stand auf der Standortseite:
+
+```
+Angebote am Standort      ➕ Neue Maschine anlegen
+Weg in die Reihe          FEHLT
+```
+
+Der Flottenlauf lag hinter der Bestandsebene, und die öffnete sich nur, wenn
+man eine Maschine anlegen wollte. Die eine Funktion, die „welche dieser vier
+fällt auf?" beantwortet, war an dem Ort, an dem diese vier stehen, nicht
+startbar.
+
+Der zweite stand am Ende des Laufs:
+
+```
+Banner        Flottencheck abgeschlossen
+Kennzahlen    100% Median · 0% Spannweite · 100% Schlechteste
+Satz          FEHLT
+Knöpfe        📊 Verlauf · 📄 Bericht · Weiter · ✅ Ergebnisse speichern · 🗑 Verwerfen
+```
+
+Eine Armaturentafel statt einer Auskunft: Sie sagt nicht, was der Techniker
+wissen will, sondern woraus man es ausrechnen könnte. Und drei der fünf Knöpfe
+taten dasselbe — „Speichern" speicherte nichts (die Ergebnisse liegen längst in
+der Ablage), „Weiter" schloss ebenfalls, das × zum dritten Mal.
+
+#### Die Reihe ist nicht die Runde
+
+Die naheliegende Vermutung war, dass Flottenlauf und Runde (§S8) dasselbe sind
+— beide gehen die Maschinen eines Standorts durch. Sie sind es nicht:
+
+- Die **Runde** fragt „war ich überall?" und beantwortet je Maschine „klingt
+  sie wie ihr eigener Normalzustand?".
+- Die **Reihe** fragt „**welche von diesen fällt auf?**" — und vergleicht dafür
+  nicht die Maschinen miteinander, sondern ihre **Abstände zum jeweils eigenen
+  Normalzustand**.
+
+Der Unterschied entscheidet über den Satz. „Rührwerk 3 klingt anders als die
+anderen" wäre falsch: Es darf bauartbedingt anders klingen und trotzdem völlig
+unverändert sein. Richtig ist „Rührwerk 3 fällt aus der Reihe — es weicht
+stärker von seinem eigenen Normalzustand ab als die anderen." Und wie überall:
+nie eine Ursache.
+
+#### Was gebaut wurde
+
+**Der Weg hinein.** Stehen an einem Standort mehrere gleichartige Maschinen mit
+Normalzustand, steht dort jetzt „⇄ Rührwerk: 2 Maschinen vergleichen" — unter
+der Liste, über „Neue Maschine anlegen", ungefüllt. Die Liste bleibt die
+Handlung dieser Ebene; die Reihe ist ein Angebot daneben. Der Ort wird aus dem
+Flottennamen gestrichen („Rührwerk · Windbergen" → „Rührwerk"): Man steht
+gerade dort.
+
+**Der Satz.** An der Stelle, an der Banner und Kacheln standen, mit dem Beleg
+darunter — dieselbe Rangfolge wie im Ergebnis einer einzelnen Maschine. Kein
+Ampelgrün und kein Warndreieck, nur ein Streifen an der Kante in der Farbe, die
+`standortmarker.ts` für diesen Zustand ohnehin führt. Eine zweite Definition in
+CSS wäre eine zweite Stelle, an der dieselbe Farbe auseinanderlaufen kann.
+
+**Vier Knöpfe statt fünf.** Einer hinaus, zwei, die etwas mit dem Ergebnis tun,
+einer, der es wegwirft — und „Fertig" führt zurück auf den Standort, von dem
+die Reihe ausging, nicht in die Bestandsliste.
+
+#### Der Fund beim Falsifizieren
+
+Ich habe einen Ausreißer erzwungen — **und er erschien nicht.**
+
+Das war kein Fehler der Falsifikation, sondern Arithmetik: Bei genau zwei
+Werten liegt der Median zwischen ihnen, beide weichen gleich weit ab, und
+`Median − 2·MAD` fällt unter beide. **Bei zwei Maschinen kann nie eine
+auffallen.** „Keine fällt aus der Reihe" wäre dort ein wahrer Satz, der nichts
+gemessen hat — und bei 40 % gegen 92 % legte er das Gegenteil dessen nahe, was
+dasteht.
+
+Der Befund sagt jetzt selbst, ob er etwas sagen kann:
+
+```
+Satz          Für einen Vergleich braucht es mindestens 3 geprüfte Maschinen.
+was das heißt Bei zweien sagt der Vergleich nicht, welche der beiden abweicht —
+              jede steht auf ihrer eigenen Seite mit ihrem eigenen Ergebnis.
+Beleg         Rührwerk · Windbergen · 2 von 2 geprüft · Ähnlichkeit 100–100 %
+```
+
+Eine zweite Grenze steht ebenfalls als Test fest: Weicht die **Hälfte** der
+Reihe ab, findet das Verfahren niemanden (`[92, 91, 55, 40]` → Median 73,
+MAD 18,5, Schwelle 36). Auch das ist keine Panne, sondern die Aussage des
+Verfahrens: „Fällt eine aus der Reihe?" ist eine andere Frage als „Geht es
+dieser Reihe gut?". Die zweite beantwortet die Standortliste, Maschine für
+Maschine.
+
+#### Der Wächter
+
+`npm run reihe` (`tools/reihe-lauf.mjs`) kürzt einen Flottenstandort der
+Beispieldaten auf zwei Maschinen, nimmt für beide einen Normalzustand auf,
+startet die Reihe über den neuen Weg und liest, was am Ende dasteht. Wie
+`runde` steht er nicht im Standard-Satz — er kostet Minuten.
+
+Falsifiziert, indem der Weg hinein und der Zweierfall wieder entfernt wurden:
+
+```
+✗ am Standort führt kein Weg in die Reihe — die Funktion, die „welche fällt auf?"
+  beantwortet, ist dort nicht startbar
+✗ die Zweierreihe behauptet ein Ergebnis, das sie nicht haben kann —
+  „Keine der 2 geprüften Maschinen fällt aus der Reihe."
+```
+
+**Drei Fehler lagen dabei am Messgerät, nicht am Produkt** — alle derselbe:
+Die Standortansicht bleibt im Baum stehen, wenn die Maschinenseite darüber
+liegt. Der Wächter zählte ihre verborgenen Zeilen, glaubte sich auf dem
+Standort, tippte ins Leere und meldete „nur 1 von 2", als läge es an der App.
+Gefragt wird jetzt nach **Sichtbarkeit** — der einzigen Eigenschaft, die für
+einen Menschen den Unterschied macht.
+
+| | vor S10 | jetzt |
+|---|---|---|
+| Weg in die Reihe am Standort | **keiner** | „⇄ Rührwerk: 2 Maschinen vergleichen" (48 px) |
+| Aussage am Ende | Banner + 3 Kennzahlkacheln | **ein Satz, Beleg darunter** |
+| Knöpfe am Ende | 5, drei davon dasselbe | **4, genau eine dominante Handlung** |
+| „Fertig" führt nach | Bestandsliste | **zurück auf den Standort** |
+| Zweierreihe | „Keine fällt aus der Reihe" | **„Dafür braucht es mindestens 3"** |
+
 ### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die
