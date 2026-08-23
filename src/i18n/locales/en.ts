@@ -25,6 +25,17 @@ export const en: TranslationDict = {
     customerData: 'Sites: samples & import',
     tool: 'Analysis tool',
   },
+  blatt: {
+    tabStandort: 'History',
+    tabZweiD: '2D',
+    tabDreiD: '3D',
+    tabBriefing: 'Briefing',
+    nochNichts: 'No measurement yet. After a check, the comparison appears here.',
+    gebirgeBrauchtBeide:
+      'The 3D view shows the difference — that needs both a baseline and a measurement.',
+    briefingErklaerung:
+      'A package with both recordings, the listening aids and a work order — built entirely here in your browser. SoundFuchs uploads nothing.',
+  },
 
   // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
   // Scharnier (docs/nutzerreise-wie-tourfuchs.md §0h).

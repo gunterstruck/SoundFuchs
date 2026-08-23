@@ -165,6 +165,85 @@ body.tiefe-offen .basemap-control {
   display: none;
 }
 
+/* ── DAS BLATT TRÄGT DREI REITERSÄTZE ───────────────────────────────────────
+
+   Gemessen am 23.08.2026 auf der Maschinenebene (Handy 390 × 844):
+
+     Reiter im Blatt      „📄 Standorte"  ·  „Filter"
+     Inhalt des Reiters   ""            ← leer
+     Blatt-Oberkante      744 px  →  aufgezogen 404 px
+
+   Das Blatt war hinter dem Scharnier also schon da, ließ sich schon aufziehen
+   — und war falsch beschriftet und leer. Wer an einer Maschine arbeitete, sah
+   unten zwei Reiter über Standorte und Kartenfilter.
+
+   Welcher Satz gilt, steht deshalb hier und nicht in JavaScript: Die Ebene ist
+   eine Klasse am Körper, und eine CSS-Regel gilt auch dann, wenn niemand ein
+   Ereignis ausgelöst hat. Derselbe Grund wie beim Rahmen der Tiefe weiter
+   oben — ein JS-gesetzter Zustand fehlt genau dort, wo ein Wächter die Klassen
+   selbst setzt.
+
+   Die Arbeitsebene zählt zur Maschine: Dort läuft die Prüfung DIESER Maschine,
+   und ihre Analyse gehört daneben. Der Bestand zählt zur Karte — er ist die
+   alte Oberfläche mit ihrer eigenen Liste. */
+body:not(.tiefe-offen) .tabs [data-ebene]:not([data-ebene='karte']),
+body:not(.tiefe-offen) .tab-panel[data-ebene]:not([data-ebene='karte']),
+body.tiefe-bestand .tabs [data-ebene]:not([data-ebene='karte']),
+body.tiefe-bestand .tab-panel[data-ebene]:not([data-ebene='karte']) {
+  display: none;
+}
+
+body.tiefe-offen:not(.tiefe-maschine):not(.tiefe-arbeit):not(.tiefe-bestand)
+  .tabs
+  [data-ebene]:not([data-ebene='standort']),
+body.tiefe-offen:not(.tiefe-maschine):not(.tiefe-arbeit):not(.tiefe-bestand)
+  .tab-panel[data-ebene]:not([data-ebene='standort']) {
+  display: none;
+}
+
+body.tiefe-maschine .tabs [data-ebene]:not([data-ebene='maschine']),
+body.tiefe-maschine .tab-panel[data-ebene]:not([data-ebene='maschine']),
+body.tiefe-arbeit .tabs [data-ebene]:not([data-ebene='maschine']),
+body.tiefe-arbeit .tab-panel[data-ebene]:not([data-ebene='maschine']) {
+  display: none;
+}
+
+/* ── UNTERWEGS HAT DAS BLATT ÜBERHAUPT KEINE REITER ────────────────────────
+
+   Der Stamm blendet sie auf dem Handy vollständig aus:
+
+     responsive.css:509   .sidebar .tabs { display: none; }
+     „Ein Bereich braucht keine Reiterleiste: Mobil gibt es nur die Tour."
+
+   Für TourFuchs stimmt das — dort hat das Blatt unterwegs genau einen Inhalt.
+   Hinter dem Scharnier hat es drei, und ohne Leiste käme man an zwei davon
+   nicht heran. Gemessen am 23.08.2026: Der Reiterknopf hatte `display:
+   inline-block` und trotzdem einen Kasten von 0 × 0 px an (0, 0) — ein
+   Vorfahre war ausgeblendet, und ein Tipp darauf lief ins Leere.
+
+   Der Stamm wird dafür nicht angefasst (§0h). Die Regel steht hier, gilt nur
+   bei offener Tiefe und gewinnt über die höhere Spezifität. Vor dem Scharnier
+   bleibt alles, wie TourFuchs es macht. */
+body.tiefe-offen .sidebar .tabs {
+  display: flex;
+  gap: 6px;
+  padding: 0 12px 8px;
+  flex: 0 0 auto;
+}
+
+body.tiefe-offen .sidebar .tabs .tab-button {
+  flex: 1 1 0;
+  min-height: 44px;
+}
+
+/* Ein Blatt ohne aktiven Reiter zeigt nichts. `.tab-panel` ist im Stamm
+   `display: none`, bis `.active` dazukommt — die Regeln oben nehmen also nur
+   weg, sie geben nichts. Deshalb setzt `schale.ts` beim Ebenenwechsel den
+   ersten Reiter des neuen Satzes. */
+.tab-panel[data-ebene].active {
+  display: block;
+}
+
 /* Die Rückkehr. Der Stamm hat für so etwas keine eigene Form — er kennt
    Blätter, die man am Griff zuzieht, keine Bildschirme, die man verlässt.
    Deshalb hier die schlichteste Form, die zu ihm passt: dieselbe Pille wie
@@ -873,21 +952,10 @@ body.tiefe-arbeit #karte-bestandswege {
   margin-top: 0;
 }
 
-.maschine-briefing {
-  min-height: 48px;
-  padding: 0 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.maschine-briefing:hover {
-  border-color: var(--color-primary);
-}
+/* Hier stand die Gestaltung von `.maschine-briefing`. Der Knopf ist am
+   23.08.2026 ins Analyseblatt gezogen (dritter Reiter); `css-check` hat die
+   beiden zurückgebliebenen Regeln gefunden, bevor sie zu totem Bestand
+   wurden. */
 
 /* ── Rückweg und Handlung in einer Zeile ────────────────────────────────────
 
@@ -1012,4 +1080,51 @@ body.tiefe-arbeit #karte-bestandswege {
   .standort-ansicht h2 {
     color: var(--text-primary);
   }
+}
+
+/* ── DER INHALT DES ANALYSEBLATTS ───────────────────────────────────────────
+
+   Die drei Reiter tragen Komponenten, die für eine breite Seite gebaut sind:
+   Hör-Lupe, Gebirge, Briefing-Einstieg. Im Blatt haben sie weniger Breite und
+   dafür mehr Höhe — bis zu 784 px, gemessen auf dem Handy, gegen 637 px der
+   ganzen Maschinenebene.
+
+   Hier steht nur, was das Blatt von ihnen verlangt: Platz zum Scrollen und
+   keine doppelten Abstände. Wie die Komponenten selbst aussehen, entscheiden
+   weiterhin sie. */
+#tab-zweid,
+#tab-dreid,
+#tab-briefing,
+#tab-standortblatt {
+  padding: 12px 12px 20px;
+}
+
+/* Der leere Zustand eines Reiters sagt, was fehlt — er sieht nicht aus wie ein
+   Fehler. */
+.blatt-leer {
+  margin: 0;
+  padding: 24px 8px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.blatt-briefing-text {
+  margin: 0 0 14px;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.blatt-briefing-knopf {
+  width: 100%;
+  min-height: 48px;
+  font-weight: 600;
+}
+
+/* Das Klangbild als reiner Beleg: keine Hand, kein Hinweis, kein Fokusrahmen
+   eines Knopfes, der nichts tut. */
+.klangbild-flaeche-beleg {
+  cursor: default;
 }

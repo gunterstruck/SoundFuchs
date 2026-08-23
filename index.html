@@ -276,25 +276,89 @@
         </label>
         <p class="map-unlocated" id="map-unlocated" style="display: none"></p>
 
+        <!-- Das Blatt trägt drei Reitersätze, einen je Ebene.
+
+             Bis zum 23.08.2026 gab es nur den ersten. Hinter dem Scharnier
+             stand er weiter da: Wer an einer Maschine arbeitete, sah unten
+             „📄 Standorte" und „Filter" — und dahinter nichts. Gemessen war
+             der Inhalt des offenen Reiters dort eine leere Zeichenkette.
+
+             Welcher Satz gilt, entscheidet `data-ebene` zusammen mit der
+             Tiefenklasse am Körper (siehe stamm/tiefe.css). Kein JavaScript
+             baut Reiter um; die Regel steht in CSS und gilt auch dann, wenn
+             die Ebene ohne Ereignis gesetzt wird. -->
         <nav class="tabs" role="tablist">
           <button
             class="tab-button active"
             data-tab="daten"
+            data-ebene="karte"
             role="tab"
             data-i18n="stamm.tabData"
           >
             📄 Standorte
           </button>
-          <button class="tab-button" data-tab="filter" role="tab" data-i18n="stamm.tabFilter">
+          <button
+            class="tab-button"
+            data-tab="filter"
+            data-ebene="karte"
+            role="tab"
+            data-i18n="stamm.tabFilter"
+          >
             Filter
+          </button>
+
+          <button
+            class="tab-button"
+            data-tab="standortblatt"
+            data-ebene="standort"
+            role="tab"
+            data-i18n="blatt.tabStandort"
+          >
+            Verlauf
+          </button>
+
+          <button
+            class="tab-button"
+            data-tab="zweid"
+            data-ebene="maschine"
+            role="tab"
+            data-i18n="blatt.tabZweiD"
+          >
+            2D
+          </button>
+          <button
+            class="tab-button"
+            data-tab="dreid"
+            data-ebene="maschine"
+            role="tab"
+            data-i18n="blatt.tabDreiD"
+          >
+            3D
+          </button>
+          <button
+            class="tab-button"
+            data-tab="briefing"
+            data-ebene="maschine"
+            role="tab"
+            data-i18n="blatt.tabBriefing"
+          >
+            Briefing
           </button>
         </nav>
 
         <!-- Reiter: Standorte -->
-        <section id="tab-daten" class="tab-panel active"></section>
+        <section id="tab-daten" class="tab-panel active" data-ebene="karte"></section>
 
         <!-- Reiter: Filter -->
-        <section id="tab-filter" class="tab-panel"></section>
+        <section id="tab-filter" class="tab-panel" data-ebene="karte"></section>
+
+        <!-- Reiter der Standortebene: was hier zuletzt passiert ist -->
+        <section id="tab-standortblatt" class="tab-panel" data-ebene="standort"></section>
+
+        <!-- Reiter der Maschinenebene: die Analyse -->
+        <section id="tab-zweid" class="tab-panel" data-ebene="maschine"></section>
+        <section id="tab-dreid" class="tab-panel" data-ebene="maschine"></section>
+        <section id="tab-briefing" class="tab-panel" data-ebene="maschine"></section>
 
       </aside>
 

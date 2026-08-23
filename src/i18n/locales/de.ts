@@ -27,6 +27,17 @@ export const de: TranslationDict = {
     customerData: 'Standorte: Beispiele & Import',
     tool: 'Auswertungswerkzeug',
   },
+  blatt: {
+    tabStandort: 'Verlauf',
+    tabZweiD: '2D',
+    tabDreiD: '3D',
+    tabBriefing: 'Briefing',
+    nochNichts: 'Noch keine Messung. Nach einer Prüfung liegt hier der Vergleich.',
+    gebirgeBrauchtBeide:
+      'Das Gebirge zeigt den Unterschied — dafür braucht es einen Normalzustand und eine Messung.',
+    briefingErklaerung:
+      'Ein Paket mit beiden Aufnahmen, den Hörhilfen und einem Arbeitsauftrag — vollständig hier im Browser erzeugt. SoundFuchs lädt nichts hoch.',
+  },
 
   // ============================================================================
   // DIE SCHALE (Schnitt 2 — docs/nutzerreise-wie-tourfuchs.md)

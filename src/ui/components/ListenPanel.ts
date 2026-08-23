@@ -54,6 +54,7 @@ import { openAnalysisPackageDialog } from './AnalysisPackageDialog.js';
 import { planTranspose } from '@core/audio/audibleTranspose.js';
 import { peakFrequencyFine } from '@core/dsp/fineSpectrogram.js';
 import { formatHz } from '@utils/formatHz.js';
+import type { SpectralSelection } from '@core/audio/spectralSelection.js';
 import { t } from '../../i18n/index.js';
 import { logger } from '@utils/logger.js';
 import { notify } from '@utils/notifications.js';
@@ -263,6 +264,18 @@ export class ListenPanel {
     };
     card.append(copy, button);
     ziel.appendChild(card);
+  }
+
+  /**
+   * Was gerade im Spektrogramm markiert ist — oder `null`.
+   *
+   * Nach außen gegeben, seit das Briefing im Analyseblatt einen eigenen Reiter
+   * hat: Wer dort einen Bereich markiert und dann auf „Briefing" wechselt,
+   * meint genau diesen Bereich. Ohne diesen Zugang müsste das Blatt eine
+   * zweite Auswahl führen — und zwei Auswahlen sind eine zu viel.
+   */
+  public aktuelleAuswahl(): SpectralSelection | null {
+    return this.auswahlPanel?.selection() ?? null;
   }
 
   /** Ein Quellenknopf: tippen spielt, nochmal tippen hält an. */

@@ -25,6 +25,16 @@ export const zh: TranslationDict = {
     customerData: '地点：示例与导入',
     tool: '分析工具',
   },
+  blatt: {
+    tabStandort: '历史',
+    tabZweiD: '2D',
+    tabDreiD: '3D',
+    tabBriefing: '简报',
+    nochNichts: '尚无测量。完成检测后，这里会显示对比。',
+    gebirgeBrauchtBeide: '3D 视图显示差异——这需要一份正常状态和一次测量。',
+    briefingErklaerung:
+      '一个包含两段录音、听觉辅助和工作说明的数据包，完全在您的浏览器中生成。SoundFuchs 不会上传任何内容。',
+  },
 
   // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
   // Scharnier (docs/nutzerreise-wie-tourfuchs.md §0h).

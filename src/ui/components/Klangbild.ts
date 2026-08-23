@@ -56,6 +56,27 @@ import { formatHz } from '@utils/formatHz.js';
 export interface KlangbildOptions {
   reference?: AudioBuffer | null;
   measurement?: AudioBuffer | null;
+  /**
+   * Kein Tipp ins Gebirge.
+   *
+   * Seit dem 23.08.2026 hat das Gebirge einen eigenen Reiter im Analyseblatt.
+   * Ein Bild, das nebenbei ein zweites Gebirge öffnet, wäre die zweite Tür zum
+   * selben Werkzeug — genau die Unordnung, für die es das Blatt gibt.
+   */
+  ohneGebirge?: boolean;
+
+  /**
+   * Kein Ziehen, keine Bereichsauswahl.
+   *
+   * Nur für das Bild auf der Maschinenseite: Dort ist das Klangbild der Beleg
+   * des letzten Urteils, kein Werkzeug. Gearbeitet wird im Blatt.
+   *
+   * Getrennt von `ohneGebirge`, weil das Ziehen die **Basis**-Fähigkeit ist:
+   * Eine Stelle greifen und hören kann jeder, die tiefe Auswahl der Hör-Lupe
+   * ist Profi. Beides in einem Schalter zu bündeln hätte der Basis-Stufe beim
+   * Umzug still etwas weggenommen.
+   */
+  ohneAuswahl?: boolean;
 }
 
 /** Welche Quelle das Bild gerade zeigt. */
@@ -159,19 +180,31 @@ export class Klangbild {
      */
     flaeche.appendChild(this.auswahlRahmen);
 
-    flaeche.setAttribute('aria-label', t('klangbild.vergroessern'));
-    flaeche.addEventListener('click', (e) => {
-      // Ein Zug ist kein Tipp. Ohne diese Sperre öffnete jedes Aufziehen
-      // eines Rechtecks anschließend das Gebirge.
-      if (this.warZug) {
-        this.warZug = false;
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-      }
-      this.wechsleTiefe();
-    });
-    this.verdrahteZiehen(flaeche);
+    if (optionen.ohneGebirge) {
+      // Der Hinweis „vergrößern" verschwindet mit dem Tipp: Ein Versprechen
+      // ohne Einlösung ist schlimmer als kein Versprechen.
+      lupe.remove();
+    } else {
+      flaeche.setAttribute('aria-label', t('klangbild.vergroessern'));
+      flaeche.addEventListener('click', (e) => {
+        // Ein Zug ist kein Tipp. Ohne diese Sperre öffnete jedes Aufziehen
+        // eines Rechtecks anschließend das Gebirge.
+        if (this.warZug) {
+          this.warZug = false;
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        this.wechsleTiefe();
+      });
+    }
+    if (optionen.ohneAuswahl) {
+      // Eine Fläche, die man ansieht — kein Knopf, der nichts tut.
+      flaeche.disabled = true;
+      flaeche.classList.add('klangbild-flaeche-beleg');
+    } else {
+      this.verdrahteZiehen(flaeche);
+    }
     this.buehne.appendChild(flaeche);
     wurzel.appendChild(this.buehne);
 
@@ -228,7 +261,13 @@ export class Klangbild {
       const ref = this.referenz ? getFineSpectrogramMatrix(this.referenz, hop) : null;
       const mes = this.messung ? getFineSpectrogramMatrix(this.messung, hop) : null;
       const roh =
-        key === 'signed' ? (ref && mes ? signedDifferenceMatrix(ref, mes) : null) : key === 'reference' ? ref : mes;
+        key === 'signed'
+          ? ref && mes
+            ? signedDifferenceMatrix(ref, mes)
+            : null
+          : key === 'reference'
+            ? ref
+            : mes;
       if (!roh) return null;
       // Dasselbe Zeitfenster wie im Gebirge — sonst wechselt beim Umschalten
       // der Maßstab, und der Vergleich wäre keiner.

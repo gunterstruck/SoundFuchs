@@ -2756,6 +2756,118 @@ einen Menschen den Unterschied macht.
 | „Fertig" führt nach | Bestandsliste | **zurück auf den Standort** |
 | Zweierreihe | „Keine fällt aus der Reihe" | **„Dafür braucht es mindestens 3"** |
 
+### S11 — Die Analyse liegt im Blatt (23.08.2026, §7g umgesetzt)
+
+Der Vorschlag stand in §7g, geprüft und gemessen. Hier steht, was beim Bauen
+dazukam — und das war mehr als erwartet.
+
+#### Drei Fehler, die keiner sehen konnte
+
+**1. Unterwegs hatte das Blatt gar keine Reiter.** §7g maß „Reiter im Blatt:
+📄 Standorte · Filter, Inhalt leer" — das war die Wahrheit über den Baum, nicht
+über den Bildschirm. Auf dem Handy blendet der Stamm die ganze Leiste aus:
+
+```
+responsive.css:509   .sidebar .tabs { display: none; }
+„Ein Bereich braucht keine Reiterleiste: Mobil gibt es nur die Tour."
+```
+
+Für TourFuchs stimmt das — dort hat das Blatt unterwegs einen Inhalt. Hinter
+dem Scharnier hat es drei. Gemessen: Der Reiterknopf hatte `display:
+inline-block` und trotzdem einen Kasten von **0 × 0 px an (0, 0)**. Der Stamm
+bleibt unangetastet (§0h); die Grenzschicht holt die Leiste zurück, nur bei
+offener Tiefe.
+
+**2. Ein Tipp auf einen Reiter schloss die ganze Tiefe.** In `schale.ts` stand,
+mit damals richtiger Begründung:
+
+> Ein Reiter ist ein Ortswechsel. Wer dort „Standorte" wählt, will zur Karte.
+> `if (tiefeIstOffen()) schliesseTiefe();`
+
+Solange im Blatt nur Kartenreiter lagen, war das wahr. Mit der Analyse darin
+warf ein Tipp auf „3D" den Nutzer auf die Karte. Gemessen: Ebene vor dem Tipp
+`tiefe-offen tiefe-maschine`, danach `(keine)`. Jetzt entscheidet, zu welchem
+Satz der Reiter gehört.
+
+**3. Der Reiter „3D" zeigte Chips statt Gebirge.** Das Panel baut sein Gebirge
+erst beim Tipp auf „🏔️ 3D-Ansicht" — richtig, solange es unangefordert auf
+einer Seite steht. Im Reiter ist dieser Tipp einer zu viel: Der Reiter IST die
+Bitte.
+
+#### Eine Entscheidung, die das Bauen erzwungen hat
+
+§7g sagte: „Das Klangbild bleibt oben, verliert aber seine Werkzeuge." Beim
+Umsetzen zeigte sich, dass darin zwei verschiedene Werkzeuge stecken — und der
+Code sagte selbst, dass sie nicht dasselbe sind:
+
+> Auf dem Bildplatz gibt es die schlichte Geste: Zug heißt Auswahl, ein Tipp
+> spielt sie. **Das ist Basis und bleibt es.** Dieses Werkzeug hier ist die
+> Werkbank dazu. Beides gleichzeitig in Basis wären zwei Auswahlen, von denen
+> man nicht weiß, welche gemeint ist.  — `ListenPanel.ts`
+
+Hätte ich beides gestrichen, wäre der **Basis**-Stufe still eine Fähigkeit
+verlorengegangen. Das Klangbild hat deshalb zwei getrennte Schalter bekommen:
+
+| | Maschinenseite | Reiter „2D" |
+|---|---|---|
+| Quellen (Normalzustand · Messung · Unterschied · Iris) | ✓ | ✓ |
+| Ziehen und Hören (**Basis**) | — | ✓ |
+| Tipp ins Gebirge | — | — (eigener Reiter) |
+| Hör-Lupe: Hervorhebung, tiefe Auswahl (**Profi**) | — | ✓ |
+
+Oben steht damit der **Beleg** des Urteils, unten das **Werkzeug**. Beide sind
+selten gleichzeitig zu sehen: Aufgezogen beginnt das Blatt bei 404 px, das Bild
+oben bei 234 px und ist 240–340 px hoch.
+
+#### Was jetzt wo liegt
+
+```
+Maschinenseite       Name · Standort · Stand
+(Blatt unten,         die eine Handlung
+ 637 px wie bisher)   das Klangbild als Beleg
+                      das Urteil in einem Satz · der Beleg
+                      die Runde
+
+Blatt (bis 784 px)   [ 2D ] [ 3D ] [ Briefing ]
+                      2D:       Klangbild mit Zug + Hör-Lupe
+                      3D:       das Gebirge, sofort gebaut
+                      Briefing: ein Satz und der Weg hinein
+```
+
+Die Handlungen der Seite sind geblieben, führen aber ins Blatt:
+„Unterschied anhören", „Trotzdem anhören" und „Letzten Unterschied anhören"
+ziehen das Blatt auf, öffnen 2D und spielen. Zwei Wege zu einem Werkzeug gibt
+es nicht mehr — der Briefing-Knopf der Seite ist entfallen, und `css-check`
+hat die beiden zurückgebliebenen CSS-Regeln gefunden, bevor sie totes Gut
+wurden.
+
+#### Was die Wächter jetzt messen
+
+`wow` meldete nach dem Umzug **19 Befunde**. Siebzehn davon waren Wächter, die
+die Werkzeuge noch dort suchten, wo sie lagen — sie sind mitgezogen. Zwei waren
+echt:
+
+- **Am Schreibtisch stand die Hör-Lupe in der zweiten Spalte des Ergebnisses.**
+  Jetzt liegt sie in der Seitenleiste — also links statt rechts. Die Frage ist
+  dieselbe geblieben und heißt jetzt so: Muss man scrollen, oder liegt sie
+  daneben? Gemessen: „ja, auf gleicher Höhe".
+- **Bei aufgezogenem Blatt überlappen Tiefe und Blatt.** Das ist die
+  Aufteilung, nicht ihr Bruch; der Rahmenwächter kennt diese Absicht jetzt.
+
+Neu bewacht: dass das Blatt sich nicht von selbst aufzieht, dass es
+2D · 3D · Briefing trägt, dass die Reiter 44 px hoch sind, dass der Reiter „3D"
+wirklich ein Gebirge bringt, und dass der Weg zum Briefing weiterhin bis zur
+Tür des Auswertungswerkzeugs führt.
+
+| | vor S11 | jetzt |
+|---|---|---|
+| Reiter im Blatt (Maschine) | „📄 Standorte" · „Filter", Inhalt leer | **2D · 3D · Briefing** |
+| Reiter unterwegs überhaupt | `display: none` (Stamm) | **sichtbar, 118 × 44 px** |
+| Wege zu den drei Werkzeugen | drei verschiedene | **einer, drei Reiter** |
+| Tipp auf einen Reiter | schloss die Tiefe | **schaltet um** |
+| Reiter „3D" | Chips ohne Gebirge | **Gebirge steht** |
+| Platz für die Analyse | 637 px (die ganze Seite) | **bis 784 px** |
+
 ### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die

@@ -30,6 +30,7 @@ import {
   schliesseTiefe,
   TIEFE_GEOEFFNET,
   TIEFE_GESCHLOSSEN,
+  type TiefeDetail,
 } from './scharnier.js';
 
 /** Schmalste Breite der Seitenleiste am Schreibtisch. Aus dem Stamm. */
@@ -59,11 +60,43 @@ const SIDEBAR_POS_KEY = 'sf_sidebar_position';
  * Zur Karte kommt man über den Griff oder über ☰ — beides Wege, die das Blatt
  * zuziehen, statt einen Inhalt zu wechseln.
  */
-export const REITER = ['daten', 'filter'] as const;
+export const REITER = ['daten', 'filter', 'standortblatt', 'zweid', 'dreid', 'briefing'] as const;
 export type Reiter = (typeof REITER)[number];
+
+/**
+ * Drei Reitersätze, einen je Ebene.
+ *
+ * Bis zum 23.08.2026 gab es nur den ersten, und er stand auch hinter dem
+ * Scharnier: Wer an einer Maschine arbeitete, sah unten „📄 Standorte" und
+ * „Filter" — mit gemessen leerem Inhalt.
+ *
+ * Welcher Satz SICHTBAR ist, entscheidet CSS über `data-ebene` (tiefe.css).
+ * Diese Liste sagt nur, welcher Reiter beim Wechsel der Ebene aufgeht — denn
+ * ein Blatt, dessen aktiver Reiter gerade unsichtbar wurde, zeigt gar nichts.
+ */
+const ERSTER_REITER: Readonly<Record<'karte' | 'standort' | 'maschine', Reiter>> = Object.freeze({
+  karte: 'daten',
+  standort: 'standortblatt',
+  maschine: 'zweid',
+});
 
 function istReiter(wert: string | undefined): wert is Reiter {
   return !!wert && (REITER as readonly string[]).includes(wert);
+}
+
+/**
+ * Die Ebene wechseln — und mit ihr den Reitersatz.
+ *
+ * Wird beim Öffnen und Schließen der Tiefe gerufen. Steht der offene Reiter
+ * schon im richtigen Satz, bleibt er stehen: Wer zwischen Maschine und Arbeit
+ * hin- und herwechselt, soll nicht jedes Mal wieder auf „2D" landen.
+ */
+export function reitersatzSetzen(ebene: 'karte' | 'standort' | 'maschine'): void {
+  const offenerKnopf = document.querySelector<HTMLElement>(
+    `.tab-button[data-tab="${zustand.reiter}"]`
+  );
+  if (offenerKnopf?.dataset.ebene === ebene) return;
+  reiterOeffnen(ERSTER_REITER[ebene]);
 }
 
 /**
@@ -266,6 +299,22 @@ export function reiterOeffnen(reiter: Reiter): void {
 export function zeigeKarte(): void {
   if (!istBlatt()) return;
   zustand.blattOffen = false;
+  schaleAnwenden();
+}
+
+/**
+ * Das Blatt aufziehen — von außen.
+ *
+ * Gebraucht, seit die Analyse darin liegt: „Unterschied anhören" ist weiterhin
+ * die eine Handlung der Maschinenseite, aber das Werkzeug dazu steht jetzt im
+ * Blatt. Eine Handlung, die auf etwas Verborgenes zeigt, ist keine.
+ *
+ * Am Schreibtisch steht die Leiste meist ohnehin offen; dann tut der Aufruf
+ * nichts.
+ */
+export function blattAufziehen(): void {
+  if (zustand.blattOffen) return;
+  zustand.blattOffen = true;
   schaleAnwenden();
 }
 
@@ -521,6 +570,26 @@ export function schaleAufbauen(): void {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar) return;
 
+  /**
+   * Das Blatt folgt der Ebene.
+   *
+   * Sichtbar ist immer nur ein Reitersatz (CSS, `tiefe.css`). Hier wird nur
+   * dafür gesorgt, dass beim Ebenenwechsel auch ein Reiter AUS DIESEM SATZ
+   * offen ist — sonst zeigte das Blatt gar nichts, weil sein aktiver Reiter
+   * gerade unsichtbar geworden ist.
+   */
+  document.addEventListener(TIEFE_GEOEFFNET, (ereignis) => {
+    const ebene = (ereignis as CustomEvent<TiefeDetail>).detail.ebene;
+    reitersatzSetzen(
+      ebene === 'maschine' || ebene === 'arbeit'
+        ? 'maschine'
+        : ebene === 'bestand'
+          ? 'karte'
+          : 'standort'
+    );
+  });
+  document.addEventListener(TIEFE_GESCHLOSSEN, () => reitersatzSetzen('karte'));
+
   breiteWiederherstellen();
   restoreSheetHeight();
   reiterUmhaengen();
@@ -532,13 +601,22 @@ export function schaleAufbauen(): void {
       const ziel = knopf.dataset.tab;
       if (!istReiter(ziel)) return;
       /**
-       * Ein Reiter ist ein Ortswechsel.
+       * Ein KARTEN-Reiter ist ein Ortswechsel — die anderen nicht.
        *
-       * Die Leiste kann jetzt über der Tiefe liegen. Wer dort „Standorte"
-       * wählt, will zur Karte — nicht einen Reiter hinter einer Maschinenseite
-       * umschalten, die er nicht sieht. Die Tiefe geht deshalb mit.
+       * Bis zum 23.08.2026 stand hier `if (tiefeIstOffen()) schliesseTiefe()`,
+       * mit der damals richtigen Begründung: Wer im Blatt „Standorte" wählt,
+       * will zur Karte und nicht einen Reiter hinter einer Maschinenseite
+       * umschalten, die er nicht sieht.
+       *
+       * Seit das Blatt auch die Analyse trägt, war das ein Fehler: Ein Tipp
+       * auf „3D" schloss die Tiefe und ließ den Nutzer auf der Karte stehen.
+       * Gemessen im Wächter — Ebene vor dem Tipp `tiefe-offen tiefe-maschine`,
+       * danach `(keine)`.
+       *
+       * Jetzt entscheidet, zu welchem Satz der Reiter gehört. Karte heißt
+       * hinaus; Standort und Maschine heißen: an Ort und Stelle umschalten.
        */
-      if (tiefeIstOffen()) schliesseTiefe();
+      if (tiefeIstOffen() && knopf.dataset.ebene === 'karte') schliesseTiefe();
       reiterOeffnen(ziel);
     });
   });
