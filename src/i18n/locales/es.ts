@@ -56,6 +56,21 @@ export const es: TranslationDict = {
     fehlerZuKurz: 'La grabación es demasiado corta ({{zusatz}}).',
     fehlerLeer: 'El archivo está vacío.',
     fehlerUnlesbar: 'No se pudo abrir el archivo.',
+    alsNormalzustand: 'Guardar como estado normal',
+    normalNochKeiner:
+      'Esta máquina aún no tiene estado normal. Si este fragmento lo es, SoundFuchs comparará con él cada revisión posterior.',
+    normalSchonEiner: 'Esta máquina ya tiene un estado normal. Este fragmento puede sustituirlo.',
+    ersetzenFrage: 'Este archivo sustituye el estado normal actual.',
+    ersetzenBleibt: 'Las revisiones anteriores se conservan.',
+    ersetzenTun: 'Sustituir el estado normal',
+    normalSpeichert: 'Creando el estado normal …',
+    normalZuKurz:
+      'Un estado normal necesita al menos {{mindest}} segundos; este fragmento tiene {{dauer}} s.',
+    normalTaugtNicht:
+      'Este fragmento no sirve como referencia: {{gruende}}. Elija un punto más tranquilo.',
+    normalOhneGrund: 'el ruido es demasiado irregular',
+    normalGingNicht: 'No se pudo crear el estado normal.',
+    andereStelle: 'Elegir otro punto',
   },
   standortblatt: {
     reihen: 'Las series aquí',

@@ -45,10 +45,25 @@ function schreibePruefton(pfad) {
   const sekunden = 14;
   const bilder = rate * sekunden;
   const daten = Buffer.alloc(bilder * 2);
+  /**
+   * Ein reiner Sinus wäre kein Maschinengeräusch.
+   *
+   * Seit dieser Lauf auch den Normalzustand misst, muss der Ton eines
+   * abgeben können: Der Modellbau schaut auf 512 Bänder, und ein einzelner
+   * Ton füllt genau eines davon. Deshalb Ton PLUS Rauschen — und das
+   * Rauschen aus einem festen Zufallsgenerator, damit zwei Läufe dieselbe
+   * Datei ergeben.
+   */
+  let keim = 12345;
+  const wuerfel = () => {
+    keim = (keim * 1103515245 + 12345) & 0x7fffffff;
+    return keim / 0x3fffffff - 1;
+  };
   for (let i = 0; i < bilder; i += 1) {
     const t = i / rate;
     const amp = t < 2 ? 0.9 : t < 4 ? 0.05 : 0.25;
-    daten.writeInt16LE(Math.round(amp * 32767 * Math.sin(2 * Math.PI * 220 * t)), i * 2);
+    const wert = 0.55 * Math.sin(2 * Math.PI * 220 * t) + 0.45 * wuerfel();
+    daten.writeInt16LE(Math.round(amp * 32767 * wert), i * 2);
   }
   const kopf = Buffer.alloc(44);
   kopf.write('RIFF', 0);
@@ -304,18 +319,277 @@ try {
   );
   pruefe(brief.length > 0, 'ohne Normalzustand gibt es kein Briefing — dafür ist es aber gebaut');
 
+  /**
+   * Das Blatt zuziehen — mit einem echten Zug am Griff.
+   *
+   * Aufgezogen deckt es die untere Hälfte der Seite ab, und dort steht
+   * „Geräusch mitbringen". Ein erzwungener Klick trifft dann das Blatt: Der
+   * erste Versuch wartete 30 s vergeblich auf den Dateidialog, weil der Knopf
+   * gar nicht angefasst wurde. Der Griff hört auf Zeigergesten, nicht auf
+   * `click` — deshalb dieselbe Bewegung, die ein Daumen macht.
+   */
+  async function blattZuziehen() {
+    if (!(await page.evaluate(() => document.body.classList.contains('sheet-open')))) return;
+    const kasten = await page.locator('#sheet-grip').boundingBox();
+    if (!kasten) return;
+    const x = kasten.x + kasten.width / 2;
+    const y = kasten.y + kasten.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y + 500, { steps: 14 });
+    await page.mouse.up();
+    await page.waitForTimeout(900);
+  }
+
+  /**
+   * ── 1b. DER MITGEBRACHTE TON ALS NORMALZUSTAND ──────────────────────────
+   *
+   * Der Auftraggeber: „Dann kann man sein Auto heute filmen und in vier Wochen
+   * vergleichen." Gemessen wird deshalb nicht, ob ein Knopf da ist, sondern ob
+   * hinterher wirklich ein Normalzustand in der Ablage liegt — und ob der
+   * bisherige nie still verschwindet.
+   */
+  async function messeNormalzustand() {
+    console.log('\n=== Der mitgebrachte Ton als Normalzustand ===');
+    await blattZuziehen();
+
+    /** Was in der Ablage steht — gelesen aus der Datenbank der Seite selbst. */
+    const ablage = () =>
+      page.evaluate(() => {
+        const name = document.querySelector('.maschine-titelzeile h2')?.textContent?.trim() ?? '';
+        return new Promise((fertig) => {
+          const anfrage = indexedDB.open('zanobot-db');
+          anfrage.onerror = () => fertig({ name, gefunden: false });
+          anfrage.onsuccess = () => {
+            const db = anfrage.result;
+            const tx = db.transaction(['machines', 'recordings'], 'readonly');
+            const alle = tx.objectStore('machines').getAll();
+            const auf = tx.objectStore('recordings').getAll();
+            tx.oncomplete = () => {
+              const m = (alle.result ?? []).find((x) => x.name === name);
+              if (!m) return fertig({ name, gefunden: false });
+              const modelle = m.referenceModels ?? [];
+              fertig({
+                name,
+                gefunden: true,
+                id: m.id,
+                modelle: modelle.length,
+                etiketten: modelle.map((x) => x.label ?? '(ohne)'),
+                refAufnahmen: (auf.result ?? []).filter(
+                  (r) => r.machineId === m.id && r.type === 'reference'
+                ).length,
+              });
+            };
+            tx.onerror = () => fertig({ name, gefunden: false });
+          };
+        });
+      });
+
+    const vorher = await ablage();
+    console.log(
+      `  vorher                    ${vorher.name} · ${vorher.modelle ?? '?'} Modelle (${(vorher.etiketten ?? []).join(', ') || '—'}) · ${vorher.refAufnahmen ?? '?'} Referenzaufnahmen`
+    );
+    pruefe(vorher.gefunden, 'die geöffnete Maschine steht nicht in der Ablage — nichts messbar');
+
+    const wahl3 = page.waitForEvent('filechooser');
+    await page
+      .locator('.maschine-mitbringen')
+      .click({ timeout: 8000 })
+      .catch(() => {});
+    (await wahl3).setFiles(WAV).catch(() => {});
+    await page
+      .waitForFunction(() => Boolean(document.querySelector('.mitbringen-nehmen')), null, {
+        timeout: 30000,
+      })
+      .catch(() => {});
+
+    const angebot = await page.evaluate(() => {
+      const k = document.querySelector('.mitbringen-normal-knopf');
+      const kk = k?.getBoundingClientRect();
+      const haupt = document.querySelector('.mitbringen-nehmen')?.getBoundingClientRect();
+      return {
+        satz: document.querySelector('.mitbringen-normal-text')?.textContent?.trim() ?? '',
+        knopf: k?.textContent?.trim() ?? '',
+        hoch: kk ? Math.round(kk.height) : 0,
+        unterHaupt: kk && haupt ? kk.top >= haupt.top : false,
+      };
+    });
+    console.log(`  Satz                      ${angebot.satz || '(keiner)'}`);
+    console.log(`  Knopf                     ${angebot.knopf || 'FEHLT'} (${angebot.hoch} px)`);
+    pruefe(angebot.knopf.length > 0, 'die Vorschau bietet den Normalzustand gar nicht an');
+    pruefe(angebot.hoch >= 44, `„${angebot.knopf}" ist ${angebot.hoch} px hoch`);
+    pruefe(
+      angebot.satz.length > 20,
+      'der Knopf steht ohne Satz da — „Als Normalzustand speichern" allein sagt nicht, was folgt'
+    );
+    pruefe(
+      angebot.unterHaupt,
+      'der zweite Ausgang steht ÜBER der einen Handlung — dann ist er nicht mehr der zweite'
+    );
+
+    /**
+     * §7e: Ein vorhandener Normalzustand wird nie still überschrieben.
+     *
+     * Das ist die Zusage, die hier fällt oder steht — deshalb wird sie
+     * FALSIFIZIERT: erst gefragt, dann abgebrochen, dann nachgesehen, ob in der
+     * Ablage wirklich nichts passiert ist.
+     */
+    const hatteSchonEinen = (vorher.modelle ?? 0) > 0;
+    if (hatteSchonEinen) {
+      await page
+        .locator('.mitbringen-normal-knopf')
+        .click({ timeout: 6000 })
+        .catch(() => {});
+      await page.waitForTimeout(600);
+      const frage = await page.evaluate(() => ({
+        satz: document.querySelector('.mitbringen-ersetzen-frage')?.textContent?.trim() ?? '',
+        antworten: [...document.querySelectorAll('.mitbringen-fuss button')].map((b) =>
+          b.textContent.trim()
+        ),
+        istGespeichert: document.querySelectorAll('.mitbringen-dialog').length === 0,
+      }));
+      console.log(`  Frage vor dem Ersetzen    ${frage.satz || '(KEINE)'}`);
+      console.log(`  Antworten                 ${frage.antworten.join(' · ') || '(keine)'}`);
+      pruefe(
+        !frage.istGespeichert,
+        'der vorhandene Normalzustand wurde ohne Frage ersetzt — genau das darf nie passieren'
+      );
+      pruefe(
+        /ersetz|replace|sustitu|remplac|取代/i.test(frage.satz),
+        `die Frage sagt nicht, dass ersetzt wird — „${frage.satz}"`
+      );
+      pruefe(frage.antworten.length === 2, 'die Frage hat nicht genau zwei benannte Antworten');
+
+      // Abbrechen — und nachsehen, ob die Ablage unberührt ist.
+      await page
+        .locator('.mitbringen-fuss button')
+        .first()
+        .click({ timeout: 6000 })
+        .catch(() => {});
+      await page.waitForTimeout(800);
+      const nachAbbruch = await ablage();
+      const zurueckInVorschau = await page.evaluate(() =>
+        Boolean(document.querySelector('.mitbringen-nehmen'))
+      );
+      console.log(
+        `  nach „Abbrechen"          ${nachAbbruch.modelle} Modelle · Vorschau ${zurueckInVorschau ? 'wieder da' : 'WEG'}`
+      );
+      pruefe(
+        nachAbbruch.modelle === vorher.modelle &&
+          nachAbbruch.refAufnahmen === vorher.refAufnahmen,
+        'nach „Abbrechen" hat sich die Ablage trotzdem verändert'
+      );
+      pruefe(zurueckInVorschau, 'nach „Abbrechen" steht die Vorschau nicht wieder da');
+
+      await page
+        .locator('.mitbringen-normal-knopf')
+        .click({ timeout: 6000 })
+        .catch(() => {});
+      await page.waitForTimeout(600);
+      await page
+        .locator('.mitbringen-ersetzen-knopf')
+        .click({ timeout: 6000 })
+        .catch(() => {});
+    } else {
+      await page
+        .locator('.mitbringen-normal-knopf')
+        .click({ timeout: 6000 })
+        .catch(() => {});
+    }
+
+    /**
+     * Warten, bis es einen Ausgang gibt: Dialog zu (gespeichert) oder ein Satz,
+     * der sagt, warum nicht. Merkmale ziehen und ein Modell trainieren sind auf
+     * einem Telefon Sekunden — hier großzügig eine Minute.
+     */
+    await page
+      .waitForFunction(
+        () =>
+          document.querySelectorAll('.mitbringen-dialog').length === 0 ||
+          Boolean(document.querySelector('.mitbringen-normal-fehler')),
+        null,
+        { timeout: 60000 }
+      )
+      .catch(() => {});
+    await page.waitForTimeout(2500);
+
+    const ausgang = await page.evaluate(() => ({
+      dialogWeg: document.querySelectorAll('.mitbringen-dialog').length === 0,
+      fehlersatz: document.querySelector('.mitbringen-normal-fehler')?.textContent?.trim() ?? '',
+      wegWeiter: document.querySelector('.mitbringen-normal-fehler + button')?.textContent ?? '',
+      fingerabdruck: document.querySelectorAll('.maschine-fingerabdruck').length,
+      handlung: document.querySelector('.maschine-aktion')?.textContent?.trim() ?? '',
+    }));
+    const nachher = await ablage();
+    console.log(`  Dialog                    ${ausgang.dialogWeg ? 'zu' : 'steht noch'}`);
+    console.log(
+      `  nachher                   ${nachher.modelle} Modelle (${(nachher.etiketten ?? []).join(', ') || '—'}) · ${nachher.refAufnahmen} Referenzaufnahmen`
+    );
+
+    if (ausgang.dialogWeg) {
+      /** Der Erfolgsweg: Es liegt wirklich ein Normalzustand da. */
+      console.log(`  Fingerabdruck             ${ausgang.fingerabdruck ? 'gezeigt' : 'nicht da'}`);
+      console.log(`  eine Handlung             ${ausgang.handlung || '(fehlt)'}`);
+      pruefe(
+        (nachher.modelle ?? 0) > 0 && (nachher.etiketten ?? []).includes('Baseline'),
+        'der Dialog ging zu, aber in der Ablage steht kein Normalzustand'
+      );
+      pruefe(
+        (nachher.refAufnahmen ?? 0) > (vorher.refAufnahmen ?? 0),
+        'der Ton selbst wurde nicht aufbewahrt — dann gibt es in vier Wochen nichts zu vergleichen'
+      );
+      /**
+       * ERSETZT, nicht dazugelegt.
+       *
+       * Das ist der Unterschied zwischen „der Normalzustand" und „einer von
+       * dreien". Nur ein einziges Modell darf `Baseline` heißen — nach genau
+       * diesem Namen suchen Geisterbild, Iris und Reihenvergleich.
+       */
+      const baselines = (nachher.etiketten ?? []).filter((e) => e === 'Baseline').length;
+      console.log(`  Modelle namens „Baseline" ${baselines}`);
+      pruefe(baselines === 1, `es gibt ${baselines} Modelle namens „Baseline" statt genau einem`);
+      if (hatteSchonEinen) {
+        pruefe(
+          nachher.modelle === vorher.modelle,
+          `aus ${vorher.modelle} Modell(en) wurden ${nachher.modelle} — ersetzt wurde nicht, es kam eines dazu`
+        );
+      }
+    } else {
+      /**
+       * Der abgelehnte Weg ist auch ein Ausgang — aber nur mit Satz UND Weiter.
+       *
+       * Ein Ausschnitt kann zu kurz oder zu unruhig sein. Dann darf nichts
+       * gespeichert werden, und der Nutzer muss lesen können, was jetzt hilft.
+       */
+      console.log(`  Satz                      ${ausgang.fehlersatz || '(KEINER)'}`);
+      console.log(`  Weg weiter                ${ausgang.wegWeiter.trim() || '(KEINER)'}`);
+      pruefe(ausgang.fehlersatz.length > 0, 'der Normalzustand kam nicht zustande, und keiner sagt warum');
+      pruefe(ausgang.wegWeiter.trim().length > 0, 'nach der Ablehnung gibt es keinen Weg weiter');
+      pruefe(
+        nachher.modelle === vorher.modelle && nachher.refAufnahmen === vorher.refAufnahmen,
+        'abgelehnt — und trotzdem hat sich die Ablage verändert'
+      );
+      await page
+        .locator('.mitbringen-schliessen')
+        .click({ timeout: 6000 })
+        .catch(() => {});
+      await page.waitForTimeout(500);
+    }
+  }
+
+  // Zweimal: beim ersten Mal hat die Maschine keinen Normalzustand, beim
+  // zweiten hat sie einen — und nur dann ist die Ersetzen-Frage messbar.
+  await messeNormalzustand();
+  await messeNormalzustand();
+
   // ── 2. Das echte Telefonvideo ───────────────────────────────────────────
   if (VIDEO && existsSync(VIDEO)) {
     console.log('\n=== Das echte Telefonvideo (MP4, HEVC + AAC-LC, 23,9 MB) ===');
-    await page
-      .locator('.tab-button[data-tab="zweid"]')
-      .click({ timeout: 6000 })
-      .catch(() => {});
-    await page.waitForTimeout(500);
+    await blattZuziehen();
     const wahl2 = page.waitForEvent('filechooser');
     await page
       .locator('.maschine-mitbringen')
-      .click({ force: true })
+      .click({ timeout: 8000 })
       .catch(() => {});
     (await wahl2).setFiles(VIDEO).catch(() => {});
     await page

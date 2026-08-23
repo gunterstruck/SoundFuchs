@@ -56,6 +56,20 @@ export const en: TranslationDict = {
     fehlerZuKurz: 'The recording is too short ({{zusatz}}).',
     fehlerLeer: 'The file is empty.',
     fehlerUnlesbar: 'The file could not be opened.',
+    alsNormalzustand: 'Save as normal state',
+    normalNochKeiner:
+      'This machine has no normal state yet. If this section becomes one, SoundFuchs compares every later check against it.',
+    normalSchonEiner: 'This machine already has a normal state. This section can replace it.',
+    ersetzenFrage: 'This file replaces the current normal state.',
+    ersetzenBleibt: 'Earlier checks are kept.',
+    ersetzenTun: 'Replace normal state',
+    normalSpeichert: 'Creating the normal state …',
+    normalZuKurz:
+      'A normal state needs at least {{mindest}} seconds; this section has {{dauer}} s.',
+    normalTaugtNicht: 'This section does not work as a yardstick: {{gruende}}. Pick a calmer spot.',
+    normalOhneGrund: 'the sound is too uneven',
+    normalGingNicht: 'The normal state could not be created.',
+    andereStelle: 'Choose another spot',
   },
   standortblatt: {
     reihen: 'The rows here',

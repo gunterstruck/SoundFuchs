@@ -12516,6 +12516,50 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   cursor: pointer;
 }
 
+/* ── DER ZWEITE AUSGANG: DER NORMALZUSTAND ────────────────────────────────
+   Unter der einen Handlung, durch eine Linie abgesetzt und ungefüllt: „Diesen
+   Ausschnitt verwenden" bleibt der Hauptweg. Wer den Maßstab setzen will,
+   findet ihn; wer nur schauen will, geht daran vorbei. */
+.mitbringen-normal {
+  border-top: 1px solid var(--border-color);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mitbringen-normal-text {
+  margin: 0;
+}
+
+.mitbringen-normal-knopf {
+  min-height: 44px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md, 12px);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mitbringen-normal-knopf:hover {
+  border-color: var(--color-primary-dark);
+}
+
+/* Die Frage vor dem Ersetzen trägt Gewicht, weil sie welches hat. */
+.mitbringen-ersetzen-frage,
+.mitbringen-normal-fehler {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mitbringen-normal-fehler + button {
+  width: 100%;
+  min-height: 48px;
+  font-weight: 600;
+}
+
 /* Der Weg hinein, auf der Maschinenseite: unter der einen Handlung und
    ungefüllt. Aufnehmen bzw. Prüfen bleibt der Hauptweg. */
 .maschine-mitbringen {

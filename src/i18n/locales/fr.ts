@@ -56,6 +56,21 @@ export const fr: TranslationDict = {
     fehlerZuKurz: "L'enregistrement est trop court ({{zusatz}}).",
     fehlerLeer: 'Le fichier est vide.',
     fehlerUnlesbar: "Le fichier n'a pas pu être ouvert.",
+    alsNormalzustand: 'Enregistrer comme état normal',
+    normalNochKeiner:
+      "Cette machine n'a pas encore d'état normal. Si cet extrait le devient, SoundFuchs comparera chaque contrôle ultérieur avec lui.",
+    normalSchonEiner: 'Cette machine a déjà un état normal. Cet extrait peut le remplacer.',
+    ersetzenFrage: "Ce fichier remplace l'état normal actuel.",
+    ersetzenBleibt: 'Les contrôles précédents sont conservés.',
+    ersetzenTun: "Remplacer l'état normal",
+    normalSpeichert: "Création de l'état normal …",
+    normalZuKurz:
+      'Un état normal demande au moins {{mindest}} secondes ; cet extrait en a {{dauer}}.',
+    normalTaugtNicht:
+      'Cet extrait ne convient pas comme référence : {{gruende}}. Choisissez un endroit plus calme.',
+    normalOhneGrund: 'le bruit est trop irrégulier',
+    normalGingNicht: "L'état normal n'a pas pu être créé.",
+    andereStelle: 'Choisir un autre endroit',
   },
   standortblatt: {
     reihen: 'Les séries ici',
