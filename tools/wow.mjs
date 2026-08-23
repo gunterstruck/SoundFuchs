@@ -287,9 +287,7 @@ const AUFMASS_STANDORT = () => {
     zeilen: zeilen.length,
     // Jede Zeile sagt in Worten, was mit ihrer Maschine los ist — und zwar in
     // denselben Worten wie die Maschinenseite selbst.
-    lagen: zeilen.map(
-      (z) => z.querySelector('.standort-maschine-lage')?.textContent?.trim() ?? ''
-    ),
+    lagen: zeilen.map((z) => z.querySelector('.standort-maschine-lage')?.textContent?.trim() ?? ''),
     lageSatz: document.querySelector('.standort-lage')?.textContent?.trim() ?? '',
     // „Maschinen" über einer Maschinenliste unter einer Kachel „4 Maschinen".
     ueberschriften: [...tiefe.querySelectorAll('h3')].filter(sichtbar).length,
@@ -700,10 +698,11 @@ async function pruefeUndWarte(page) {
         aufnahme: sicht('record-reference-content'),
         pruefung: sicht('run-diagnosis-content'),
         knopf: sicht('diagnose-btn'),
-        fenster: [...document.querySelectorAll('.modal')]
-          .filter((m) => getComputedStyle(m).display !== 'none')
-          .map((m) => m.id)
-          .join(',') || 'keine',
+        fenster:
+          [...document.querySelectorAll('.modal')]
+            .filter((m) => getComputedStyle(m).display !== 'none')
+            .map((m) => m.id)
+            .join(',') || 'keine',
       };
     });
     console.log(`  !! Prüfung ließ sich nicht starten: ${JSON.stringify(gesehen)}`);
@@ -999,7 +998,9 @@ try {
       const sichtbar = (e) => {
         const cs = getComputedStyle(e);
         return (
-          cs.display !== 'none' && cs.visibility !== 'hidden' && e.getBoundingClientRect().height > 0
+          cs.display !== 'none' &&
+          cs.visibility !== 'hidden' &&
+          e.getBoundingClientRect().height > 0
         );
       };
       const ansicht = document.querySelector('.maschinen-ansicht');
@@ -1058,7 +1059,9 @@ try {
     console.log(`  eine Handlung             ${ruhe.aktionsname || '(fehlt)'}`);
     console.log(`  letzte Hör-Lupe           ${ruhe.nachhoeren || '(fehlt)'}`);
     console.log(`  Klangbild ohne Tipp       ${ruhe.klangbildGemalt ? 'gemalt' : 'NEIN'}`);
-    console.log(`  ungenutzter Bildschirm    ${ruhe.ungenutztUnten} px (Budget ${BUDGET.leerRaum})`);
+    console.log(
+      `  ungenutzter Bildschirm    ${ruhe.ungenutztUnten} px (Budget ${BUDGET.leerRaum})`
+    );
 
     pruefe(
       /prüfen/i.test(ruhe.aktionsname),
@@ -1109,12 +1112,144 @@ try {
      * vorher die Hör-Lupe aufmachte. Für den Produktleuchtturm des Hauses ist
      * das der falsche Ort.
      */
-    pruefe(ruhe.briefing.length > 0, 'Fall C: kein Weg zum Geräusch-Briefing auf der Maschinenseite');
+    pruefe(
+      ruhe.briefing.length > 0,
+      'Fall C: kein Weg zum Geräusch-Briefing auf der Maschinenseite'
+    );
     pruefe(ruhe.briefingImBild, 'Fall C: das Briefing steht nicht ohne Scrollen im Bild');
     pruefe(
       ruhe.briefingHoch >= BUDGET.antippgroesse,
       `Fall C: der Briefing-Knopf ist ${ruhe.briefingHoch} px hoch`
     );
+
+    /**
+     * ── DIE TÜR AM ENDE DES BRIEFINGS ─────────────────────────────────────
+     *
+     * Das Geräusch-Briefing entsteht vollständig im Browser: ein ZIP und ein
+     * Arbeitsauftrag in der Zwischenablage. Bis zum 23.08.2026 endete der
+     * Erfolgsbildschirm dort — „Nochmal kopieren" und „Fertig". Wohin damit,
+     * musste jeder selbst wissen. Der letzte Schritt einer Funktion, die es
+     * genau für diesen Schritt gibt, war der einzige ohne Weg.
+     *
+     * Gemessen wird nicht, dass ein Knopf dasteht, sondern dass er das
+     * GEWÄHLTE Werkzeug beim Namen nennt und wirklich dessen Adresse öffnet.
+     * Ein Knopf „In Claude öffnen", der auf die eigene Startseite führte, sähe
+     * im Quelltext gleich aus.
+     *
+     * Der Lauf steht hier, weil an dieser Stelle beides vorliegt, was das
+     * Briefing braucht: ein Normalzustand und eine Messung. Er kostet kein
+     * zusätzliches Mikrofonsignal.
+     */
+    await page
+      .locator('.maschine-briefing')
+      .first()
+      .click({ force: true, timeout: 5000 })
+      .catch(() => {});
+    await page.waitForTimeout(1500);
+    // Ein Wächter, der nur „ging nicht" sagt, ist einer, den man überblättert.
+    // Wenn der Dialog nicht aufgeht, gehört ins Protokoll, was stattdessen da
+    // stand — sonst beginnt die Suche bei null.
+    const briefingZustand = await page.evaluate(() => {
+      const zustimmung = document.querySelector('.analysepaket-zustimmung input');
+      if (zustimmung) {
+        zustimmung.checked = true;
+        zustimmung.dispatchEvent(new Event('change'));
+        return { offen: true, gesehen: '' };
+      }
+      return {
+        offen: false,
+        gesehen:
+          [...document.querySelectorAll('[class*="analysepaket"]')]
+            .map((e) => e.className)
+            .slice(0, 3)
+            .join(' | ') || '(nichts vom Briefing im Baum)',
+      };
+    });
+    const briefingOffen = briefingZustand.offen;
+    let tuer = { knopf: '', wechsel: '', hinweis: '', ziel: '', primaer: 0 };
+    if (briefingOffen) {
+      await page.evaluate(() => document.querySelector('.analysepaket-erstellen')?.click());
+      await page
+        .waitForFunction(() => Boolean(document.querySelector('.analysepaket-tuer')), null, {
+          timeout: 60000,
+        })
+        .catch(() => {});
+      /**
+       * Wohin der Knopf führt — gemessen an der Adresse, die er dem Browser
+       * übergibt, nicht am geladenen Tab.
+       *
+       * Der erste Versuch fing den neuen Tab ab und las dessen `url()`. Das
+       * misst zwei Dinge auf einmal: unsere Adresse UND die Erreichbarkeit
+       * von claude.ai. Im abgeschotteten Lauf gibt es keine Route nach
+       * draußen — der Tab ging auf und blieb ohne Adresse, und der Wächter
+       * meldete „führt nirgendwohin", obwohl die Tür stand.
+       *
+       * `window.open` abzufangen misst genau das, wofür das Produkt zuständig
+       * ist: welche Adresse es nennt. Ob der Browser sie erreicht, ist nicht
+       * unsere Aussage.
+       */
+      await page.evaluate(() => {
+        window.__tuerZiel = '';
+        const echt = window.open;
+        window.open = (adresse, ...rest) => {
+          window.__tuerZiel = String(adresse ?? '');
+          return echt.call(window, 'about:blank', ...rest);
+        };
+      });
+      await page
+        .locator('.analysepaket-tuer-knopf')
+        .click({ timeout: 8000 })
+        .catch(() => {});
+      await page.waitForTimeout(600);
+      tuer = await page.evaluate(() => ({
+        knopf: document.querySelector('.analysepaket-tuer-knopf')?.textContent?.trim() ?? '',
+        wechsel: document.querySelector('.analysepaket-tuer-wechsel')?.textContent?.trim() ?? '',
+        hinweis: document.querySelector('.analysepaket-tuer-schritte')?.textContent?.trim() ?? '',
+        ziel: window.__tuerZiel ?? '',
+        primaer: [...document.querySelectorAll('.analysepaket-erfolg .primary-btn')].filter(
+          (b) => getComputedStyle(b).display !== 'none'
+        ).length,
+      }));
+      for (const seite of page.context().pages()) {
+        if (seite !== page) await seite.close().catch(() => {});
+      }
+    }
+    console.log('\n=== Der Weg zum Auswertungswerkzeug ===');
+    console.log(
+      `  Briefing geöffnet         ${briefingOffen ? 'ja' : `NEIN — ${briefingZustand.gesehen}`}`
+    );
+    console.log(`  Knopf                     ${tuer.knopf || '(fehlt)'}`);
+    console.log(`  was dort zu tun ist       ${tuer.hinweis || '(fehlt)'}`);
+    console.log(`  anderes Werkzeug          ${tuer.wechsel || '(fehlt)'}`);
+    console.log(`  führt nach                ${tuer.ziel || '(nirgendwohin)'}`);
+    pruefe(briefingOffen, 'Briefing: der Weg zum Geräusch-Briefing führt nicht in den Dialog');
+    pruefe(
+      /Claude/.test(tuer.knopf),
+      `Briefing: am Ende steht kein Weg zum gewählten Werkzeug — „${tuer.knopf}"`
+    );
+    pruefe(
+      tuer.ziel.startsWith('https://claude.ai/'),
+      `Briefing: der Knopf führt nach „${tuer.ziel || 'nirgendwohin'}" statt zum gewählten Werkzeug`
+    );
+    pruefe(
+      /ChatGPT/.test(tuer.wechsel),
+      `Briefing: kein leiser Wechsel zum anderen Werkzeug — „${tuer.wechsel}"`
+    );
+    pruefe(
+      tuer.hinweis.length > 0,
+      'Briefing: der Knopf sagt nicht, was am Ziel zu tun ist — einfügen und das ZIP anhängen'
+    );
+    pruefe(
+      tuer.primaer === BUDGET.primaer,
+      `Briefing: ${tuer.primaer} dominante Handlungen auf dem Erfolgsbildschirm statt genau einer`
+    );
+    // Den Dialog wieder schließen, damit der Rest des Laufs vorfindet, was er
+    // erwartet.
+    await page.evaluate(() => {
+      const knoepfe = [...document.querySelectorAll('.analysepaket-erfolg-aktionen button')];
+      (knoepfe[knoepfe.length - 1] ?? document.querySelector('.analysepaket-schliessen'))?.click();
+    });
+    await page.waitForTimeout(1200);
 
     /**
      * Und der Verlauf sagt, wie viel dahinter liegt. „Verlauf" allein war ein
@@ -1499,10 +1634,7 @@ try {
       rahmen.schalterHoch > 0,
       'S5d: der Basis/Profi-Schalter ist hinter dem Scharnier nicht zu sehen — er soll dastehen, nicht in einem Tipp liegen'
     );
-    pruefe(
-      rahmen.schalterHoch >= 40,
-      `S5d: der Stufenschalter ist ${rahmen.schalterHoch} px hoch`
-    );
+    pruefe(rahmen.schalterHoch >= 40, `S5d: der Stufenschalter ist ${rahmen.schalterHoch} px hoch`);
     /**
      * Die Tiefe liegt IM Rahmen, nicht darüber.
      *

@@ -10,6 +10,11 @@ import {
 import type { SpectralSelection } from '@core/audio/spectralSelection.js';
 import { t } from '../../i18n/index.js';
 import { logger } from '@utils/logger.js';
+import {
+  gewaehltesWerkzeug,
+  waehleWerkzeug,
+  weitereWerkzeuge,
+} from '../../stamm/einstellungen/werkzeug.js';
 
 export interface AnalysisPackageDialogOptions {
   reference?: AudioBuffer | null;
@@ -504,6 +509,62 @@ export class AnalysisPackageDialog {
     field.value = prompt;
     promptLabel.append(label, field);
     success.appendChild(promptLabel);
+
+    /**
+     * ── DIE TÜR ───────────────────────────────────────────────────────────
+     *
+     * Bis zum 23.08.2026 endete der Erfolgsbildschirm hier: „Nochmal kopieren"
+     * und „Fertig". Der Arbeitsauftrag lag in der Zwischenablage, das Paket im
+     * Download-Ordner — und wohin damit, musste jeder selbst wissen. Der
+     * letzte Schritt einer Funktion, die es genau für diesen Schritt gibt, war
+     * der einzige ohne Weg.
+     *
+     * Der Knopf öffnet das gewählte Werkzeug in einem neuen Tab. Er füllt
+     * nichts aus: Der Arbeitsauftrag ist zu lang für eine Adresszeile, und die
+     * ZIP-Datei kann ohnehin nur der Nutzer anhängen. Was er tut, ist das
+     * Einzige, was die App hier tun kann und was bisher fehlte — den Weg
+     * zeigen.
+     *
+     * Daneben, leise, das andere Werkzeug. Wer dort tippt, wählt für dieses
+     * Mal UND für das nächste: Eine Wahl, die man an der Tür trifft und die
+     * dann vergessen wird, müsste man jedes Mal neu treffen.
+     */
+    const tuer = document.createElement('div');
+    tuer.className = 'analysepaket-tuer';
+    const oeffne = (werkzeug: { id: string; name: string; adresse: string }): void => {
+      waehleWerkzeug(werkzeug.id);
+      window.open(werkzeug.adresse, '_blank', 'noopener,noreferrer');
+    };
+    const baueTuer = (): void => {
+      tuer.replaceChildren();
+      const werkzeug = gewaehltesWerkzeug();
+      const hin = document.createElement('button');
+      hin.type = 'button';
+      hin.className = 'primary-btn analysepaket-tuer-knopf';
+      hin.textContent = t('analysisPackage.openIn', { name: werkzeug.name });
+      hin.onclick = () => oeffne(werkzeug);
+      tuer.appendChild(hin);
+
+      const schritte = document.createElement('p');
+      schritte.className = 'muted small analysepaket-tuer-schritte';
+      schritte.textContent = t('analysisPackage.openInHint');
+      tuer.appendChild(schritte);
+
+      for (const anderes of weitereWerkzeuge(werkzeug)) {
+        const wechsel = document.createElement('button');
+        wechsel.type = 'button';
+        wechsel.className = 'analysepaket-tuer-wechsel';
+        wechsel.textContent = t('analysisPackage.useInstead', { name: anderes.name });
+        wechsel.onclick = () => {
+          waehleWerkzeug(anderes.id);
+          baueTuer();
+        };
+        tuer.appendChild(wechsel);
+      }
+    };
+    baueTuer();
+    success.appendChild(tuer);
+
     const actions = document.createElement('div');
     actions.className = 'analysepaket-erfolg-aktionen';
     const copy = document.createElement('button');
@@ -517,13 +578,16 @@ export class AnalysisPackageDialog {
     };
     const done = document.createElement('button');
     done.type = 'button';
-    done.className = 'primary-btn';
+    // Nicht mehr die dominante Handlung: Das ist jetzt der Weg zum Werkzeug.
+    // Zwei gefüllte Knöpfe nebeneinander wären zwei Angebote, von denen eines
+    // „hör hier auf" bedeutet.
+    done.className = 'listen-btn';
     done.textContent = t('analysisPackage.done');
     done.onclick = () => this.close();
     actions.append(copy, done);
     success.appendChild(actions);
     this.dialog.appendChild(success);
-    done.focus();
+    tuer.querySelector('button')?.focus();
   }
 
   private close(): void {

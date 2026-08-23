@@ -23,6 +23,7 @@ export const fr: TranslationDict = {
     view: 'Vue : simple ou pro',
     map: 'Carte des sites',
     customerData: 'Sites : exemples et import',
+    tool: "Outil d'analyse",
   },
 
   // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
@@ -216,6 +217,16 @@ export const fr: TranslationDict = {
     copied: '✓ Mission copiée',
     copyManually: 'Texte sélectionné — veuillez copier',
     done: 'Terminé',
+    openIn: 'Ouvrir dans {{name}}',
+    openInHint: "Collez-le là-bas et joignez le fichier ZIP téléchargé. SoundFuchs n'envoie rien.",
+    useInstead: 'Utiliser {{name}} à la place',
+  },
+  tool: {
+    title: "Outil d'analyse",
+    description:
+      "Le briefing sonore est créé dans le navigateur. Où vous l'emmenez ensuite se décide ici : SoundFuchs ouvre l'outil, mais n'envoie rien.",
+    label: 'Outil',
+    hint: "À la fin du briefing, un bouton y mène. L'ordre de travail est alors dans le presse-papiers, le paquet dans le dossier de téléchargement.",
   },
   site: {
     countMachines: '{{n}} machines',

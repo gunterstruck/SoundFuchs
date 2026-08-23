@@ -3257,6 +3257,30 @@
 
             <div class="settings-divider"></div>
 
+            <!-- Auswertungswerkzeug: wohin das Geräusch-Briefing geht.
+                 Ohne data-view-level, also auch auf Basis: Wer ein Briefing
+                 erzeugen kann, muss auch sagen dürfen, wohin damit. -->
+            <div class="setting-category" data-thema="werkzeug">
+              <h4 class="setting-category-title" data-i18n="tool.title">Auswertungswerkzeug</h4>
+              <p class="setting-category-description" data-i18n="tool.description">
+                Das Geräusch-Briefing entsteht im Browser. Wohin Sie es danach geben, wählen Sie
+                hier — SoundFuchs öffnet das Werkzeug, lädt aber nichts hoch.
+              </p>
+              <div class="setting-item">
+                <label for="analysis-tool-select" data-i18n="tool.label">Werkzeug</label>
+                <select id="analysis-tool-select">
+                  <option value="claude">Claude</option>
+                  <option value="chatgpt">ChatGPT</option>
+                </select>
+                <p class="setting-description" data-i18n="tool.hint">
+                  Am Ende des Briefings führt ein Knopf dorthin. Der Arbeitsauftrag liegt dann in
+                  der Zwischenablage, das Paket im Download-Ordner.
+                </p>
+              </div>
+            </div>
+
+            <div class="settings-divider"></div>
+
             <!-- Theme Selection Section -->
 
             <!-- Audio Settings (Advanced+) -->

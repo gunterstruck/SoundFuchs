@@ -23,6 +23,7 @@ export const es: TranslationDict = {
     view: 'Vista: básica o profesional',
     map: 'Mapa de ubicaciones',
     customerData: 'Ubicaciones: ejemplos e importación',
+    tool: 'Herramienta de análisis',
   },
 
   // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
@@ -213,6 +214,16 @@ export const es: TranslationDict = {
     copied: '✓ Encargo copiado',
     copyManually: 'Texto seleccionado — cópialo',
     done: 'Listo',
+    openIn: 'Abrir en {{name}}',
+    openInHint: 'Péguelo allí y adjunte el archivo ZIP descargado. SoundFuchs no sube nada.',
+    useInstead: 'Usar {{name}} en su lugar',
+  },
+  tool: {
+    title: 'Herramienta de análisis',
+    description:
+      'El informe de sonido se crea en el navegador. Adónde lo lleva después lo decide aquí: SoundFuchs abre la herramienta, pero no sube nada.',
+    label: 'Herramienta',
+    hint: 'Al final del informe, un botón lleva allí. La orden de trabajo queda en el portapapeles y el paquete en la carpeta de descargas.',
   },
   site: {
     countMachines: '{{n}} máquinas',

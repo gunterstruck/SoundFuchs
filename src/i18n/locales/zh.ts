@@ -23,6 +23,7 @@ export const zh: TranslationDict = {
     view: '视图：基础或专业',
     map: '地点地图',
     customerData: '地点：示例与导入',
+    tool: '分析工具',
   },
 
   // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
@@ -196,6 +197,16 @@ export const zh: TranslationDict = {
     copied: '✓ 已复制任务说明',
     copyManually: '文字已选中——请复制',
     done: '完成',
+    openIn: '在 {{name}} 中打开',
+    openInHint: '在那里粘贴并附上已下载的 ZIP 文件。SoundFuchs 不会上传任何内容。',
+    useInstead: '改用 {{name}}',
+  },
+  tool: {
+    title: '分析工具',
+    description:
+      '声音简报在浏览器中生成。之后交给谁，由您在这里选择——SoundFuchs 只负责打开工具，不会上传任何内容。',
+    label: '工具',
+    hint: '简报结束时有一个按钮通向那里。届时工作说明在剪贴板中，数据包在下载文件夹中。',
   },
   site: {
     countMachines: '{{n}} 台机器',

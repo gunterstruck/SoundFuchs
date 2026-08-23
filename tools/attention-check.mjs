@@ -102,11 +102,21 @@ const BUDGET = {
    *
    * Was der Rahmen kostet, ist damit sichtbar und begründet. Was die Ansicht
    * selbst verlangt, steht weiter unter demselben Maßstab wie vorher.
+   *
+   * ── 23.08.2026: +1 für die Wahl des Auswertungswerkzeugs ────────────────
+   *
+   * Ein Auswahlfeld mehr im Einstellungen-Dialog, auf beiden Stufen dasselbe.
+   * Gemessen: Handy 29 (blieb unter dem alten Budget), Schreibtisch 32 und 54.
+   *
+   * Es ist bewusst ein Bedienelement und keine zweite Zeile im Menü, die auf
+   * eine dritte Seite führt: Die Frage hat genau zwei Antworten, und ein
+   * Auswahlfeld ist die kürzeste Form, sie zu stellen. Angehoben wird um
+   * genau eins — nicht bis zum Grün, sondern um das, was dazugekommen ist.
    */
   erstbild: 16,
   schritteOffen: 18,
-  einstellungenBasis: 31,
-  einstellungenExperte: 53,
+  einstellungenBasis: 32,
+  einstellungenExperte: 54,
 };
 
 /**
@@ -468,6 +478,35 @@ try {
     pruefe(
       basis.bedienelemente <= BUDGET.einstellungenBasis,
       `${format.name}: Einstellungen/Basis ${basis.bedienelemente} > Budget ${BUDGET.einstellungenBasis}`
+    );
+
+    /**
+     * Das Auswertungswerkzeug steht schon auf Basis.
+     *
+     * Es ist keine Feineinstellung der Messung, sondern die Entscheidung, an
+     * wen man das Geräusch weitergibt. Wer ein Briefing erzeugen kann — und
+     * das kann jeder, der Knopf steht auf der Maschinenseite —, muss auch
+     * sagen dürfen, wohin damit. Läge es auf Profi, stünde am Ende des
+     * Briefings ein Werkzeug, das man nicht wechseln kann, ohne vorher eine
+     * Stufe zu finden, von der man nicht weiß, dass es sie gibt.
+     */
+    const werkzeugfeld = await page.evaluate(() => {
+      const feld = document.getElementById('analysis-tool-select');
+      if (!feld) return { da: false, sichtbar: false, auswahl: [] };
+      const kasten = feld.getBoundingClientRect();
+      return {
+        da: true,
+        sichtbar: getComputedStyle(feld).display !== 'none' && kasten.height > 0,
+        auswahl: [...feld.options].map((o) => o.textContent.trim()),
+      };
+    });
+    console.log(
+      `Werkzeugwahl Basis  ${werkzeugfeld.sichtbar ? 'sichtbar' : '   FEHLT'}   ${werkzeugfeld.auswahl.join(' · ')}`
+    );
+    pruefe(
+      werkzeugfeld.sichtbar,
+      `${format.name}: die Wahl des Auswertungswerkzeugs steht auf Basis nicht da` +
+        (werkzeugfeld.da ? ' (vorhanden, aber verborgen)' : ' (gar nicht im Baum)')
     );
 
     await page.evaluate(() => {
@@ -963,10 +1002,7 @@ try {
       scharnierIstKnopf,
       'Scharnier: der Maschinenstandortname ist kein Knopf — der Übergang hängt genau an ihm'
     );
-    pruefe(
-      scharnierOeffnet,
-      'Scharnier: der Name lässt sich drücken, führt aber nirgendwohin'
-    );
+    pruefe(scharnierOeffnet, 'Scharnier: der Name lässt sich drücken, führt aber nirgendwohin');
     pruefe(
       Boolean(standort?.titel),
       'Standortansicht: hinter dem Scharnier steht kein Maschinenstandortname'
@@ -1404,8 +1440,11 @@ try {
         const e = document.querySelector(sel);
         if (!e) return false;
         const cs = getComputedStyle(e);
-        return cs.display !== 'none' && cs.visibility !== 'hidden' &&
-          e.getBoundingClientRect().height > 0;
+        return (
+          cs.display !== 'none' &&
+          cs.visibility !== 'hidden' &&
+          e.getBoundingClientRect().height > 0
+        );
       };
       return {
         kopfleiste: da('#app > .topbar'),
@@ -1441,7 +1480,10 @@ try {
       bestandDa: Boolean(document.querySelector('#zanobo-tiefe .container')),
     }));
 
-    await page.locator('.tiefe-zurueck').click({ force: true }).catch(() => {});
+    await page
+      .locator('.tiefe-zurueck')
+      .click({ force: true })
+      .catch(() => {});
     await page.waitForTimeout(700);
     const zurueck = await page.evaluate(() => ({
       tiefeZu: document.getElementById('zanobo-tiefe')?.hidden ?? false,
@@ -1498,7 +1540,10 @@ try {
       steht.tiefeZu,
       'Scharnier: die Tiefe steht beim Start offen — die Karte wäre nie das erste Bild'
     );
-    pruefe(drin.tiefeOffen && drin.bestandDa, 'Scharnier: die Tür geht auf, aber dahinter steht nichts');
+    pruefe(
+      drin.tiefeOffen && drin.bestandDa,
+      'Scharnier: die Tür geht auf, aber dahinter steht nichts'
+    );
     pruefe(
       drin.stammRuht,
       'Scharnier: der Stamm bleibt sichtbar, während die Tiefe offen ist — zwei Oberflächen übereinander'
