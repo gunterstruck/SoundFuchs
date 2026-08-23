@@ -431,6 +431,164 @@ try {
     ergebnisort.alterDialog ? 'er steht offen' : 'zu'
   );
 
+  /**
+   * ── WIE KRÄFTIG IST DAS BILD, UND FÄNGT ES DEN FINGER? ──────────────────
+   *
+   * Der Auftraggeber am 23.08.2026, mit Bildschirmfoto: „Das Bild ist fahl.
+   * Und wenn ich drauftippe zum Scrollen, geht das nicht."
+   *
+   * Beides ist am fertigen Bild messbar, und beides gehört hierher: Diese
+   * Stelle ist die einzige im ganzen Lauf, an der ein ECHTES Klangbild aus
+   * einer echten Aufnahme steht. Berichtet wird immer, geprüft nur, was eine
+   * Zusage ist.
+   */
+  const bildbefund = await page.evaluate(() => {
+    /**
+     * Das SICHTBARE Klangbild — nicht das erstbeste.
+     *
+     * Der erste Versuch nahm `document.querySelector('.klangbild-flaeche')`.
+     * Das traf das Bild im Analyseblatt: zugezogen, 0 px hoch, Gesten an. Die
+     * beiden Zusagen darunter wurden dadurch grün, ohne je das Bild angesehen
+     * zu haben, um das es geht. Ein Wächter, der das falsche Ding misst, misst
+     * nichts.
+     */
+    const flaeche = [...document.querySelectorAll('.klangbild-flaeche')].find(
+      (f) => f.getBoundingClientRect().height > 0
+    );
+    const c = flaeche?.querySelector('.klangbild-flach');
+    const erg = {
+      flaecheHoch: flaeche ? Math.round(flaeche.getBoundingClientRect().height) : 0,
+      anteil: flaeche
+        ? Math.round((flaeche.getBoundingClientRect().height / window.innerHeight) * 100)
+        : 0,
+      touchAction: flaeche ? getComputedStyle(flaeche).touchAction : '(keine Fläche)',
+      deaktiviert: flaeche ? flaeche.disabled : null,
+      hinweis:
+        flaeche?.closest('.klangbild')?.querySelector('.klangbild-ziehhinweis')?.textContent?.trim() ??
+        '',
+    };
+    if (!c || !c.width) return { ...erg, bild: null };
+    const g = c.getContext('2d');
+    const d = g.getImageData(0, 0, c.width, c.height).data;
+    let sat = 0;
+    let n = 0;
+    const eimer = new Array(5).fill(0);
+    for (let i = 0; i < d.length; i += 4 * 5) {
+      const r = d[i] / 255;
+      const gg = d[i + 1] / 255;
+      const bb = d[i + 2] / 255;
+      const max = Math.max(r, gg, bb);
+      const min = Math.min(r, gg, bb);
+      sat += max === 0 ? 0 : (max - min) / max;
+      // Fünf Körbe entlang des Turbo-Verlaufs: 0 = tiefblau … 4 = rot
+      eimer[Math.min(4, Math.floor(((r > bb ? (gg > 0.6 ? 0.8 : 1) : gg > 0.4 ? 0.5 : 0.2) * 5)))] += 1;
+      n += 1;
+    }
+    return {
+      ...erg,
+      bild: {
+        leinwand: `${c.width}×${c.height}`,
+        streckung: `${(c.getBoundingClientRect().width / c.width).toFixed(1)}× breit, ${(c.getBoundingClientRect().height / c.height).toFixed(1)}× hoch`,
+        glaettung: getComputedStyle(c).imageRendering,
+        mittlereSaettigung: +(sat / n).toFixed(3),
+        anteilImOberenDrittelDerSkala: Math.round(((eimer[3] + eimer[4]) / n) * 100),
+      },
+    };
+  });
+  console.log('\n  — Das Bild auf der Maschinenseite —');
+  console.log(`  Leinwand                  ${bildbefund.bild?.leinwand ?? '(kein Bild)'}`);
+  console.log(`  gestreckt auf             ${bildbefund.bild?.streckung ?? '—'}`);
+  console.log(`  Glättung                  ${bildbefund.bild?.glaettung ?? '—'}`);
+  console.log(
+    `  Fläche                    ${bildbefund.flaecheHoch} px (${bildbefund.anteil} % des Bildschirms)`
+  );
+  console.log(`  mittlere Sättigung        ${bildbefund.bild?.mittlereSaettigung ?? '—'}`);
+  console.log(`  touch-action              ${bildbefund.touchAction}`);
+  console.log(`  Fläche deaktiviert        ${bildbefund.deaktiviert}`);
+  console.log(`  Hinweis darunter          ${bildbefund.hinweis || '(keiner)'}`);
+  /**
+   * Die Zusage: Ein Bild, das keine Geste annimmt, darf den Finger auch nicht
+   * festhalten. `touch-action: none` sagt dem Browser „hier wird nicht
+   * gescrollt" — auf einem Bild, das ein Drittel des Bildschirms einnimmt und
+   * nichts tut, ist das eine Sperre ohne Gegenleistung.
+   */
+  pruefe(
+    17,
+    'das Bild lässt die Seite scrollen',
+    !(bildbefund.deaktiviert === true && bildbefund.touchAction === 'none'),
+    `touch-action: ${bildbefund.touchAction}, Fläche deaktiviert: ${bildbefund.deaktiviert}`
+  );
+  /**
+   * Und es verspricht keine Geste, die es nicht gibt.
+   */
+  pruefe(
+    18,
+    'der Hinweis verspricht nur, was die Fläche kann',
+    !(bildbefund.deaktiviert === true && /Tippen|Ziehen/.test(bildbefund.hinweis)),
+    bildbefund.hinweis || '(keiner)'
+  );
+  /**
+   * Und das Bild wird nicht gestreckt.
+   *
+   * Eine Aufnahme hat so viele Spalten, wie sie Zeitschritte hat — gemessen
+   * 76. Läge die Leinwand in dieser Rohgröße vor und der Browser zöge sie auf
+   * 356 Bildpunkte, interpolierte er dazwischen: Aus Blöcken würde ein
+   * Farbnebel. Genau das war der Befund „das Bild ist fahl" (23.08.2026).
+   *
+   * Gemessen wird deshalb das Verhältnis von Anzeigebreite zu Leinwandbreite.
+   * Es muss 1 sein — dann malt der Browser Bildpunkt auf Bildpunkt.
+   */
+  const streckung = bildbefund.bild
+    ? Number.parseFloat(bildbefund.bild.streckung)
+    : 0;
+  pruefe(
+    19,
+    'das Bild wird nicht gestreckt',
+    streckung > 0 && streckung <= 1.05,
+    bildbefund.bild?.streckung ?? '(kein Bild)'
+  );
+
+  /**
+   * ── DAS POSITIONSBILD AUF DER MASCHINENSEITE ────────────────────────────
+   *
+   * Der Auftraggeber am 23.08.2026: „Das gespeicherte Prüfbild zum Erkennen
+   * der Maschine wäre genauso wichtig wie das Referenzspektrum."
+   *
+   * Es lag in der Ablage und erschien nur WÄHREND einer Prüfung als
+   * Geisterbild über der Kamera — auf der Seite, auf der man die Maschine
+   * wiedererkennen will, stand es nicht. „Genauso wichtig" heißt: dieselbe
+   * Fläche wie das Spektrum, in derselben Quellenzeile.
+   *
+   * Gemessen wird beides: dass die Quelle da ist UND dass ein Tipp darauf
+   * wirklich ein Bild zeigt. Ein Knopf, der eine leere Fläche aufschlägt,
+   * wäre schlimmer als keiner.
+   */
+  const fotoKnopf = page.locator('#maschinen-ansicht .klangbild-quelle', { hasText: 'Foto' });
+  const fotoDa = (await fotoKnopf.count()) > 0;
+  if (fotoDa) await fotoKnopf.first().click({ timeout: 6000 }).catch(() => {});
+  await page.waitForTimeout(700);
+  const foto = await page.evaluate(() => {
+    const img = document.querySelector('#maschinen-ansicht .klangbild-foto');
+    const k = img?.getBoundingClientRect();
+    return {
+      da: Boolean(img),
+      sichtbar: Boolean(img) && !img.hidden && (k?.height ?? 0) > 0,
+      geladen: img ? img.naturalWidth > 0 : false,
+      groesse: k ? `${Math.round(k.width)}×${Math.round(k.height)}` : '—',
+      hinweis: document.querySelector('#maschinen-ansicht .klangbild-ziehhinweis')?.textContent?.trim() ?? '',
+    };
+  });
+  console.log('\n  — Das Positionsbild —');
+  console.log(`  Quelle „Foto"             ${fotoDa ? 'da' : 'FEHLT'}`);
+  console.log(`  Bild                      ${foto.sichtbar ? foto.groesse : 'nicht sichtbar'} · geladen ${foto.geladen}`);
+  console.log(`  Hinweis                   ${foto.hinweis || '(keiner)'}`);
+  pruefe(
+    20,
+    'das Positionsbild steht als Quelle auf der Maschinenseite',
+    fotoDa && foto.sichtbar && foto.geladen,
+    fotoDa ? `${foto.groesse}, geladen ${foto.geladen}` : 'keine Quelle „Foto"'
+  );
+
   // Hier endet der Hauptweg, und zwar bewusst beim gespeicherten Ergebnis: Das
   // war die Frage. Die Schritte 1–11 bleiben deshalb unverändert und
   // vergleichbar — sie messen die Länge des Weges, und diese Zahl darf beim

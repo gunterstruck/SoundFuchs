@@ -77,10 +77,26 @@ export interface KlangbildOptions {
    * Umzug still etwas weggenommen.
    */
   ohneAuswahl?: boolean;
+  /**
+   * Das gespeicherte Positionsbild dieser Maschine.
+   *
+   * Der Auftraggeber am 23.08.2026: „Das gespeicherte Prüfbild zum Erkennen
+   * der Maschine wäre genauso wichtig wie das Referenzspektrum."
+   *
+   * Es lag bis dahin nur in der Ablage und wurde ausschließlich WÄHREND einer
+   * Prüfung als Geisterbild über die Kamera gelegt. Auf der Seite, auf der man
+   * die Maschine wiedererkennen will, stand es nicht.
+   *
+   * „Genauso wichtig" heißt hier: als gleichrangige Quelle in derselben Zeile
+   * wie Normalzustand, Messung, Unterschied und Iris — nicht als Briefmarke am
+   * Rand. Es bekommt dieselbe Fläche wie das Spektrum, weil es dieselbe Frage
+   * beantwortet: Ist das die Maschine, und wo halte ich das Gerät hin?
+   */
+  foto?: Blob | null;
 }
 
 /** Welche Quelle das Bild gerade zeigt. */
-type Quelle = 'measurement' | 'reference' | 'signed' | 'iris';
+type Quelle = 'measurement' | 'reference' | 'signed' | 'iris' | 'foto';
 
 export class Klangbild {
   public readonly element: HTMLElement;
@@ -108,6 +124,26 @@ export class Klangbild {
   private auswahlText: HTMLElement;
   /** Die eine Zeile unter dem Bild: erklärt die Geste — oder die Iris. */
   private hinweis: HTMLElement;
+  /**
+   * Diese Fläche nimmt keine Geste an — dann sagt sie auch keine an.
+   *
+   * Gesetzt bei `ohneAuswahl`: Ohne Ziehen bleibt allenfalls das Tippen, und
+   * das ist auf derselben Seite mit `ohneGebirge` ebenfalls aus.
+   */
+  private stumm = false;
+  /**
+   * Das rohe Spektrogramm — ein Bildpunkt je Zeitschritt und Band.
+   *
+   * Es bleibt liegen, weil die Anzeigegröße erst später feststeht: Beim ersten
+   * Zeichnen hängt die Leinwand noch nicht im Dokument und misst 0 × 0. Der
+   * erste Versuch der Schärfung fiel genau darauf herein — sie rechnete mit
+   * `Math.max(breite, 0)` und ließ alles, wie es war. Gemessen blieb es bei
+   * „76 × 256, gestreckt auf 4,7×".
+   */
+  private rohbild: HTMLCanvasElement | null = null;
+  private beobachter: ResizeObserver | null = null;
+  private foto: HTMLImageElement | null = null;
+  private fotoUrl: string | null = null;
   private spieler = new SlowListenPlayer();
   private laeuft = false;
   /** Merker, damit ein Zug nicht als Tipp durchgeht. */
@@ -130,6 +166,14 @@ export class Klangbild {
     this.iris = document.createElement('canvas');
     this.iris.className = 'klangbild-iris';
     this.iris.hidden = true;
+    if (optionen.foto) {
+      this.fotoUrl = URL.createObjectURL(optionen.foto);
+      this.foto = document.createElement('img');
+      this.foto.className = 'klangbild-foto';
+      this.foto.src = this.fotoUrl;
+      this.foto.alt = t('klangbild.fotoAlt');
+      this.foto.hidden = true;
+    }
     // Vor dem frühen Ausstieg angelegt, aus demselben Grund wie die Leinwände:
     // Ein Klangbild ohne Inhalt hat keine Bedienung, aber seine Felder müssen
     // trotzdem stehen.
@@ -165,6 +209,7 @@ export class Klangbild {
     flaeche.className = 'klangbild-flaeche';
     flaeche.appendChild(this.leinwand);
     flaeche.appendChild(this.iris);
+    if (this.foto) flaeche.appendChild(this.foto);
 
     const lupe = document.createElement('span');
     lupe.className = 'klangbild-hinweis';
@@ -202,11 +247,25 @@ export class Klangbild {
       // Eine Fläche, die man ansieht — kein Knopf, der nichts tut.
       flaeche.disabled = true;
       flaeche.classList.add('klangbild-flaeche-beleg');
+      this.stumm = true;
     } else {
       this.verdrahteZiehen(flaeche);
     }
     this.buehne.appendChild(flaeche);
     wurzel.appendChild(this.buehne);
+
+    /**
+     * Nachziehen, sobald die Fläche ihre Maße hat.
+     *
+     * Beim Bauen hängt nichts davon im Dokument — `getBoundingClientRect()`
+     * meldet 0 × 0, und eine Vergrößerung auf 0 ist keine. Der Beobachter
+     * meldet sich, sobald das Layout steht, und danach bei jeder Änderung:
+     * Drehen des Geräts, Aufziehen des Blatts, Wechsel der Gesichtsgrenze.
+     */
+    if (typeof ResizeObserver !== 'undefined') {
+      this.beobachter = new ResizeObserver(() => this.aufAnzeigegroesse());
+      this.beobachter.observe(this.leinwand);
+    }
 
     // ── Die Quellen, als Reiter unter dem Bild ─────────────────────────────
     const reihe = document.createElement('div');
@@ -225,6 +284,8 @@ export class Klangbild {
     if (this.referenz && this.messung) anlegen('signed', t('klangbild.quelleUnterschied'));
     // Die Iris braucht beide Spektren: Sie IST der Vergleich.
     if (this.referenz && this.messung) anlegen('iris', t('klangbild.quelleIris'));
+    // Das Positionsbild — gleichrangig, nicht nachgeordnet.
+    if (this.foto) anlegen('foto', t('klangbild.quelleFoto'));
     if (this.reiter.length > 1) wurzel.appendChild(reihe);
 
     /**
@@ -302,6 +363,24 @@ export class Klangbild {
      * Ein Gebirge aus einer runden Ansicht gibt es nicht, und ein Versprechen,
      * das die Fläche nicht hält, ist schlimmer als keines.
      */
+    /**
+     * Das Positionsbild ist wie die Iris keine Zeitachse.
+     *
+     * Es wird deshalb nach demselben Muster gezeigt: Leinwand aus, eigenes
+     * Element ein, eigener Hinweis. Ein Auswahlrechteck darin wäre sinnlos —
+     * es gibt keine Sekunden zum Herausgreifen.
+     */
+    const zeigtFoto = key === 'foto';
+    if (this.foto) this.foto.hidden = !zeigtFoto;
+    if (zeigtFoto) {
+      this.iris.hidden = true;
+      this.leinwand.hidden = true;
+      this.element.classList.remove('ist-rund');
+      this.auswahlRahmen.hidden = true;
+      this.auswahlzeile.hidden = true;
+      this.hinweis.textContent = t('klangbild.fotoHinweis');
+      return;
+    }
     const rund = key === 'iris';
     this.iris.hidden = !rund;
     this.leinwand.hidden = rund;
@@ -318,7 +397,16 @@ export class Klangbild {
       this.zeichneIris();
       return;
     }
-    this.hinweis.textContent = t('klangbild.ziehen');
+    /**
+     * Der Hinweis verspricht nur, was diese Fläche kann.
+     *
+     * Er stand hier unbedingt — auch auf der Maschinenseite, wo Tippen und
+     * Ziehen beide abgeschaltet sind. „Tippen zeigt das Gebirge · Ziehen
+     * greift eine Stelle heraus" war dort schlicht nicht wahr. Ein Versprechen
+     * ohne Einlösung ist schlimmer als kein Versprechen — dieselbe Regel, nach
+     * der weiter oben schon die Lupe verschwindet, wenn es kein Gebirge gibt.
+     */
+    this.hinweis.textContent = this.stumm ? '' : t('klangbild.ziehen');
     this.zeichneFlach();
     // Dieselbe Auswahl, neue Quelle: Das Rechteck bleibt, was gespielt wird,
     // wechselt mit dem Bild.
@@ -338,6 +426,29 @@ export class Klangbild {
   }
 
   /** Das flache Bild in die Leinwand malen. */
+  /**
+   * Das rohe Bild ohne Glättung auf die Anzeigegröße bringen.
+   *
+   * `imageSmoothingEnabled = false` ist der ganze Punkt: Der Browser würde 76
+   * Spalten über 356 Bildpunkte interpolieren und dabei benachbarte Farben zu
+   * Mitteltönen verrühren — genau das, was der Auftraggeber am 23.08.2026 als
+   * „fahl" gemeldet hat. Ein Block je Zeitschritt ist ehrlicher als ein
+   * Farbverlauf, den die Aufnahme nicht hergibt.
+   */
+  private aufAnzeigegroesse(): void {
+    const roh = this.rohbild;
+    const stift = this.leinwand.getContext('2d');
+    if (!roh || !stift) return;
+    const kasten = this.leinwand.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const zielB = Math.max(roh.width, Math.round((kasten.width || 0) * dpr));
+    const zielH = Math.max(roh.height, Math.round((kasten.height || 0) * dpr));
+    this.leinwand.width = zielB;
+    this.leinwand.height = zielH;
+    stift.imageSmoothingEnabled = false;
+    stift.drawImage(roh, 0, 0, zielB, zielH);
+  }
+
   private zeichneFlach(): void {
     const matrix = this.matrix(this.quelle);
     const stift = this.leinwand.getContext('2d');
@@ -347,11 +458,38 @@ export class Klangbild {
     }
     this.letzteMatrix = matrix;
     const { breite, hoehe, punkte } = matrixZuBildpunkten(matrix);
-    // In Originalauflösung malen und per CSS strecken: Das Bild ist ein
-    // Vorschaubild; eine Interpolation von Hand wäre Aufwand ohne Gewinn.
-    this.leinwand.width = breite;
-    this.leinwand.height = hoehe;
-    stift.putImageData(new ImageData(punkte, breite, hoehe), 0, 0);
+    /**
+     * ── SCHARF STATT VERSCHMIERT ──────────────────────────────────────────
+     *
+     * Hier stand: „In Originalauflösung malen und per CSS strecken: Das Bild
+     * ist ein Vorschaubild; eine Interpolation von Hand wäre Aufwand ohne
+     * Gewinn." Das war eine Annahme, und sie ist widerlegt.
+     *
+     * Gemessen am 23.08.2026 nach einer echten Prüfung (Handy 390 × 844):
+     *
+     *     Leinwand        76 × 256
+     *     gestreckt auf   4,7× breit · 1,2× hoch
+     *     Glättung        auto
+     *
+     * Eine Aufnahme hat so viele Spalten, wie sie Zeitschritte hat — hier 76.
+     * Der Browser zieht sie auf 356 Bildpunkte und interpoliert dabei: Jede
+     * senkrechte Struktur wird über fünf Bildpunkte verrieben, und benachbarte
+     * Farben mischen sich zu Mitteltönen. Der Auftraggeber hat das mit einem
+     * Bildschirmfoto gemeldet: „Das Bild ist fahl."
+     *
+     * Es wird deshalb einmal roh gezeichnet und dann OHNE Glättung auf die
+     * Anzeigegröße vergrößert. Aus einem Farbnebel werden wieder Blöcke — und
+     * ein Block ist ehrlich: Er ist genau ein Zeitschritt breit.
+     */
+    const roh = document.createElement('canvas');
+    roh.width = breite;
+    roh.height = hoehe;
+    const rohStift = roh.getContext('2d');
+    if (!rohStift) return;
+    rohStift.putImageData(new ImageData(punkte, breite, hoehe), 0, 0);
+
+    this.rohbild = roh;
+    this.aufAnzeigegroesse();
     this.leinwand.setAttribute('role', 'img');
     this.leinwand.setAttribute('aria-label', t('klangbild.alt'));
   }
@@ -544,5 +682,15 @@ export class Klangbild {
     this.gebirge?.destroy();
     this.gebirge = null;
     this.spieler.stop();
+    // Der Beobachter hält die Leinwand fest. Ohne dieses Abmelden überlebt
+    // jedes abgeräumte Klangbild als Zuhörer auf einem Element, das niemand
+    // mehr sieht — und die Maschinenseite baut ihres bei jedem Zeichnen neu.
+    this.beobachter?.disconnect();
+    this.beobachter = null;
+    this.rohbild = null;
+    if (this.fotoUrl) {
+      URL.revokeObjectURL(this.fotoUrl);
+      this.fotoUrl = null;
+    }
   }
 }

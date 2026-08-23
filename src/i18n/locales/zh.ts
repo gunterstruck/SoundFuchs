@@ -140,6 +140,9 @@ export const zh: TranslationDict = {
   // 听觉放大镜（第 3 刀）：正常状态 · 测量 · 差异。
   // 机器页面上的声音图像。
   klangbild: {
+    quelleFoto: '📷 照片',
+    fotoAlt: '这台机器保存的位置照片',
+    fotoHinweis: '这是学习时设备的位置——请以同样方式拿持。',
     irisLegende: '颜色＝频率强度 · 白线＝常态',
     auswahlSpielen: '▶ 播放所选',
     auswahlStoppen: '■ 停止',

@@ -145,6 +145,9 @@ export const fr: TranslationDict = {
   // La loupe d\u2019écoute (coupe 3) : état normal · mesure · différence.
   // L’image sonore sur la page machine.
   klangbild: {
+    quelleFoto: '📷 Photo',
+    fotoAlt: 'Photo de position enregistrée de cette machine',
+    fotoHinweis: "Voilà comment l'appareil était tenu à l'apprentissage — tenez-le pareil.",
     irisLegende: 'Couleur = intensité de la fréquence · ligne blanche = état normal',
     auswahlSpielen: '▶ Écouter la sélection',
     auswahlStoppen: '■ Arrêter',
