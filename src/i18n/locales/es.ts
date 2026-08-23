@@ -145,6 +145,9 @@ export const es: TranslationDict = {
   // La lupa auditiva (corte 3): estado normal · medición · diferencia.
   // La imagen sonora en la página de la máquina.
   klangbild: {
+    quelleFoto: '📷 Foto',
+    fotoAlt: 'Foto de posición guardada de esta máquina',
+    fotoHinweis: 'Así estaba el dispositivo al aprender: sosténgalo igual.',
     irisLegende: 'Color = intensidad de la frecuencia · línea blanca = estado normal',
     auswahlSpielen: '▶ Escuchar selección',
     auswahlStoppen: '■ Detener',

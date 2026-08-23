@@ -927,7 +927,15 @@ const AUFMASS_ERGEBNIS = () => {
         const k = b.getBoundingClientRect();
         return k.height < 44 || k.width < 44;
       })
-      .map((b) => `${b.className || b.id}(${Math.round(b.getBoundingClientRect().height)}px)`),
+      // Beide Kanten nennen: Die Bedingung prüft Höhe UND Breite, gemeldet
+      // wurde nur die Höhe. „klangbild-quelle(44px)" als Befund über eine zu
+      // schmale Schaltfläche kostete am 23.08.2026 eine Minute Suche.
+      .map(
+        (b) =>
+          `${b.className || b.id}(${Math.round(b.getBoundingClientRect().height)}×${Math.round(
+            b.getBoundingClientRect().width
+          )}px)`
+      ),
   };
 };
 
@@ -1224,9 +1232,17 @@ try {
       'Fall C: das Klangbild ist leer — eine Leinwand mit Maßen ist kein Bild'
     );
     pruefe(ruhe.klangbildImBild, 'Fall C: das Klangbild steht nicht ohne Scrollen im Bild');
+    /**
+     * Fünf Quellen, seit das Positionsbild dazugehört (23.08.2026).
+     *
+     * Der Auftraggeber: „Das gespeicherte Prüfbild zum Erkennen der Maschine
+     * wäre genauso wichtig wie das Referenzspektrum." Genauso wichtig heißt:
+     * in derselben Zeile, nicht daneben. Die Zahl bleibt fest — sie ist die
+     * Sperre gegen eine Zeile, in die mit der Zeit alles hineinwandert.
+     */
     pruefe(
-      ruhe.klangbildQuellen === 4,
-      `Fall C: das Klangbild bietet ${ruhe.klangbildQuellen} Quellen statt Normalzustand, Messung, Unterschied und Iris`
+      ruhe.klangbildQuellen === 5,
+      `Fall C: das Klangbild bietet ${ruhe.klangbildQuellen} Quellen statt Normalzustand, Messung, Unterschied, Iris und Foto`
     );
     pruefe(
       ruhe.ungenutztUnten <= BUDGET.leerRaum,

@@ -3608,6 +3608,100 @@ wieder einen Knopf gibt, der springt statt zu tun.
 Das ist der Unterschied zu den Abstürzen weiter oben: Dieser Wächter hat
 gesagt, was fehlt, statt stillschweigend durchzulaufen.
 
+### S20 — Drei Befunde vom Bildschirmfoto (23.08.2026)
+
+Der Auftraggeber schickte ein Bildschirmfoto der Maschinenseite und drei Sätze:
+„Das Bild ist fahl. Und wenn ich drauftippe zum Scrollen, geht das nicht. Zudem
+wäre das gespeicherte Prüfbild zum Erkennen der Maschine genauso wichtig wie das
+Referenzspektrum."
+
+Alle drei stimmten. Gemessen nach einer echten Prüfung (Handy 390 × 844):
+
+```
+Leinwand        76 × 256
+gestreckt auf   4,7× breit · 1,2× hoch      ← das „fahl"
+Glättung        auto
+Fläche          300 px (38 % des Bildschirms)
+touch-action    none      ·  deaktiviert: true
+Hinweis         „Tippen zeigt das Gebirge · Ziehen greift eine Stelle heraus."
+```
+
+#### 1. Fahl: 76 Spalten auf 356 Bildpunkte
+
+Eine Aufnahme hat so viele Spalten, wie sie Zeitschritte hat. Der Browser zog
+sie mit Interpolation auf die Anzeigebreite und verrührte benachbarte Farben zu
+Mitteltönen. Im Quelltext stand als Begründung: „In Originalauflösung malen und
+per CSS strecken … eine Interpolation von Hand wäre Aufwand ohne Gewinn." Das
+war eine Annahme, und die Messung hat sie widerlegt.
+
+Jetzt wird roh gezeichnet und **ohne Glättung** auf die Anzeigegröße vergrößert.
+Aus dem Farbnebel werden Blöcke, und ein Block ist ehrlich: genau ein
+Zeitschritt breit.
+
+#### 2. Eine Sperre ohne Gegenleistung
+
+```css
+.klangbild-flaeche { touch-action: none; }     /* galt für ALLE */
+.klangbild-flaeche-beleg { cursor: default; }  /* hob es NICHT auf */
+```
+
+Auf der Maschinenseite sind Tippen und Ziehen beide abgeschaltet — die Sperre
+blieb. Wer auf 38 % des Bildschirms wischte, bekam nichts: keine Auswahl (aus)
+und kein Scrollen (gesperrt). Und der Hinweis versprach trotzdem beide Gesten.
+
+#### 3. Das Positionsbild — „genauso wichtig wie das Referenzspektrum"
+
+Es lag in der Ablage und erschien nur **während** einer Prüfung als Geisterbild
+über der Kamera. In `src/stamm/` kam `referenceImage` kein einziges Mal vor.
+
+Es steht jetzt als **fünfte Quelle** in derselben Zeile:
+
+```
+Normalzustand · Messung · Unterschied · Iris · 📷 Foto
+```
+
+Damit hat es wörtlich, was verlangt war: dieselbe Fläche (gemessen 360 × 298 —
+exakt die des Spektrums), dieselbe Stelle, dieselbe Zeile. Keine Briefmarke am
+Rand. `object-fit: contain` statt `cover`, weil ein beschnittenes Positionsbild
+nicht mehr zeigt, wie das Gerät stand. Der Hinweis wechselt mit: „So stand das
+Gerät beim Anlernen — halte es wieder so."
+
+Das Bauteil kannte den Fall schon: Die Iris ist ebenfalls „eine stehende
+Ansicht, kein Spektrogramm". Das Foto folgt demselben Muster, statt ein zweites
+zu erfinden.
+
+#### Zwei Fehler in meiner eigenen Arbeit — beide von der Messung gefunden
+
+1. **Der Wächter griff das falsche Bild.** `document.querySelector('.klangbild-flaeche')`
+   traf das Klangbild im **zugezogenen** Analyseblatt: 0 px hoch, Gesten an. Die
+   Zusagen 17 und 18 wurden dadurch grün, ohne je das Bild angesehen zu haben,
+   um das es ging. Er sucht jetzt das sichtbare.
+2. **Die erste Schärfung wirkte nicht** — und war schon als erledigt gemeldet.
+   Beim ersten Zeichnen hängt die Leinwand nicht im Dokument und misst 0 × 0;
+   die Vergrößerung rechnete mit `Math.max(76, 0)`. Ein `ResizeObserver` zieht
+   jetzt nach, sobald das Layout steht, und bei jeder Änderung danach — beim
+   Abräumen wird er abgemeldet.
+
+#### Vier neue Zusagen im `durchlauf`
+
+```
+17  das Bild lässt die Seite scrollen
+18  der Hinweis verspricht nur, was die Fläche kann
+19  das Bild wird nicht gestreckt
+20  das Positionsbild steht als Quelle auf der Maschinenseite
+```
+
+Jede einzeln falsifiziert: Beobachter stillgelegt → 19 rot („4,7× breit");
+Quelle entfernt → 20 rot („keine Quelle Foto"); die alte CSS-Regel zurück → 17
+und 18 rot.
+
+| | vor S20 | jetzt |
+|---|---|---|
+| Streckung des Spektrogramms | 4,7× mit Glättung | **1,0×, ungeglättet** |
+| Wischen auf dem Bild | gesperrt, ohne Gegenleistung | **scrollt** |
+| Hinweis unter dem Bild | verspricht zwei tote Gesten | **schweigt** |
+| Positionsbild | nur während der Prüfung | **fünfte Quelle, gleiche Fläche** |
+
 ### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die

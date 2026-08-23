@@ -144,6 +144,9 @@ export const en: TranslationDict = {
   // The listening lens (slice 3): normal state · measurement · difference.
   // The sound picture on the machine page.
   klangbild: {
+    quelleFoto: '📷 Photo',
+    fotoAlt: 'Stored position photo of this machine',
+    fotoHinweis: 'This is how the device was held when learning — hold it the same way.',
     irisLegende: 'Colour = strength of the frequency · white line = normal state',
     auswahlSpielen: '▶ Play selection',
     auswahlStoppen: '■ Stop',
@@ -1596,7 +1599,6 @@ export const en: TranslationDict = {
     discardNew: 'Discard / New',
     saveAsReference: 'Save as Reference',
   },
-
 
   // ============================================================================
   // RESULTS – Result Modal Context Hints

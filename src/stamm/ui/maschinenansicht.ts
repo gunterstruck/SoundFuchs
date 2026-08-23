@@ -679,6 +679,9 @@ async function zeichne(maschine: Machine): Promise<void> {
       measurement: frisch.messung,
       ohneGebirge: true,
       ohneAuswahl: true,
+      // Das Positionsbild dieser Maschine — als gleichrangige Quelle neben
+      // Normalzustand, Messung, Unterschied und Iris.
+      foto: maschine.referenceImage ?? null,
     });
     if (bild.hasContent) {
       raeumeKlangbildAb();
@@ -922,6 +925,7 @@ async function zeichne(maschine: Machine): Promise<void> {
           measurement: klaenge.messung,
           ohneGebirge: true,
           ohneAuswahl: true,
+          foto: maschine.referenceImage ?? null,
         });
         if (!bild.hasContent) return null;
         raeumeKlangbildAb();
