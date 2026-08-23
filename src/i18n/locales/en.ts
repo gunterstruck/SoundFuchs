@@ -1597,22 +1597,6 @@ export const en: TranslationDict = {
     saveAsReference: 'Save as Reference',
   },
 
-  diagnosisResults: {
-    title: 'Check Results',
-    fingerprintLabel: 'Fingerprint',
-    confidenceScoreLabel: 'Confidence score',
-    varianceTitle: 'Variance',
-    frequencyAnomalyLabel: 'Frequency anomaly',
-    analysisHintDefault: 'Hint: Slightly increased signal around 20 kHz',
-    measurementQualityWarning:
-      '⚠ Measurement signal very weak – result barely usable. Move closer to the machine and measure again in a quieter environment.',
-    referenceQualityTitle: 'Recording Quality',
-    referenceQualityStatusGood: 'GOOD',
-    referenceQualityDescription: 'Recording meets recommended conditions',
-    featureModeLabel: 'Feature Mode',
-    viewHistory: 'View History',
-    closeDialog: 'Close check',
-  },
 
   // ============================================================================
   // RESULTS – Result Modal Context Hints
@@ -2523,18 +2507,6 @@ export const en: TranslationDict = {
   },
 
   // Welle 2 UX: Result action buttons
-  resultActions: {
-    details: 'Details',
-    newCheck: 'New check',
-    reportMaintenance: 'Report maintenance',
-    copiedToClipboard: 'Maintenance report copied to clipboard',
-    maintenanceReportTitle: 'Maintenance Report',
-    machine: 'Machine',
-    score: 'Score',
-    status: 'Status',
-    date: 'Date',
-    recommendation: 'Notice',
-  },
 
   // ============================================================================
   // REFERENZ-SAMMLUNG TEILEN (Maschinen-Detail)

@@ -3515,6 +3515,99 @@ Stelle, keine zweite.
 | `npm run test:run` hier | Node des Rechners | **Bedingungen der CI** |
 | Nach dem Zusammenführen | Wächter gelesen | **auch die CI gelesen** |
 
+### S19 — Der Abriss des alten Ergebnisdialogs (23.08.2026)
+
+Rein subtraktiv. Seit S17 hat `#diagnosis-modal` keinen Aufrufer mehr: Der
+normale Prüfweg zeigt sein Ergebnis seit dem 22.08. auf der Maschinenebene, der
+Flottenlauf seit S17 als Satz in der nächsten Ansage.
+
+**Was NICHT abgerissen wurde:** `#inspection-modal` — der Live-Bildschirm mit
+Kamerabild, Ringanzeige und „STOP & SAVE". Er trägt eine der drei Auflagen, und
+`durchlauf` misst ihn bei jedem Lauf. Der Auftraggeber hat mit einem
+Bildschirmfoto nachgefragt, ob dieser gemeint sei; er ist es nicht. Die beiden
+Fenster lagen 840 Zeilen auseinander in derselben Datei.
+
+Die 98 % darin sind übrigens `#inspection-score`, ein zur Laufzeit gebautes
+Element — nicht die abgerissene Zeigerskala.
+
+#### Was mitgegangen ist
+
+| | Zeilen |
+|---|---|
+| Markup `#diagnosis-modal` | 190 |
+| `showResults` + `applyAppShellLayout` + `renderResolutionLine` + `updateWorkPointRanking` + `drawAnalysisCanvas` | 540 |
+| `renderAnalysisCanvas` | 270 |
+| CSS-Regeln, die nie mehr greifen konnten | ~590 |
+| Textschlüssel (`diagnosisResults`, `resultActions`, `workPoint`, `maintenanceExport`) | 5 × 28 |
+| Ganze Dateien | `HealthGauge.ts`, `WorkPointRanking.ts`, `maintenanceExport.ts` |
+
+Zwei Expertenansichten gingen mit: die **Frequenzabweichungs-Grafik** und die
+**Betriebspunkt-Rangliste**. Beide zeichneten seit dem 22.08. in ein Fenster,
+das nicht mehr aufging — sichtbar waren sie einen Tag lang nicht. Der
+Auftraggeber hat die Entscheidung getroffen: mitabreißen. Wenn sie zurück
+sollen, gehören sie neben 2D und Gebirge ins Analyseblatt, und das ist ein
+eigener Schnitt.
+
+#### Drei Fallen, in die ein Abriss läuft
+
+1. **Ein Name, der woanders noch gebraucht wird.** `#health-gauge-canvas` wird
+   in `2-Reference.ts` zur *Laufzeit umgehängt* — das sah aus, als hinge das
+   Livebild daran. Gemessen: Die Leinwand lag nur im Ergebnisdialog, das
+   Umhängen suchte seit jeher ins Leere, und die Live-Anzeige ist ein anderes
+   Element.
+2. **Ein Aufrufer auf dem lebenden Weg.** `drawAnalysisCanvas` wird von
+   `veroeffentlicheErgebnis` gerufen — dem Weg, der bleibt. Nur zeichnete es
+   in eine Leinwand, die es nur im Dialog gab.
+3. **Mehrzeilige Selektorlisten.** Mein erstes Entfernen der CSS-Regeln fand
+   nur die Zeile mit der `{` und ließ die Selektoren darüber als Rumpf hängen —
+   kaputtes CSS. Die Datei wurde zurückgesetzt und mit einem Parser wiederholt,
+   der die ganze Liste einsammelt; gemischte Listen wurden zeilenweise
+   bereinigt statt gelöscht. Geprüft an der Klammerbilanz (0) und an
+   `css-check`.
+
+`css-check` hat den Abriss geführt: Nach dem Entfernen des Markups meldete er
+**111 Selektoren, die nie greifen können** — und nannte jeden beim Namen.
+
+#### Und ein Befund über die Wächter selbst
+
+Ein zwischenzeitliches `npm ci` entfernte Playwright — es steht bewusst nicht
+in `package.json`, weil die CI `npm ci` ausführt und keinen einzigen
+Browser-Wächter; es dort zu installieren lüde bei jedem Lauf Browser herunter,
+die niemand benutzt.
+
+Die Läufe brachen daraufhin ab. **Sechs von acht mit einer Stapelspur**, zwei
+mit einem Satz. Im Protokoll sah das aus wie „0 Befunde" — dieselbe
+Fehlerfamilie wie schon zweimal an diesem Tag: *Ein Wächter, der nicht läuft,
+ist von einem Wächter, der nichts gefunden hat, nur am Exit-Code zu
+unterscheiden.* Alle acht sagen jetzt denselben Satz.
+
+| | vor S19 | jetzt |
+|---|---|---|
+| `#diagnosis-modal` | 190 Zeilen Markup ohne Aufrufer | **weg** |
+| Toter Code dahinter | ~1 400 Zeilen | **weg** |
+| CSS, das nie greifen kann | 111 Selektoren | **0** |
+| Playwright fehlt | 6 Stapelspuren, 2 Sätze | **8 Sätze** |
+| `#inspection-modal` | trägt eine Auflage | **unverändert** |
+
+#### Ein Wächter, der seine Arbeit gemacht hat
+
+`attention-check` meldete nach dem Abriss:
+
+```
+✗ #result-btn-details: Knopf oder Ziel (#diagnosis-modal .result-fingerprint)
+  gibt es nicht
+```
+
+Sein Prüfblock „Knopf und Ziel auf derselben Stufe" bewachte genau einen Fall:
+„Details" im alten Ergebnisdialog sprang zu `.result-fingerprint` (Stufe
+„advanced"), stand aber selbst auf jeder Stufe — unter Basis tat der Knopf
+nichts. Mit dem Dialog hat die Prüfung keinen Gegenstand mehr; sie ist
+entfernt, **die Regel bleibt als Kommentar stehen** und kommt zurück, sobald es
+wieder einen Knopf gibt, der springt statt zu tun.
+
+Das ist der Unterschied zu den Abstürzen weiter oben: Dieser Wächter hat
+gesagt, was fehlt, statt stillschweigend durchzulaufen.
+
 ### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die

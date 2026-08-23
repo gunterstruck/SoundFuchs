@@ -1431,22 +1431,6 @@ export const es: TranslationDict = {
     discardNew: 'Descartar / Nuevo',
     saveAsReference: 'Guardar como referencia',
   },
-  diagnosisResults: {
-    title: 'Resultados de la verificación',
-    fingerprintLabel: 'Huella',
-    confidenceScoreLabel: 'Puntuación de confianza',
-    varianceTitle: 'Varianza',
-    frequencyAnomalyLabel: 'Anomalía de frecuencia',
-    analysisHintDefault: 'Consejo: señal ligeramente elevada alrededor de 20 kHz',
-    measurementQualityWarning:
-      '⚠ Señal de medición muy débil: resultado poco fiable. Acércate a la máquina y vuelve a medir en un entorno más silencioso.',
-    referenceQualityTitle: 'Calidad de grabación',
-    referenceQualityStatusGood: 'BUENA',
-    referenceQualityDescription: 'La grabación cumple las condiciones recomendadas',
-    featureModeLabel: 'Modo de características',
-    viewHistory: 'Ver historial',
-    closeDialog: 'Cerrar verificación',
-  },
   results: {
     envMatch: {
       moreReverberant: '🏠 Environment more reverberant than reference – score may be affected',
@@ -2191,18 +2175,6 @@ export const es: TranslationDict = {
       'Auflösung dieser Referenz unbekannt — sie wurde angelernt, bevor die Eigenstreuung gemessen wurde. Neu anlernen sagt, welche Unterschiede der Vergleich trennt.',
     resolutionDetail:
       'Aus der Wiederholstreuung der Referenz „{{label}}" selbst: {{k}} · MAD ihrer Selbsttest-Scores, auf die angezeigte Skala gestreckt. Keine Schwelle — die Ampel entscheidet unverändert.',
-  },
-  resultActions: {
-    details: 'Detalles',
-    newCheck: 'Nueva verificación',
-    reportMaintenance: 'Reportar mantenimiento',
-    copiedToClipboard: 'Informe de mantenimiento copiado al portapapeles',
-    maintenanceReportTitle: 'Informe de mantenimiento',
-    machine: 'Máquina',
-    score: 'Puntuación',
-    status: 'Estado',
-    date: 'Fecha',
-    recommendation: 'Recomendación',
   },
 
   // ============================================================================

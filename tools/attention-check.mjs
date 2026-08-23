@@ -527,79 +527,17 @@ try {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // KNOPF UND ZIEL AUF DERSELBEN STUFE
+  // HIER STAND: KNOPF UND ZIEL AUF DERSELBEN STUFE
   //
-  // Manche Knöpfe springen zu einer Stelle, statt etwas zu tun. Liegt diese
-  // Stelle auf einer höheren Ansichtstiefe als der Knopf, dann ist der Knopf
-  // auf der niedrigeren Stufe zwar sichtbar und anklickbar — aber sein Ziel
-  // ist `display:none`, und `scrollIntoView` darauf bewirkt nichts.
+  // Die Regel war gut: Ein Knopf, der zu einer Stelle springt, muss auf jeder
+  // Ansichtstiefe sichtbar sein, auf der auch sein Ziel sichtbar ist — sonst
+  // tut er nichts. Sie hatte genau einen Fall: „Details" im alten
+  // Ergebnisdialog sprang zu `.result-fingerprint` (Stufe „advanced"), stand
+  // aber selbst auf jeder Stufe.
   //
-  // Genau das war „Details" im Prüfergebnis: Es springt zum Klangbild
-  // (`.result-fingerprint`, Stufe „advanced"), stand aber selbst auf jeder
-  // Stufe. Unter Basis — der Voreinstellung, also dem Normalfall — tat der
-  // Knopf nichts.
-  //
-  // Geprüft wird das am ruhenden Markup, nicht nach einer echten Prüfung: Das
-  // Ergebnis-Fenster liegt ohnehin im Dokument, und die Frage ist eine des
-  // Aufbaus, nicht des Messwerts.
-  {
-    const ctx = await browser.newContext({ viewport: FORMATE[0].viewport, locale: 'de-DE' });
-    const page = await ctx.newPage();
-    await ohneBeispieldaten(page);
-    await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
-    await inDieTiefe(page);
-    await page.waitForTimeout(2000);
-
-    /** Knopf → Stelle, zu der er springt. */
-    const PAARE = [{ knopf: '#result-btn-details', ziel: '#diagnosis-modal .result-fingerprint' }];
-
-    console.log('\n=== Knopf und Ziel ===');
-    for (const paar of PAARE) {
-      const befund = await page.evaluate((p) => {
-        const knopf = document.querySelector(p.knopf);
-        const ziel = document.querySelector(p.ziel);
-        if (!knopf || !ziel) return { fehlt: true };
-        // Das Ergebnis-Fenster einblenden, sonst ist alles darin unsichtbar.
-        const fenster = knopf.closest('.modal');
-        const vorher = fenster ? fenster.style.display : null;
-        if (fenster) fenster.style.display = 'flex';
-        const stufen = ['basic', 'advanced', 'expert'];
-        const alt = document.documentElement.getAttribute('data-view-level');
-        const zeilen = stufen.map((s) => {
-          document.documentElement.setAttribute('data-view-level', s);
-          return {
-            stufe: s,
-            knopf: getComputedStyle(knopf).display !== 'none',
-            ziel: getComputedStyle(ziel).display !== 'none',
-          };
-        });
-        if (alt) document.documentElement.setAttribute('data-view-level', alt);
-        if (fenster) fenster.style.display = vorher ?? 'none';
-        return { zeilen };
-      }, paar);
-
-      if (befund.fehlt) {
-        console.log(`${paar.knopf}  → Knopf oder Ziel nicht im Markup`);
-        pruefe(false, `${paar.knopf}: Knopf oder Ziel (${paar.ziel}) gibt es nicht`);
-        continue;
-      }
-
-      for (const z of befund.zeilen) {
-        const gut = !z.knopf || z.ziel;
-        console.log(
-          `${paar.knopf}  ${z.stufe.padEnd(8)} Knopf ${z.knopf ? 'sichtbar' : 'verborgen'}` +
-            ` · Ziel ${z.ziel ? 'sichtbar' : 'verborgen'}  ${gut ? '' : '←'}`
-        );
-        pruefe(
-          gut,
-          `${paar.knopf} ist auf Stufe „${z.stufe}" sichtbar, sein Ziel ${paar.ziel} aber nicht` +
-            ' — der Knopf tut dort nichts'
-        );
-      }
-    }
-
-    await ctx.close();
-  }
+  // Mit dem Abriss des Dialogs (23.08.2026) hat die Prüfung keinen Gegenstand
+  // mehr. Sie kommt zurück, sobald es wieder einen Knopf gibt, der springt
+  // statt zu tun — die Regel steht so lange hier.
 
   // ═══════════════════════════════════════════════════════════════════════
   // ERSTER START

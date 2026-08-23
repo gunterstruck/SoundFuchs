@@ -31,15 +31,12 @@ import {
 import { RollingAudioBuffer } from '@core/dsp/resample.js';
 import { assessRecordingQuality } from '@core/ml/qualityCheck.js';
 import {
-  renderAnalysisCanvas,
   dominantFrequency,
   topDeviationHz,
   topDeviations,
 } from './analysisRender.js';
-import { showMaintenanceExportChoice } from './maintenanceExport.js';
 import { getScoreVerbalStatus } from './diagnoseScore.js';
 import { setMeasurementActive } from '@utils/measurementActivity.js';
-import { WorkPointRanking, type WorkPoint } from '@ui/components/WorkPointRanking.js';
 import { OperatingPointMetrics } from '@core/dsp/operatingPointMetrics.js';
 import { OperatingPointMonitor } from '@ui/components/OperatingPointMonitor.js';
 import { EventTimeline } from '@ui/components/EventTimeline.js';
@@ -59,11 +56,9 @@ import { ListenPanel } from '@ui/components/ListenPanel.js';
 import { merkeErgebnis } from '../../stamm/maschine/ergebnis.js';
 import { getDiagnosisAudioMode } from '@utils/diagnosisAudioSettings.js';
 import { partitionModels } from '@core/ml/modelCompatibility.js';
-import { resolutionLineState } from './resolutionLine.js';
 import { Spectrogram3DPanel } from '../components/Spectrogram3DPanel.js';
 import { averageSpectrum } from '@core/dsp/spectrumSummary.js';
 import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
-import { HealthGauge } from '@ui/components/HealthGauge.js';
 import { HistoryChart } from '@ui/components/HistoryChart.js';
 import {
   getRawAudioStream,
@@ -141,7 +136,6 @@ export class DiagnosePhase {
   private diagnosisAudioChunks: Blob[] = [];
   private lastDiagnosisAudioBuffer: AudioBuffer | null = null;
   private diagnosisAudioPromise: Promise<AudioBuffer | null> | null = null;
-  private healthGauge: HealthGauge | null = null;
   private historyChart: HistoryChart | null = null;
   private activeModels: ReferenceModel[] = [];
   // Tier 1 (YAMNet) — separate async diagnosis path. Sync engines never touch these.
@@ -208,7 +202,6 @@ export class DiagnosePhase {
   private diagnoseButtonClickHandler: (() => void) | null = null;
 
   // Work Point Ranking (Advanced/Expert view)
-  private workPointRanking: WorkPointRanking | null = null;
   private lastFeatureVector: {
     features: Float64Array;
     absoluteFeatures: Float64Array;
@@ -280,7 +273,6 @@ export class DiagnosePhase {
   private onDiagnosisError: ((error: unknown) => void) | null = null;
 
   /** Welle 2: Optional callback fired when result modal is closed (for dashboard refresh) */
-  private onResultModalClosed: (() => void) | null = null;
 
   /** UX-Fix: Optional callback fired when the explicit "Weiter" button is clicked (for Grundansicht reset) */
   private onResultContinue: (() => void) | null = null;
@@ -361,13 +353,6 @@ export class DiagnosePhase {
   }
 
   /**
-   * Welle 2: Set callback for when result modal is closed (for dashboard refresh)
-   */
-  public setOnResultModalClosed(cb: () => void): void {
-    this.onResultModalClosed = cb;
-  }
-
-  /**
    * UX-Fix: Set callback for when the explicit "Weiter" button is clicked (triggers Grundansicht reset)
    */
   public setOnResultContinue(cb: () => void): void {
@@ -386,7 +371,6 @@ export class DiagnosePhase {
    * Initialize the diagnose phase UI
    */
   public init(): void {
-    this.applyAppShellLayout();
     const diagnoseBtn = document.getElementById('diagnose-btn');
     if (diagnoseBtn) {
       // CRITICAL FIX: Store handler reference to enable cleanup in destroy()
@@ -960,12 +944,6 @@ export class DiagnosePhase {
           }
         }
 
-        // Initialize HealthGauge for advanced view
-        const gaugeCanvas = document.getElementById('health-gauge-canvas');
-        if (gaugeCanvas) {
-          this.healthGauge = new HealthGauge('health-gauge-canvas');
-          this.healthGauge.draw(0, 'UNKNOWN');
-        }
       }
 
       // FORCE START: Check if audio trigger should be disabled
@@ -2007,10 +1985,6 @@ export class DiagnosePhase {
             ? 'status-uncertain'
             : 'status-faulty';
 
-      // Update HealthGauge (if still present)
-      if (this.healthGauge) {
-        this.healthGauge.draw(score, status);
-      }
 
       // Update legacy score display in modal (live-health-score)
       const scoreElement = document.getElementById('live-health-score');
@@ -2737,8 +2711,10 @@ export class DiagnosePhase {
     }
 
     // Sprint 1 UX: Tap on score shows explanation toast
+    // `health-gauge-canvas` stand hier an erster Stelle. Diese Leinwand lag im
+    // alten Ergebnisdialog und ist mit ihm abgerissen; übrig bleiben die
+    // beiden Anzeigen, die man beim Prüfen wirklich sieht.
     const scoreDisplay =
-      document.getElementById('health-gauge-canvas') ||
       document.getElementById('inspection-score-container') ||
       document.getElementById('live-dashboard-score-container');
 
@@ -2801,12 +2777,10 @@ export class DiagnosePhase {
 
     // Hide original elements that we'll reorganize
     const waveformCanvas = document.getElementById('waveform-canvas');
-    const gaugeCanvas = document.getElementById('health-gauge-canvas');
     const recordingStatus = modalBody.querySelector('.recording-status') as HTMLElement;
     const recordingTimer = modalBody.querySelector('.recording-timer') as HTMLElement;
 
     if (waveformCanvas) waveformCanvas.style.display = 'none';
-    if (gaugeCanvas) gaugeCanvas.style.display = 'none';
     if (recordingStatus) recordingStatus.style.display = 'none';
     if (recordingTimer) recordingTimer.style.display = 'none';
 
@@ -3211,453 +3185,7 @@ export class DiagnosePhase {
     logger.debug('🧹 Modals hidden and reset');
   }
 
-  /**
-   * Show diagnosis results
-   */
-  private async showResults(diagnosis: DiagnosisResult): Promise<void> {
-    const modal = document.getElementById('diagnosis-modal');
-    if (!modal) return;
 
-    // Update machine info
-    const machineBarcode = document.getElementById('machine-barcode');
-    if (machineBarcode) {
-      machineBarcode.textContent = this.machine.name;
-    }
-
-    // Draw final health gauge
-    const gaugeCanvas = document.getElementById('health-gauge-canvas');
-    if (gaugeCanvas) {
-      if (this.healthGauge) {
-        this.healthGauge.destroy();
-      }
-      this.healthGauge = new HealthGauge('health-gauge-canvas');
-      this.healthGauge.draw(diagnosis.healthScore, diagnosis.status);
-    }
-
-    // Update status
-    const resultStatus = document.getElementById('result-status');
-    if (resultStatus) {
-      // Translate technical status to localized display text
-      const normalizedStatus = diagnosis.status.toLowerCase();
-      const localizedStatus =
-        normalizedStatus === 'healthy'
-          ? t('status.healthy')
-          : normalizedStatus === 'uncertain'
-            ? t('status.uncertain')
-            : normalizedStatus === 'faulty'
-              ? t('status.faulty')
-              : t('status.unknown');
-
-      // MULTICLASS: Show detected state if available. When a known fault was
-      // matched, name it with its own match quality (separate from the gauge).
-      const detectedState = diagnosis.metadata?.detectedState;
-      const faultLabel = diagnosis.metadata?.faultLabel as string | undefined;
-      const faultScore = diagnosis.metadata?.faultScore as number | undefined;
-      if (normalizedStatus === 'faulty' && faultLabel) {
-        const faultText = `${faultLabel}${typeof faultScore === 'number' ? ` (${Math.round(faultScore)} %)` : ''}`;
-        resultStatus.textContent = `${localizedStatus} | ${t('diagnose.faultDetected', { fault: faultText })}`;
-      } else if (detectedState && detectedState !== 'UNKNOWN') {
-        const displayState =
-          detectedState === 'Baseline' ? t('reference.labels.baseline') : detectedState;
-        resultStatus.textContent = `${localizedStatus} | ${displayState}`;
-      } else {
-        resultStatus.textContent = localizedStatus;
-      }
-      // CSS classes use technical terms for correct color styling
-      resultStatus.className = `result-status status-${normalizedStatus}`;
-    }
-
-    // Fault line in the saved documentation: shown whenever fault references
-    // existed for this check — red if a fault was detected, neutral if they were
-    // checked and ruled out. Hidden entirely when the machine has no fault refs.
-    const resultFaultLine = document.getElementById('result-fault-line');
-    if (resultFaultLine) {
-      const faultModelsExist = diagnosis.metadata?.faultModelsExist === true;
-      const detectedFaultLabel = diagnosis.metadata?.faultLabel as string | undefined;
-      const detectedFaultScore = diagnosis.metadata?.faultScore as number | undefined;
-      const bestFaultLabel = diagnosis.metadata?.bestFaultLabel as string | undefined;
-      const bestFaultScore = diagnosis.metadata?.bestFaultScore as number | undefined;
-      resultFaultLine.classList.remove('fault-detected', 'fault-clear');
-      if (detectedFaultLabel) {
-        const pct = typeof detectedFaultScore === 'number' ? Math.round(detectedFaultScore) : 0;
-        resultFaultLine.classList.add('fault-detected');
-        resultFaultLine.textContent = `⚠ ${t('diagnose.faultDetected', { fault: `${detectedFaultLabel} (${pct} %)` })}`;
-        resultFaultLine.style.display = '';
-      } else if (faultModelsExist && bestFaultLabel) {
-        resultFaultLine.classList.add('fault-clear');
-        resultFaultLine.textContent = t('diagnose.faultChecked', {
-          fault: bestFaultLabel || t('diagnose.faultGeneric'),
-          score: typeof bestFaultScore === 'number' ? Math.round(bestFaultScore) : 0,
-        });
-        resultFaultLine.style.display = '';
-      } else {
-        resultFaultLine.style.display = 'none';
-        resultFaultLine.textContent = '';
-      }
-    }
-
-    // Sprint 1 UX: Add verbal status below score in result modal
-    const verbalStatus = document.getElementById('result-verbal-status');
-    if (verbalStatus) {
-      verbalStatus.textContent = getScoreVerbalStatus(diagnosis.healthScore);
-    }
-
-    // Measurement quality gate: warn when the signal was too weak / noise-masked
-    // (e.g. mic too far, machine off, mostly background noise). Additive only –
-    // the score and status are still shown, just flagged as barely usable.
-    const qualityWarning = document.getElementById('quality-warning-result');
-    if (qualityWarning) {
-      if (this.measurementSignalTooWeak) {
-        qualityWarning.textContent = t('diagnosisResults.measurementQualityWarning');
-        qualityWarning.style.display = '';
-      } else {
-        qualityWarning.style.display = 'none';
-        qualityWarning.textContent = '';
-      }
-    }
-
-    // Welle 1 UX: Action recommendation
-    const recommendationEl = document.getElementById('diagnosis-recommendation');
-    if (recommendationEl) {
-      if (diagnosis.healthScore >= 75) {
-        recommendationEl.textContent = t('diagnose.recommendation.healthy');
-      } else if (diagnosis.healthScore >= 50) {
-        recommendationEl.textContent = t('diagnose.recommendation.warning');
-      } else {
-        recommendationEl.textContent = t('diagnose.recommendation.critical');
-      }
-    }
-
-    // Welle 2 UX: Ampel-Banner
-    const ampel = document.getElementById('result-ampel');
-    if (ampel) {
-      const ampelIcon = document.getElementById('result-ampel-icon');
-      const ampelLabel = document.getElementById('result-ampel-label');
-      const ampelExplanation = document.getElementById('result-ampel-explanation');
-      const ampelRecommendation = document.getElementById('result-ampel-recommendation');
-
-      const ampelScore = diagnosis.healthScore;
-
-      // Remove previous status classes
-      ampel.classList.remove('ampel-healthy', 'ampel-warning', 'ampel-critical');
-
-      if (ampelScore >= 75) {
-        ampel.classList.add('ampel-healthy');
-        if (ampelIcon) ampelIcon.textContent = '✅';
-        if (ampelLabel) ampelLabel.textContent = t('status.healthy').toUpperCase();
-        if (ampelExplanation) ampelExplanation.textContent = t('resultAmpel.explanationHealthy');
-        if (ampelRecommendation)
-          ampelRecommendation.textContent = t('diagnose.recommendation.healthy');
-      } else if (ampelScore >= 50) {
-        ampel.classList.add('ampel-warning');
-        if (ampelIcon) ampelIcon.textContent = '⚠';
-        if (ampelLabel) ampelLabel.textContent = t('status.uncertain').toUpperCase();
-        if (ampelExplanation) ampelExplanation.textContent = t('resultAmpel.explanationWarning');
-        if (ampelRecommendation)
-          ampelRecommendation.textContent = t('diagnose.recommendation.warning');
-      } else {
-        ampel.classList.add('ampel-critical');
-        if (ampelIcon) ampelIcon.textContent = '❌';
-        if (ampelLabel) ampelLabel.textContent = t('status.faulty').toUpperCase();
-        if (ampelExplanation) ampelExplanation.textContent = t('resultAmpel.explanationCritical');
-        if (ampelRecommendation)
-          ampelRecommendation.textContent = t('diagnose.recommendation.critical');
-      }
-
-      // Welle 2: Trend with delta in ampel banner
-      const ampelTrendContainer = document.getElementById('result-ampel-trend');
-      const ampelTrendArrow = document.getElementById('result-ampel-trend-arrow');
-      const ampelTrendText = document.getElementById('result-ampel-trend-text');
-
-      if (ampelTrendContainer && ampelTrendArrow && ampelTrendText) {
-        try {
-          const ampelDiagnoses = await getDiagnosesForMachine(this.machine.id, 6);
-          const ampelOlder = ampelDiagnoses.filter((d) => d.id !== diagnosis.id).slice(0, 5);
-
-          if (ampelOlder.length >= 2) {
-            const olderScores = ampelOlder.map((d) => d.healthScore);
-            const sorted = [...olderScores].sort((a, b) => a - b);
-            const mid = Math.floor(sorted.length / 2);
-            const median =
-              sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
-            const delta = ampelScore - median;
-
-            ampelTrendContainer.style.display = 'flex';
-
-            if (Math.abs(delta) <= 3) {
-              ampelTrendArrow.textContent = '→';
-              ampelTrendText.textContent = t('resultAmpel.trendStable', {
-                count: String(ampelOlder.length),
-              });
-              ampelTrendContainer.className = 'result-ampel-trend trend-stable';
-            } else if (delta > 0) {
-              ampelTrendArrow.textContent = '↗';
-              ampelTrendText.textContent = t('resultAmpel.trendImproving', {
-                delta: `+${delta.toFixed(0)}`,
-                count: String(ampelOlder.length),
-              });
-              ampelTrendContainer.className = 'result-ampel-trend trend-improving';
-            } else {
-              ampelTrendArrow.textContent = '↘';
-              ampelTrendText.textContent = t('resultAmpel.trendDeclining', {
-                delta: delta.toFixed(0),
-                count: String(ampelOlder.length),
-              });
-              ampelTrendContainer.className = 'result-ampel-trend trend-declining';
-            }
-          } else {
-            ampelTrendContainer.style.display = 'none';
-          }
-        } catch {
-          ampelTrendContainer.style.display = 'none';
-        }
-      }
-
-      this.renderResolutionLine();
-    }
-
-    // Welle 2 UX: Context-aware action buttons
-    const resultBtnNext = document.getElementById('result-btn-next');
-    const resultBtnDetails = document.getElementById('result-btn-details');
-    if (resultBtnNext) {
-      if (diagnosis.healthScore < 50) {
-        // Critical: Primary action becomes "Report maintenance"
-        resultBtnNext.textContent = t('resultActions.reportMaintenance');
-        resultBtnNext.className = 'result-action-btn result-action-danger';
-
-        const newNextBtn = resultBtnNext.cloneNode(true) as HTMLElement;
-        resultBtnNext.parentNode?.replaceChild(newNextBtn, resultBtnNext);
-        newNextBtn.addEventListener('click', () => {
-          showMaintenanceExportChoice(this.machine, diagnosis);
-        });
-      } else {
-        // Normal: "New check"
-        resultBtnNext.textContent = t('resultActions.newCheck');
-        resultBtnNext.className = 'result-action-btn result-action-primary';
-
-        const newNextBtn = resultBtnNext.cloneNode(true) as HTMLElement;
-        resultBtnNext.parentNode?.replaceChild(newNextBtn, resultBtnNext);
-        newNextBtn.addEventListener('click', () => {
-          modal.style.display = 'none';
-          if (this.workPointRanking) {
-            this.workPointRanking.destroy();
-            this.workPointRanking = null;
-          }
-          if (this.onResultModalClosed) {
-            this.onResultModalClosed();
-          }
-          // Re-trigger diagnosis
-          const diagnoseBtn = document.getElementById('diagnose-btn');
-          if (diagnoseBtn) {
-            diagnoseBtn.click();
-          }
-        });
-      }
-    }
-
-    // Welle 2: Details button scrolls to technical details
-    if (resultBtnDetails) {
-      const newDetailsBtn = resultBtnDetails.cloneNode(true) as HTMLElement;
-      resultBtnDetails.parentNode?.replaceChild(newDetailsBtn, resultBtnDetails);
-      newDetailsBtn.addEventListener('click', () => {
-        const fingerprint = modal.querySelector('.result-fingerprint');
-        if (fingerprint) {
-          fingerprint.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      });
-    }
-
-    // Sprint 3 UX: Old trend arrow (hidden - replaced by Welle 2 ampel trend)
-    const trendEl = document.getElementById('result-trend');
-    if (trendEl) {
-      trendEl.style.display = 'none';
-    }
-
-    // Environment match hint (all view levels)
-    const envMatchEl = document.getElementById('env-match-result');
-    if (envMatchEl) {
-      if (this.environmentWarning && this.environmentWarning.severity !== 'ok') {
-        envMatchEl.style.display = '';
-
-        const severity = this.environmentWarning.severity;
-        const ratio = this.environmentWarning.ratio;
-
-        // Direction-aware text
-        let textKey: string;
-        if (severity === 'critical') {
-          textKey = 'results.envMatch.critical';
-        } else if (ratio > 1) {
-          textKey = 'results.envMatch.moreReverberant';
-        } else {
-          textKey = 'results.envMatch.lessReverberant';
-        }
-
-        envMatchEl.textContent = t(textKey);
-        envMatchEl.className = 'env-match-result';
-        envMatchEl.classList.add(`env-match-${severity}`);
-      } else {
-        // severity === 'ok' OR no environmentWarning (T60 not available)
-        envMatchEl.style.display = 'none';
-      }
-    }
-
-    // Sprint 3 UX: Operating point hint in result modal (Expert only)
-    const opHintResult = document.getElementById('op-hint-result');
-    if (opHintResult) {
-      const currentViewLevel = document.body.dataset.viewLevel || 'basic';
-      if (currentViewLevel === 'expert' && this.opChangedDuringDiagnosis) {
-        opHintResult.style.display = '';
-        opHintResult.textContent = t('diagnose.opHint.changed');
-      } else {
-        opHintResult.style.display = 'none';
-      }
-    }
-
-    // Update confidence
-    const resultConfidence = document.getElementById('result-confidence');
-    if (resultConfidence) {
-      resultConfidence.textContent = diagnosis.confidence.toFixed(1);
-    }
-
-    // Update analysis hint
-    const analysisHint = document.getElementById('analysis-hint');
-    if (analysisHint) {
-      // MULTICLASS: Use diagnosis.analysis.hint if available (contains detected state info)
-      if (diagnosis.analysis?.hint) {
-        analysisHint.textContent = diagnosis.analysis.hint;
-      } else {
-        // Fallback to old method
-        const classification = getClassificationDetails(diagnosis.healthScore);
-        analysisHint.textContent = classification.recommendation;
-      }
-    }
-
-    // Show modal BEFORE drawing canvas/ranking — elements inside a display:none
-    // ancestor return 0×0 from getBoundingClientRect(), which caused the canvas
-    // to render at zero size (visible only as a gray background).
-    modal.style.display = 'flex';
-
-    // Draw frequency spectrum on analysis canvas (must be after modal is visible)
-    this.drawAnalysisCanvas(diagnosis);
-
-    // Update Work Point Ranking (Advanced/Expert view)
-    this.updateWorkPointRanking();
-
-    // Setup close button
-    const closeBtn = document.getElementById('close-diagnosis-modal');
-    if (closeBtn) {
-      closeBtn.onclick = () => {
-        modal.style.display = 'none';
-        // Die Hör-Lupe hält einen Web-Audio-Spieler — beim Schließen anhalten.
-        this.hoerlupe?.destroy();
-        this.hoerlupe = null;
-        // WebGL-Kontexte sind eine knappe Ressource (Browser begrenzen sie
-        // pro Seite) — das Gebirge muss beim Schließen wirklich weg sein.
-        this.spectro3dPanel?.destroy();
-        this.spectro3dPanel = null;
-        // Cleanup ranking when modal closes
-        if (this.workPointRanking) {
-          this.workPointRanking.destroy();
-          this.workPointRanking = null;
-        }
-        // Welle 2: Notify router to refresh dashboard
-        if (this.onResultModalClosed) {
-          this.onResultModalClosed();
-        }
-      };
-    }
-
-    // Setup footer "Weiter" button – closes modal and triggers Grundansicht reset
-    const closeResultBtn = document.getElementById('close-diagnosis-result-btn');
-    if (closeResultBtn) {
-      closeResultBtn.onclick = () => {
-        modal.style.display = 'none';
-        // Die Hör-Lupe hält einen Web-Audio-Spieler — beim Schließen anhalten.
-        this.hoerlupe?.destroy();
-        this.hoerlupe = null;
-        // WebGL-Kontexte sind eine knappe Ressource (Browser begrenzen sie
-        // pro Seite) — das Gebirge muss beim Schließen wirklich weg sein.
-        this.spectro3dPanel?.destroy();
-        this.spectro3dPanel = null;
-        if (this.workPointRanking) {
-          this.workPointRanking.destroy();
-          this.workPointRanking = null;
-        }
-        // UX-Fix: Notify router to reset to Grundansicht (explicit "Weiter" action)
-        if (this.onResultContinue) {
-          this.onResultContinue();
-        }
-      };
-    }
-
-    // Setup view history button
-    const viewHistoryBtn = document.getElementById('view-history-btn');
-    if (viewHistoryBtn) {
-      viewHistoryBtn.onclick = () => {
-        this.showHistoryChart();
-      };
-    }
-
-    // Result extras (iris comparison + A/B listen controls): reserve their
-    // slots in a fixed order and fill them from a single shared audio load, so
-    // they fade in place instead of racing and reordering (which made the
-    // result screen jump as each block was pushed in).
-    void this.renderResultExtras(diagnosis);
-  }
-
-  /**
-   * AUFLÖSUNG DIESER REFERENZ — die Zahl, die „Vergleich, keine Diagnose" von
-   * einer Ausrede trennt.
-   *
-   * Wer nicht diagnostiziert, muss sagen können, was er stattdessen leistet.
-   * Zanobo leistet: Unterschiede ab einer bestimmten Punktzahl auflösen. Diese
-   * Punktzahl ist keine Produkteigenschaft, sondern eine Eigenschaft DIESER
-   * Referenz — sie kommt aus deren eigener Wiederholstreuung (Median + k · MAD
-   * der Selbsttest-Scores, siehe `core/ml/baselineSpread.ts`). Eine leise
-   * Maschine mit ruhiger Aufnahme löst fein auf, eine mit schwankendem
-   * Betriebspunkt grob. Beide zeigen dieselbe Skala — deshalb muss dabeistehen,
-   * was sie wert ist.
-   *
-   * Diese Zeile ENTSCHEIDET nichts. Die Ampel urteilt unverändert an ihren zwei
-   * festen Schwellen; hier steht nur, wie fein sie urteilen kann. Erst wenn sich
-   * über genug echte Referenzen zeigt, wo die Zahl liegt, kann die Schwelle
-   * begründet darauf umgestellt werden.
-   *
-   * Fehlt die Streuung (Referenz vor diesem Feld angelernt, oder Temporal-Engine,
-   * die keine Verteilung hat), wird KEINE Zahl erfunden: ab „Advanced" steht der
-   * Grund da, darunter bleibt die Zeile weg — ein Hinweis, auf den man nur mit
-   * Neuanlernen reagieren kann, ist für die einfache Ansicht bloß Lärm.
-   */
-  private renderResolutionLine(): void {
-    const line = document.getElementById('result-ampel-resolution');
-    if (!line) return;
-
-    const state = resolutionLineState(
-      this.activeModels,
-      this.lastHealthyLabel,
-      isViewLevelAtLeast('advanced')
-    );
-
-    if (state.kind === 'hidden') {
-      line.style.display = 'none';
-      line.textContent = '';
-      line.removeAttribute('title');
-      return;
-    }
-
-    line.style.display = '';
-    if (state.kind === 'unknown') {
-      line.textContent = t('resultAmpel.resolutionUnknown');
-      line.removeAttribute('title');
-      return;
-    }
-
-    line.textContent = t('resultAmpel.resolution', { points: state.points });
-    line.title = t('resultAmpel.resolutionDetail', {
-      k: String(state.k),
-      label: state.label,
-    });
-  }
 
   /**
    * Reserve fixed-order slots for the result extras and fill them from a single
@@ -3957,13 +3485,15 @@ export class DiagnosePhase {
       }
     }
 
-    // Re-draw the expert analysis canvas now that the reference and/or measured
-    // spectrum are available, so it can overlay the reference for deviation
-    // context (and, for engines without an ESD vector like YAMNet, draw the
-    // measured curve at all).
-    if (this.lastReferenceSpectrum || this.lastMeasurementSpectrum) {
-      this.drawAnalysisCanvas(diagnosis);
-    }
+    /**
+     * Hier stand das Nachzeichnen der Frequenzabweichungs-Grafik.
+     *
+     * Ihre Leinwand lag im alten Ergebnisdialog. Seit das Ergebnis auf der
+     * Maschinenebene steht (22.08.2026), zeichnete sie in ein Fenster, das nie
+     * aufging — sichtbar war sie damit einen Tag lang nicht mehr. Mit dem
+     * Dialog ist sie abgerissen. Wenn sie zurück soll, gehört sie neben 2D und
+     * Gebirge ins Analyseblatt, und das ist ein eigener Schnitt.
+     */
 
     this.revealResultSlot(container);
   }
@@ -4148,89 +3678,7 @@ export class DiagnosePhase {
     }
   }
 
-  private drawAnalysisCanvas(diagnosis: DiagnosisResult): void {
-    const canvas = document.getElementById('analysis-canvas') as HTMLCanvasElement | null;
-    if (!canvas) return;
-    // Prefer the engine's ESD feature vector (GMIA / spectral-cosine). When the
-    // active engine produces none (YAMNet), fall back to the measured spectrum
-    // computed from the captured audio, so the "Frequenzabweichung" plot — the
-    // measured curve over the reference, with the strongest deviations — is
-    // shown regardless of the evaluation method.
-    const measured = this.lastFeatureVector
-      ? this.lastFeatureVector
-      : this.lastMeasurementSpectrum
-        ? {
-            features: this.lastMeasurementSpectrum.data,
-            frequencyRange: [0, this.lastMeasurementSpectrum.nyquist] as [number, number],
-          }
-        : null;
-    if (!measured) return;
-    renderAnalysisCanvas(canvas, measured, this.lastReferenceSpectrum, diagnosis.status);
-  }
 
-  /**
-   * Update Work Point Ranking component with all model scores
-   *
-   * This provides a detailed view of all trained machine states
-   * and their probability scores for Advanced/Expert users.
-   */
-  private updateWorkPointRanking(): void {
-    // YAMNet produces no ESD feature vector and is skipped by the sync
-    // dispatcher, so reuse the per-state scores captured during the live YAMNet
-    // diagnosis. All other engines score synchronously from the feature vector.
-    // NOTE: detect YAMNet by the captured scores, NOT this.diagnosisIsYamnet —
-    // cleanup() resets that flag before the result screen renders. lastYamnetScores
-    // survives cleanup and is only set during a YAMNet diagnosis.
-    let modelScores: WorkPointScore[];
-    if (this.lastYamnetScores && this.lastYamnetScores.length > 0) {
-      modelScores = this.lastYamnetScores;
-    } else {
-      if (!this.lastFeatureVector || !this.activeModels || this.activeModels.length === 0) {
-        logger.debug('📊 WorkPointRanking: No feature vector or models available');
-        return;
-      }
-      modelScores = scoreAllWithEngines(this.activeModels, {
-        feature: this.lastFeatureVector,
-        sampleRate: this.actualSampleRate,
-      });
-    }
-
-    if (modelScores.length === 0) {
-      logger.debug('📊 WorkPointRanking: No scores calculated');
-      return;
-    }
-
-    // Convert to WorkPoint format
-    const workPoints: WorkPoint[] = modelScores.map((score) => ({
-      name: score.label === 'Baseline' ? t('reference.labels.baseline') : score.label,
-      score: score.score,
-      isHealthy: score.isHealthy,
-      metadata: {
-        trainingDate: score.trainingDate,
-      },
-    }));
-
-    // Initialize or update ranking component
-    const container = document.getElementById('work-point-ranking-container');
-    if (!container) {
-      logger.warn('📊 WorkPointRanking: Container not found');
-      return;
-    }
-
-    // Create ranking if not exists
-    if (!this.workPointRanking) {
-      this.workPointRanking = new WorkPointRanking('work-point-ranking-container', {
-        animate: true,
-        showRankNumbers: true,
-        maxItems: 10,
-      });
-    }
-
-    // Update with new data
-    this.workPointRanking.update(workPoints);
-
-    logger.info(`📊 WorkPointRanking updated with ${workPoints.length} states`);
-  }
 
   /**
    * Show history chart modal with machine diagnosis history
@@ -4367,18 +3815,6 @@ export class DiagnosePhase {
     }
   }
 
-  private applyAppShellLayout(): void {
-    const modal = document.getElementById('diagnosis-modal');
-    if (!modal) return;
-
-    const modalContent = modal.querySelector('.modal-content');
-    if (!modalContent) return;
-
-    modalContent.classList.add('app-shell-container');
-    modalContent.querySelector('.modal-header')?.classList.add('shell-header');
-    modalContent.querySelector('.modal-body')?.classList.add('shell-content');
-    modalContent.querySelector('.modal-actions')?.classList.add('shell-footer');
-  }
 
   /**
    * Destroy phase and cleanup all resources
@@ -4420,10 +3856,6 @@ export class DiagnosePhase {
     this.diagnosisAudioPromise = null;
 
     // Cleanup health gauge instance to prevent leaks
-    if (this.healthGauge) {
-      this.healthGauge.destroy();
-      this.healthGauge = null;
-    }
 
     // Cleanup history chart
     if (this.historyChart) {
@@ -4432,10 +3864,6 @@ export class DiagnosePhase {
     }
 
     // Cleanup work point ranking
-    if (this.workPointRanking) {
-      this.workPointRanking.destroy();
-      this.workPointRanking = null;
-    }
     this.lastFeatureVector = null;
     this.lastReferenceSpectrum = null;
     this.lastMeasurementSpectrum = null;
