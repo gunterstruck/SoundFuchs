@@ -1674,22 +1674,6 @@ export const de: TranslationDict = {
   // ============================================================================
   // DIAGNOSIS RESULTS MODAL
   // ============================================================================
-  diagnosisResults: {
-    title: 'Prüfergebnisse',
-    fingerprintLabel: 'Fingerprint',
-    confidenceScoreLabel: 'Vertrauensscore',
-    varianceTitle: 'Varianz',
-    frequencyAnomalyLabel: 'Frequenzabweichung',
-    analysisHintDefault: 'Hinweis: Leicht erhöhtes Signal um 20 kHz',
-    measurementQualityWarning:
-      '⚠ Messsignal sehr schwach – Ergebnis kaum verwertbar. Bitte näher an die Maschine und in ruhigerer Umgebung erneut messen.',
-    referenceQualityTitle: 'Aufnahmequalität',
-    referenceQualityStatusGood: 'GUT',
-    referenceQualityDescription: 'Aufnahme erfüllt empfohlene Bedingungen',
-    featureModeLabel: 'Feature-Modus',
-    viewHistory: 'Verlauf anzeigen',
-    closeDialog: 'Prüfung schließen',
-  },
 
   // ============================================================================
   // RESULTS – Ergebnis-Modal Kontext-Hinweise
@@ -2615,18 +2599,6 @@ export const de: TranslationDict = {
   },
 
   // Welle 2 UX: Result action buttons
-  resultActions: {
-    details: 'Details',
-    newCheck: 'Neue Prüfung',
-    reportMaintenance: 'Auffälligkeit melden',
-    copiedToClipboard: 'Prüfbericht in Zwischenablage kopiert',
-    maintenanceReportTitle: 'Prüfbericht',
-    machine: 'Maschine',
-    score: 'Score',
-    status: 'Status',
-    date: 'Datum',
-    recommendation: 'Empfehlung',
-  },
 
   // ============================================================================
   // REFERENZ-SAMMLUNG TEILEN (Maschinen-Detail)

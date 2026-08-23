@@ -1346,22 +1346,6 @@ export const zh: TranslationDict = {
     discardNew: '丢弃/重新',
     saveAsReference: '保存为参考',
   },
-  diagnosisResults: {
-    title: '检查结果',
-    fingerprintLabel: '指纹',
-    confidenceScoreLabel: '置信度分数',
-    varianceTitle: '方差',
-    frequencyAnomalyLabel: '频率异常',
-    analysisHintDefault: '提示：约 20 kHz 附近信号略有升高',
-    measurementQualityWarning:
-      '⚠ 测量信号非常弱——结果几乎不可用。请靠近机器并在更安静的环境中重新测量。',
-    referenceQualityTitle: '录制质量',
-    referenceQualityStatusGood: '良好',
-    referenceQualityDescription: '录制符合推荐条件',
-    featureModeLabel: '特征模式',
-    viewHistory: '查看历史',
-    closeDialog: '关闭检查',
-  },
   results: {
     envMatch: {
       moreReverberant: '🏠 Environment more reverberant than reference – score may be affected',
@@ -2068,18 +2052,6 @@ export const zh: TranslationDict = {
       'Auflösung dieser Referenz unbekannt — sie wurde angelernt, bevor die Eigenstreuung gemessen wurde. Neu anlernen sagt, welche Unterschiede der Vergleich trennt.',
     resolutionDetail:
       'Aus der Wiederholstreuung der Referenz „{{label}}" selbst: {{k}} · MAD ihrer Selbsttest-Scores, auf die angezeigte Skala gestreckt. Keine Schwelle — die Ampel entscheidet unverändert.',
-  },
-  resultActions: {
-    details: '详情',
-    newCheck: '新检查',
-    reportMaintenance: '报告维护',
-    copiedToClipboard: '维护报告已复制到剪贴板',
-    maintenanceReportTitle: '维护报告',
-    machine: '机器',
-    score: '分数',
-    status: '状态',
-    date: '日期',
-    recommendation: '建议',
   },
 
   // ============================================================================

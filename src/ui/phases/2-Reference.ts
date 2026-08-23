@@ -2443,14 +2443,13 @@ export class ReferencePhase {
             visualizerContainer.className = 'visualizer-container';
           }
 
+          // Die Zeigerskala stand hier auch — sie lag aber nie in diesem
+          // Fenster, sondern im alten Ergebnisdialog. Die Zeile suchte seit
+          // jeher ins Leere und ist mit ihm abgerissen.
           const waveformCanvas = body.querySelector('#waveform-canvas');
-          const gaugeCanvas = body.querySelector('#health-gauge-canvas');
 
           if (waveformCanvas && waveformCanvas.parentElement !== visualizerContainer) {
             visualizerContainer.appendChild(waveformCanvas);
-          }
-          if (gaugeCanvas && gaugeCanvas.parentElement !== visualizerContainer) {
-            visualizerContainer.appendChild(gaugeCanvas);
           }
 
           if (!visualizerContainer.parentElement) {

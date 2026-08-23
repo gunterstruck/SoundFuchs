@@ -1441,22 +1441,6 @@ export const fr: TranslationDict = {
     discardNew: 'Rejeter / Nouveau',
     saveAsReference: 'Sauvegarder comme référence',
   },
-  diagnosisResults: {
-    title: 'Résultats de la vérification',
-    fingerprintLabel: 'Empreinte',
-    confidenceScoreLabel: 'Score de confiance',
-    varianceTitle: 'Variance',
-    frequencyAnomalyLabel: 'Anomalie de fréquence',
-    analysisHintDefault: 'Astuce : signal légèrement accru autour de 20 kHz',
-    measurementQualityWarning:
-      '⚠ Signal de mesure très faible – résultat peu exploitable. Rapprochez-vous de la machine et mesurez à nouveau dans un environnement plus calme.',
-    referenceQualityTitle: "Qualité d'enregistrement",
-    referenceQualityStatusGood: 'BON',
-    referenceQualityDescription: "L'enregistrement respecte les conditions recommandées",
-    featureModeLabel: 'Mode de caractéristiques',
-    viewHistory: "Voir l'historique",
-    closeDialog: 'Fermer la vérification',
-  },
   results: {
     envMatch: {
       moreReverberant: '🏠 Environment more reverberant than reference – score may be affected',
@@ -2209,18 +2193,6 @@ export const fr: TranslationDict = {
       'Auflösung dieser Referenz unbekannt — sie wurde angelernt, bevor die Eigenstreuung gemessen wurde. Neu anlernen sagt, welche Unterschiede der Vergleich trennt.',
     resolutionDetail:
       'Aus der Wiederholstreuung der Referenz „{{label}}" selbst: {{k}} · MAD ihrer Selbsttest-Scores, auf die angezeigte Skala gestreckt. Keine Schwelle — die Ampel entscheidet unverändert.',
-  },
-  resultActions: {
-    details: 'Détails',
-    newCheck: 'Nouvelle vérification',
-    reportMaintenance: 'Signaler maintenance',
-    copiedToClipboard: 'Rapport de maintenance copié dans le presse-papiers',
-    maintenanceReportTitle: 'Rapport de maintenance',
-    machine: 'Machine',
-    score: 'Score',
-    status: 'Statut',
-    date: 'Date',
-    recommendation: 'Recommandation',
   },
 
   // ============================================================================

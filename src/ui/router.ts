@@ -999,11 +999,6 @@ export class Router {
     this.diagnosePhase = new DiagnosePhase(machine, selectedDeviceId);
     this.diagnosePhase.init();
 
-    // Welle 2: Refresh dashboard when result modal is dismissed (✕ button)
-    this.diagnosePhase.setOnResultModalClosed(() => {
-      this.identifyPhase.updateDashboard();
-    });
-
     // UX-Fix: Reset to Grundansicht when explicit "Weiter" button is clicked
     // Guard: in fleet queue mode the queue advances via onDiagnosisComplete – do not reset
     this.diagnosePhase.setOnResultContinue(() => {
@@ -2958,23 +2953,12 @@ export class Router {
     // Sprint 6: Remove guided prompt if visible
     document.getElementById('fleet-guided-prompt')?.remove();
     /**
-     * ── DER ALTE ERGEBNISDIALOG BLEIBT NICHT STEHEN ───────────────────────
+     * Hier stand ein Notnagel für den alten Ergebnisdialog.
      *
-     * Im Flottenlauf zeigt jede einzelne Prüfung weiterhin den alten Dialog —
-     * dort ist er der Takt des Laufs. Nach der letzten blieb er offen liegen
-     * und legte sich hinter das Reihenergebnis.
-     *
-     * Gemessen am 23.08.2026 auf der Standortebene NACH einem Flottenlauf:
-     * Am Griff des Blatts lag `modal-actions shell-footer`, im Baum stand
-     * `diagnosis-modal`. Das Blatt ließ sich nicht mehr aufziehen — die Fußzeile
-     * eines Dialogs, den niemand mehr sah, fing jeden Zug ab.
-     *
-     * Es ist derselbe Dialog, den §S6 für Einzelprüfungen abgelöst hat. Auf
-     * diesem Weg lebt er noch; dann muss er wenigstens gehen, wenn der Lauf
-     * vorbei ist.
+     * Er blieb nach einem Flottenlauf offen liegen, und seine Fußzeile fing am
+     * Griff des Blatts jeden Zug ab. Seit der Dialog abgerissen ist, gibt es
+     * nichts mehr zu schließen.
      */
-    const alterDialog = document.getElementById('diagnosis-modal');
-    if (alterDialog) alterDialog.style.display = 'none';
     // Remove visibility listener
     if (this.boundVisibilityHandler) {
       document.removeEventListener('visibilitychange', this.boundVisibilityHandler);

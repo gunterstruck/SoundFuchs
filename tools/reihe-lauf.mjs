@@ -25,8 +25,28 @@ import { join } from 'node:path';
 import { schreibeKlang } from './klang.mjs';
 
 const require = createRequire(import.meta.url);
-const { chromium } = require('playwright');
-
+let chromium;
+try {
+  ({ chromium } = require('playwright'));
+} catch {
+  /**
+   * Kein Fehler ohne Satz — auch nicht beim Werkzeug selbst.
+   *
+   * Playwright steht bewusst NICHT in `package.json`: Die CI führt `npm ci`
+   * aus und keinen einzigen Browser-Wächter; es dort zu installieren lüde bei
+   * jedem Lauf Browser herunter, die niemand benutzt.
+   *
+   * Der Preis dafür ist, dass es nach einem frischen `npm ci` fehlen kann.
+   * Dann muss hier ein Satz stehen, der sagt, was zu tun ist. Am 23.08.2026
+   * stürzten sechs von acht Wächtern stattdessen mit einer Stapelspur ab —
+   * und ein Wächter, der gar nicht läuft, sieht in einem Protokoll aus wie
+   * einer, der nichts gefunden hat.
+   */
+  console.error(
+    'Playwright fehlt. Einmalig:  npm i -D playwright  (der Browser liegt schon bereit)'
+  );
+  process.exit(1);
+}
 const freierPort = () =>
   new Promise((res, rej) => {
     const s = createServer();
