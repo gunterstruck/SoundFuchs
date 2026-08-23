@@ -5,6 +5,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    /**
+     * Dieselben Bedingungen wie in der CI — siehe `src/test-setup.ts`.
+     *
+     * Ohne diese Zeile prüft `npm run test:run` auf dem Entwicklungsrechner
+     * etwas anderes als in der CI, sobald deren Node-Fassung eine andere ist.
+     * Genau das ist am 23.08.2026 passiert.
+     */
+    setupFiles: ['./src/test-setup.ts'],
     include: ['src/**/*.test.ts'],
     coverage: {
       provider: 'v8',
