@@ -3368,6 +3368,96 @@ nie zu sehen bekommt.
 | Hoher Dialog mit Videobild | Titel angeschnitten | **frei** |
 | Was der Wächter prüft | — | **die Regel, nicht ein Fenster** |
 
+### S17 — Der Takt der Reihe (23.08.2026)
+
+#### Zuerst: eine Behauptung von mir, die die Messung nicht hält
+
+Ich hatte notiert, die Ansage „Geh zu: Rührwerk 1" decke „den ganzen Bildschirm
+als Vollbild-Überlagerung". Gemessen im Reihenlauf, Handy 390 × 844:
+
+```
+Ansage 1: Blatt   323 px (38 % des Bildschirms) · frei darüber 522 px
+```
+
+Ein Blatt von unten, wie die anderen Blätter dieser App. Kein Vollbild. Die
+Notiz war eine Erinnerung, keine Messung — und sie war falsch.
+
+#### Der echte Befund
+
+```
+nach Prüfung 1   alter Dialog flex · nächste Ansage da
+```
+
+**Beides gleichzeitig**, und der Dialog obenauf. Der Takt einer Reihe war
+damit: ansagen — aufnehmen — **wegtippen** — ansagen. Den Schritt in der Mitte
+hat niemand angefordert.
+
+Im Quelltext stand die Begründung dafür schon, und sie war halb richtig: „Wer
+sie nach jeder Maschine auf eine Maschinenseite führte, unterbräche genau das,
+was sie ist." Stimmt. Nur war die gewählte Lösung ein **modaler Dialog**, und
+der unterbricht sie genauso.
+
+#### Das Ergebnis ist nicht verschwunden, es ist umgezogen
+
+Eine Reihe hat nach jeder Maschine ein Ergebnis, aber keinen Ort dafür: Die
+Maschinenseite bricht die Reihe, ein Dialog bricht sie auch. Also reist es mit.
+Die Ansage der nächsten Maschine trägt es oben als **einen Satz**:
+
+```
+Rührwerk 1: klingt wie der Normalzustand · 100 %
+────────────────────────────────────────────────
+GEH ZU:
+Rührwerk 2
+Bereit? Halte das Smartphone an die Maschine.
+[ ▶ Aufnahme starten ]
+```
+
+Er steht oben, weil er zur Vergangenheit gehört; darunter beginnt die Zukunft
+mit dem Namen der nächsten Maschine. Er steht nur einmal — beim übernächsten
+Mal ist er nicht mehr die Nachricht. Und er sagt nie, was der Maschine fehlt:
+„klingt anders als der Normalzustand" ist eine Beobachtung, „Lager defekt" wäre
+eine Behauptung.
+
+Die letzte Maschine bringt ihr Ergebnis ins Ergebnis der ganzen Reihe, das
+ohnehin kommt.
+
+```
+nach Prüfung 1   alter Dialog none · nächste Ansage da
+Ansage 2         375 px (44 % des Bildschirms) · frei darüber 469 px
+Ansage 2         „Rührwerk 1: klingt wie der Normalzustand · 100 %"
+```
+
+Das Blatt wächst um 52 px und bleibt ein Blatt.
+
+#### Zwei Falsifikationen — und eine, die der Compiler abgefangen hat
+
+1. **Das Ergebnis nicht merken** → 2 Befunde: „ab der zweiten Ansage fehlt das
+   Ergebnis der vorigen Maschine — es hat keinen anderen Ort" und „der
+   Rückblick nennt nicht ‚Rührwerk 1'".
+2. **Eine Diagnose in den Satz schreiben** („Lager defekt") → 1 Befund: „der
+   Rückblick stellt eine Diagnose statt einer Beobachtung". Diese Prüfung war
+   bei Falsifikation 1 grün geblieben — auf leerem Text kann sie nicht
+   scheitern. Sie brauchte ihre eigene.
+
+Und ein dritter Versuch kam gar nicht bis in den Browser: `if (false && vorher
+&& vorher.name)` ließ TypeScript `vorher` wieder für `null` halten — fünf
+Fehler, bevor der Build lief. Eine Falsifikation, die den Compiler nicht
+passiert, ist keine.
+
+#### Was dieser Schnitt liegen lässt
+
+`showResults()` in `3-Diagnose.ts` hat jetzt keinen Aufrufer mehr, und damit
+auch das Markup von `#diagnosis-modal` keinen. Das Entfernen ist ein eigener,
+rein subtraktiver Schnitt — rund 350 Zeilen plus Markup plus CSS. Ihn hier
+mitzunehmen hieße, einen Umbau und einen Abriss in einem Zug zu prüfen.
+
+| | vor S17 | jetzt |
+|---|---|---|
+| Takt der Reihe | ansagen · aufnehmen · **wegtippen** · ansagen | **ansagen · aufnehmen · ansagen** |
+| Ergebnis je Maschine | modaler Dialog | **ein Satz in der nächsten Ansage** |
+| Was zu tun ist | einen Dialog schließen | **nichts** |
+| Diagnose-Verbot in der Reihe | eingehalten | **bewacht** |
+
 ### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die

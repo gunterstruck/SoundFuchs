@@ -9166,6 +9166,26 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   }
 }
 
+/* ── DER RÜCKBLICK ÜBER DER ANSAGE ──────────────────────────────────────────
+   Was die vorige Maschine ergeben hat — ein Satz, kein Fenster.
+
+   Er trägt eine Linie unter sich, nicht um sich: Ein Kasten machte aus einer
+   Randnotiz eine zweite Nachricht, und die Nachricht ist der Name darunter.
+   Die Farbe kommt nur bei einer Abweichung dazu, und auch dann trägt der Satz
+   die Auskunft — Farbe allein wäre eine reine Farbcodierung. */
+.fleet-guided-rueckblick {
+  font-size: var(--font-sm, 0.85rem);
+  color: var(--text-secondary, #666);
+  padding-bottom: var(--spacing-sm, 8px);
+  margin-bottom: var(--spacing-md, 12px);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.fleet-guided-rueckblick.ist-auffaellig {
+  color: var(--color-warning, #f59e0b);
+  font-weight: 600;
+}
+
 .fleet-guided-goto {
   font-size: var(--font-sm, 0.85rem);
   color: var(--text-muted, #999);

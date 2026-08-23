@@ -2403,6 +2403,8 @@ export const de: TranslationDict = {
       resumed: 'Flottencheck fortgesetzt.',
       // Sprint 6: Guided fleet check
       guided: {
+        vorherWie: '{{name}}: klingt wie der Normalzustand · {{wert}} %',
+        vorherAnders: '{{name}}: klingt anders als der Normalzustand · {{wert}} %',
         goTo: 'Geh zu:',
         startRecording: '\u25B6 Aufnahme starten',
         skip: '\u00DCberspringen',
