@@ -3058,6 +3058,117 @@ Der Build räumt `dist/` und nahm dem Lauf beim nächsten Mal seine Grundlage.
 | Video ohne Tonspur | — | **eigener Satz, nicht „ging nicht"** |
 | Was gespeichert wird | — | **die Tonspur des Ausschnitts, nie der Film** |
 
+### S14 — Die mitgebrachte Aufnahme als Normalzustand (23.08.2026)
+
+Der Auftraggeber: „Dann kann man sein Auto heute filmen und in vier Wochen
+vergleichen." Das ist der Schritt, der dem Video seinen vollen Wert gibt. Ohne
+ihn ist ein mitgebrachter Film ein einmaliger Blick; mit ihm ist er der Maßstab
+für alles, was danach kommt.
+
+#### Es ist DERSELBE Weg — und das ist die ganze Arbeit
+
+Die Verarbeitung stand mitten in `processRecording()`: Blob entpacken,
+Anlaufzeit abschneiden, Merkmale ziehen, Kirschen pflücken, Rauschen abziehen,
+Raum ausgleichen, Umgebungsdaten rechnen, Modell trainieren, speichern. Ein
+zweiter Weg für Dateien wäre ein **zweiter Normalzustand-Begriff** gewesen —
+und beim nächsten Umbau einer davon veraltet.
+
+Herausgelöst wurde deshalb die gemeinsame Mitte: `bereiteNormalzustandVor(ton,
+trainingsstück, abtastrate)`. Davor unterscheiden sich die beiden Wege, danach
+nicht mehr.
+
+| | Mikrofon | mitgebrachte Datei |
+|---|---|---|
+| Anlaufzeit abschneiden | 5 s (OS-Filter schwingen ein) | **entfällt** — eine Datei hat keine |
+| Raum-T60 | aus dem Chirp | **`null`** — nicht gemessen, also nicht behauptet |
+| Verarbeitung | `bereiteNormalzustandVor` | **dieselbe Methode** |
+| Speichern | `performReviewSave` | **dieselbe Methode** |
+| Etikett | erstes = `Baseline`, danach gefragt | **immer `Baseline`, ersetzt den bisherigen** |
+
+Die Abtastrate passt von selbst: `decodeAudioData` rechnet die Datei auf die
+Rate des AudioContext um, und das ist dieselbe Standardrate, mit der die Prüfung
+später aufnimmt.
+
+#### §7e hält: ein Normalzustand wird nie still überschrieben
+
+Er ist der Maßstab, an dem jede Prüfung dieser Maschine gemessen wird. Ihn zu
+ersetzen ändert rückwirkend nichts, aber ab jetzt alles. Deshalb eine Frage mit
+zwei benannten Antworten — **im Dialog und nicht per `confirm()`**: In
+installierten PWAs wird `confirm()` auf Android stillschweigend unterdrückt (es
+erscheint kein Fenster, der Aufruf liefert sofort `false`). Dieselbe Lehre steht
+seit dem Etiketten-Modal in `2-Reference.ts`.
+
+```
+Diese Datei ersetzt den bisherigen Normalzustand.
+Frühere Prüfungen bleiben erhalten.
+[ Abbrechen ]  [ Normalzustand ersetzen ]
+```
+
+Ersetzt wird genau das Modell, das die App selbst für „den" Normalzustand hält
+(`label === 'Baseline'`, sonst das erste) — dieselbe Regel, nach der
+Geisterbild, Iris und Reihenvergleich suchen. Eine zweite Regel hier wäre
+irgendwann eine andere Antwort.
+
+#### Strenger als bei der Aufnahme — mit Grund
+
+Bei der Mikrofonaufnahme darf ein `BAD`-Stück nach Rückfrage bleiben: Der Nutzer
+steht an der Maschine, und eine brauchbare Referenz ist besser als keine. Bei
+einer Datei ist das anders — eine andere Stelle im selben Film kostet einen Zug
+am Regler. Ein schlechter Maßstab wäre vier Wochen lang der Maßstab. Also wird
+nichts gespeichert, sondern benannt, und der Weg weiter führt **zurück in
+denselben Film**, nicht zu einer anderen Datei.
+
+#### Und die vier Wochen funktionieren wirklich
+
+Ein mitgebrachtes Geräusch lag bisher **allein** im Analyseblatt. Das stimmte
+nur für Maschinen ohne Normalzustand. Hat die Maschine einen, ist er genau der
+zweite Ton, den Gebirge und Hör-Lupe brauchen — und er ist der Grund, warum
+jemand vier Wochen später noch einmal filmt. Er wird jetzt mitgegeben.
+
+#### Der Wächter liest die Ablage, nicht die Oberfläche
+
+`npm run mitbringen` durchläuft den Normalzustand **zweimal**: beim ersten Mal
+hat die Maschine keinen, beim zweiten hat sie einen — nur dann ist die
+Ersetzen-Frage überhaupt messbar. Gelesen wird dabei die IndexedDB der Seite
+selbst; ein Knopf, der zugeht, ist kein Beweis, dass etwas gespeichert wurde.
+
+```
+vorher              Kompressor 1 · 0 Modelle (—) · 0 Referenzaufnahmen
+nachher             1 Modelle (Baseline) · 1 Referenzaufnahmen
+                    Fingerabdruck gezeigt · „Jetzt Gegenprobe machen"
+
+zweiter Lauf
+Frage               Diese Datei ersetzt den bisherigen Normalzustand.
+Antworten           Abbrechen · Normalzustand ersetzen
+nach „Abbrechen"    1 Modelle · Vorschau wieder da   (Ablage unberührt)
+nachher             1 Modelle (Baseline) · 2 Referenzaufnahmen
+```
+
+Zwei Falsifikationen haben ihn bestätigt:
+
+1. **Frage entfernt** (direkt speichern statt fragen) → 5 Befunde, darunter
+   „der vorhandene Normalzustand wurde ohne Frage ersetzt — genau das darf nie
+   passieren" und „nach ‚Abbrechen' steht die Vorschau nicht wieder da".
+2. **Ersetzen zu Anhängen geändert** → „es gibt 2 Modelle namens ‚Baseline'
+   statt genau einem" und „aus 1 Modell(en) wurden 2".
+
+Ein dritter Fehler lag beim Wächter selbst: Sein Prüfton war ein reiner Sinus.
+Der Modellbau schaut auf 512 Bänder, und ein einzelner Ton füllt genau eines
+davon — er trägt jetzt Rauschen mit, aus einem festen Zufallsgenerator, damit
+zwei Läufe dieselbe Datei ergeben. Und der zweite Durchlauf traf den Knopf
+„Geräusch mitbringen" nicht: Das aufgezogene Blatt lag darüber, ein erzwungener
+Klick landete auf dem Blatt, und der Lauf wartete 30 s vergeblich auf den
+Dateidialog. Er zieht das Blatt jetzt mit einer echten Zeigergeste zu.
+
+| | vor S14 | jetzt |
+|---|---|---|
+| Mitgebrachte Aufnahme als Normalzustand | gar nicht | **ein zweiter Ausgang in der Vorschau** |
+| Verarbeitungsweg | nur Mikrofon | **eine Methode für beide** |
+| Vorhandener Normalzustand | — | **wird nie still ersetzt (§7e)** |
+| Schlechter Ausschnitt | — | **nicht gespeichert, sondern benannt** |
+| Mitgebrachtes Geräusch im Blatt | allein | **neben dem Normalzustand** |
+| Was der Wächter glaubt | dem Knopf | **der IndexedDB** |
+
 ### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die

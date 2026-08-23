@@ -38,6 +38,7 @@ import {
   type Dateibefund,
 } from '@core/audio/geraeuschdatei.js';
 import { SlowListenPlayer } from '@core/audio/slowListen.js';
+import type { NormalzustandBefund } from '@ui/phases/2-Reference.js';
 import { t } from '../../i18n/index.js';
 import { logger } from '@utils/logger.js';
 
@@ -47,6 +48,22 @@ const FENSTER = 10;
 export interface MitbringenOptions {
   /** Was mit dem gewählten Ausschnitt geschehen soll. */
   uebernehmen: (ton: AudioBuffer, dateiname: string) => void;
+  /**
+   * Der zweite Ausgang: den Ausschnitt als Normalzustand behalten.
+   *
+   * Der Auftraggeber: „Dann kann man sein Auto heute filmen und in vier Wochen
+   * vergleichen." Ohne diesen Ausgang ist ein mitgebrachter Film ein
+   * einmaliger Blick; mit ihm ist er der Maßstab für alles, was danach kommt.
+   *
+   * Optional, weil er eine Maschine braucht, der er gehören kann. Wo keine
+   * ist, wird er nicht angeboten — statt angeboten und dann verweigert.
+   */
+  normalzustand?: {
+    /** Hat die Maschine schon einen? Dann wird gefragt, bevor ersetzt wird. */
+    vorhanden: boolean;
+    /** Speichern — der Befund sagt, ob der Dialog zugehen darf. */
+    speichern: (ton: AudioBuffer, dateiname: string) => Promise<NormalzustandBefund>;
+  };
 }
 
 const SATZ: Readonly<Record<Dateibefund, string>> = Object.freeze({
@@ -72,6 +89,7 @@ class Vorschau {
   private start = 0;
   private laeuft = false;
   private zu = false;
+  private gezogenVerdrahtet = false;
   private readonly vorherFokus: HTMLElement | null;
 
   constructor(
@@ -193,6 +211,23 @@ class Vorschau {
   private zeigeVorschau(): void {
     const ton = this.ton;
     if (!ton) return;
+    /**
+     * Die Vorschau wird mehr als einmal gezeigt.
+     *
+     * Wer die Ersetzen-Frage abbricht oder nach einem abgelehnten Ausschnitt
+     * „Andere Stelle wählen" drückt, landet wieder hier — mit demselben
+     * Regler-Stand. Deshalb muss diese Methode aufräumen, was sie beim letzten
+     * Mal angelegt hat: Ohne diese vier Zeilen bliebe je ein Video-Objekt und
+     * eine Objekt-URL zurück, und die halten den ganzen Film im Speicher.
+     */
+    if (this.video) {
+      this.video.src = '';
+      this.video = null;
+    }
+    if (this.videoUrl) {
+      URL.revokeObjectURL(this.videoUrl);
+      this.videoUrl = null;
+    }
     this.buehne.replaceChildren();
 
     if (istVideo(this.datei)) {
@@ -255,7 +290,147 @@ class Vorschau {
     zeile.className = 'mitbringen-knoepfe';
     zeile.append(hoeren, nehmen);
     this.fuss.append(hinweis, zeile);
+
+    const normal = this.baueNormalblock();
+    if (normal) this.fuss.appendChild(normal);
+
     nehmen.focus();
+  }
+
+  /**
+   * ── DER ZWEITE AUSGANG ─────────────────────────────────────────────────
+   *
+   * Unter der einen Handlung und ungefüllt — dieselbe Zurückhaltung wie beim
+   * Knopf, der diesen Dialog geöffnet hat. „Ansehen" bleibt der Hauptweg;
+   * „Normalzustand" ist die Entscheidung, die man erst trifft, wenn man weiß,
+   * dass man sie treffen will.
+   *
+   * Der Satz darüber sagt, was daraus folgt, nicht was der Knopf tut. „Als
+   * Normalzustand speichern" allein wäre für jemanden, der das Wort zum ersten
+   * Mal liest, keine Auskunft.
+   */
+  private baueNormalblock(): HTMLElement | null {
+    const angebot = this.optionen.normalzustand;
+    if (!angebot) return null;
+
+    const block = document.createElement('div');
+    block.className = 'mitbringen-normal';
+
+    const satz = document.createElement('p');
+    satz.className = 'muted small mitbringen-normal-text';
+    satz.textContent = angebot.vorhanden
+      ? t('mitbringen.normalSchonEiner')
+      : t('mitbringen.normalNochKeiner');
+    block.appendChild(satz);
+
+    const knopf = document.createElement('button');
+    knopf.type = 'button';
+    knopf.className = 'mitbringen-normal-knopf';
+    knopf.textContent = t('mitbringen.alsNormalzustand');
+    knopf.onclick = () => {
+      if (angebot.vorhanden) this.frageErsetzen();
+      else void this.speichereNormalzustand();
+    };
+    block.appendChild(knopf);
+    return block;
+  }
+
+  /**
+   * §7e: Ein Normalzustand wird nie still überschrieben.
+   *
+   * Er ist der Maßstab, an dem jede Prüfung dieser Maschine gemessen wird —
+   * ihn zu ersetzen ändert rückwirkend nichts, aber ab jetzt alles. Deshalb
+   * eine Frage mit zwei benannten Antworten, und die gefährliche ist nicht die
+   * gefüllte.
+   *
+   * Im Dialog und nicht per `confirm()`: In installierten PWAs wird `confirm()`
+   * auf Android stillschweigend unterdrückt — es erscheint kein Fenster, der
+   * Aufruf liefert sofort `false`. Dieselbe Lehre steht in `2-Reference.ts`.
+   */
+  private frageErsetzen(): void {
+    this.fuss.replaceChildren();
+
+    const frage = document.createElement('p');
+    frage.className = 'mitbringen-ersetzen-frage';
+    frage.setAttribute('role', 'alert');
+    frage.textContent = t('mitbringen.ersetzenFrage');
+
+    const beruhigung = document.createElement('p');
+    beruhigung.className = 'muted small';
+    beruhigung.textContent = t('mitbringen.ersetzenBleibt');
+
+    const zurueck = document.createElement('button');
+    zurueck.type = 'button';
+    zurueck.className = 'mitbringen-hoeren';
+    zurueck.textContent = t('mitbringen.abbrechen');
+    zurueck.onclick = () => this.zeigeVorschau();
+
+    const los = document.createElement('button');
+    los.type = 'button';
+    los.className = 'primary mitbringen-ersetzen-knopf';
+    los.textContent = t('mitbringen.ersetzenTun');
+    los.onclick = () => void this.speichereNormalzustand();
+
+    const zeile = document.createElement('div');
+    zeile.className = 'mitbringen-knoepfe';
+    zeile.append(zurueck, los);
+    this.fuss.append(frage, beruhigung, zeile);
+    zurueck.focus();
+  }
+
+  /**
+   * Speichern — und dabei sagen, dass es dauert.
+   *
+   * Merkmale ziehen, Kirschen pflücken, Modell trainieren: Das sind auf einem
+   * Telefon Sekunden. Ein Knopf, der in dieser Zeit unverändert dasteht, sieht
+   * aus wie ein Knopf, der nicht funktioniert hat.
+   */
+  private async speichereNormalzustand(): Promise<void> {
+    const angebot = this.optionen.normalzustand;
+    const ton = this.ton;
+    if (!angebot || !ton) return;
+
+    this.spieler.stop();
+    this.laeuft = false;
+    this.fuss.replaceChildren();
+    const warten = document.createElement('p');
+    warten.className = 'mitbringen-warten';
+    warten.setAttribute('role', 'status');
+    warten.textContent = t('mitbringen.normalSpeichert');
+    this.fuss.appendChild(warten);
+
+    const teil = ausschnitt(ton, this.start, Math.min(FENSTER, ton.duration));
+    const befund = await angebot.speichern(teil, this.datei.name);
+    if (this.zu) return;
+    if (befund.ok) {
+      this.schliesse();
+      return;
+    }
+    this.zeigeNormalFehler(befund.satz);
+  }
+
+  /**
+   * Es hat nicht geklappt — und der Weg weiter führt zurück in denselben Film.
+   *
+   * „Andere Datei wählen" wäre hier die falsche Hilfe: Wenn der Ausschnitt zu
+   * kurz oder zu unruhig war, liegt die passende Stelle meist in derselben
+   * Aufnahme, einen Zug am Regler entfernt.
+   */
+  private zeigeNormalFehler(satz: string): void {
+    this.fuss.replaceChildren();
+    const p = document.createElement('p');
+    p.className = 'mitbringen-normal-fehler';
+    p.setAttribute('role', 'alert');
+    p.textContent = satz;
+
+    const zurueck = document.createElement('button');
+    zurueck.type = 'button';
+    zurueck.className = 'primary';
+    zurueck.textContent = t('mitbringen.andereStelle');
+    zurueck.onclick = () => this.zeigeVorschau();
+
+    this.fuss.append(p, zurueck);
+    zurueck.focus();
   }
 
   /** Die Wellenform des ganzen Stücks — grob, sie ist eine Landkarte. */
@@ -310,6 +485,10 @@ class Vorschau {
   private verdrahteZiehen(): void {
     const ton = this.ton;
     if (!ton || ton.duration <= FENSTER) return;
+    // Nur einmal: Die Wellenfläche überlebt jedes Neuzeichnen der Vorschau,
+    // ihre Zuhörer würden sich sonst stapeln.
+    if (this.gezogenVerdrahtet) return;
+    this.gezogenVerdrahtet = true;
     const flaeche = this.leinwand.parentElement;
     if (!flaeche) return;
     const setzen = (klientX: number) => {

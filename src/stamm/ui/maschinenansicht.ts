@@ -52,7 +52,7 @@ import {
   type Maschinenzustand,
 } from '../maschine/zustand.js';
 import { oeffneTiefe, TIEFE_GEOEFFNET, TIEFE_GESCHLOSSEN, type TiefeDetail } from './scharnier.js';
-import { NORMALZUSTAND_GESPEICHERT } from '@ui/phases/2-Reference.js';
+import { NORMALZUSTAND_GESPEICHERT, ReferencePhase } from '@ui/phases/2-Reference.js';
 import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
 import { getReferenceIrisVector } from '@ui/phases/referenceIris.js';
 import { getMachine } from '@data/db.js';
@@ -351,6 +351,34 @@ async function toeneDerMaschine(
   }
 }
 
+/**
+ * Ein mitgebrachtes Geräusch ins Analyseblatt legen — NEBEN den Normalzustand.
+ *
+ * Bis zum 23.08.2026 lag es dort allein, mit der Begründung, dass es zu ihm
+ * keine Vergleichsaufnahme gebe. Das stimmte nur für Maschinen ohne
+ * Normalzustand. Hat die Maschine einen, ist er genau der zweite Ton, den
+ * Gebirge und Hör-Lupe brauchen — und er ist der Grund, warum jemand vier
+ * Wochen später noch einmal filmt.
+ *
+ * Hat sie keinen, bleibt es beim einen Ton, und das Briefing behandelt ihn
+ * weiter als `single-recording`: keine Vergleichsaufnahme, also keine
+ * behauptete Abweichung.
+ */
+async function legeMitgebrachtesInsBlatt(
+  maschine: Machine,
+  ton: AudioBuffer,
+  dateiname: string
+): Promise<void> {
+  const { referenz } = await toeneDerMaschine(maschine);
+  analyseblattFuellen({
+    referenz,
+    messung: ton,
+    maschinenname: `${maschine.name} · ${dateiname}`,
+  });
+  analyseblattOeffnen('zweid');
+  blattAufziehen();
+}
+
 async function zeichne(maschine: Machine): Promise<void> {
   const ziel = behaelter();
   if (!ziel) return;
@@ -573,23 +601,20 @@ async function zeichne(maschine: Machine): Promise<void> {
   mitbringen.textContent = t('mitbringen.knopf');
   mitbringen.addEventListener('click', () => {
     geraeuschMitbringen({
-      uebernehmen: (ton, dateiname) => {
-        /**
-         * Die Tonspur landet als Messung im Blatt — ohne Normalzustand.
-         *
-         * Damit gilt für sie genau das, was das Briefing für diesen Fall
-         * ohnehin vorsieht (`single-recording`): Es gibt keine
-         * Vergleichsaufnahme, also wird keine Abweichung behauptet. Das
-         * Gebirge sagt, dass ihm der zweite Ton fehlt; 2D und Briefing
-         * arbeiten.
-         */
-        analyseblattFuellen({
-          referenz: null,
-          messung: ton,
-          maschinenname: `${maschine.name} · ${dateiname}`,
-        });
-        analyseblattOeffnen('zweid');
-        blattAufziehen();
+      uebernehmen: (ton, dateiname) => void legeMitgebrachtesInsBlatt(maschine, ton, dateiname),
+      /**
+       * ── UND DER ZWEITE AUSGANG: DER NORMALZUSTAND ──────────────────────
+       *
+       * Der Auftraggeber: „Dann kann man sein Auto heute filmen und in vier
+       * Wochen vergleichen."
+       *
+       * `vorhanden` entscheidet nur, ob vorher gefragt wird. Es kommt aus der
+       * Maschine in der Hand — und die ist an dieser Stelle frisch: Die Ebene
+       * wird nach jedem Speichern eines Normalzustands neu gezeichnet.
+       */
+      normalzustand: {
+        vorhanden: (maschine.referenceModels?.length ?? 0) > 0,
+        speichern: (ton) => new ReferencePhase(maschine).normalzustandAusTon(ton),
       },
     });
   });

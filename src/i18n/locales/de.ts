@@ -58,6 +58,22 @@ export const de: TranslationDict = {
     fehlerZuKurz: 'Die Aufnahme ist zu kurz ({{zusatz}}).',
     fehlerLeer: 'Die Datei ist leer.',
     fehlerUnlesbar: 'Die Datei ließ sich nicht öffnen.',
+    alsNormalzustand: 'Als Normalzustand speichern',
+    normalNochKeiner:
+      'Diese Maschine hat noch keinen Normalzustand. Wird dieser Ausschnitt einer, vergleicht SoundFuchs jede spätere Prüfung damit.',
+    normalSchonEiner:
+      'Diese Maschine hat schon einen Normalzustand. Dieser Ausschnitt kann ihn ersetzen.',
+    ersetzenFrage: 'Diese Datei ersetzt den bisherigen Normalzustand.',
+    ersetzenBleibt: 'Frühere Prüfungen bleiben erhalten.',
+    ersetzenTun: 'Normalzustand ersetzen',
+    normalSpeichert: 'Der Normalzustand wird angelegt …',
+    normalZuKurz:
+      'Ein Normalzustand braucht mindestens {{mindest}} Sekunden; dieser Ausschnitt hat {{dauer}} s.',
+    normalTaugtNicht:
+      'Dieser Ausschnitt taugt nicht als Maßstab: {{gruende}}. Wähle eine ruhigere Stelle.',
+    normalOhneGrund: 'Das Geräusch ist zu ungleichmäßig',
+    normalGingNicht: 'Der Normalzustand ließ sich nicht anlegen.',
+    andereStelle: 'Andere Stelle wählen',
   },
   standortblatt: {
     reihen: 'Die Reihen hier',

@@ -60,6 +60,23 @@ import { setMeasurementActive } from '@utils/measurementActivity.js';
  */
 export const NORMALZUSTAND_GESPEICHERT = 'zanobot:normalzustand-gespeichert';
 
+/**
+ * So viel Ton braucht ein Normalzustand mindestens.
+ *
+ * Bei 330 ms Fenster und 66 ms Vorschub sind 5 s rund 70–80 Ausschnitte —
+ * genug, damit der Mittelwert steht. Mit 2 s waren es ~26, und das Modell
+ * schwankte. Die Zahl gilt für beide Wege: Mikrofon wie mitgebrachte Datei.
+ */
+export const MINDESTDAUER_NORMALZUSTAND = 5.0;
+
+/**
+ * Was aus einem mitgebrachten Ton wurde.
+ *
+ * Mit Satz statt mit Fehlercode: Wer eine Datei mitbringt, steht in einem
+ * Dialog, und dort muss stehen, was jetzt zu tun ist — nicht, was schiefging.
+ */
+export type NormalzustandBefund = { ok: true } | { ok: false; satz: string };
+
 export class ReferencePhase {
   private machine: Machine | null;
   private selectedDeviceId: string | undefined; // Selected microphone device ID
@@ -92,6 +109,15 @@ export class ReferencePhase {
    */
   private isProcessingRecording: boolean = false;
   private smartStartWasUsed: boolean = false; // Track if Smart Start completed successfully
+
+  /**
+   * Kam der Ton aus einer Datei statt aus dem Mikrofon?
+   *
+   * Ein Merker und keine zweite Klasse: Die Verarbeitung ist dieselbe, das
+   * Speichern ist dasselbe. Unterschiedlich ist nur, was schon entschieden
+   * wurde — siehe `performReviewSave()`.
+   */
+  private ausMitgebrachterDatei: boolean = false;
 
   // Room Compensation: T60 estimate from chirp measurement
   private currentT60: T60Estimate | null = null;
@@ -895,7 +921,7 @@ export class ReferencePhase {
       // UPDATED: Increased from 2.0s to 5.0s for stable GMIA models
       // With 330ms windows + 66ms hop: 5s = ~70-80 chunks (sufficient for statistical stability)
       // 2s was too short (~26 chunks), leading to high variance and unreliable models
-      const MIN_TRAINING_DURATION = 5.0; // Minimum 5 seconds of training data
+      const MIN_TRAINING_DURATION = MINDESTDAUER_NORMALZUSTAND;
       const minTrainingSamples = Math.floor(MIN_TRAINING_DURATION * sampleRate);
 
       if (trainingSamples <= 0) {
@@ -936,218 +962,20 @@ export class ReferencePhase {
         }
       }
 
-      // CRITICAL FIX: Create DSP config with actual sample rate from AudioContext
-      // This ensures training features match diagnosis features even if browser uses different sample rate
-      const actualSampleRate = this.audioContext.sampleRate;
-      const dspConfig = {
-        ...DEFAULT_DSP_CONFIG,
-        sampleRate: actualSampleRate,
-        frequencyRange: [0, actualSampleRate / 2] as [number, number], // Update Nyquist frequency
-      };
-
-      logger.debug(
-        `📊 DSP Config: sampleRate=${dspConfig.sampleRate}Hz, frequencyRange=[${dspConfig.frequencyRange[0]}, ${dspConfig.frequencyRange[1]}]Hz`
+      /**
+       * Ab hier ist es einerlei, woher der Ton kam.
+       *
+       * Alles Folgende — Merkmale, Kirschen, Rauschabzug, Raumausgleich,
+       * Umgebungsdaten — kennt nur noch ein Stück Ton und seine Abtastrate.
+       * Deshalb steht es in einer eigenen Methode: Eine mitgebrachte Datei geht
+       * durch **dieselbe** Verarbeitung. Eine zweite Fassung wäre eine zweite
+       * Wahrheit darüber, was ein Normalzustand ist.
+       */
+      const qualityResult = this.bereiteNormalzustandVor(
+        audioBuffer,
+        trainingBuffer,
+        this.audioContext.sampleRate
       );
-
-      // Extract features from the SLICED buffer (only stable signal)
-      logger.info('📊 Extracting features from stable signal...');
-      const features = extractFeatures(trainingBuffer, dspConfig);
-      logger.info(`   Extracted ${features.length} feature vectors`);
-
-      // Cherry-Picking (Pipeline-Stufe 1): Filter transient interference frames
-      // Applied BEFORE quality check and room compensation so GMIA only sees clean frames.
-      const cherryPickSettings = getCherryPickSettings();
-      let cherryPickedFeatures = features;
-      let cpTotalCount = features.length;
-      let cpRemovedCount = 0;
-
-      if (cherryPickSettings.enabled) {
-        const cpResult = cherryPickFeatures(features, cherryPickSettings);
-        cpTotalCount = cpResult.totalCount;
-        cpRemovedCount = cpResult.removedCount;
-        logger.info(
-          `🍒 Cherry-Picking: ${cpResult.removedCount}/${cpResult.totalCount} Frames verworfen`
-        );
-        if (cpResult.removedCount > 0) {
-          logger.info(`   Entfernte Indizes: [${cpResult.removedIndices.join(', ')}]`);
-          logger.info(
-            `   Energie-Schwellen: [${cpResult.energyStats.threshold[0].toFixed(4)}, ${cpResult.energyStats.threshold[1].toFixed(4)}]`
-          );
-          logger.info(
-            `   Entropie-Schwellen: [${cpResult.entropyStats.threshold[0].toFixed(4)}, ${cpResult.entropyStats.threshold[1].toFixed(4)}]`
-          );
-        }
-        cherryPickedFeatures = cpResult.filteredFeatures;
-
-        // Safety check: enough frames remaining for training?
-        if (cherryPickedFeatures.length < 5) {
-          logger.error('Cherry-Picking: Too few frames remaining for training');
-          cherryPickedFeatures = features;
-          logger.warn('Fallback: Using all frames');
-        }
-      }
-
-      // PHASE 2: Assess recording quality (on cherry-picked features, before room compensation)
-      const qualityResult = assessRecordingQuality(cherryPickedFeatures);
-
-      // Noise Profile Subtraction (Pipeline-Stufe 1.5): additive Störungen zuerst.
-      // Nützlich, wenn die Referenz selbst in lauter Umgebung erstellt wird
-      // (Einlernen beim Kunden statt im Werk). Bei inkompatiblem Profil gibt
-      // applyNoiseSubtraction den Input unverändert zurück (Pass-Through).
-      const noiseSubSettings = getNoiseSubtractionSettings();
-      const activeNoiseProfile = noiseSubSettings.enabled ? getActiveNoiseProfile() : null;
-      const noiseSubtractedFeatures = activeNoiseProfile
-        ? applyNoiseSubtraction(cherryPickedFeatures, activeNoiseProfile, noiseSubSettings)
-        : cherryPickedFeatures;
-      const noiseSubApplied = noiseSubtractedFeatures !== cherryPickedFeatures;
-
-      // Room Compensation: Apply T60 subtraction + optional CMN (Pipeline-Stufe 3.5)
-      // IMPORTANT: Quality assessment uses cherry-picked features; training uses compensated features.
-      // NOTE: During reference creation, Bias-Match is not applicable (no prior reference exists).
-      //       Only T60 subtraction is meaningful here. CMN is off by default.
-      const roomCompSettings = getRoomCompSettings();
-      const processedFeatures = roomCompSettings.enabled
-        ? applyRoomCompensation(
-            noiseSubtractedFeatures,
-            roomCompSettings,
-            this.currentT60 ?? undefined,
-            undefined
-          )
-        : noiseSubtractedFeatures;
-
-      // Pipeline Status Dashboard: Prepare for review modal (Expert mode only)
-      if (this.pipelineStatus) {
-        this.pipelineStatus.destroy();
-        this.pipelineStatus = null;
-      }
-      const currentViewLevel = getViewLevel();
-      if (
-        currentViewLevel === 'expert' &&
-        (cherryPickSettings.enabled || roomCompSettings.enabled || noiseSubApplied)
-      ) {
-        this.pipelineStatus = new PipelineStatusDashboard();
-        this.pipelineStatus.loadFromSettings(
-          cherryPickSettings.enabled,
-          roomCompSettings.enabled,
-          roomCompSettings.cmnEnabled,
-          roomCompSettings.t60Enabled,
-          cherryPickSettings.sigmaThreshold,
-          roomCompSettings.beta,
-          roomCompSettings.biasMatchEnabled,
-          noiseSubApplied,
-          activeNoiseProfile?.name ?? ''
-        );
-
-        if (cherryPickSettings.enabled) {
-          this.pipelineStatus.setCherryPickBatchResult(cpTotalCount, cpRemovedCount);
-        }
-
-        if (noiseSubApplied) {
-          this.pipelineStatus.setNoiseSubStatus(true, activeNoiseProfile?.name ?? '', true);
-        }
-
-        if (this.currentT60) {
-          this.pipelineStatus.setT60Result(this.currentT60.broadband, true);
-        } else if (roomCompSettings.enabled && roomCompSettings.t60Enabled) {
-          this.pipelineStatus.setT60Result(null, false);
-        }
-
-        if (roomCompSettings.enabled && roomCompSettings.cmnEnabled) {
-          this.pipelineStatus.setCmnActive(true);
-        }
-      }
-
-      // ════════════════════════════════════════════════════════════
-      // Reference environment data for Bias Match + T60 comparison
-      // ════════════════════════════════════════════════════════════
-      const LOG_EPSILON = 1e-12;
-      const K = processedFeatures[0]?.absoluteFeatures.length ?? 512;
-      const refLogMeanArr = new Float64Array(K);
-
-      for (const fv of processedFeatures) {
-        for (let k = 0; k < K; k++) {
-          refLogMeanArr[k] += Math.log(fv.absoluteFeatures[k] + LOG_EPSILON);
-        }
-      }
-      for (let k = 0; k < K; k++) {
-        refLogMeanArr[k] /= processedFeatures.length;
-      }
-
-      this.currentRefLogMean = Array.from(refLogMeanArr);
-      logger.info(`📊 refLogMean computed (${K} bins, ${processedFeatures.length} frames)`);
-
-      // Standard deviation (refLogStd) – for Drift Detector variance normalization
-      const N = processedFeatures.length;
-      if (N >= 2) {
-        const refLogStdArr = new Float64Array(K);
-        for (const fv of processedFeatures) {
-          for (let k = 0; k < K; k++) {
-            const logVal = Math.log(fv.absoluteFeatures[k] + LOG_EPSILON);
-            const diff = logVal - refLogMeanArr[k];
-            refLogStdArr[k] += diff * diff;
-          }
-        }
-        for (let k = 0; k < K; k++) {
-          refLogStdArr[k] = Math.sqrt(refLogStdArr[k] / (N - 1)); // Bessel correction
-        }
-        this.currentRefLogStd = Array.from(refLogStdArr);
-        logger.info(`📊 refLogStd computed (${K} bins, ${N} frames)`);
-      } else {
-        this.currentRefLogStd = null;
-      }
-
-      // Residual standard deviation (refLogResidualStd) – Drift Detector V2
-      // Measures variance of the FINE STRUCTURE (not overall spectrum).
-      const driftSettings = getDriftSettings();
-      const residualStd = computeRefLogResidualStd(
-        processedFeatures,
-        refLogMeanArr,
-        driftSettings.smoothWindow
-      );
-      if (residualStd) {
-        this.currentRefLogResidualStd = Array.from(residualStd);
-        logger.info(`📊 refLogResidualStd computed (${K} bins, ${N} frames)`);
-      } else {
-        this.currentRefLogResidualStd = null;
-      }
-
-      // Adaptive threshold calibration via reference partitions – Drift Detector V2
-      this.currentRefDriftBaseline = calibrateAdaptiveThresholds(processedFeatures, driftSettings);
-      if (this.currentRefDriftBaseline) {
-        logger.info('📊 Adaptive drift thresholds calibrated:', this.currentRefDriftBaseline);
-      } else {
-        logger.info('📊 Too few frames for drift calibration, fallback thresholds will be used');
-      }
-
-      // Store reference T60 (measured during chirp warmup)
-      this.currentRefT60 = this.currentT60?.broadband ?? null;
-      this.currentRefT60Classification =
-        this.currentRefT60 !== null ? classifyT60Value(this.currentRefT60) : null;
-
-      if (this.currentRefT60 !== null) {
-        logger.info(
-          `🔊 Reference environment: T60 = ${this.currentRefT60.toFixed(2)}s (${this.currentRefT60Classification})`
-        );
-      } else {
-        logger.info('🔊 No reference T60 (chirp disabled or failed)');
-      }
-
-      // Prepare training data (but don't train yet - wait for user approval)
-      // CRITICAL FIX: Store actual DSP config used for feature extraction
-      // ZERO-FRICTION: Use placeholder ID if no machine selected (will be updated when machine is created)
-      const trainingData: TrainingData = {
-        featureVectors: processedFeatures.map((f) => f.features),
-        machineId: this.machine?.id || 'pending-auto-create',
-        recordingId: `ref-${Date.now()}`,
-        numSamples: processedFeatures.length,
-        config: dspConfig, // Use actual config with correct sample rate
-      };
-
-      // Store for later use
-      this.currentAudioBuffer = audioBuffer;
-      this.currentFeatures = processedFeatures;
-      this.currentQualityResult = qualityResult;
-      this.currentTrainingData = trainingData;
 
       // Cleanup resources now that processing is complete
       // This releases AudioContext, MediaStream, timer, etc.
@@ -1188,6 +1016,314 @@ export class ReferencePhase {
       this.hideRecordingModal();
     } finally {
       this.isProcessingRecording = false;
+    }
+  }
+
+  /**
+   * AUS EINEM STÜCK TON EINEN NORMALZUSTAND VORBEREITEN
+   *
+   * Die gemeinsame Mitte zweier Wege: der Aufnahme am Mikrofon und der
+   * mitgebrachten Datei. Sie unterscheiden sich davor — die Aufnahme muss ihre
+   * Anlaufzeit abschneiden, die Datei hat keine — und danach nicht mehr.
+   *
+   * Gespeichert wird hier noch nichts; das tut `performReviewSave()`.
+   *
+   * @param ganzerTon Was aufbewahrt und später abgespielt wird.
+   * @param trainingBuffer Woraus die Merkmale gezogen werden.
+   * @param abtastrate Die Rate, mit der die Prüfung später rechnen wird.
+   * @returns Wie gut das Stück ist — daran hängt, ob gefragt oder gespeichert wird.
+   */
+  private bereiteNormalzustandVor(
+    ganzerTon: AudioBuffer,
+    trainingBuffer: AudioBuffer,
+    abtastrate: number
+  ): QualityResult {
+    // CRITICAL FIX: Create DSP config with actual sample rate from AudioContext
+    // This ensures training features match diagnosis features even if browser uses different sample rate
+    const actualSampleRate = abtastrate;
+    const dspConfig = {
+      ...DEFAULT_DSP_CONFIG,
+      sampleRate: actualSampleRate,
+      frequencyRange: [0, actualSampleRate / 2] as [number, number], // Update Nyquist frequency
+    };
+
+    logger.debug(
+      `📊 DSP Config: sampleRate=${dspConfig.sampleRate}Hz, frequencyRange=[${dspConfig.frequencyRange[0]}, ${dspConfig.frequencyRange[1]}]Hz`
+    );
+
+    // Extract features from the SLICED buffer (only stable signal)
+    logger.info('📊 Extracting features from stable signal...');
+    const features = extractFeatures(trainingBuffer, dspConfig);
+    logger.info(`   Extracted ${features.length} feature vectors`);
+
+    // Cherry-Picking (Pipeline-Stufe 1): Filter transient interference frames
+    // Applied BEFORE quality check and room compensation so GMIA only sees clean frames.
+    const cherryPickSettings = getCherryPickSettings();
+    let cherryPickedFeatures = features;
+    let cpTotalCount = features.length;
+    let cpRemovedCount = 0;
+
+    if (cherryPickSettings.enabled) {
+      const cpResult = cherryPickFeatures(features, cherryPickSettings);
+      cpTotalCount = cpResult.totalCount;
+      cpRemovedCount = cpResult.removedCount;
+      logger.info(
+        `🍒 Cherry-Picking: ${cpResult.removedCount}/${cpResult.totalCount} Frames verworfen`
+      );
+      if (cpResult.removedCount > 0) {
+        logger.info(`   Entfernte Indizes: [${cpResult.removedIndices.join(', ')}]`);
+        logger.info(
+          `   Energie-Schwellen: [${cpResult.energyStats.threshold[0].toFixed(4)}, ${cpResult.energyStats.threshold[1].toFixed(4)}]`
+        );
+        logger.info(
+          `   Entropie-Schwellen: [${cpResult.entropyStats.threshold[0].toFixed(4)}, ${cpResult.entropyStats.threshold[1].toFixed(4)}]`
+        );
+      }
+      cherryPickedFeatures = cpResult.filteredFeatures;
+
+      // Safety check: enough frames remaining for training?
+      if (cherryPickedFeatures.length < 5) {
+        logger.error('Cherry-Picking: Too few frames remaining for training');
+        cherryPickedFeatures = features;
+        logger.warn('Fallback: Using all frames');
+      }
+    }
+
+    // PHASE 2: Assess recording quality (on cherry-picked features, before room compensation)
+    const qualityResult = assessRecordingQuality(cherryPickedFeatures);
+
+    // Noise Profile Subtraction (Pipeline-Stufe 1.5): additive Störungen zuerst.
+    // Nützlich, wenn die Referenz selbst in lauter Umgebung erstellt wird
+    // (Einlernen beim Kunden statt im Werk). Bei inkompatiblem Profil gibt
+    // applyNoiseSubtraction den Input unverändert zurück (Pass-Through).
+    const noiseSubSettings = getNoiseSubtractionSettings();
+    const activeNoiseProfile = noiseSubSettings.enabled ? getActiveNoiseProfile() : null;
+    const noiseSubtractedFeatures = activeNoiseProfile
+      ? applyNoiseSubtraction(cherryPickedFeatures, activeNoiseProfile, noiseSubSettings)
+      : cherryPickedFeatures;
+    const noiseSubApplied = noiseSubtractedFeatures !== cherryPickedFeatures;
+
+    // Room Compensation: Apply T60 subtraction + optional CMN (Pipeline-Stufe 3.5)
+    // IMPORTANT: Quality assessment uses cherry-picked features; training uses compensated features.
+    // NOTE: During reference creation, Bias-Match is not applicable (no prior reference exists).
+    //       Only T60 subtraction is meaningful here. CMN is off by default.
+    const roomCompSettings = getRoomCompSettings();
+    const processedFeatures = roomCompSettings.enabled
+      ? applyRoomCompensation(
+          noiseSubtractedFeatures,
+          roomCompSettings,
+          this.currentT60 ?? undefined,
+          undefined
+        )
+      : noiseSubtractedFeatures;
+
+    // Pipeline Status Dashboard: Prepare for review modal (Expert mode only)
+    if (this.pipelineStatus) {
+      this.pipelineStatus.destroy();
+      this.pipelineStatus = null;
+    }
+    const currentViewLevel = getViewLevel();
+    if (
+      currentViewLevel === 'expert' &&
+      (cherryPickSettings.enabled || roomCompSettings.enabled || noiseSubApplied)
+    ) {
+      this.pipelineStatus = new PipelineStatusDashboard();
+      this.pipelineStatus.loadFromSettings(
+        cherryPickSettings.enabled,
+        roomCompSettings.enabled,
+        roomCompSettings.cmnEnabled,
+        roomCompSettings.t60Enabled,
+        cherryPickSettings.sigmaThreshold,
+        roomCompSettings.beta,
+        roomCompSettings.biasMatchEnabled,
+        noiseSubApplied,
+        activeNoiseProfile?.name ?? ''
+      );
+
+      if (cherryPickSettings.enabled) {
+        this.pipelineStatus.setCherryPickBatchResult(cpTotalCount, cpRemovedCount);
+      }
+
+      if (noiseSubApplied) {
+        this.pipelineStatus.setNoiseSubStatus(true, activeNoiseProfile?.name ?? '', true);
+      }
+
+      if (this.currentT60) {
+        this.pipelineStatus.setT60Result(this.currentT60.broadband, true);
+      } else if (roomCompSettings.enabled && roomCompSettings.t60Enabled) {
+        this.pipelineStatus.setT60Result(null, false);
+      }
+
+      if (roomCompSettings.enabled && roomCompSettings.cmnEnabled) {
+        this.pipelineStatus.setCmnActive(true);
+      }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // Reference environment data for Bias Match + T60 comparison
+    // ════════════════════════════════════════════════════════════
+    const LOG_EPSILON = 1e-12;
+    const K = processedFeatures[0]?.absoluteFeatures.length ?? 512;
+    const refLogMeanArr = new Float64Array(K);
+
+    for (const fv of processedFeatures) {
+      for (let k = 0; k < K; k++) {
+        refLogMeanArr[k] += Math.log(fv.absoluteFeatures[k] + LOG_EPSILON);
+      }
+    }
+    for (let k = 0; k < K; k++) {
+      refLogMeanArr[k] /= processedFeatures.length;
+    }
+
+    this.currentRefLogMean = Array.from(refLogMeanArr);
+    logger.info(`📊 refLogMean computed (${K} bins, ${processedFeatures.length} frames)`);
+
+    // Standard deviation (refLogStd) – for Drift Detector variance normalization
+    const N = processedFeatures.length;
+    if (N >= 2) {
+      const refLogStdArr = new Float64Array(K);
+      for (const fv of processedFeatures) {
+        for (let k = 0; k < K; k++) {
+          const logVal = Math.log(fv.absoluteFeatures[k] + LOG_EPSILON);
+          const diff = logVal - refLogMeanArr[k];
+          refLogStdArr[k] += diff * diff;
+        }
+      }
+      for (let k = 0; k < K; k++) {
+        refLogStdArr[k] = Math.sqrt(refLogStdArr[k] / (N - 1)); // Bessel correction
+      }
+      this.currentRefLogStd = Array.from(refLogStdArr);
+      logger.info(`📊 refLogStd computed (${K} bins, ${N} frames)`);
+    } else {
+      this.currentRefLogStd = null;
+    }
+
+    // Residual standard deviation (refLogResidualStd) – Drift Detector V2
+    // Measures variance of the FINE STRUCTURE (not overall spectrum).
+    const driftSettings = getDriftSettings();
+    const residualStd = computeRefLogResidualStd(
+      processedFeatures,
+      refLogMeanArr,
+      driftSettings.smoothWindow
+    );
+    if (residualStd) {
+      this.currentRefLogResidualStd = Array.from(residualStd);
+      logger.info(`📊 refLogResidualStd computed (${K} bins, ${N} frames)`);
+    } else {
+      this.currentRefLogResidualStd = null;
+    }
+
+    // Adaptive threshold calibration via reference partitions – Drift Detector V2
+    this.currentRefDriftBaseline = calibrateAdaptiveThresholds(processedFeatures, driftSettings);
+    if (this.currentRefDriftBaseline) {
+      logger.info('📊 Adaptive drift thresholds calibrated:', this.currentRefDriftBaseline);
+    } else {
+      logger.info('📊 Too few frames for drift calibration, fallback thresholds will be used');
+    }
+
+    // Store reference T60 (measured during chirp warmup)
+    this.currentRefT60 = this.currentT60?.broadband ?? null;
+    this.currentRefT60Classification =
+      this.currentRefT60 !== null ? classifyT60Value(this.currentRefT60) : null;
+
+    if (this.currentRefT60 !== null) {
+      logger.info(
+        `🔊 Reference environment: T60 = ${this.currentRefT60.toFixed(2)}s (${this.currentRefT60Classification})`
+      );
+    } else {
+      logger.info('🔊 No reference T60 (chirp disabled or failed)');
+    }
+
+    // Prepare training data (but don't train yet - wait for user approval)
+    // CRITICAL FIX: Store actual DSP config used for feature extraction
+    // ZERO-FRICTION: Use placeholder ID if no machine selected (will be updated when machine is created)
+    const trainingData: TrainingData = {
+      featureVectors: processedFeatures.map((f) => f.features),
+      machineId: this.machine?.id || 'pending-auto-create',
+      recordingId: `ref-${Date.now()}`,
+      numSamples: processedFeatures.length,
+      config: dspConfig, // Use actual config with correct sample rate
+    };
+
+    // Store for later use
+    this.currentAudioBuffer = ganzerTon;
+    this.currentFeatures = processedFeatures;
+    this.currentQualityResult = qualityResult;
+    this.currentTrainingData = trainingData;
+    return qualityResult;
+  }
+
+  /**
+   * EINEN MITGEBRACHTEN TON ZUM NORMALZUSTAND MACHEN
+   *
+   * Der Auftraggeber: „Dann kann man sein Auto heute filmen und in vier Wochen
+   * vergleichen." Das ist der Schritt, der dem mitgebrachten Video seinen
+   * vollen Wert gibt — ohne ihn ist ein Film ein einmaliger Blick, mit ihm ist
+   * er der Maßstab für alles, was danach kommt.
+   *
+   * ## Warum es DERSELBE Weg ist
+   *
+   * Der Ton geht durch `bereiteNormalzustandVor()` und `performReviewSave()` —
+   * dieselben Methoden, die die Mikrofonaufnahme benutzt. Ein eigener
+   * Speicherweg für Dateien wäre ein zweiter Normalzustand-Begriff, und beim
+   * nächsten Umbau einer davon veraltet.
+   *
+   * Zwei Dinge entfallen, weil sie zur Aufnahme gehören und nicht zum Ton:
+   * die **Anlaufzeit** (eine Datei hat keine OS-Filter, die sich einschwingen
+   * müssen) und der **Raum-T60** (er wurde nicht gemessen; `null` ist die
+   * ehrliche Angabe).
+   *
+   * ## Warum die Abtastrate von selbst passt
+   *
+   * `decodeAudioData` rechnet die Datei auf die Rate des AudioContext um, und
+   * das ist dieselbe Standardrate, mit der die Prüfung später aufnimmt. Der
+   * Ton kommt also schon in der Rate an, in der er verglichen wird.
+   *
+   * ## Warum ein schlechtes Stück hier NICHT gespeichert wird
+   *
+   * Bei der Aufnahme darf ein `BAD`-Stück nach Rückfrage bleiben — der Nutzer
+   * steht an der Maschine, und eine brauchbare Referenz ist besser als keine.
+   * Bei einer Datei ist das anders: Eine andere Stelle im selben Film kostet
+   * einen Zug am Regler. Ein schlechter Maßstab wäre vier Wochen lang der
+   * Maßstab.
+   */
+  public async normalzustandAusTon(ton: AudioBuffer): Promise<NormalzustandBefund> {
+    if (ton.duration < MINDESTDAUER_NORMALZUSTAND) {
+      return {
+        ok: false,
+        satz: t('mitbringen.normalZuKurz', {
+          dauer: ton.duration.toFixed(1),
+          mindest: String(MINDESTDAUER_NORMALZUSTAND),
+        }),
+      };
+    }
+
+    this.ausMitgebrachterDatei = true;
+    try {
+      // Kein T60 aus einer Datei: Es gibt keinen Chirp und keinen Raum, den
+      // man gemessen hätte. Ein geschätzter Wert wäre eine Behauptung.
+      this.currentT60 = null;
+      const guete = this.bereiteNormalzustandVor(ton, ton, ton.sampleRate);
+
+      if (guete.rating === 'BAD') {
+        const gruende = guete.issues.length
+          ? guete.issues.join(' · ')
+          : t('mitbringen.normalOhneGrund');
+        logger.info(`📄 Mitgebrachte Datei taugt nicht als Normalzustand: ${gruende}`);
+        return { ok: false, satz: t('mitbringen.normalTaugtNicht', { gruende }) };
+      }
+
+      const gespeichert = await this.performReviewSave();
+      return gespeichert ? { ok: true } : { ok: false, satz: t('mitbringen.normalGingNicht') };
+    } catch (fehler) {
+      logger.error('Normalzustand aus Datei fehlgeschlagen:', fehler);
+      return { ok: false, satz: t('mitbringen.normalGingNicht') };
+    } finally {
+      this.ausMitgebrachterDatei = false;
+      this.currentAudioBuffer = null;
+      this.currentFeatures = [];
+      this.currentQualityResult = null;
+      this.currentTrainingData = null;
     }
   }
 
@@ -1772,7 +1908,7 @@ export class ReferencePhase {
     }
   }
 
-  private async performReviewSave(): Promise<void> {
+  private async performReviewSave(): Promise<boolean> {
     const { getMachine, saveMachine, createAutoMachine, getNextAutoMachineNumber } =
       await import('@data/db.js');
 
@@ -1801,7 +1937,7 @@ export class ReferencePhase {
           title: t('common.error'),
           duration: 0,
         });
-        return;
+        return false;
       }
     } else {
       // Machine exists - fetch latest from DB
@@ -1812,7 +1948,7 @@ export class ReferencePhase {
           title: t('common.error'),
           duration: 0,
         });
-        return;
+        return false;
       }
       machineToUpdate = existingMachine;
       this.machine = existingMachine;
@@ -1828,7 +1964,7 @@ export class ReferencePhase {
           duration: 0,
         }
       );
-      return;
+      return false;
     }
 
     // PHASE 2 REQUIREMENT: Block BAD quality recordings with very low scores
@@ -1841,7 +1977,7 @@ export class ReferencePhase {
         new Error('Quality too low'),
         { duration: 0 }
       );
-      return;
+      return false;
     }
 
     // INTELLIGENT MAGNITUDE + QUALITY CHECK: Brown Noise Protection
@@ -1863,7 +1999,7 @@ export class ReferencePhase {
         new Error('Signal too weak or noisy'),
         { duration: 0, title: t('modals.unsuitableSignal') }
       );
-      return;
+      return false;
     }
 
     // PHASE 2 REQUIREMENT: Show extra confirmation for BAD quality (score >= 30%)
@@ -1877,7 +2013,7 @@ export class ReferencePhase {
 
       if (!confirmed) {
         logger.info('User cancelled save due to bad quality warning');
-        return;
+        return false;
       }
     }
 
@@ -1890,8 +2026,32 @@ export class ReferencePhase {
       // Use machineToUpdate (freshly fetched or just created) for consistency
       const existingModels = machineToUpdate.referenceModels || [];
 
-      // ZERO-FRICTION: First recording is always baseline - no prompt needed
-      if (existingModels.length === 0) {
+      /**
+       * Eine mitgebrachte Datei wird IMMER der Normalzustand — und ersetzt den
+       * bisherigen.
+       *
+       * Nicht aus Bequemlichkeit, sondern weil im Vorschau-Dialog genau das
+       * gefragt wurde: „Diese Datei ersetzt den bisherigen Normalzustand." Wer
+       * dort zugestimmt hat, hat entschieden; ihn hier ein zweites Mal nach
+       * einem Namen und nach „gesund oder defekt" zu fragen wäre dieselbe Frage
+       * in anderen Worten — und legte einen ZWEITEN Zustand an, statt den einen
+       * zu ersetzen.
+       *
+       * Ersetzt wird das Modell, das die App selbst für „den" Normalzustand
+       * hält: `label === 'Baseline'`, sonst das erste. Dieselbe Regel, nach der
+       * Geisterbild, Iris und Reihenvergleich es suchen — eine zweite Regel
+       * hier wäre irgendwann eine andere Antwort.
+       *
+       * Frühere Prüfungen bleiben unberührt: Sie liegen als eigene Einträge in
+       * der Ablage, nicht in diesem Modell.
+       */
+      if (this.ausMitgebrachterDatei && existingModels.length > 0) {
+        const bisher = existingModels.find((m) => m.label === 'Baseline') ?? existingModels[0];
+        machineToUpdate.referenceModels = existingModels.filter((m) => m !== bisher);
+        label = 'Baseline';
+        type = 'healthy';
+        logger.info('🗂️ Mitgebrachte Datei ersetzt den bisherigen Normalzustand');
+      } else if (existingModels.length === 0) {
         // First recording: Always baseline (healthy state) - SILENT, no user interaction
         // CRITICAL FIX: Store the literal 'Baseline' marker (not the translated display
         // text) - this is the sentinel that find(m => m.label === 'Baseline') lookups
@@ -1912,7 +2072,7 @@ export class ReferencePhase {
 
         if (!choice) {
           logger.info('User cancelled - no label provided');
-          return;
+          return false;
         }
 
         label = choice.label;
@@ -1989,7 +2149,7 @@ export class ReferencePhase {
           new Error('Baseline score too low'),
           { title: t('modals.referenceUnsuitable'), duration: 0 }
         );
-        return;
+        return false;
       }
 
       logger.info(
@@ -2121,8 +2281,13 @@ export class ReferencePhase {
       // ZERO-FRICTION: Show simple success toast with edit option for auto-created machines
       if (this.wasAutoCreated) {
         this.showZeroFrictionSuccess(updatedMachine);
-      } else {
+      } else if (this.recordedBlob) {
         // Show success with option to download reference audio
+        //
+        // Nur, wenn es überhaupt eine Aufnahmedatei gibt. Eine mitgebrachte
+        // Datei liegt schon auf dem Gerät — die Frage „Möchtest du sie
+        // herunterladen?" böte dem Nutzer seine eigene Datei an, und ohne Blob
+        // hätte ein „Ja" gar keine Antwort.
         promptReferenceAudioExport(this.recordedBlob, this.machine);
       }
 
@@ -2143,7 +2308,10 @@ export class ReferencePhase {
         title: t('modals.saveError'),
         duration: 0,
       });
+      return false;
     }
+
+    return true;
   }
 
   /**
