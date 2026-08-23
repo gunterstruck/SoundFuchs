@@ -75,6 +75,28 @@ const GEOMETRIE = [
 /** Diese werden nur berichtet — hier ist Abweichung der Auftrag. */
 const INHALT = ['reiter', 'pillen', 'marker', 'tiefePille', 'nurMobil', 'nurTisch'];
 
+/**
+ * EINGETRAGENE ABWEICHUNGEN — §4a des Papiers.
+ *
+ * Dieser Wächter endet mit dem Satz: „Entweder die Stelle richtigstellen —
+ * oder die Abweichung in §4a des Papiers eintragen, mit Grund." Bis zum
+ * 23.08.2026 gab es die zweite Hälfte nur als Satz: Wer eintrug, blieb
+ * trotzdem rot, und ein Wächter, der dauerhaft rot steht, wird nicht mehr
+ * gelesen.
+ *
+ * Hier stehen deshalb die Felder, deren Abweichung im Register steht. Sie
+ * werden weiter GEMESSEN und GEZEIGT — nur nicht mehr als Befund gezählt, und
+ * die Zeile sagt, wo der Grund nachzulesen ist.
+ *
+ * Der Wächter verliert dadurch nichts: Jede Abweichung an einer Stelle, die
+ * hier NICHT steht, macht ihn weiter rot. Wer eine neue einträgt, muss diese
+ * Liste anfassen — und damit den Grund aufschreiben.
+ */
+const EINGETRAGEN = {
+  knopfzeile:
+    '§4a Geometrie: 44 px Fingerziel statt der 38–41 px des Stamms',
+};
+
 async function freierPort() {
   return new Promise((r) => {
     const s = createServer();
@@ -270,8 +292,16 @@ for (const [gesicht, viewport, , soll] of FORMATE) {
     const a = zeige(t[feld]);
     const b = zeige(s[feld]);
     const gleich = a === b;
-    console.log(`  ${gleich ? '✓' : '✗'} ${feld.padEnd(12)} TF ${a.padEnd(24)} SF ${b}`);
-    if (!gleich) befunde.push(`${gesicht}/${feld}: TourFuchs ${a}, SoundFuchs ${b}`);
+    const eingetragen = EINGETRAGEN[feld];
+    const zeichen = gleich ? '✓' : eingetragen ? '·' : '✗';
+    console.log(
+      `  ${zeichen} ${feld.padEnd(12)} TF ${a.padEnd(24)} SF ${b}${
+        !gleich && eingetragen ? `   ← ${eingetragen}` : ''
+      }`
+    );
+    if (!gleich && !eingetragen) {
+      befunde.push(`${gesicht}/${feld}: TourFuchs ${a}, SoundFuchs ${b}`);
+    }
   }
   console.log('  — Inhalt (darf abweichen: fachlich reduziert) —');
   for (const feld of INHALT) {

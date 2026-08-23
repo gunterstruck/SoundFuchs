@@ -208,6 +208,38 @@ body.tiefe-arbeit .tab-panel[data-ebene]:not([data-ebene='maschine']) {
   display: none;
 }
 
+/* ── DER REITER „DETAILS" GILT NUR AUF PROFI ───────────────────────────────
+
+   Zuerst stand dafür `data-view-level="expert"` am Knopf und am Feld — die
+   Mechanik, mit der die Hör-Lupe ihre Bereichsauswahl verbirgt. Am Feld war
+   das ein schwerer Fehler, und zwar ein unsichtbarer:
+
+     html[data-view-level='expert'] [data-view-level='expert'] {
+       display: revert !important;     ← style.css
+     }
+
+   `revert` wirft die AUTORENREGELN weg und geht auf den Browser-Standard
+   zurück. Für ein <section> heißt das `display: block` — und damit fielen
+   BEIDE Regeln der Reitermechanik: `.tab-panel { display: none }` und
+   `.tab-panel.active { display: block }`.
+
+   Gemessen am 23.08.2026 auf Profi, Maschinenebene, offener Reiter „2D":
+
+     #tab-details   nicht aktiv   display: block   434 px hoch
+     #tab-zweid     AKTIV         display: none
+
+   Das Blatt zeigte also den falschen Reiter, und der richtige war weg. Der
+   Wächter `wow` hat es gefunden, weil die 2D-Auswahl der Hör-Lupe plötzlich
+   nicht mehr auf einen zweiten Rahmen reagierte — sie stand gar nicht mehr
+   im Bild. Zwei Befunde, die auf ein Attribut zurückgingen.
+
+   Deshalb hier eigene Regeln statt des Attributs: Sie nehmen weg, statt
+   zurückzusetzen, und lassen `.tab-panel.active` in Ruhe. */
+html:not([data-view-level='expert']) .tab-button[data-tab='details'],
+html:not([data-view-level='expert']) #tab-details {
+  display: none;
+}
+
 /* ── UNTERWEGS HAT DAS BLATT ÜBERHAUPT KEINE REITER ────────────────────────
 
    Der Stamm blendet sie auf dem Handy vollständig aus:

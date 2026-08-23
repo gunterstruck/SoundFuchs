@@ -582,7 +582,13 @@ Jedes Bauteil von TourFuchs, in der Reihenfolge des Quelltexts. Marken siehe
 | Tourplanung, Routen, Google Maps | **S** | entfällt   | zwischen Maschinen desselben Kunden gibt es kein Wegeproblem — genau dafür ist TourFuchs da, und dort entsteht die Brücke |
 | Nominatim-Adressgenauigkeit      | A     | entfällt   | ohne Straße keine Hausnummer; PLZ-Mitte genügt                                                                            |
 
-**Nur die beiden mit S sind Abweichungen aus eigenem Urteil.** Alles andere ist
+### Geometrie
+
+| TourFuchs                     |       | SoundFuchs                | Grund                                                                                                                                                                                                                                                                                                             |
+| ----------------------------- | ----- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Knopfzeile über der Karte     | **S** | 44 px statt 38–41 px hoch | `.map-fab` misst im Stamm je nach Format 38, 39 oder 41 px. Das sind Fingerziele unter 44 px, und die Knopfzeile ist unterwegs der einzige Weg zu „In der Nähe" und „Geräusch prüfen". Übernommen wäre hier ein Maß, das SoundFuchs an jeder anderen Stelle als Befund meldet — der eigene 44-px-Maßstab gilt auch für den Stamm. Gemessen in allen sechs Formaten; `stammvergleich` weist die Abweichung aus, und sie ist gewollt. |
+
+**Nur die drei mit S sind Abweichungen aus eigenem Urteil.** Alles andere ist
 übernommen, gefüllt, ausdrücklich bestellt, inhaltlich leer oder zurückgestellt.
 
 ---

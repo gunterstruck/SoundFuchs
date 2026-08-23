@@ -683,6 +683,24 @@ try {
         (document.querySelector('.tab-button[data-tab="details"]')?.getBoundingClientRect()
           .height ?? 0) > 0,
       feldOffen: Boolean(feld?.classList.contains('active')),
+      /**
+       * Welche Felder das Blatt WIRKLICH zeigt — nicht welche es meint.
+       *
+       * Diese Zeile gäbe es nicht ohne einen Fehler vom 23.08.2026: Der neue
+       * Reiter trug `data-view-level="expert"`, und die Regel dazu in
+       * style.css setzt `display: revert !important`. `revert` wirft die
+       * Autorenregeln weg — also auch `.tab-panel { display: none }` UND
+       * `.tab-panel.active { display: block }`. Auf Profi stand damit das
+       * INAKTIVE Feld „Details" 434 px hoch da, und das aktive „2D" war weg.
+       *
+       * Gefunden hat es `wow`, an einer ganz anderen Stelle: Die 2D-Auswahl
+       * der Hör-Lupe nahm keinen zweiten Rahmen mehr an — sie stand gar nicht
+       * mehr im Bild. Ein Wächter, der nur „ist der Knopf sichtbar?" fragt,
+       * hätte davon nie etwas gemerkt.
+       */
+      gezeigteFelder: [...document.querySelectorAll('.tab-panel')]
+        .filter((p) => getComputedStyle(p).display !== 'none')
+        .map((p) => `${p.id}${p.classList.contains('active') ? '' : ' (NICHT aktiv)'}`),
       leer: feld?.querySelector('.blatt-leer')?.textContent?.trim() ?? '',
       ueberschrift: feld?.querySelector('.blatt-details-kurve h4')?.textContent?.trim() ?? '',
       hoch: c ? Math.round(c.getBoundingClientRect().height) : 0,
@@ -716,6 +734,7 @@ try {
   console.log('\n  — Der Reiter „Details" —');
   console.log(`  auf Basis                 ${detailsAufBasis.sichtbar ? 'SICHTBAR' : 'verborgen'} (im Baum: ${detailsAufBasis.da})`);
   console.log(`  auf Profi                 ${details.knopfSichtbar ? 'sichtbar' : 'VERBORGEN'} · Feld offen ${details.feldOffen}`);
+  console.log(`  gezeigte Felder           ${details.gezeigteFelder.join(' · ') || '(keins)'}`);
   console.log(`  Überschrift               ${details.ueberschrift || '(keine)'}`);
   console.log(`  Leinwand                  ${details.hoch} px · ${details.farben} Farbstufen`);
   console.log(`  Betriebspunkte            ${details.punkte.length} (Modelle in der Ablage: ${ablageModelle})`);
@@ -732,6 +751,12 @@ try {
       ? `sichtbar: ${detailsAufBasis.sichtbar}`
       : 'der Reiter fehlt ganz — dann kann er auf Profi auch nicht auftauchen'
   );
+  /**
+   * Genau EIN Feld ist zu sehen, und zwar das aufgeschlagene.
+   *
+   * Ein Blatt mit zwei sichtbaren Feldern ist kein Schönheitsfehler: Was
+   * darunter liegt, ist dann weg, ohne dass irgendwo „zu" steht.
+   */
   pruefe(
     22,
     'die Frequenzkurve ist wirklich gezeichnet',
@@ -772,10 +797,38 @@ try {
         : `weder Liste noch Begründung${details.leer ? ` — „${details.leer}"` : ''}`
   );
 
-  // Zurück auf Basis und auf den 2D-Reiter: Was danach kommt, misst den
-  // Hauptweg weiter und soll ihn so vorfinden, wie er ihn immer vorfand —
-  // einschließlich der Stufe, auf der der Lauf steht.
+  // Zurück auf den 2D-Reiter — und genau HIER wird nachgesehen.
   await page.locator('.tab-button[data-tab="zweid"]').click({ force: true }).catch(() => {});
+  await page.waitForTimeout(900);
+  const nachWechsel = await page.evaluate(() =>
+    [...document.querySelectorAll('.tab-panel')]
+      .filter((p) => getComputedStyle(p).display !== 'none')
+      .map((p) => `${p.id}${p.classList.contains('active') ? '' : ' (NICHT aktiv)'}`)
+  );
+  console.log(`  nach Wechsel auf 2D       ${nachWechsel.join(' · ') || '(keins)'}`);
+  /**
+   * Genau EIN Feld ist zu sehen, und zwar das aufgeschlagene — gemessen,
+   * NACHDEM woanders hingewechselt wurde.
+   *
+   * Der erste Versuch maß, während „Details" selbst offen stand. Dort war die
+   * Zusage nicht zu verletzen: Das offene Feld ist immer das gezeigte. Beim
+   * Falsifizieren blieb die Prüfung grün, obwohl der Fehler wieder eingebaut
+   * war — ein Wächter, der zum falschen Zeitpunkt hinsieht, misst nichts.
+   *
+   * Der Fehler zeigt sich erst beim WEGGEHEN: `display: revert !important`
+   * am Feld hebelt `.tab-panel { display: none }` aus, also bleibt „Details"
+   * stehen, während „2D" verschwindet. Gemessen am 23.08.2026 auf Profi:
+   * #tab-details nicht aktiv, 434 px hoch — #tab-zweid aktiv und unsichtbar.
+   */
+  pruefe(
+    24,
+    'das Blatt zeigt genau den Reiter, der aufgeschlagen ist',
+    nachWechsel.length === 1 && nachWechsel[0] === 'tab-zweid',
+    nachWechsel.join(' · ') || '(keins)'
+  );
+
+  // Und zurück auf Basis: Was danach kommt, misst den Hauptweg weiter und soll
+  // ihn so vorfinden, wie er ihn immer vorfand — einschließlich der Stufe.
   await page
     .locator('#depth-switch .view-level-btn[data-level="basic"]')
     .click({ force: true, timeout: 6000 })
