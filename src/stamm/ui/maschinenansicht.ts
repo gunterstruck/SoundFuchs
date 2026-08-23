@@ -57,6 +57,7 @@ import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
 import { getReferenceIrisVector } from '@ui/phases/referenceIris.js';
 import { getMachine } from '@data/db.js';
 import { Klangbild } from '@ui/components/Klangbild.js';
+import { geraeuschMitbringen } from '@ui/components/GeraeuschMitbringen.js';
 import { holeErgebnis, PRUEFUNG_FERTIG, vergissErgebnis } from '../maschine/ergebnis.js';
 import {
   analyseblattFuellen,
@@ -553,6 +554,46 @@ async function zeichne(maschine: Machine): Promise<void> {
   if (rueckweg) aktionszeile.appendChild(rueckweg);
   aktionszeile.appendChild(knopf);
   ziel.appendChild(aktionszeile);
+
+  /**
+   * ── EIN GERÄUSCH MITBRINGEN ──────────────────────────────────────────────
+   *
+   * Der Auftraggeber: Menschen filmen, was komisch klingt, und der Film liegt
+   * schon auf dem Telefon. SoundFuchs nimmt ihn entgegen, löst die Tonspur
+   * heraus und legt sie ins Analyseblatt — 2D, Gebirge, Stelle greifen und
+   * hören, Briefing.
+   *
+   * Es steht UNTER der einen Handlung und ungefüllt: Aufnehmen bzw. Prüfen
+   * bleibt der Hauptweg. Wer eine Datei hat, sieht eine ruhige Alternative;
+   * wer keine hat, geht daran vorbei.
+   */
+  const mitbringen = document.createElement('button');
+  mitbringen.type = 'button';
+  mitbringen.className = 'maschine-mitbringen';
+  mitbringen.textContent = t('mitbringen.knopf');
+  mitbringen.addEventListener('click', () => {
+    geraeuschMitbringen({
+      uebernehmen: (ton, dateiname) => {
+        /**
+         * Die Tonspur landet als Messung im Blatt — ohne Normalzustand.
+         *
+         * Damit gilt für sie genau das, was das Briefing für diesen Fall
+         * ohnehin vorsieht (`single-recording`): Es gibt keine
+         * Vergleichsaufnahme, also wird keine Abweichung behauptet. Das
+         * Gebirge sagt, dass ihm der zweite Ton fehlt; 2D und Briefing
+         * arbeiten.
+         */
+        analyseblattFuellen({
+          referenz: null,
+          messung: ton,
+          maschinenname: `${maschine.name} · ${dateiname}`,
+        });
+        analyseblattOeffnen('zweid');
+        blattAufziehen();
+      },
+    });
+  });
+  ziel.appendChild(mitbringen);
 
   /**
    * ── DER BILDPLATZ ────────────────────────────────────────────────────────

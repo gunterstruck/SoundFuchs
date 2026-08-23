@@ -36,6 +36,27 @@ export const es: TranslationDict = {
     briefingErklaerung:
       'Un paquete con ambas grabaciones, las ayudas de escucha y una orden de trabajo, creado íntegramente en su navegador. SoundFuchs no sube nada.',
   },
+  mitbringen: {
+    knopf: '🎞 Traer un sonido',
+    titel: 'Traer un sonido',
+    liest: 'Extrayendo la pista de audio …',
+    dauer: '{{dauer}} s · {{rate}} kHz',
+    schieben: 'Desplace el fragmento: en un vídeo la imagen le sigue.',
+    ganzKurz: 'Se utilizará toda la grabación.',
+    hoeren: '▶ Escuchar fragmento',
+    stoppen: '■ Detener',
+    verwenden: 'Usar este fragmento',
+    andereDatei: 'Elegir otro archivo',
+    abbrechen: 'Cancelar',
+    fehlerKeineTonspur: 'Este vídeo no tiene pista de audio.',
+    fehlerFormat:
+      'Este navegador no puede leer este formato. En el teléfono, o en Chrome, Edge y Safari suele funcionar; si no, ayuda una grabación en WAV o WebM.',
+    fehlerZuGross:
+      'El archivo es demasiado grande ({{zusatz}}). Debe caber entero en memoria: recorte el vídeo o use menor resolución.',
+    fehlerZuKurz: 'La grabación es demasiado corta ({{zusatz}}).',
+    fehlerLeer: 'El archivo está vacío.',
+    fehlerUnlesbar: 'No se pudo abrir el archivo.',
+  },
   standortblatt: {
     reihen: 'Las series aquí',
     verlauf: 'Comprobado recientemente',

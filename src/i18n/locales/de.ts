@@ -38,6 +38,27 @@ export const de: TranslationDict = {
     briefingErklaerung:
       'Ein Paket mit beiden Aufnahmen, den Hörhilfen und einem Arbeitsauftrag — vollständig hier im Browser erzeugt. SoundFuchs lädt nichts hoch.',
   },
+  mitbringen: {
+    knopf: '🎞 Geräusch mitbringen',
+    titel: 'Geräusch mitbringen',
+    liest: 'Die Tonspur wird herausgelöst …',
+    dauer: '{{dauer}} s · {{rate}} kHz',
+    schieben: 'Ausschnitt verschieben — bei einem Video springt das Bild mit.',
+    ganzKurz: 'Die ganze Aufnahme wird verwendet.',
+    hoeren: '▶ Ausschnitt hören',
+    stoppen: '■ Stoppen',
+    verwenden: 'Diesen Ausschnitt verwenden',
+    andereDatei: 'Andere Datei wählen',
+    abbrechen: 'Abbrechen',
+    fehlerKeineTonspur: 'In diesem Video ist keine Tonspur.',
+    fehlerFormat:
+      'Dieser Browser kann dieses Format nicht lesen. Auf dem Telefon oder in Chrome, Edge und Safari geht es meistens; sonst hilft eine Aufnahme als WAV oder WebM.',
+    fehlerZuGross:
+      'Die Datei ist zu groß ({{zusatz}}). Sie muss am Stück in den Speicher passen — kürze den Film oder nimm eine kleinere Auflösung.',
+    fehlerZuKurz: 'Die Aufnahme ist zu kurz ({{zusatz}}).',
+    fehlerLeer: 'Die Datei ist leer.',
+    fehlerUnlesbar: 'Die Datei ließ sich nicht öffnen.',
+  },
   standortblatt: {
     reihen: 'Die Reihen hier',
     verlauf: 'Zuletzt geprüft',

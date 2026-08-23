@@ -1,0 +1,407 @@
+/**
+ * EIN GERÄUSCH MITBRINGEN — DIE VORSCHAU
+ *
+ * Der Auftraggeber: „Ich glaube, das ist sehr allgemein, dass die Menschen
+ * einen Film machen von etwas, wo sie denken, das hört sich aber komisch an."
+ *
+ * Die Datei kommt herein, die Tonspur wird herausgelöst, und dann steht die
+ * eine Frage, die ein Video mit sich bringt: **welche Stelle?** Ein Film ist
+ * lang, das Interessante darin kurz.
+ *
+ * ## Das Bild ist der Wegweiser
+ *
+ * Bei einer Audiodatei hilft nur die Wellenform. Bei einem Video gibt es etwas,
+ * das es sonst nicht gibt: Wer gefilmt hat, weiß, wann er die Haube aufgemacht
+ * und wo er hingehalten hat. Deshalb springt das Bild mit, wenn man den
+ * Ausschnitt verschiebt.
+ *
+ * ## Danach ist das Video zu Ende
+ *
+ * Übergeben wird die Tonspur des gewählten Ausschnitts, nicht der Film. Ein
+ * Video im Speicher jeder Prüfung wäre in zwei Wochen ein volles Telefon.
+ *
+ * ## Kein Fehler ohne Satz
+ *
+ * Jeder Befund aus `geraeuschdatei.ts` hat hier seinen eigenen Satz und einen
+ * Weg weiter. Besonders einer: „Dieser Browser kann dieses Format nicht lesen."
+ * Er ist echt — der Testbrowser dieses Projekts kann kein AAC, und AAC ist das,
+ * was jedes Telefon aufnimmt. Ein stilles „ging nicht" wäre davon nicht zu
+ * unterscheiden.
+ */
+
+import {
+  ausschnitt,
+  Dateifehler,
+  istVideo,
+  ruhigsteStelle,
+  toneAusDatei,
+  type Dateibefund,
+} from '@core/audio/geraeuschdatei.js';
+import { SlowListenPlayer } from '@core/audio/slowListen.js';
+import { t } from '../../i18n/index.js';
+import { logger } from '@utils/logger.js';
+
+/** So lang ist der Ausschnitt, den SoundFuchs auswertet. */
+const FENSTER = 10;
+
+export interface MitbringenOptions {
+  /** Was mit dem gewählten Ausschnitt geschehen soll. */
+  uebernehmen: (ton: AudioBuffer, dateiname: string) => void;
+}
+
+const SATZ: Readonly<Record<Dateibefund, string>> = Object.freeze({
+  'zu-gross': 'mitbringen.fehlerZuGross',
+  'keine-tonspur': 'mitbringen.fehlerKeineTonspur',
+  format: 'mitbringen.fehlerFormat',
+  'zu-kurz': 'mitbringen.fehlerZuKurz',
+  leer: 'mitbringen.fehlerLeer',
+  unlesbar: 'mitbringen.fehlerUnlesbar',
+});
+
+class Vorschau {
+  private readonly overlay: HTMLDivElement;
+  private readonly dialog: HTMLDivElement;
+  private readonly buehne: HTMLDivElement;
+  private readonly leinwand: HTMLCanvasElement;
+  private readonly rahmen: HTMLElement;
+  private readonly fuss: HTMLDivElement;
+  private readonly spieler = new SlowListenPlayer();
+  private video: HTMLVideoElement | null = null;
+  private videoUrl: string | null = null;
+  private ton: AudioBuffer | null = null;
+  private start = 0;
+  private laeuft = false;
+  private zu = false;
+  private readonly vorherFokus: HTMLElement | null;
+
+  constructor(
+    private readonly datei: File,
+    private readonly optionen: MitbringenOptions
+  ) {
+    this.vorherFokus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    this.overlay = document.createElement('div');
+    this.overlay.className = 'mitbringen-overlay';
+    this.overlay.addEventListener('mousedown', (e) => {
+      if (e.target === this.overlay) this.schliesse();
+    });
+
+    this.dialog = document.createElement('div');
+    this.dialog.className = 'mitbringen-dialog';
+    this.dialog.setAttribute('role', 'dialog');
+    this.dialog.setAttribute('aria-modal', 'true');
+    this.dialog.setAttribute('aria-label', t('mitbringen.titel'));
+    this.overlay.appendChild(this.dialog);
+
+    const kopf = document.createElement('header');
+    kopf.className = 'mitbringen-kopf';
+    const titel = document.createElement('h2');
+    titel.textContent = t('mitbringen.titel');
+    const name = document.createElement('p');
+    name.className = 'muted small mitbringen-dateiname';
+    name.textContent = datei.name;
+    const zuKnopf = document.createElement('button');
+    zuKnopf.type = 'button';
+    zuKnopf.className = 'mitbringen-schliessen';
+    zuKnopf.setAttribute('aria-label', t('mitbringen.abbrechen'));
+    zuKnopf.textContent = '×';
+    zuKnopf.onclick = () => this.schliesse();
+    const kopftext = document.createElement('div');
+    kopftext.append(titel, name);
+    kopf.append(kopftext, zuKnopf);
+    this.dialog.appendChild(kopf);
+
+    this.buehne = document.createElement('div');
+    this.buehne.className = 'mitbringen-buehne';
+    this.dialog.appendChild(this.buehne);
+
+    const welle = document.createElement('div');
+    welle.className = 'mitbringen-welle';
+    this.leinwand = document.createElement('canvas');
+    this.leinwand.className = 'mitbringen-wellenbild';
+    this.rahmen = document.createElement('div');
+    this.rahmen.className = 'mitbringen-fenster';
+    this.rahmen.hidden = true;
+    welle.append(this.leinwand, this.rahmen);
+    this.dialog.appendChild(welle);
+
+    this.fuss = document.createElement('div');
+    this.fuss.className = 'mitbringen-fuss';
+    this.dialog.appendChild(this.fuss);
+
+    this.dialog.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this.schliesse();
+    });
+
+    document.body.appendChild(this.overlay);
+    zuKnopf.focus();
+    void this.lade();
+  }
+
+  private zeigeWarten(): void {
+    this.buehne.replaceChildren();
+    const p = document.createElement('p');
+    p.className = 'mitbringen-warten';
+    p.textContent = t('mitbringen.liest');
+    this.buehne.appendChild(p);
+  }
+
+  private async lade(): Promise<void> {
+    this.zeigeWarten();
+    try {
+      const ton = await toneAusDatei(this.datei);
+      if (this.zu) return;
+      this.ton = ton;
+      this.start = ruhigsteStelle(
+        ton.getChannelData(0),
+        ton.sampleRate,
+        Math.min(FENSTER, ton.duration)
+      );
+      this.zeigeVorschau();
+    } catch (fehler) {
+      if (this.zu) return;
+      const befund = fehler instanceof Dateifehler ? fehler.befund : 'unlesbar';
+      const zusatz = fehler instanceof Dateifehler ? fehler.zusatz : undefined;
+      logger.warn(`Geräusch mitbringen: ${befund}`, fehler);
+      this.zeigeFehler(befund, zusatz);
+    }
+  }
+
+  private zeigeFehler(befund: Dateibefund, zusatz?: string): void {
+    this.buehne.replaceChildren();
+    const kasten = document.createElement('div');
+    kasten.className = 'mitbringen-fehler';
+    const satz = document.createElement('p');
+    satz.setAttribute('role', 'alert');
+    satz.textContent = t(SATZ[befund], zusatz ? { zusatz } : undefined);
+    kasten.appendChild(satz);
+    this.buehne.appendChild(kasten);
+    this.fuss.replaceChildren();
+    const andere = document.createElement('button');
+    andere.type = 'button';
+    andere.className = 'primary';
+    andere.textContent = t('mitbringen.andereDatei');
+    andere.onclick = () => {
+      this.schliesse();
+      geraeuschMitbringen(this.optionen);
+    };
+    this.fuss.appendChild(andere);
+    andere.focus();
+  }
+
+  private zeigeVorschau(): void {
+    const ton = this.ton;
+    if (!ton) return;
+    this.buehne.replaceChildren();
+
+    if (istVideo(this.datei)) {
+      /**
+       * Das Bild — nur als Wegweiser.
+       *
+       * Stumm und ohne Bedienleiste: Gehört wird der Ausschnitt über den
+       * Knopf darunter, und zwar die Tonspur, die auch ausgewertet wird. Zwei
+       * Wiedergaben nebeneinander wären zwei Wahrheiten über dasselbe.
+       */
+      this.videoUrl = URL.createObjectURL(this.datei);
+      const v = document.createElement('video');
+      v.className = 'mitbringen-video';
+      v.muted = true;
+      v.playsInline = true;
+      v.preload = 'metadata';
+      v.src = this.videoUrl;
+      v.onloadedmetadata = () => this.springeBild();
+      this.video = v;
+      this.buehne.appendChild(v);
+    }
+
+    const dauer = document.createElement('p');
+    dauer.className = 'muted small mitbringen-dauer';
+    dauer.textContent = t('mitbringen.dauer', {
+      dauer: ton.duration.toFixed(1),
+      rate: String(Math.round(ton.sampleRate / 1000)),
+    });
+    this.buehne.appendChild(dauer);
+
+    this.maleWelle();
+    this.rahmen.hidden = false;
+    this.setzeRahmen();
+    this.verdrahteZiehen();
+
+    const hinweis = document.createElement('p');
+    hinweis.className = 'muted small mitbringen-hinweis';
+    hinweis.textContent =
+      ton.duration <= FENSTER ? t('mitbringen.ganzKurz') : t('mitbringen.schieben');
+
+    this.fuss.replaceChildren();
+    const hoeren = document.createElement('button');
+    hoeren.type = 'button';
+    hoeren.className = 'mitbringen-hoeren';
+    hoeren.textContent = t('mitbringen.hoeren');
+    hoeren.onclick = () => void this.spiele(hoeren);
+
+    const nehmen = document.createElement('button');
+    nehmen.type = 'button';
+    nehmen.className = 'primary mitbringen-nehmen';
+    nehmen.textContent = t('mitbringen.verwenden');
+    nehmen.onclick = () => {
+      const teil = ausschnitt(ton, this.start, Math.min(FENSTER, ton.duration));
+      const name = this.datei.name;
+      this.schliesse();
+      this.optionen.uebernehmen(teil, name);
+    };
+
+    const zeile = document.createElement('div');
+    zeile.className = 'mitbringen-knoepfe';
+    zeile.append(hoeren, nehmen);
+    this.fuss.append(hinweis, zeile);
+    nehmen.focus();
+  }
+
+  /** Die Wellenform des ganzen Stücks — grob, sie ist eine Landkarte. */
+  private maleWelle(): void {
+    const ton = this.ton;
+    if (!ton) return;
+    const breite = Math.max(200, Math.round(this.dialog.clientWidth || 320) - 24);
+    const hoehe = 64;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    this.leinwand.width = Math.round(breite * dpr);
+    this.leinwand.height = Math.round(hoehe * dpr);
+    this.leinwand.style.width = `${breite}px`;
+    this.leinwand.style.height = `${hoehe}px`;
+    const c = this.leinwand.getContext('2d');
+    if (!c) return;
+    c.scale(dpr, dpr);
+    c.clearRect(0, 0, breite, hoehe);
+    const daten = ton.getChannelData(0);
+    const proSpalte = Math.max(1, Math.floor(daten.length / breite));
+    c.fillStyle = getComputedStyle(this.leinwand).color || '#0d9488';
+    for (let x = 0; x < breite; x += 1) {
+      let max = 0;
+      const von = x * proSpalte;
+      for (let i = von; i < Math.min(daten.length, von + proSpalte); i += 1) {
+        const a = Math.abs(daten[i]);
+        if (a > max) max = a;
+      }
+      const h = Math.max(1, max * hoehe);
+      c.fillRect(x, (hoehe - h) / 2, 1, h);
+    }
+  }
+
+  private setzeRahmen(): void {
+    const ton = this.ton;
+    if (!ton) return;
+    const anteil = Math.min(1, FENSTER / ton.duration);
+    this.rahmen.style.left = `${(this.start / ton.duration) * 100}%`;
+    this.rahmen.style.width = `${anteil * 100}%`;
+  }
+
+  private springeBild(): void {
+    if (!this.video) return;
+    // In die Mitte des Ausschnitts: Dort ist am ehesten zu sehen, worum es geht.
+    const ziel = this.start + Math.min(FENSTER, this.ton?.duration ?? FENSTER) / 2;
+    try {
+      this.video.currentTime = Math.max(0, ziel);
+    } catch {
+      /* Manche Container erlauben kein Springen — dann bleibt das erste Bild. */
+    }
+  }
+
+  private verdrahteZiehen(): void {
+    const ton = this.ton;
+    if (!ton || ton.duration <= FENSTER) return;
+    const flaeche = this.leinwand.parentElement;
+    if (!flaeche) return;
+    const setzen = (klientX: number) => {
+      const k = flaeche.getBoundingClientRect();
+      const anteil = Math.min(1, Math.max(0, (klientX - k.left) / k.width));
+      this.start = Math.min(
+        ton.duration - FENSTER,
+        Math.max(0, anteil * ton.duration - FENSTER / 2)
+      );
+      this.setzeRahmen();
+      this.springeBild();
+    };
+    let zieht = false;
+    flaeche.addEventListener('pointerdown', (e) => {
+      zieht = true;
+      flaeche.setPointerCapture(e.pointerId);
+      setzen(e.clientX);
+    });
+    flaeche.addEventListener('pointermove', (e) => {
+      if (zieht) setzen(e.clientX);
+    });
+    const ende = () => {
+      zieht = false;
+    };
+    flaeche.addEventListener('pointerup', ende);
+    flaeche.addEventListener('pointercancel', ende);
+  }
+
+  private async spiele(knopf: HTMLButtonElement): Promise<void> {
+    const ton = this.ton;
+    if (!ton) return;
+    if (this.laeuft) {
+      this.spieler.stop();
+      this.laeuft = false;
+      knopf.textContent = t('mitbringen.hoeren');
+      return;
+    }
+    this.laeuft = true;
+    knopf.textContent = t('mitbringen.stoppen');
+    try {
+      this.spieler.unlock();
+      // In normaler Geschwindigkeit: Hier soll man hören, was aufgenommen
+      // wurde — nicht, was die Hör-Lupe daraus macht.
+      await this.spieler.play(
+        ausschnitt(ton, this.start, Math.min(FENSTER, ton.duration)),
+        { playbackRate: 1 },
+        () => {
+          this.laeuft = false;
+          if (!this.zu) knopf.textContent = t('mitbringen.hoeren');
+        }
+      );
+    } catch (fehler) {
+      logger.warn('Ausschnitt ließ sich nicht abspielen', fehler);
+      this.laeuft = false;
+      knopf.textContent = t('mitbringen.hoeren');
+    }
+  }
+
+  private schliesse(): void {
+    if (this.zu) return;
+    this.zu = true;
+    this.spieler.stop();
+    if (this.video) {
+      this.video.src = '';
+      this.video = null;
+    }
+    if (this.videoUrl) {
+      URL.revokeObjectURL(this.videoUrl);
+      this.videoUrl = null;
+    }
+    this.overlay.remove();
+    this.vorherFokus?.focus();
+  }
+}
+
+/**
+ * Eine Datei auswählen lassen und die Vorschau öffnen.
+ *
+ * Audio UND Video im selben Filter: Für `decodeAudioData` ist der Unterschied
+ * keiner — die Bildspur wird ignoriert. Ein zweiter Knopf „Video verwenden"
+ * wäre eine Unterscheidung, die den Nutzer nichts angeht.
+ */
+export function geraeuschMitbringen(optionen: MitbringenOptions): void {
+  const feld = document.createElement('input');
+  feld.type = 'file';
+  feld.accept = 'audio/*,video/*';
+  feld.hidden = true;
+  feld.addEventListener('change', () => {
+    const datei = feld.files?.[0];
+    feld.remove();
+    if (datei) new Vorschau(datei, optionen);
+  });
+  document.body.appendChild(feld);
+  feld.click();
+}
