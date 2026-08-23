@@ -491,6 +491,92 @@ try {
       danach.zeilen >= 2,
       `nach der Reihe steht nicht der Standort da, von dem sie ausging — ${danach.ebene}`
     );
+
+    /**
+     * ── DAS BLATT AUF DER STANDORTEBENE ─────────────────────────────────
+     *
+     * Die offene Frage aus §7g, vom Auftraggeber entschieden: Verlauf und
+     * Reihenbefund. Vorher standen dort die Kartenreiter „📄 Standorte" und
+     * „Filter" — genauso falsch wie auf der Maschinenebene.
+     *
+     * Geprüft wird beides: dass der richtige Reitersatz gilt und dass
+     * dahinter wirklich etwas steht. Ein Reiter mit leerem Inhalt war der
+     * Zustand, den dieser Schnitt beseitigt.
+     */
+    /**
+     * Das Blatt aufziehen — und nachsehen, ob es wirklich aufging.
+     *
+     * Der Stamm blendet bei zugezogenem Blatt alle Reiterinhalte aus
+     * (`responsive.css:654`, `display: none !important`) — richtig, denn die
+     * Guckhöhe zeigt nur Griff und Streifen. Ein Wächter, der nach einem
+     * gescheiterten Zug misst, meldet deshalb „0 px hoch" und beschreibt
+     * seinen eigenen Fehlgriff als Produktfehler. Genau das ist beim ersten
+     * Versuch passiert.
+     */
+    for (let versuch = 0; versuch < 3; versuch += 1) {
+      if (await page.evaluate(() => document.body.classList.contains('sheet-open'))) break;
+      const kasten = await page.locator('#sheet-grip').boundingBox();
+      if (!kasten) break;
+      const x = kasten.x + kasten.width / 2;
+      const y = kasten.y + kasten.height / 2;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(x, y - 30, { steps: 3 });
+      await page.mouse.move(x, y - 420, { steps: 16 });
+      await page.mouse.up();
+      await page.waitForTimeout(1500);
+    }
+    await page.waitForTimeout(1200);
+    const blatt = await page.evaluate(() => {
+      const sichtbar = (e) => getComputedStyle(e).display !== 'none';
+      const inhalt = document.getElementById('tab-standortblatt');
+      return {
+        reiter: [...document.querySelectorAll('.tab-button')]
+          .filter(sichtbar)
+          .map((b) => b.textContent.trim()),
+        offen: document.querySelector('.tab-button.active')?.textContent?.trim() ?? '(keiner)',
+        titel: [...(inhalt?.querySelectorAll('.standortblatt-titel') ?? [])].map((h) =>
+          h.textContent.trim()
+        ),
+        reihensatz: inhalt?.querySelector('.standortblatt-reihe-satz')?.textContent?.trim() ?? '',
+        zeilen: inhalt?.querySelectorAll('.standortblatt-zeile').length ?? 0,
+        ersteZeile:
+          inhalt?.querySelector('.standortblatt-zeile')?.textContent?.replace(/\s+/g, ' ').trim() ??
+          '',
+        zeileHoch: (() => {
+          const z = inhalt?.querySelector('.standortblatt-zeile');
+          return z ? Math.round(z.getBoundingClientRect().height) : 0;
+        })(),
+        panelAktiv: inhalt?.classList.contains('active') ?? false,
+        panelAnzeige: inhalt ? getComputedStyle(inhalt).display : '(fehlt)',
+        panelHoch: inhalt ? Math.round(inhalt.getBoundingClientRect().height) : 0,
+        blattOffen: document.body.classList.contains('sheet-open'),
+        ebene: document.body.className.match(/tiefe-\w+/g)?.join(' ') ?? '(keine)',
+      };
+    });
+    console.log('\n=== Das Blatt auf der Standortebene ===');
+    console.log(`  Reiter                    ${blatt.reiter.join(' · ') || '(keine)'}`);
+    console.log(`  offen                     ${blatt.offen}`);
+    console.log(`  Abschnitte                ${blatt.titel.join(' · ') || '(keine)'}`);
+    console.log(`  Reihenbefund              ${blatt.reihensatz || '(fehlt)'}`);
+    console.log(`  Verlaufszeilen            ${blatt.zeilen} (${blatt.zeileHoch} px)`);
+    console.log(`  erste Zeile               ${blatt.ersteZeile || '(fehlt)'}`);
+    pruefe(
+      blatt.reiter.length === 1 &&
+        /verlauf|history|historial|historique|历史/i.test(blatt.reiter[0] ?? ''),
+      `auf der Standortebene trägt das Blatt „${blatt.reiter.join(' · ')}" statt seines eigenen Reiters`
+    );
+    pruefe(blatt.zeilen > 0, 'das Blatt der Standortebene zeigt keinen Verlauf');
+    console.log(
+      `  Reiterblatt               ${blatt.panelAktiv ? 'aktiv' : 'NICHT aktiv'} · ${blatt.panelAnzeige} · ${blatt.panelHoch} px · Blatt ${blatt.blattOffen ? 'offen' : 'ZU'}`
+    );
+    pruefe(
+      blatt.zeileHoch >= 44,
+      `die Verlaufszeilen sind ${blatt.zeileHoch} px hoch statt einer Fingerkuppe`
+    );
+    pruefe(blatt.reihensatz.length > 0, 'das Blatt der Standortebene sagt nichts über die Reihe');
+    pruefe(blatt.blattOffen, 'das Blatt ließ sich auf der Standortebene nicht aufziehen');
+    pruefe(blatt.ebene !== '(keine)', 'ein Tipp im Blatt hat die Tiefe geschlossen');
   }
 
   await ctx.close();

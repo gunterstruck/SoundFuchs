@@ -35,6 +35,12 @@ export const zh: TranslationDict = {
     briefingErklaerung:
       '一个包含两段录音、听觉辅助和工作说明的数据包，完全在您的浏览器中生成。SoundFuchs 不会上传任何内容。',
   },
+  standortblatt: {
+    reihen: '此处的机组',
+    verlauf: '最近检测',
+    nochNichts: '该地点尚未进行任何检测。',
+    undMehr: '以及另外 {{count}} 次检测',
+  },
 
   // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
   // Scharnier (docs/nutzerreise-wie-tourfuchs.md §0h).

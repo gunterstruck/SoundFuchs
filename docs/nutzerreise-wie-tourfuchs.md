@@ -2868,6 +2868,73 @@ Tür des Auswertungswerkzeugs führt.
 | Reiter „3D" | Chips ohne Gebirge | **Gebirge steht** |
 | Platz für die Analyse | 637 px (die ganze Seite) | **bis 784 px** |
 
+### S12 — Das Blatt auf der Standortebene (23.08.2026)
+
+Die eine offene Frage aus §7g, vom Auftraggeber entschieden: **Verlauf und
+letztes Reihenergebnis.** Damit trägt jede Ebene ihren eigenen Reitersatz:
+
+```
+Karte     →  📄 Standorte · Filter
+Standort  →  Verlauf
+Maschine  →  2D · 3D · Briefing
+```
+
+#### Was „letztes Reihenergebnis" hier heißt
+
+Nicht das konservierte Ergebnis eines vergangenen Flottenlaufs — ein solches
+gibt es nicht, gespeichert werden die einzelnen Prüfungen. Sondern derselbe
+Befund, aus den **aktuellen** letzten Werten gerechnet, mit derselben Funktion
+(`reihenbefund`), die am Ende eines Flottenlaufs urteilt.
+
+Das ist die ehrlichere Auskunft: Ein Ergebnis von gestern behauptete einen
+Stand, den zwei Prüfungen von heute längst überholt haben. Und es gilt
+weiterhin die Grenze des Verfahrens — unter drei geprüften Maschinen steht
+dort „Für einen Vergleich braucht es mindestens 3 geprüfte Maschinen" statt
+eines wahren Satzes, der nichts gemessen hat.
+
+#### Der Fund unterwegs: der alte Dialog stand noch offen
+
+Der Wächter meldete „die Verlaufszeilen sind 0 px hoch". Der erste Verdacht —
+ein Fehler im neuen Blatt — war falsch. Gemessen wurde, was am Griff des Blatts
+lag:
+
+```
+(Griff bei 745 px, darauf: modal-actions shell-footer; Reste: diagnosis-modal)
+```
+
+**Nach einem Flottenlauf blieb der alte Ergebnisdialog offen liegen.** Man sah
+ihn nicht, weil das Reihenergebnis darüberlag — aber seine Fußzeile fing jeden
+Zug am Blattgriff ab. Es ist derselbe Dialog, den §S6 für Einzelprüfungen
+abgelöst hat; auf dem Flottenweg lebt er noch als Takt des Laufs. Jetzt geht er
+wenigstens, wenn der Lauf vorbei ist.
+
+Der Stamm selbst war unschuldig und hatte recht:
+`.sidebar:not(.open) .tab-panel { display: none !important; }` — bei
+zugezogenem Blatt zeigt die Guckhöhe nur Griff und Streifen. Ein Wächter, der
+nach einem gescheiterten Zug misst, beschreibt seinen eigenen Fehlgriff als
+Produktfehler. Der Lauf prüft deshalb jetzt selbst, ob das Blatt wirklich
+aufging.
+
+#### Gemessen
+
+```
+Reiter           Verlauf
+Abschnitte       Die Reihen hier · Zuletzt geprüft
+Reihenbefund     Für einen Vergleich braucht es mindestens 3 geprüfte Maschinen.
+Verlaufszeilen   2 (52 px)
+erste Zeile      Rührwerk 2 · Ähnlichkeit 100 % · gerade eben
+Reiterblatt      aktiv · block · 420 px · Blatt offen
+```
+
+Falsifiziert, indem beide Änderungen zurückgenommen wurden — vier Befunde,
+darunter „das Blatt ließ sich auf der Standortebene nicht aufziehen".
+
+| | vor S12 | jetzt |
+|---|---|---|
+| Reiter auf der Standortebene | „📄 Standorte" · „Filter" | **Verlauf** |
+| Was dahinter steht | nichts | **Reihenbefund + die letzten Prüfungen** |
+| Alter Dialog nach einem Flottenlauf | blieb offen und fing Gesten ab | **geht zu** |
+
 ### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die

@@ -36,6 +36,12 @@ export const en: TranslationDict = {
     briefingErklaerung:
       'A package with both recordings, the listening aids and a work order — built entirely here in your browser. SoundFuchs uploads nothing.',
   },
+  standortblatt: {
+    reihen: 'The rows here',
+    verlauf: 'Recently checked',
+    nochNichts: 'Nothing has been checked at this site yet.',
+    undMehr: 'and {{count}} more checks',
+  },
 
   // Der Stamm: die von TourFuchs uebernommene Oberflaeche vor dem
   // Scharnier (docs/nutzerreise-wie-tourfuchs.md §0h).
