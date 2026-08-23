@@ -26,6 +26,7 @@ import { logger } from '@utils/logger.js';
 import { getVisualizerSettings, setVisualizerSettings } from '@utils/visualizerSettings.js';
 import { getRecordingSettings, setRecordingSettings } from '@utils/recordingSettings.js';
 import { getEvaluationEngine, setEvaluationEngine } from '@utils/evaluationSettings.js';
+import { gewaehltesWerkzeug, waehleWerkzeug } from '../../stamm/einstellungen/werkzeug.js';
 import type { EngineId } from '@data/types.js';
 import { t } from '../../i18n/index.js';
 import {
@@ -84,6 +85,7 @@ export class SettingsPhase {
     this.initVisualizerScaleSettings();
     this.initRecordingSettings();
     this.initEvaluationEngineSettings();
+    this.initAnalysisToolSettings();
     this.initMessLaborEntry();
     this.initCustomerDataSettings();
 
@@ -284,6 +286,30 @@ export class SettingsPhase {
         }
       });
     }
+  }
+
+  /**
+   * Das Auswertungswerkzeug — wohin das Geräusch-Briefing geht.
+   *
+   * Es steht als Einstellung da, weil der Auftraggeber es dort erwartet hat
+   * („Einstellungen wie z. B. ein anderes Auswertungswerkzeug wählen"). Es
+   * lässt sich aber auch direkt an der Tür wechseln, am Ende des Briefings —
+   * beide schreiben dieselbe Merkung, und beide lesen sie beim Öffnen neu.
+   *
+   * Die Liste steht bewusst NICHT hier, sondern in
+   * `stamm/einstellungen/werkzeug.ts`. Zwei Listen wären zwei Stellen, an
+   * denen ein drittes Werkzeug fehlen kann.
+   */
+  private initAnalysisToolSettings(): void {
+    const select = document.getElementById('analysis-tool-select') as HTMLSelectElement | null;
+    if (!select) return;
+    select.value = gewaehltesWerkzeug().id;
+    select.addEventListener('change', () => {
+      // Der Rückgabewert und nicht der Wert des Feldes: Eine Kennung, die es
+      // nicht gibt, ändert nichts — dann soll das Feld auch wieder zeigen, was
+      // wirklich gilt.
+      select.value = waehleWerkzeug(select.value).id;
+    });
   }
 
   /**

@@ -2542,6 +2542,92 @@ Nach Maschine 2 (Rührwerk 2):
 | Auskunft, dass die Runde fertig ist | keine | **„✓ Runde fertig — 2 Maschinen …"** |
 | Gedächtnis über den Besuch hinaus | — | **keins, mit Absicht** |
 
+### S9 — Das Auswertungswerkzeug (23.08.2026)
+
+Der Auftraggeber hatte sich in der Seitenleiste „Einstellungen wie z. B. ein
+anderes Auswertungswerkzeug wählen statt Gemini" gewünscht. Das war blockiert:
+Es gab kein Gemini im Code und auch kein anderes externes Werkzeug — nichts,
+wovon man hätte wegwählen können. Am 23.08.2026 hat er die Liste genannt:
+**„auswahlwerkzeuge: Claude, Chatgpt"**.
+
+**Der eigentliche Befund lag daneben.** Das Geräusch-Briefing entsteht
+vollständig im Browser — ein ZIP mit den Aufnahmen und ein Arbeitsauftrag in
+der Zwischenablage. Der Erfolgsbildschirm endete dort, mit zwei Knöpfen:
+„Nochmal kopieren" und „Fertig". Keiner führte irgendwohin. Wer das Briefing
+erzeugt hatte, musste selbst einen Tab öffnen, sich an den Namen einer KI
+erinnern, sie ansteuern, einfügen und die ZIP-Datei aus dem Download-Ordner
+anhängen. Der letzte Schritt einer Funktion, die es genau für diesen Schritt
+gibt, war der einzige ohne Weg.
+
+Die Wahl des Werkzeugs ist deshalb nicht nur eine Einstellung geworden,
+sondern vor allem eine **Tür**: Am Ende des Briefings steht jetzt
+„**In Claude öffnen**", darunter in einem Satz, was dort zu tun ist
+(„Dort einfügen und die heruntergeladene ZIP-Datei anhängen. SoundFuchs lädt
+nichts hoch."), und darunter leise „Stattdessen ChatGPT benutzen".
+
+Vier Entscheidungen, alle bewusst:
+
+- **Keine Schnittstelle.** Die naheliegende Erwartung an „Auswertungswerkzeug
+  wählen" wäre, dass die App das Briefing selbst hinschickt und die Antwort
+  anzeigt. Das hieße: Zugangsschlüssel im Browser, Audio auf fremde Server,
+  und ein Datenschutzversprechen („Das Briefing wurde lokal erzeugt.
+  SoundFuchs hat nichts hochgeladen."), das dann nicht mehr stimmt. Ein
+  Werkzeug ist hier ein **Name und eine Adresse**, mehr nicht.
+- **Kein Vorausfüllen.** Der Arbeitsauftrag ist über tausend Zeichen lang und
+  wäre in einer Adresszeile ein Glücksspiel; die ZIP-Datei kann ohnehin nur
+  der Nutzer anhängen. Der Knopf öffnet ein leeres Gespräch — `claude.ai/new`,
+  nicht die Startseite: Wer mit einem Auftrag in der Zwischenablage ankommt,
+  will ein leeres Eingabefeld und nicht das Gespräch von gestern.
+- **Der Wechsel steht an der Tür, nicht nur in den Einstellungen.** Wer dort
+  tippt, wählt für dieses Mal UND für das nächste. Eine Wahl, die man an der
+  Tür trifft und die dann vergessen wird, müsste man jedes Mal neu treffen.
+- **Die Einstellung steht auf Basis.** Sie ist keine Feineinstellung der
+  Messung, sondern die Entscheidung, an wen man das Geräusch weitergibt. Läge
+  sie auf Profi, stünde am Ende des Briefings ein Werkzeug, das man nicht
+  wechseln kann, ohne vorher eine Stufe zu finden, von der man nicht weiß,
+  dass es sie gibt. `attention-check` bewacht das.
+
+Die Liste steht an **einer** Stelle (`src/stamm/einstellungen/werkzeug.ts`) und
+nicht auch noch im Dialog — zwei Listen wären zwei Stellen, an denen ein
+drittes Werkzeug fehlen kann. 14 Tests halten fest, was die Oberfläche
+voraussetzt: dass eine fehlende Merkung eine Vorgabe ergibt, dass eine
+unbekannte Kennung gar nicht erst gespeichert wird, und dass eine Ablage, die
+wirft oder fehlt, den Weg zur Tür nicht versperrt.
+
+**Der Wächter.** `wow` öffnet in Fall C das Briefing, erzeugt das Paket und
+misst den Erfolgsbildschirm: den Namen des Knopfes, den Satz darunter, den
+leisen Wechsel, die Zahl der dominanten Handlungen — und **wohin der Knopf
+führt**. Gemessen wird dabei die Adresse, die das Produkt dem Browser übergibt,
+nicht der geladene Tab: Der erste Versuch fing das neue Fenster ab und las
+dessen `url()`. Das maß zwei Dinge auf einmal — unsere Adresse und die
+Erreichbarkeit von claude.ai. Im abgeschotteten Lauf gibt es keine Route nach
+draußen; der Tab ging auf und blieb ohne Adresse, und der Wächter meldete
+„führt nirgendwohin", obwohl die Tür stand.
+
+Zweimal absichtlich falsifiziert. Mit einer falschen Adresse:
+
+```
+✗ Briefing: der Knopf führt nach „https://example.invalid/" statt zum gewählten Werkzeug
+```
+
+Und ohne die Tür überhaupt:
+
+```
+✗ Briefing: am Ende steht kein Weg zum gewählten Werkzeug — „"
+✗ Briefing: der Knopf führt nach „nirgendwohin" statt zum gewählten Werkzeug
+✗ Briefing: kein leiser Wechsel zum anderen Werkzeug — „"
+✗ Briefing: der Knopf sagt nicht, was am Ziel zu tun ist — einfügen und das ZIP anhängen
+✗ Briefing: 0 dominante Handlungen auf dem Erfolgsbildschirm statt genau einer
+```
+
+|                                     | vor S9                        | jetzt                             |
+| ----------------------------------- | ----------------------------- | --------------------------------- |
+| Ende des Briefings                  | „Nochmal kopieren" · „Fertig" | **„In Claude öffnen"**            |
+| Weg zum Werkzeug                    | keiner                        | **ein Tipp, ins leere Gespräch**  |
+| Wahl des Werkzeugs                  | keine                         | **Claude / ChatGPT, gemerkt**     |
+| Bedienelemente in den Einstellungen | 31 / 53                       | **32 / 54** (+1, das Auswahlfeld) |
+| Hochgeladen wird                    | nichts                        | **weiterhin nichts**              |
+
 ### Die zurückgenommenen Schnitte
 
 Jeder Schnitt ist für sich prüfbar und für sich zurücknehmbar. Die

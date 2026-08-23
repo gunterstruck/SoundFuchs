@@ -4009,6 +4009,51 @@ body.analysepaket-offen {
   text-align: left;
 }
 
+/* Die Tür: der Weg zum Auswertungswerkzeug.
+
+   Sie steht ÜBER den beiden alten Knöpfen und über die volle Breite. Das ist
+   die Rangfolge, um die es geht: „Nochmal kopieren" und „Fertig" sind
+   Hilfsmittel, der Weg zum Werkzeug ist die Handlung. Bis zum 23.08.2026 gab
+   es sie nicht — der Bildschirm endete bei „Fertig". */
+.analysepaket-tuer {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.analysepaket-tuer-knopf {
+  width: 100%;
+  min-height: 48px;
+  font-weight: 600;
+}
+
+/* Was dort zu tun ist, in einem Satz. Ohne ihn führte der Knopf in ein leeres
+   Eingabefeld, und das Paket bliebe im Download-Ordner liegen. */
+.analysepaket-tuer-schritte {
+  margin: 0;
+  text-align: center;
+}
+
+/* Das andere Werkzeug — ein Wort, kein Knopf. Zwei gleich laute Angebote
+   wären eine Frage; hier ist eine Antwort mit einer Hintertür. */
+.analysepaket-tuer-wechsel {
+  background: none;
+  border: none;
+  padding: 10px 6px;
+  min-height: 44px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.analysepaket-tuer-wechsel:hover {
+  color: var(--text-primary);
+}
+
 .analysepaket-erfolg-aktionen {
   display: flex;
   justify-content: flex-end;

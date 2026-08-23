@@ -113,7 +113,6 @@ class ZanobotApp {
     },
   });
 
-
   constructor() {
     this.init();
   }
@@ -1030,6 +1029,10 @@ class ZanobotApp {
         zeilen: [
           { art: 'thema', thema: 'pruefen', icon: '🎚', key: 'sheet.recording' },
           { art: 'thema', thema: 'raum', icon: '📐', key: 'sheet.room' },
+          // Wohin das Geräusch-Briefing geht. Eine eigene Zeile und nicht unter
+          // „Aufnahme & Prüfung": Das ist keine Einstellung der Messung,
+          // sondern die Entscheidung, an wen man das Ergebnis weitergibt.
+          { art: 'thema', thema: 'werkzeug', icon: '🤖', key: 'sheet.tool' },
         ],
       },
       {

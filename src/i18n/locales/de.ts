@@ -25,6 +25,7 @@ export const de: TranslationDict = {
     view: 'Ansicht: Basis oder Profi',
     map: 'Standortkarte',
     customerData: 'Standorte: Beispiele & Import',
+    tool: 'Auswertungswerkzeug',
   },
 
   // ============================================================================
@@ -223,6 +224,17 @@ export const de: TranslationDict = {
     copied: '✓ Arbeitsauftrag kopiert',
     copyManually: 'Text ist markiert – bitte kopieren',
     done: 'Fertig',
+    openIn: 'In {{name}} öffnen',
+    openInHint:
+      'Dort einfügen und die heruntergeladene ZIP-Datei anhängen. SoundFuchs lädt nichts hoch.',
+    useInstead: 'Stattdessen {{name}} benutzen',
+  },
+  tool: {
+    title: 'Auswertungswerkzeug',
+    description:
+      'Das Geräusch-Briefing entsteht im Browser. Wohin Sie es danach geben, wählen Sie hier — SoundFuchs öffnet das Werkzeug, lädt aber nichts hoch.',
+    label: 'Werkzeug',
+    hint: 'Am Ende des Briefings führt ein Knopf dorthin. Der Arbeitsauftrag liegt dann in der Zwischenablage, das Paket im Download-Ordner.',
   },
   site: {
     countMachines: '{{n}} Maschinen',
