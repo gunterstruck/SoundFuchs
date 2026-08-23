@@ -3224,6 +3224,257 @@ diesem Leuchtturm.
 
 ---
 
+## 7g. Konzept — Die Analyse gehört ins Blatt (23.08.2026)
+
+_Vom Auftraggeber vorgeschlagen, hier geprüft. **Noch nicht umgesetzt.**_
+
+Der Vorschlag: Das Blatt hinter dem Scharnier — dasselbe, das man bei TourFuchs
+aufzieht, um eine Tour zu planen — nimmt die **gesamte Analyse** auf, in drei
+Reitern: **1 = 2D**, **2 = 3D-Gebirge**, **3 = Briefing**. Was oben stehen
+bleibt, wenn das Blatt unten liegt, ist das Zentrale: die aktuelle **Prüfung
+und der Vergleich**.
+
+### Der Befund, der den Vorschlag trägt
+
+Gemessen am 23.08.2026, Handy 390 × 844, auf der Maschinenebene:
+
+```
+Körper                tiefe-offen tiefe-maschine
+Reiter im Blatt       „📄 Standorte"  ·  „Filter"
+offener Reiter        „📄 Standorte"
+Inhalt des Reiters    ""            ← leer
+Griff                 „Einstellungen & mehr"
+Blatt-Oberkante       744 px        → aufgezogen 404 px
+Tiefe                 107–744 px (637 px hoch)
+```
+
+Das Blatt ist hinter dem Scharnier also **schon da, lässt sich schon aufziehen
+— und ist falsch beschriftet und leer.** Wer an einer Maschine steht, sieht
+unten zwei Reiter über Standorte und Kartenfilter, und dahinter nichts.
+
+Damit ist der Vorschlag keine Erweiterung, sondern eine Reparatur: Es geht
+nicht darum, einen Ort zu schaffen, sondern einen vorhandenen richtig zu
+füllen.
+
+### Was dafür spricht — drei Maße
+
+**Ein Ort statt dreier.** Die drei Werkzeuge werden heute auf drei
+verschiedenen Wegen erreicht:
+
+| Werkzeug | Weg heute |
+|---|---|
+| 2D-Analyse (Hör-Lupe) | über „Unterschied anhören" bzw. „Trotzdem anhören" |
+| 3D-Gebirge | ein Tipp auf das Klangbild |
+| Briefing | ein Knopf weit unten in der Zweitaktionszeile |
+
+Drei Werkzeuge derselben Art, drei verschiedene Türen, und keine davon heißt
+„Analyse". Im Blatt wären es eine Geste und drei Reiter — immer dieselben,
+unabhängig davon, in welchem Zustand die Maschine gerade ist.
+
+**Mehr Platz, nicht weniger.** Das Blatt kann bis auf
+`innerHeight − Kopfleiste − 8` aufgezogen werden, gemessen **784 px**. Die
+Maschinenebene selbst hat 637 px. Die Analyse bekäme also 147 px **mehr** Raum
+als die ganze Seite heute hat — und das Gebirge ist das Element, das am
+meisten davon profitiert.
+
+**Nichts geht oben verloren.** Liegt das Blatt auf Guckhöhe (Oberkante 744 px),
+bleiben der Maschinenebene dieselben 637 px wie heute. Der Vorschlag kostet
+oben nichts.
+
+### Was er kostet — ehrlich benannt
+
+**Das Blatt verdeckt, was darüber steht.** Aufgezogen liegt seine Oberkante bei
+404 px; von der Tiefe bleiben 297 px sichtbar. Das Klangbild beginnt heute bei
+234 px und ist 240–340 px hoch — es wäre zu gut der Hälfte verdeckt.
+
+Das ist **kein Einwand, sondern die Bestätigung der Aufteilung**: Wer die
+Analyse aufzieht, arbeitet in der Analyse. Das Bild oben und das Bild unten
+gleichzeitig zu brauchen, wäre ein Zeichen, dass die Trennung falsch liegt.
+Daraus folgt aber eine Regel: **Was im Blatt liegt, muss dort vollständig
+sein.** Ein Reiter, der auf etwas oben verweist, wäre eine halbe Sache.
+
+**Der Tipp aufs Gebirge wird ein Zug plus ein Tipp.** Heute steht das Gebirge
+nach einem Tipp auf das Klangbild. Im Blatt wären es zwei Handlungen. Dafür
+steht es immer an derselben Stelle, statt nur dann, wenn oben gerade ein
+Klangbild liegt. Ich halte den Tausch für richtig — Vorhersagbarkeit schlägt
+einen Tipp —, aber es ist ein Tausch und keine reine Verbesserung.
+
+**Basis und Profi.** Hervorhebungsstufen und die tiefe Bereichsauswahl liegen
+heute auf Profi. Bleibt das so, ist Reiter 1 auf Basis deutlich dünner. Mein
+Vorschlag: Das Blatt gibt es auf beiden Stufen, die Inhalte behalten ihre
+heutigen Stufenregeln. Basis bekommt Bild, Abspielen und Briefing; Profi
+zusätzlich Hervorhebung, Bereichsauswahl und Zeitfenster.
+
+**Das Blatt hat drei Kontexte, nicht zwei.** Karte → Standorte/Filter.
+Maschine → 1/2/3. Und die **Standortebene**? Dort stünden heute weiter die
+Kartenreiter, und das wäre genauso falsch wie auf der Maschinenebene. Das ist
+die eine offene Frage dieses Konzepts. Naheliegend wäre die Reihe (§S10) —
+aber das ist eine Vermutung, keine Entscheidung.
+
+### Was oben bleibt
+
+Alles, was zur **aktuellen Prüfung** gehört, in dieser Reihenfolge:
+
+```
+Name · Standort · „Zuletzt 87 % · vor 3 Tagen"
+die eine Handlung           („Jetzt 10 Sekunden prüfen")
+das Klangbild               (flach, als Beleg — ohne Werkzeuge)
+das Urteil in einem Satz    („Die Messung klingt wie der Normalzustand.")
+der Beleg                   („Ähnlichkeit 100 % · gerade eben")
+die Runde                   („▸ Nächste: Rührwerk 2")
+```
+
+Das Klangbild bleibt oben, verliert aber seine Werkzeuge: kein Tipp ins
+Gebirge, kein Zug für die Auswahl. Es ist dann, was es im Ruhezustand ohnehin
+ist — **der Beleg des letzten Urteils, nicht das Werkzeug**. Die Werkzeuge
+liegen eine Geste tiefer.
+
+### Mein Urteil als Produktverantwortlicher
+
+**Der Vorschlag trägt.** Er ist nicht „noch ein Ort", sondern die Antwort auf
+eine Unordnung, die messbar dasteht: ein leeres, falsch beschriftetes Blatt und
+drei gleichartige Werkzeuge hinter drei verschiedenen Türen. Und er benutzt
+kein neues Formenvokabular — das Blatt mit Reitern ist der Stamm selbst (§0h).
+
+Die Analogie zu TourFuchs stimmt genau: Dort zieht man das Blatt auf, um zu
+planen; hier zieht man es auf, um zu analysieren. Beides ist Arbeit, die man
+nicht immer will, aber oft genug, um sie einen Zug entfernt zu haben.
+
+**Was vor einer Umsetzung entschieden sein muss:**
+
+1. Was liegt auf der **Standortebene** im Blatt? (offen)
+2. Wandert das Klangbild oben wirklich in die reine Belegrolle — also ohne
+   Tipp ins Gebirge? (mein Vorschlag: ja)
+3. Bleiben die Stufenregeln der Werkzeuge unverändert? (mein Vorschlag: ja)
+
+**Was die Umsetzung anfassen würde:** `Klangbild`, `ListenPanel` (Hör-Lupe),
+`Spectrogram3DPanel` und der Briefing-Knopf werden neu eingehängt, nicht neu
+gebaut. Angefasst werden müssten außerdem `schale.ts` (Reiter je Kontext),
+`tiefe.css` und die Wächter `wow` (Bildplatz, Hör-Lupe, Gebirge) sowie
+`attention-check` (Budgets).
+
+---
+
+## 7h. Konzept — Ein Video mitbringen (23.08.2026)
+
+_Vom Auftraggeber vorgeschlagen. **Noch nicht umgesetzt.**_
+
+Der Vorschlag: Menschen filmen, was komisch klingt — die offene Motorhaube, die
+Waschmaschine, den Lüfter. Das Video liegt schon auf dem Telefon. SoundFuchs
+soll es entgegennehmen, **die Tonspur herauslösen** und mit denselben Methoden
+verarbeiten wie eine eigene Aufnahme.
+
+### Die Machbarkeit ist gemessen, nicht geschätzt
+
+Gemessen am 23.08.2026 im mitgelieferten Chromium, auf der eigenen Herkunft:
+
+```
+video/mp4                     Aufnahme 65 984 Bytes  →  decodeAudioData: ok
+                                 1,12 s · 44 100 Hz · 1 Kanal
+video/webm;codecs=vp8,opus    Aufnahme 63 000 Bytes  →  decodeAudioData: ok
+                                 1,20 s · 44 100 Hz · 1 Kanal
+WebCodecs AudioDecoder        vorhanden
+```
+
+**`decodeAudioData` liest die Tonspur direkt aus dem Video-Container.** Die
+Bildspur wird dabei schlicht ignoriert. Es braucht **keine neue Bibliothek,
+keinen Demuxer und keinen Server** — der Weg ist derselbe, den
+`2-Reference.ts` und `3-Diagnose.ts` heute schon für Audio gehen.
+
+Damit ist der Video-Import kein neuer Analysepfad, sondern **eine Zeile mehr im
+Dateifilter** plus die Oberfläche darum herum.
+
+### Er hängt an einem Konzept, das schon steht
+
+§7e beschreibt den Audiodatei-Import vollständig: Einstieg unter der einen
+Handlung, eine Vorschau mit Wellenform und Ausschnitt, Vorschlag eines ruhigen
+Abschnitts, kein stilles Überschreiben des Normalzustands. **Das Video ändert
+davon nichts** — es kommt genau ein Schritt davor dazu: Die Datei darf auch ein
+Video sein.
+
+Und der Fall „ich habe nur dieses eine verdächtige Geräusch, keinen
+Normalzustand" ist ebenfalls schon gebaut: Das Geräusch-Briefing kennt den
+Modus `single-recording` mit der ausdrücklichen Regel
+
+> „Es gibt keine Vergleichsaufnahme. Verwende deshalb nicht die Begriffe
+> Abweichung, Verschlechterung oder neu hinzugekommen …"
+
+und die Aufnahmesituation `vehicle-engine-bay` — den Motorraum. Ein gefilmtes
+Motorgeräusch fällt also in einen Pfad, den es bereits gibt.
+
+### Der eine wirklich neue Teil: die Stelle im Video finden
+
+Ein Video ist lang, und das Interessante darin ist kurz. §7e schlägt für Audio
+schon einen ruhigen, nicht übersteuerten Abschnitt vor. Beim Video kommt eine
+Hilfe dazu, die es bei Audio nicht gibt: **Man hat das Bild.**
+
+```
+Video wählen
+  → Vorschau: Bild oben, Wellenform darunter, Ausschnitt darin
+  → Beim Schieben des Ausschnitts springt das Bild mit
+  → „Diesen Ausschnitt verwenden"
+```
+
+Wer gefilmt hat, weiß, wann er die Haube aufgemacht und wo er hingehalten hat.
+Das Bild ist der Wegweiser zur Stelle — deshalb gehört es in die Vorschau und
+nicht weggeworfen.
+
+**Danach ist das Video zu Ende.** Gespeichert wird die Tonspur des gewählten
+Ausschnitts, nicht der Film: Ein Video im Speicher jeder Prüfung wäre in zwei
+Wochen ein volles Telefon. Ob ein Standbild des gewählten Augenblicks als
+Positionsbild aufgehoben werden sollte — die App kennt ein solches schon aus
+der Live-Prüfung —, ist eine offene Frage. Sie ist verlockend und kostet
+Speicher; sie gehört entschieden, nicht nebenbei gemacht.
+
+### Die Grenzen, vorher benannt
+
+**Was ich gemessen habe und was nicht.** Gemessen ist ein MP4, das der Browser
+selbst erzeugt hat. **Nicht** gemessen ist ein echtes Telefonvideo — iPhone
+liefert `.mov` mit HEVC-Bild und AAC-Ton, Android meist `.mp4` mit H.264 und
+AAC. Für `decodeAudioData` zählt nur der Ton, und AAC ist dort der Normalfall;
+sicher ist es aber erst mit einer echten Datei. **Der Auftraggeber hat ein
+Beispiel angeboten — das ist die erste Messung vor jeder Zeile Code.**
+
+**Der Speicher.** `decodeAudioData` braucht die ganze Datei am Stück im
+Arbeitsspeicher; teilweises Lesen geht nicht, weil die Verwaltungsdaten eines
+MP4 am Ende stehen können. Ein zweiminütiges 1080p-Video sind schnell 200 MB.
+Es braucht also eine Obergrenze mit einem Satz, der sagt, was zu tun ist —
+nicht eine Sackgasse und nicht einen stillen Absturz.
+
+**Videos ohne Ton.** Kommen vor (stummgeschaltet aufgenommen). Der Fall muss
+beim Namen genannt werden: „In diesem Video ist keine Tonspur." — nicht
+„Datei konnte nicht gelesen werden".
+
+**Schlechter Ton.** Handymikrofone in einem Motorraum übersteuern und rauschen,
+und manche Kameras nehmen mit 8 kHz auf. Die Qualitätsprüfung, die es für
+Live-Aufnahmen schon gibt, muss auch hier laufen und darf nicht wegen der
+bequemen Herkunft milder sein.
+
+**Was die App weiterhin nicht kann.** Aus einem Motorgeräusch ohne
+Normalzustand eine Diagnose zu machen. Sie kann das Geräusch beschreiben,
+hörbar machen, markieren und weitergeben — genau das, wofür der Modus
+`single-recording` und das Briefing gebaut sind. Ein Video-Import, der am Ende
+„Lager defekt" sagt, wäre der Punkt, an dem dieses Produkt sein Versprechen
+bricht.
+
+### Vorgeschlagene Reihenfolge
+
+1. **§7e zuerst.** Der Audiodatei-Import ist die Grundlage; das Video ist ein
+   Dateifilter mehr plus die Bildvorschau. Andersherum baut man dieselbe
+   Vorschau zweimal.
+2. **Mit einer echten Telefonaufnahme messen**, bevor die Oberfläche entsteht.
+3. **Das Video als Wegweiser**, nicht als gespeicherter Inhalt.
+
+### Was zu entscheiden ist
+
+1. Wird ein Standbild des gewählten Augenblicks aufgehoben? (Speicher gegen
+   Nachvollziehbarkeit)
+2. Wo liegt die Obergrenze für die Dateigröße?
+3. Führt ein Video ohne bekannte Maschine in einen „Schnellcheck" ohne
+   Maschinenanlage — oder verlangt der Weg wie heute erst eine Maschine?
+   Der zweite ist einfacher, der erste ist näher an dem, was jemand tut, der
+   gerade ein Video von seinem eigenen Auto gemacht hat.
+
 ## 8. Risiken, offen benannt
 
 **Die Reise wird länger statt kürzer.** Das größte Risiko, und der Grund für
