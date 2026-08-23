@@ -244,6 +244,79 @@ try {
   pruefe(sicht.video === 0, 'eine Audiodatei zeigt ein Videobild');
   pruefe(sicht.hinweis.length > 0, 'die Vorschau sagt nicht, was man mit dem Ausschnitt tun kann');
 
+  /**
+   * ── DER DIALOG LIEGT ÜBER DER KOPFLEISTE ──────────────────────────────
+   *
+   * Der Auftraggeber hat am 23.08.2026 ein Bildschirmfoto von seinem Telefon
+   * geschickt: Sein Video lief — und der Titel „Geräusch mitbringen" war oben
+   * angeschnitten. Die Ursache war keine Eigenheit dieses Dialogs, sondern die
+   * ganze Modal-Ebene: `--z-modal` stand auf 1100, die aus TourFuchs
+   * übernommene Topbar auf 3600.
+   *
+   * Gemessen wird beides:
+   *
+   * 1. **Die Regel.** Der Dialog muss über der Kopfleiste liegen. Sie gilt
+   *    unabhängig davon, wie hoch der Dialog gerade ist — und nur sie fängt
+   *    den Fall ab, dass jemand die Kopfleiste eines Tages höher legt.
+   * 2. **Die Geometrie des Auftraggebers.** Sein Dialog trug ein Videobild und
+   *    war deshalb so hoch, dass `max-height: 92vh` griff. Der Testbrowser
+   *    kann kein AAC, sein Video also nicht zeigen — die Höhe wird deshalb
+   *    hier erzwungen, um genau seine Lage nachzustellen: Liegt der Titel dann
+   *    frei, oder liegt etwas darauf?
+   */
+  const decke = await page.evaluate(() => {
+    const overlay = document.querySelector('.mitbringen-overlay');
+    const dialog = document.querySelector('.mitbringen-dialog');
+    const bar = document.querySelector('.topbar');
+    const zahl = (el) => {
+      const w = el ? Number.parseInt(getComputedStyle(el).zIndex, 10) : NaN;
+      return Number.isFinite(w) ? w : 0;
+    };
+    // Die Lage des Auftraggebers nachstellen: der höchste erlaubte Dialog.
+    const vorher = dialog?.style.height ?? '';
+    if (dialog) dialog.style.height = '92vh';
+    const titel = dialog?.querySelector('h2');
+    const tk = titel?.getBoundingClientRect();
+    const bk = bar?.getBoundingClientRect();
+    const drauf =
+      tk && tk.width ? document.elementFromPoint(tk.x + tk.width / 2, tk.y + tk.height / 2) : null;
+    const ergebnis = {
+      zDialog: zahl(overlay),
+      zKopfleiste: zahl(bar),
+      titelOben: tk ? Math.round(tk.top) : null,
+      kopfleisteUnten: bk ? Math.round(bk.bottom) : null,
+      titelFrei: Boolean(drauf && titel && (drauf === titel || titel.contains(drauf))),
+      wasDrauf: drauf ? drauf.className || drauf.tagName : '(nichts)',
+    };
+    if (dialog) dialog.style.height = vorher;
+    return ergebnis;
+  });
+  console.log(
+    `  Ebenen                    Dialog ${decke.zDialog} · Kopfleiste ${decke.zKopfleiste}`
+  );
+  console.log(
+    `  Titel bei 92vh            oben ${decke.titelOben} px, Kopfleiste bis ${decke.kopfleisteUnten} px`
+  );
+  console.log(`  auf dem Titel liegt       ${decke.wasDrauf}`);
+  pruefe(
+    decke.zDialog > decke.zKopfleiste,
+    `der Dialog liegt auf Ebene ${decke.zDialog}, die Kopfleiste auf ${decke.zKopfleiste} — sie deckt ihn zu`
+  );
+  /**
+   * Die Geometrie steht hier NUR im Protokoll — sie wird nicht behauptet.
+   *
+   * Bei 390 × 844 überlappen sich Kopfleiste und Dialogkopf um genau 0 px: Der
+   * Titel beginnt bei 52 px, die Kopfleiste endet bei 52 px. Die Falsifikation
+   * hat es gezeigt — mit `--z-modal: 1100` blieb diese Prüfung grün, während
+   * die Regel darüber rot wurde. Eine Prüfung, die nicht scheitern kann, misst
+   * nichts.
+   *
+   * Auf dem Telefon des Auftraggebers ist die Kopfleiste im Verhältnis höher,
+   * und dort schnitt sie den Titel sichtbar an. Genau deshalb ist die **Regel**
+   * das Richtige zum Messen und nicht die Arithmetik eines einzelnen Fensters:
+   * Sie gilt auf jedem Gerät, auch auf denen, die dieser Lauf nie sieht.
+   */
+
   // Übernehmen — und nachsehen, ob der Ton wirklich im Analyseblatt liegt.
   await page
     .locator('.mitbringen-nehmen')

@@ -102,7 +102,22 @@
   --z-sticky: 200;
   --z-fixed: 500;
   --z-modal-backdrop: 1000;
-  --z-modal: 1100;
+  /* Dialoge müssen über der aus TourFuchs übernommenen Topbar (3600) liegen.
+
+     Gemessen am 23.08.2026 auf einem echten Telefon (Bildschirmfoto des
+     Auftraggebers) und im Testbrowser nachgerechnet: Ein Dialog mit Videobild
+     wird so hoch, dass `max-height: 92vh` greift. Bei 844 px Fensterhöhe sind
+     das 776 px, mittig also Oberkante bei 34 px — die Topbar endet aber erst
+     bei 52 px. Ihre 18 px lagen ÜBER dem Dialogkopf, und dort steht sein Titel.
+
+     Es traf jeden Dialog dieser App, nicht nur den einen: Die ganze
+     Modal-Ebene lag unter der Kopfleiste. Dieselbe Korrektur hat `--z-toast`
+     schon hinter sich (siehe darunter) — sie war für Dialoge nur nie
+     nachgezogen worden.
+
+     Die Ordnung darüber bleibt: Toast 4000, Installationsbanner 4200,
+     Drehsperre 5000, Kontexthilfe 10000. */
+  --z-modal: 3700;
   --z-popover: 1200;
   /* Hinweise müssen auch über der aus TourFuchs übernommenen Topbar (3600)
      liegen. Ihre Position hält sie normalerweise darunter; die höhere Ebene
@@ -8960,7 +8975,9 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
-  z-index: 1100;
+  /* Ein Dialog wie jeder andere — die feste 1100 hielt ihn unter der
+     Kopfleiste, während `--z-modal` darüber stieg. */
+  z-index: var(--z-modal);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -9711,7 +9728,7 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
 .fleet-result-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: var(--z-modal);
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;

@@ -2979,9 +2979,23 @@ WebCodecs AudioDecoder mp4a…    false
 ```
 
 Ein Chromium ohne proprietäre Codecs. Jedes Telefon, Chrome, Edge und Safari
-haben AAC-LC — **nachweisen lässt es sich hier nicht.** Die frühere Messung in
+haben AAC-LC — **nachweisen ließ es sich hier nicht.** Die frühere Messung in
 §7h („video/mp4 → ok") war deshalb zu optimistisch: Sie bewies den Container,
 nicht AAC. Das ist im Konzept korrigiert.
+
+> **Nachgetragen am 23.08.2026: es trägt.** Der Auftraggeber hat dasselbe Video
+> auf seinem Telefon importiert und ein Bildschirmfoto geschickt. Die Vorschau
+> stand vollständig: Videobild, **13.7 s · 48 kHz**, Wellenform mit gesetztem
+> Ausschnitt, „Ausschnitt hören", „Diesen Ausschnitt verwenden" und darunter
+> „Als Normalzustand speichern".
+>
+> Damit ist der einzige nicht messbare Punkt dieses Schnitts durch eine echte
+> Messung ersetzt — nur eben nicht durch meine. Der benannte Formatfall bleibt
+> trotzdem: Er gilt jetzt nachweislich für Browser wie den Testbrowser, nicht
+> für Telefone.
+>
+> Dasselbe Bildschirmfoto hat einen Fehler gezeigt, den kein Wächter hier
+> gesehen hätte — siehe S16.
 
 **Daraus folgt der wichtigste Teil dieses Schnitts.** „Dieser Browser kann
 dieses Format nicht lesen" ist ein **benannter Fall** mit einem Satz, der sagt,
@@ -3294,6 +3308,65 @@ Leerzustand — der Ton ging verloren").
 | Standort ohne Koordinaten | unerreichbar | **steht in der Liste** |
 | Maschinenname | „Maschine 01" | **der Dateiname** |
 | Fingerziel über der Karte | 37 px | **44 px, wie überall sonst** |
+
+### S16 — Die Dialoge lagen unter der Kopfleiste (23.08.2026)
+
+Ein Bildschirmfoto vom Telefon des Auftraggebers, geschickt als Beleg dafür,
+dass der Videoimport funktioniert. Er funktionierte. Und oben im Bild war der
+Titel „Geräusch mitbringen" **angeschnitten**.
+
+#### Es war nicht dieser Dialog
+
+```
+--z-modal   1100      (jeder Dialog dieser App)
+.topbar     3600      (aus TourFuchs übernommen)
+```
+
+Die ganze Modal-Ebene lag unter der Kopfleiste. Solange ein Dialog klein genug
+war, fiel es nicht auf: Bei 390 × 844 ist er mittig, seine Oberkante liegt bei
+220 px, die Kopfleiste endet bei 52 px. Kommt aber ein **Videobild** hinzu,
+greift `max-height: 92vh` — 776 px in einem 844-px-Fenster, Oberkante 34 px.
+Dann liegen 18 px Kopfleiste über dem Dialogkopf, und dort steht sein Titel.
+
+Auf dem Gerät des Auftraggebers ist die Kopfleiste im Verhältnis höher, dort
+waren es sichtbar mehr.
+
+Dieselbe Korrektur hatte `--z-toast` längst hinter sich — im Quelltext steht
+seit Langem der Kommentar „Hinweise müssen auch über der aus TourFuchs
+übernommenen Topbar (3600) liegen". Für Dialoge war sie nur nie nachgezogen
+worden. Jetzt: `--z-modal: 3700`, und die zwei Dialoge, die sich ihre 1100 fest
+verdrahtet hatten (Import/Export, Flottenergebnis), benutzen die Variable.
+
+Die Ordnung darüber bleibt unverändert: Toast 4000, Installationsbanner 4200,
+Drehsperre 5000, Kontexthilfe 10000.
+
+#### Eine Prüfung, die nichts gemessen hat — von der Falsifikation entlarvt
+
+Der Wächter bekam zwei Prüfungen: die **Regel** (Dialog über Kopfleiste) und die
+**Geometrie** (liegt etwas auf dem Titel, wenn der Dialog 92 vh hoch ist).
+
+Bei der Falsifikation — `--z-modal` zurück auf 1100 — wurde die Regel rot, die
+Geometrie blieb **grün**:
+
+```
+Ebenen           Dialog 1100 · Kopfleiste 3600     ✗
+Titel bei 92vh   oben 52 px, Kopfleiste bis 52 px  ✓
+```
+
+Genau 0 px Überlappung. In diesem einen Fenster kann diese Prüfung gar nicht
+scheitern — also misst sie nichts, und sie ist wieder raus. Sie steht nur noch
+im Protokoll.
+
+Das ist der Grund, warum hier die Regel geprüft wird und nicht die Arithmetik
+eines Fensters: Die Regel gilt auf jedem Gerät, auch auf denen, die dieser Lauf
+nie zu sehen bekommt.
+
+| | vor S16 | jetzt |
+|---|---|---|
+| Modal-Ebene | 1100, unter der Kopfleiste (3600) | **3700, darüber** |
+| Dialoge mit fester 1100 | zwei | **keiner — alle über `--z-modal`** |
+| Hoher Dialog mit Videobild | Titel angeschnitten | **frei** |
+| Was der Wächter prüft | — | **die Regel, nicht ein Fenster** |
 
 ### Die zurückgenommenen Schnitte
 
