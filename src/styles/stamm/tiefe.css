@@ -268,6 +268,39 @@ body.tiefe-offen .sidebar .tabs .tab-button {
   min-height: 44px;
 }
 
+/* ── UND SEIT DEM 23.08.2026 AUCH AUF DER KARTENEBENE ──────────────────────
+
+   Dieselbe Begründung, eine Ebene höher. Sie galt bisher nur hinter dem
+   Scharnier, weil das Blatt VOR dem Scharnier faktisch einen Inhalt hatte:
+   „Standorte" mit der Liste und „Filter" mit dem Satz „gibt es noch nicht".
+   Ein unerreichbarer Reiter, in dem nichts steht, fällt niemandem auf.
+
+   Jetzt steht dort der Filter. Gemessen am 23.08.2026 auf dem Handy
+   (390 × 844), Blatt aufgezogen, Kartenebene: Ein Tipp auf
+   `.tab-button[data-tab="filter"]` ließ den aktiven Reiter auf „daten" —
+   der Knopf war da, aber sein Vorfahre `.tabs` stand auf `display: none`
+   (responsive.css:509). Der Filter war auf dem Telefon nicht erreichbar,
+   also auf genau dem Gerät, für das er gebaut ist.
+
+   Der Preis sind rund 53 px Listenhöhe. Der Gegenwert ist der Zugang zu
+   einem von zwei Inhalten — das ist kein Tausch, über den man lange
+   nachdenkt. Der Stamm selbst wird dafür weiterhin nicht angefasst (§0h). */
+@media (max-width: 768px),
+  (max-width: 1200px) and (orientation: portrait),
+  (max-width: 900px) and (max-height: 520px) {
+  .sidebar .tabs {
+    display: flex;
+    gap: 6px;
+    padding: 0 12px 8px;
+    flex: 0 0 auto;
+  }
+
+  .sidebar .tabs .tab-button {
+    flex: 1 1 0;
+    min-height: 44px;
+  }
+}
+
 /* Ein Blatt ohne aktiven Reiter zeigt nichts. `.tab-panel` ist im Stamm
    `display: none`, bis `.active` dazukommt — die Regeln oben nehmen also nur
    weg, sie geben nichts. Deshalb setzt `schale.ts` beim Ebenenwechsel den
@@ -1317,6 +1350,108 @@ body.tiefe-arbeit #karte-bestandswege {
 .standorteliste-zeile-lage {
   font-size: 0.8125rem;
   color: var(--text-secondary);
+}
+
+/* ── DER FILTER: CHIPS, KEIN PULLDOWN ───────────────────────────────────────
+   Die Form kommt aus dem Stamm — TourFuchs wählt aus wenigen festen
+   Möglichkeiten mit Pillen, nicht mit `<select>`. Die Begründung steht in
+   standortfilter.ts; hier steht nur, was das Blatt davon verlangt. */
+.standortfilter-reihe {
+  margin: 0 0 16px;
+}
+
+.standortfilter-titel {
+  margin: 0 0 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Umbrechend und nicht in einer Zeile gestaucht: Vier Zustände plus Zahl
+   passen auf 390 px nicht nebeneinander, und ein Chip unter 44 px wäre kein
+   Fingerziel mehr. Lieber zwei Reihen als sechs zu schmale Ziele. */
+.standortfilter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.standortfilter-chip {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+/* Gedrückt ist nicht nur eine andere Farbe.
+   Farbe allein trägt die Aussage nicht — wer sie nicht unterscheidet, sähe
+   vier gleiche Chips. Deshalb zusätzlich Rahmen und Fettung. */
+.standortfilter-chip[aria-pressed='true'] {
+  border-color: var(--color-primary-dark, var(--primary-color));
+  background: var(--color-primary-dark, var(--primary-color));
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Ein Chip, der auf nichts führt, sagt das vorher — statt eine leere Liste
+   zu zeigen und den Nutzer raten zu lassen, ob etwas kaputt ist. */
+.standortfilter-chip-leer:not([aria-pressed='true']) {
+  opacity: 0.55;
+}
+
+.standortfilter-stand {
+  margin: 4px 0 0;
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+}
+
+.standortfilter-aufheben {
+  margin-top: 10px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill, 999px);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+/* Der Stand des Filters über der Liste — damit ein vergessener Filter nicht
+   wie ein leerer Bestand aussieht. */
+.standorteliste-filterzeile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.standorteliste-filtertext {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  min-width: 0;
+}
+
+.standorteliste-filter-aus {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  cursor: pointer;
 }
 
 /* ── EINE ÜBERSCHREIBUNG AM STAMM: DIE PILLEN ÜBER DER KARTE ─────────────────

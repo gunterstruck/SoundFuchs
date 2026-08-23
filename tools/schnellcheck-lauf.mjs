@@ -224,7 +224,194 @@ try {
     /Maschine/i.test(reiter.ersteZeile),
     `die Standortzeile sagt nicht, wie viele Maschinen dort stehen — „${reiter.ersteZeile}"`
   );
-  pruefe(reiter.filterKinder > 0, 'der Reiter „Filter" bleibt stumm statt zu sagen, was fehlt');
+  /**
+   * Hier stand: „der Reiter ‚Filter' bleibt stumm statt zu sagen, was fehlt."
+   *
+   * Sein Gegenstand war ein Platzhaltersatz in einem Reiter ohne Funktion. Den
+   * Reiter gibt es seit dem 23.08.2026 wirklich, und er baut sich erst, wenn
+   * jemand ihn aufschlägt — dieselbe Zurückhaltung wie im Analyseblatt. Vorher
+   * hat er 0 Kinder, und das ist jetzt richtig statt stumm.
+   *
+   * Was er zeigt, wenn man ihn aufschlägt, misst der nächste Abschnitt.
+   */
+
+  // ── 1b. Der Filter tut wirklich etwas ───────────────────────────────────
+  //
+  // Bis zum 23.08.2026 stand im Reiter „Filter" ein Satz: „gibt es noch
+  // nicht." Ehrlich, aber eben nichts. Jetzt stehen dort Chips, und gemessen
+  // wird nicht, DASS sie dastehen, sondern dass ein Tipp die Liste kürzer
+  // macht — und dass man wieder herauskommt.
+  console.log('\n=== Der Filter ===');
+  await page
+    .locator('.tab-button[data-tab="filter"]')
+    .click({ force: true, timeout: 6000 })
+    .catch(() => {});
+  await page.waitForTimeout(1200);
+
+  const vorFilter = await page.evaluate(() => {
+    const feld = document.getElementById('tab-filter');
+    const chips = [...(feld?.querySelectorAll('.standortfilter-chip') ?? [])];
+    return {
+      aktiv: document.querySelector('.tab-button.active')?.dataset.tab ?? '(keiner)',
+      feldAktiv: Boolean(feld?.classList.contains('active')),
+      kinder: feld?.childElementCount ?? -1,
+      roh: feld?.textContent?.trim().slice(0, 80) ?? '',
+      reihen: feld?.querySelectorAll('.standortfilter-reihe').length ?? 0,
+      chips: chips.map((c) => ({
+        text: c.textContent.trim(),
+        hoch: Math.round(c.getBoundingClientRect().height),
+        breit: Math.round(c.getBoundingClientRect().width),
+        gedrueckt: c.getAttribute('aria-pressed') === 'true',
+      })),
+      stand: feld?.querySelector('.standortfilter-stand')?.textContent?.trim() ?? '',
+      aufheben: Boolean(feld?.querySelector('.standortfilter-aufheben')),
+    };
+  });
+  console.log(`  aktiver Reiter            ${vorFilter.aktiv} · Feld aktiv ${vorFilter.feldAktiv} · ${vorFilter.kinder} Kinder`);
+  console.log(`  Inhalt                    ${vorFilter.roh || '(leer)'}`);
+  console.log(`  Reihen                    ${vorFilter.reihen}`);
+  console.log(`  Chips                     ${vorFilter.chips.map((c) => c.text).join(' · ') || '(keine)'}`);
+  console.log(`  Stand                     ${vorFilter.stand || '(keiner)'}`);
+  pruefe(vorFilter.reihen >= 2, `der Filter hat ${vorFilter.reihen} Reihe(n) statt Zustand und Alter`);
+  pruefe(
+    vorFilter.chips.length > 0 && vorFilter.chips.every((c) => c.hoch >= 44 && c.breit >= 44),
+    `ein Chip ist kleiner als 44 px — ${vorFilter.chips.map((c) => `${c.breit}×${c.hoch}`).join(' · ')}`
+  );
+  /**
+   * Die Zahl steht am Chip, bevor man tippt.
+   *
+   * Ein Chip, der auf 0 Standorte führt, ist eine Sackgasse — und ohne Zahl
+   * sieht man sie erst danach.
+   */
+  pruefe(
+    vorFilter.chips.every((c) => /\d/.test(c.text)),
+    `ein Chip nennt seine Anzahl nicht — „${vorFilter.chips.map((c) => c.text).join(' · ')}"`
+  );
+  pruefe(
+    /\d+\D+\d+/.test(vorFilter.stand),
+    `der Filter sagt nicht, wie viele von wie vielen übrig bleiben — „${vorFilter.stand}"`
+  );
+  pruefe(
+    !vorFilter.aufheben,
+    'ohne gesetzten Filter steht schon „Filter aufheben" da — dann sagt der Knopf nichts'
+  );
+
+  /**
+   * ZWEI TIPPS, DIE NICHT VON DEN TESTDATEN ABHÄNGEN.
+   *
+   * Der erste Versuch suchte einen Chip mit „mehr als 0 und weniger als
+   * alle". Mit den Beispieldaten gab es den nur in der Flottenreihe — hundert
+   * Standorte, alle ungeprüft. Der Wächter maß damit die Flottenreihe, und als
+   * die (zu Recht) verschwand, hatte er nichts mehr zu greifen. Ein Wächter,
+   * der an der Zusammensetzung der Testdaten hängt, misst irgendwann etwas
+   * anderes als das, wofür er geschrieben wurde.
+   *
+   * Gemessen wird deshalb die Zusage selbst: **Die Liste zeigt genau so viele
+   * Standorte, wie am Chip steht.** Das gilt bei 0 wie bei 100.
+   *
+   *   1. ein Chip mit 0  →  keine Zeile, aber ein Satz, der das sagt
+   *   2. ein Chip mit n  →  genau n Zeilen
+   *   3. „Alle zeigen"   →  wieder alle
+   */
+  const zahlVon = (text) => Number(text.match(/(\d+)\s*$/)?.[1] ?? -1);
+  const leerChip = vorFilter.chips.find((c) => zahlVon(c.text) === 0);
+  const vollChip = vorFilter.chips.find((c) => zahlVon(c.text) > 0);
+  console.log(`  Chip mit 0                ${leerChip?.text ?? '(keiner)'}`);
+  console.log(`  Chip mit Treffern         ${vollChip?.text ?? '(keiner)'}`);
+  pruefe(
+    Boolean(leerChip) && Boolean(vollChip),
+    'es gibt keinen Chip mit 0 und keinen mit Treffern — die Filterung ist nicht messbar'
+  );
+
+  /** Der Stand der Liste, nachdem ein Chip getippt wurde. */
+  const listeNach = async (chiptext) => {
+    await page
+      .locator('.tab-button[data-tab="filter"]')
+      .click({ force: true, timeout: 6000 })
+      .catch(() => {});
+    await page.waitForTimeout(700);
+    await page
+      .locator('.standortfilter-chip', { hasText: chiptext })
+      .first()
+      .click({ force: true, timeout: 6000 })
+      .catch(() => {});
+    await page.waitForTimeout(900);
+    await page
+      .locator('.tab-button[data-tab="daten"]')
+      .click({ force: true, timeout: 6000 })
+      .catch(() => {});
+    await page.waitForTimeout(1000);
+    return page.evaluate(() => {
+      const daten = document.getElementById('tab-daten');
+      const aus = daten?.querySelector('.standorteliste-filter-aus');
+      return {
+        zeilen: daten?.querySelectorAll('.standorteliste-zeile').length ?? 0,
+        zeile: daten?.querySelector('.standorteliste-filtertext')?.textContent?.trim() ?? '',
+        leersatz: daten?.querySelector('.blatt-leer')?.textContent?.trim() ?? '',
+        ausHoch: Math.round(aus?.getBoundingClientRect().height ?? 0),
+      };
+    });
+  };
+
+  if (leerChip) {
+    const leer = await listeNach(leerChip.text);
+    console.log(`  nach „${leerChip.text}"${' '.repeat(Math.max(1, 18 - leerChip.text.length))}${leer.zeilen} Zeilen · „${leer.leersatz || '(kein Satz)'}"`);
+    pruefe(leer.zeilen === 0, `„${leerChip.text}" führt zu ${leer.zeilen} Zeilen statt zu keiner`);
+    /**
+     * Eine leere Liste braucht einen Satz.
+     *
+     * Ohne ihn sieht ein Filter auf 0 Treffer genauso aus wie ein leerer
+     * Bestand oder ein Fehler beim Laden — drei sehr verschiedene Lagen.
+     */
+    pruefe(
+      leer.leersatz.length > 0,
+      'ein Filter ohne Treffer zeigt eine leere Liste statt eines Satzes'
+    );
+    pruefe(leer.zeile.length > 0, 'über der leeren Liste steht nicht, dass gefiltert wird');
+    // Zurücknehmen, damit der nächste Tipp allein steht.
+    await page
+      .locator('.standorteliste-filter-aus')
+      .click({ force: true, timeout: 6000 })
+      .catch(() => {});
+    await page.waitForTimeout(900);
+  }
+
+  if (vollChip) {
+    const soll = zahlVon(vollChip.text);
+    const voll = await listeNach(vollChip.text);
+    console.log(`  nach „${vollChip.text}"${' '.repeat(Math.max(1, 18 - vollChip.text.length))}${voll.zeilen} Zeilen (am Chip steht ${soll})`);
+    console.log(`  Zeile über der Liste      ${voll.zeile || '(keine)'}`);
+    /**
+     * Die Zahl am Chip ist ein Versprechen.
+     *
+     * Sie wird VOR dem Tippen gelesen und entscheidet, ob jemand tippt. Weicht
+     * sie vom Ergebnis ab, ist sie schlimmer als keine Zahl.
+     */
+    pruefe(
+      voll.zeilen === soll,
+      `„${vollChip.text}" verspricht ${soll} Standorte und zeigt ${voll.zeilen}`
+    );
+    pruefe(voll.zeile.length > 0, 'über der gefilterten Liste steht nicht, dass gefiltert wird');
+    pruefe(voll.ausHoch >= 44, `„Alle zeigen" ist ${voll.ausHoch} px hoch`);
+
+    await page
+      .locator('.standorteliste-filter-aus')
+      .click({ force: true, timeout: 6000 })
+      .catch(() => {});
+    await page.waitForTimeout(1000);
+    const zurueck = await page.evaluate(() => {
+      const daten = document.getElementById('tab-daten');
+      return {
+        zeilen: daten?.querySelectorAll('.standorteliste-zeile').length ?? 0,
+        zeile: Boolean(daten?.querySelector('.standorteliste-filtertext')),
+      };
+    });
+    console.log(`  nach „Alle zeigen"        ${zurueck.zeilen} Zeilen`);
+    pruefe(
+      zurueck.zeilen === reiter.zeilen && !zurueck.zeile,
+      `„Alle zeigen" bringt nicht alle zurück — ${zurueck.zeilen} statt ${reiter.zeilen}`
+    );
+  }
 
   // ── 2. Der Weg hinein ───────────────────────────────────────────────────
   console.log('\n=== Der Knopf über der Karte ===');

@@ -44,6 +44,27 @@ export const fr: TranslationDict = {
     detailsRatenPassenNicht:
       'Cet enregistrement est à {{messung}} kHz, l’état normal à {{modell}} kHz. Les bandes de fréquence ne signifient alors plus la même chose — SoundFuchs ne les compare donc pas.',
   },
+  filter: {
+    titelZustand: 'État',
+    titelAlter: 'Dernier contrôle',
+    titelFlotte: 'Flotte',
+    zustand: {
+      kritisch: 'critique',
+      warnung: 'écart',
+      gesund: 'sans particularité',
+      ungeprueft: 'non contrôlé',
+    },
+    alter: {
+      nie: 'jamais',
+      ab30: 'plus de 30 jours',
+      ab90: 'plus de 90 jours',
+    },
+    trefferVon: '{{treffer}} sur {{gesamt}} sites',
+    aufheben: 'Effacer le filtre',
+    aktiv: 'Filtre : {{filter}}',
+    alleZeigen: 'Tout afficher',
+    keinTreffer: 'Aucun site ne correspond à ce filtre.',
+  },
   liste: {
     nochKeiner: "Aucun site pour l'instant. Les sites naissent en créant une machine.",
     nichtLadbar: "Les sites n'ont pas pu être chargés pour le moment.",
@@ -51,7 +72,6 @@ export const fr: TranslationDict = {
     eineMaschine: '1 machine',
     nochNichtGeprueft: 'pas encore contrôlé',
     schlechteste: 'pire {{wert}} %',
-    filterNochNicht: "Il n'y a pas encore de filtres ici.",
   },
   schnellcheck: {
     knopf: 'Contrôler un bruit',

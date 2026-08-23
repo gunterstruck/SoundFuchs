@@ -44,6 +44,27 @@ export const es: TranslationDict = {
     detailsRatenPassenNicht:
       'Esta grabación está a {{messung}} kHz y el estado normal a {{modell}} kHz. Las bandas de frecuencia ya no significan lo mismo, por eso SoundFuchs no las compara.',
   },
+  filter: {
+    titelZustand: 'Estado',
+    titelAlter: 'Última comprobación',
+    titelFlotte: 'Flota',
+    zustand: {
+      kritisch: 'crítico',
+      warnung: 'desviación',
+      gesund: 'sin novedad',
+      ungeprueft: 'sin comprobar',
+    },
+    alter: {
+      nie: 'nunca',
+      ab30: 'más de 30 días',
+      ab90: 'más de 90 días',
+    },
+    trefferVon: '{{treffer}} de {{gesamt}} ubicaciones',
+    aufheben: 'Quitar filtro',
+    aktiv: 'Filtro: {{filter}}',
+    alleZeigen: 'Mostrar todo',
+    keinTreffer: 'Ninguna ubicación coincide con este filtro.',
+  },
   liste: {
     nochKeiner: 'Aún no hay ubicaciones. Aparecen al crear una máquina.',
     nichtLadbar: 'No se pudieron cargar las ubicaciones en este momento.',
@@ -51,7 +72,6 @@ export const es: TranslationDict = {
     eineMaschine: '1 máquina',
     nochNichtGeprueft: 'aún sin revisar',
     schlechteste: 'peor {{wert}} %',
-    filterNochNicht: 'Aquí todavía no hay filtros.',
   },
   schnellcheck: {
     knopf: 'Revisar un sonido',

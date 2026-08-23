@@ -44,6 +44,27 @@ export const en: TranslationDict = {
     detailsRatenPassenNicht:
       'This recording is at {{messung}} kHz, the baseline at {{modell}} kHz. The frequency bins then do not mean the same thing — so SoundFuchs does not compare them.',
   },
+  filter: {
+    titelZustand: 'Condition',
+    titelAlter: 'Last checked',
+    titelFlotte: 'Fleet',
+    zustand: {
+      kritisch: 'critical',
+      warnung: 'deviation',
+      gesund: 'unremarkable',
+      ungeprueft: 'not checked',
+    },
+    alter: {
+      nie: 'never',
+      ab30: 'over 30 days',
+      ab90: 'over 90 days',
+    },
+    trefferVon: '{{treffer}} of {{gesamt}} sites',
+    aufheben: 'Clear filter',
+    aktiv: 'Filter: {{filter}}',
+    alleZeigen: 'Show all',
+    keinTreffer: 'No site matches this filter.',
+  },
   liste: {
     nochKeiner: 'No site yet. Sites appear when you add a machine.',
     nichtLadbar: 'The sites could not be loaded just now.',
@@ -51,7 +72,6 @@ export const en: TranslationDict = {
     eineMaschine: '1 machine',
     nochNichtGeprueft: 'not checked yet',
     schlechteste: 'worst {{wert}} %',
-    filterNochNicht: 'There are no filters here yet.',
   },
   schnellcheck: {
     knopf: 'Check a sound',

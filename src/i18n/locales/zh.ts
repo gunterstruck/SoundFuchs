@@ -43,6 +43,27 @@ export const zh: TranslationDict = {
     detailsRatenPassenNicht:
       '这段录音为 {{messung}} kHz，正常状态为 {{modell}} kHz。频率分档的含义不再相同，因此 SoundFuchs 不做比较。',
   },
+  filter: {
+    titelZustand: '状态',
+    titelAlter: '最近检查',
+    titelFlotte: '机群',
+    zustand: {
+      kritisch: '严重',
+      warnung: '偏差',
+      gesund: '无异常',
+      ungeprueft: '未检查',
+    },
+    alter: {
+      nie: '从未',
+      ab30: '超过 30 天',
+      ab90: '超过 90 天',
+    },
+    trefferVon: '{{gesamt}} 个地点中的 {{treffer}} 个',
+    aufheben: '清除筛选',
+    aktiv: '筛选：{{filter}}',
+    alleZeigen: '显示全部',
+    keinTreffer: '没有地点符合此筛选。',
+  },
   liste: {
     nochKeiner: '还没有机器地点。新建机器时会自动出现。',
     nichtLadbar: '暂时无法加载机器地点。',
@@ -50,7 +71,6 @@ export const zh: TranslationDict = {
     eineMaschine: '1 台机器',
     nochNichtGeprueft: '尚未检测',
     schlechteste: '最差 {{wert}} %',
-    filterNochNicht: '这里还没有筛选功能。',
   },
   schnellcheck: {
     knopf: '检查一段声音',

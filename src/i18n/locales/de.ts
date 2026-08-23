@@ -50,6 +50,27 @@ export const de: TranslationDict = {
     detailsRatenPassenNicht:
       'Diese Aufnahme liegt bei {{messung}} kHz, der Normalzustand bei {{modell}} kHz. Die Frequenzfelder bedeuten dann nicht dasselbe — SoundFuchs vergleicht sie deshalb nicht.',
   },
+  filter: {
+    titelZustand: 'Zustand',
+    titelAlter: 'Zuletzt geprüft',
+    titelFlotte: 'Flotte',
+    zustand: {
+      kritisch: 'kritisch',
+      warnung: 'Abweichung',
+      gesund: 'unauffällig',
+      ungeprueft: 'ungeprüft',
+    },
+    alter: {
+      nie: 'nie',
+      ab30: 'über 30 Tage',
+      ab90: 'über 90 Tage',
+    },
+    trefferVon: '{{treffer}} von {{gesamt}} Standorten',
+    aufheben: 'Filter aufheben',
+    aktiv: 'Filter: {{filter}}',
+    alleZeigen: 'Alle zeigen',
+    keinTreffer: 'Kein Standort passt zu diesem Filter.',
+  },
   liste: {
     nochKeiner: 'Noch kein Standort. Standorte entstehen beim Anlegen einer Maschine.',
     nichtLadbar: 'Die Standorte ließen sich gerade nicht laden.',
@@ -57,7 +78,6 @@ export const de: TranslationDict = {
     eineMaschine: '1 Maschine',
     nochNichtGeprueft: 'noch nicht geprüft',
     schlechteste: 'schlechteste {{wert}} %',
-    filterNochNicht: 'Filter gibt es hier noch nicht.',
   },
   schnellcheck: {
     knopf: 'Geräusch prüfen',
