@@ -56,10 +56,15 @@ import { NORMALZUSTAND_GESPEICHERT } from '@ui/phases/2-Reference.js';
 import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
 import { getReferenceIrisVector } from '@ui/phases/referenceIris.js';
 import { getMachine } from '@data/db.js';
-import { ListenPanel } from '@ui/components/ListenPanel.js';
 import { Klangbild } from '@ui/components/Klangbild.js';
-import { openAnalysisPackageDialog } from '@ui/components/AnalysisPackageDialog.js';
 import { holeErgebnis, PRUEFUNG_FERTIG, vergissErgebnis } from '../maschine/ergebnis.js';
+import {
+  analyseblattFuellen,
+  analyseblattLeeren,
+  analyseblattOeffnen,
+  blattLupe,
+} from './analyseblatt.js';
+import { blattAufziehen } from './schale.js';
 import {
   erledigte,
   merkeGeprueft,
@@ -272,14 +277,6 @@ async function zeichneFingerabdruck(ziel: HTMLElement, maschine: Machine): Promi
 }
 
 /**
- * Die Hör-Lupe dieser Ebene — höchstens eine, und sie wird abgeräumt.
- *
- * Sie hält einen Web-Audio-Spieler; zwei davon nebeneinander hieße zwei
- * Wiedergaben gleichzeitig, und die zweite hörte man nicht mehr richtig.
- */
-let lupe: ListenPanel | null = null;
-
-/**
  * Das Klangbild dieser Ebene — höchstens eines, und es wird abgeräumt.
  *
  * Es kann ein WebGL-Gebirge halten, und WebGL-Kontexte sind eine knappe
@@ -306,42 +303,19 @@ function raeumeKlangbildAb(): void {
   klangbild = null;
 }
 
-function raeumeLupeAb(): void {
-  lupe?.destroy();
-  // `destroy()` hält die Wiedergabe an, entfernt aber nichts aus dem Baum —
-  // die Komponente weiß nicht, wo sie hängt. Wer sie eingehängt hat, hängt sie
-  // auch wieder aus; sonst stünden nach dem zweiten Aufruf zwei Hör-Lupen da,
-  // von denen nur eine reagiert.
-  lupe?.element.remove();
-  lupe = null;
-}
-
 /**
- * Die Hör-Lupe an eine Stelle zeichnen.
+ * ── DIE HÖR-LUPE IST UMGEZOGEN ────────────────────────────────────────────
  *
- * Sie bekommt keine eigene Fassung für das Ergebnis: Es ist dieselbe
- * Komponente, die im Verlauf steht (`ui/components/ListenPanel.ts`). Eine
- * zweite wäre eine zweite Wahrheit darüber, was „Unterschied" bedeutet.
+ * Hier standen `raeumeLupeAb()` und `zeichneLupe()`. Seit dem 23.08.2026 liegt
+ * die Hör-Lupe im Analyseblatt (`analyseblatt.ts`) und nicht mehr auf dieser
+ * Seite. Sie dort UND hier zu halten hieße, dieselbe Komponente an zwei
+ * Stellen zu führen — mit zwei Web-Audio-Spielern, von denen der zweite den
+ * ersten übertönt.
+ *
+ * Die Handlungen der Seite sind geblieben: „Unterschied anhören" und „Letzten
+ * Unterschied anhören" ziehen jetzt das Blatt auf, öffnen den 2D-Reiter und
+ * spielen dort.
  */
-function zeichneLupe(
-  ziel: HTMLElement,
-  referenz: AudioBuffer | null,
-  messung: AudioBuffer | null,
-  shareName: string
-): ListenPanel | null {
-  raeumeLupeAb();
-  const panel = new ListenPanel({
-    reference: referenz,
-    measurement: messung,
-    mitUeberschrift: true,
-    shareName,
-    analysisPackage: referenz || messung ? { machineName: shareName } : undefined,
-  });
-  if (!panel.hasContent) return null;
-  lupe = panel;
-  ziel.appendChild(panel.element);
-  return panel;
-}
 
 /**
  * Die Aufnahmen einer Maschine — EINMAL geholt.
@@ -379,8 +353,15 @@ async function toeneDerMaschine(
 async function zeichne(maschine: Machine): Promise<void> {
   const ziel = behaelter();
   if (!ziel) return;
-  raeumeLupeAb();
   raeumeKlangbildAb();
+  /**
+   * Das Blatt bekommt zuerst den leeren Stand.
+   *
+   * Ohne diese Zeile stand der 2D-Reiter auf einer Maschine ohne Normalzustand
+   * offen und leer da. Die beiden Wege weiter unten — frisches Ergebnis und
+   * gespeicherte letzte Prüfung — legen dann den echten Stoff nach.
+   */
+  analyseblattFuellen(null);
   /**
    * Den Rückweg retten, bevor die Fläche geleert wird.
    *
@@ -600,12 +581,28 @@ async function zeichne(maschine: Machine): Promise<void> {
    * ohnehin im Speicher — es aus ihnen zu zeichnen kostet keinen Ladevorgang.
    */
   if (frisch) {
-    const bild = new Klangbild({ reference: frisch.referenz, measurement: frisch.messung });
+    const bild = new Klangbild({
+      reference: frisch.referenz,
+      measurement: frisch.messung,
+      ohneGebirge: true,
+      ohneAuswahl: true,
+    });
     if (bild.hasContent) {
       raeumeKlangbildAb();
       klangbild = bild;
       bildplatz.appendChild(bild.element);
     }
+    /**
+     * Dieselben Aufnahmen liegen ab jetzt auch im Analyseblatt.
+     *
+     * Der Stoff wird eingelegt, nicht gezeigt: Gebaut wird ein Reiter erst,
+     * wenn er aufgeht. Wer das Blatt unten lässt, zahlt für die Analyse nichts.
+     */
+    analyseblattFuellen({
+      referenz: frisch.referenz,
+      messung: frisch.messung,
+      maschinenname: maschine.name,
+    });
   }
 
   ziel.appendChild(urteilsblock);
@@ -701,22 +698,22 @@ async function zeichne(maschine: Machine): Promise<void> {
   }
 
   if (frisch && zustand === 'result-deviating') {
-    const panel = zeichneLupe(ziel, frisch.referenz, frisch.messung, maschine.name);
     /**
-     * Ein Tipp bis zum hörbaren Unterschied.
+     * Ein Tipp bis zum hörbaren Unterschied — jetzt über das Blatt.
      *
-     * Die Primäraktion ruft die Komponente an ihrer eigenen Schnittstelle auf,
-     * statt einen ihrer Knöpfe zu klicken. Ein nachgemachter Klick wäre eine
-     * zweite Bedienung derselben Sache — und die erste, die kaputtgeht, wenn
-     * dort jemand eine Klasse umbenennt.
+     * Bis zum 23.08.2026 baute die Seite hier ihre eigene Hör-Lupe. Seit die
+     * Analyse im Blatt liegt, wäre das die zweite: dieselbe Komponente an zwei
+     * Stellen, von denen eine gerade verdeckt ist.
+     *
+     * Die Handlung bleibt, was sie war. Sie zieht das Blatt auf, öffnet den
+     * 2D-Reiter und spielt. Die Komponente wird dabei an ihrer eigenen
+     * Schnittstelle gerufen und nicht per nachgemachtem Klick — das wäre die
+     * erste Bedienung, die kaputtgeht, wenn dort jemand eine Klasse umbenennt.
      */
     knopf.addEventListener('click', () => {
-      if (!panel) return;
-      void panel.spieleUnterschied();
-      // Sichtbar hinführen, ohne zu springen: Der Fokus wandert auf die
-      // Lupe, damit auch ohne Blick klar ist, wo es weitergeht.
-      panel.element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      panel.element.querySelector<HTMLButtonElement>('.hoerlupe-difference')?.focus();
+      analyseblattOeffnen('zweid');
+      blattAufziehen();
+      void blattLupe()?.spieleUnterschied();
     });
   } else if (frisch && zustand === 'result-similar') {
     /**
@@ -736,8 +733,8 @@ async function zeichne(maschine: Machine): Promise<void> {
     trotzdem.className = 'linklike maschine-trotzdem';
     trotzdem.textContent = t('maschine.trotzdemHoeren');
     trotzdem.addEventListener('click', () => {
-      trotzdem.remove();
-      zeichneLupe(ziel, frisch.referenz, frisch.messung, maschine.name);
+      analyseblattOeffnen('zweid');
+      blattAufziehen();
     });
     ziel.appendChild(trotzdem);
   } else if (zustand !== 'processing') {
@@ -830,6 +827,8 @@ async function zeichne(maschine: Machine): Promise<void> {
         const bild = new Klangbild({
           reference: klaenge.referenz,
           measurement: klaenge.messung,
+          ohneGebirge: true,
+          ohneAuswahl: true,
         });
         if (!bild.hasContent) return null;
         raeumeKlangbildAb();
@@ -840,6 +839,12 @@ async function zeichne(maschine: Machine): Promise<void> {
       };
       const ankerFuerBild: HTMLElement | null = null;
       zeigePruefung(toene, ankerFuerBild);
+      // Auch im Ruhezustand liegt die letzte Prüfung im Blatt bereit.
+      analyseblattFuellen({
+        referenz: toene.referenz,
+        messung: toene.messung,
+        maschinenname: maschine.name,
+      });
 
       const zeile = document.createElement('div');
       zeile.className = 'maschine-zweitaktionen';
@@ -849,38 +854,24 @@ async function zeichne(maschine: Machine): Promise<void> {
       nachhoeren.className = 'maschine-nachhoeren';
       nachhoeren.textContent = t('maschine.letzterUnterschied');
       nachhoeren.addEventListener('click', () => {
-        zeile.remove();
-        const panel = zeichneLupe(tonplatz, toene.referenz, toene.messung, maschine.name);
-        void panel?.spieleUnterschied();
+        analyseblattOeffnen('zweid');
+        blattAufziehen();
+        void blattLupe()?.spieleUnterschied();
       });
       zeile.appendChild(nachhoeren);
 
       /**
-       * ── DAS BRIEFING KOMMT AUS DEM KELLER ──────────────────────────────
+       * ── DAS BRIEFING IST UMGEZOGEN ─────────────────────────────────────
        *
-       * Gemessen am 18.08.2026: „Geräusch-Briefing erstellen" stand bei
-       * y = 1027 px — 183 px unter dem Bildschirmrand, erreichbar nur, wenn
-       * man erst die Hör-Lupe aufmachte und dann wusste, dass man scrollen
-       * muss. Für den Produktleuchtturm des Hauses (§ „Geräusch-Briefing",
-       * #71) ist das der falsche Ort.
+       * Hier stand ein zweiter Knopf „✨ Geräusch-Briefing". Seit dem
+       * 23.08.2026 hat das Briefing einen eigenen Reiter im Analyseblatt —
+       * zusammen mit 2D und dem Gebirge, den beiden anderen Werkzeugen, die
+       * vorher ebenfalls je eine eigene Tür hatten.
        *
-       * Es steht jetzt neben dem Nachhören, in einer Zeile: zwei
-       * gleichwertige zweite Wege, keiner davon der dominante. Die eine
-       * Handlung bleibt „Prüfen".
+       * Der Knopf hier bliebe die zweite Tür zum selben Werkzeug, und genau
+       * das war die Unordnung, die das Blatt beseitigt. Wer ihn sucht: ein Zug
+       * am Griff, dritter Reiter.
        */
-      const briefing = document.createElement('button');
-      briefing.type = 'button';
-      briefing.className = 'maschine-briefing';
-      briefing.textContent = t('maschine.briefing');
-      briefing.addEventListener('click', () => {
-        openAnalysisPackageDialog({
-          reference: toene.referenz,
-          measurement: toene.messung,
-          machineName: maschine.name,
-          getSelection: () => null,
-        });
-      });
-      zeile.appendChild(briefing);
 
       tonplatz.appendChild(zeile);
 
@@ -1043,8 +1034,10 @@ export function maschinenansichtAufbauen(abhaengigkeiten: MaschinenansichtDeps):
      */
     if (detail.ebene !== 'maschine') rueckwegNachHause();
     if (detail.ebene !== 'maschine' && detail.ebene !== 'arbeit') {
-      raeumeLupeAb();
       raeumeKlangbildAb();
+      // Das Blatt gehört zur Maschine. Wer sie verlässt, lässt auch ihre
+      // Analyse los — sonst hinge ein Gebirge der vorigen Maschine im Reiter.
+      analyseblattLeeren();
       vergissErgebnis();
     }
     if (detail.ebene !== 'maschine') return;

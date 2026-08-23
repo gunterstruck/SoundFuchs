@@ -581,6 +581,84 @@ async function starteHandy(klangDatei) {
   return { ctx, page, seitenfehler };
 }
 
+/**
+ * Das Analyseblatt aufziehen und einen Reiter öffnen.
+ *
+ * Seit dem 23.08.2026 liegen 2D, Gebirge und Briefing im Blatt hinter dem
+ * Scharnier. Der Griff hört auf Zeigerereignisse, nicht auf `click` — ein
+ * Skript-Klick ginge ins Leere und meldete anschließend, das Werkzeug fehle.
+ */
+async function blattAufziehen(page, reiter) {
+  const kasten = await page.locator('#sheet-grip').boundingBox();
+  const offen = await page.evaluate(() => document.body.classList.contains('sheet-open'));
+  if (!kasten) console.log('     (kein #sheet-grip gefunden)');
+  if (kasten && !offen) {
+    const x = kasten.x + kasten.width / 2;
+    const y = kasten.y + kasten.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y - 380, { steps: 14 });
+    await page.mouse.up();
+    await page.waitForTimeout(900);
+  }
+  if (reiter) {
+    const stand = await page.evaluate((r) => {
+      const b = document.querySelector(`.tab-button[data-tab="${r}"]`);
+      const k = b?.getBoundingClientRect();
+      const mitte =
+        k && k.width ? document.elementFromPoint(k.x + k.width / 2, k.y + k.height / 2) : null;
+      return {
+        offen: document.body.classList.contains('sheet-open'),
+        blattOben: Math.round(
+          document.getElementById('sidebar')?.getBoundingClientRect().top ?? -1
+        ),
+        rect: k
+          ? `${Math.round(k.x)},${Math.round(k.y)} ${Math.round(k.width)}×${Math.round(k.height)}`
+          : '(fehlt)',
+        display: b ? getComputedStyle(b).display : '(fehlt)',
+        amPunkt: mitte ? mitte.className || mitte.tagName : '(nichts)',
+        fensterHoch: window.innerHeight,
+        ebene: document.body.className.match(/tiefe-\w+/g)?.join(' ') ?? '(keine)',
+      };
+    }, reiter);
+    /**
+     * Nur melden, wenn der Reiter nicht dasteht.
+     *
+     * Diese Zeile hat den Fehler gefunden, den ein „ging nicht" verschwiegen
+     * hätte: Ebene vor dem Tipp `tiefe-offen tiefe-maschine`, danach
+     * `(keine)` — ein Tipp auf einen Reiter schloss die ganze Tiefe.
+     */
+    if (stand.display === 'none' || !stand.offen)
+      console.log(
+        `     [Blatt ${stand.offen ? 'offen' : 'ZU'} @${stand.blattOben} · „${reiter}" ${stand.display} ${stand.rect} · darauf: ${stand.amPunkt} · ${stand.ebene}]`
+      );
+  }
+  if (reiter) {
+    const fehler = await page
+      .locator(`.tab-button[data-tab="${reiter}"]`)
+      .click({ timeout: 6000 })
+      .then(() => null)
+      .catch((e) => String(e.message).split('\n')[0]);
+    if (fehler) console.log(`     (Reiter „${reiter}" nicht antippbar: ${fehler.slice(0, 70)})`);
+    await page.waitForTimeout(1600);
+  }
+}
+
+/** Das Blatt wieder zuziehen, damit der Rest des Laufs die Seite vorfindet. */
+async function blattZuziehen(page) {
+  const offen = await page.evaluate(() => document.body.classList.contains('sheet-open'));
+  if (!offen) return;
+  const kasten = await page.locator('#sheet-grip').boundingBox();
+  if (!kasten) return;
+  const x = kasten.x + kasten.width / 2;
+  const y = kasten.y + kasten.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 500, { steps: 14 });
+  await page.mouse.up();
+  await page.waitForTimeout(900);
+}
+
 /** Karte → Standort → Maschinenzeile. Zählt nicht: das ist die Schale. */
 async function bisZurMaschine(page) {
   for (let i = 0; i < 8; i += 1) {
@@ -817,7 +895,9 @@ const AUFMASS_ERGEBNIS = () => {
     // Der Bildplatz: Steht das Spektrogramm im Ergebnis dort, wo es auch im
     // Ruhezustand stand? Nur dann kann das Auge zwei Zustände vergleichen.
     klangbildOben: (() => {
-      const k = document.querySelector('.klangbild-flach')?.getBoundingClientRect();
+      const k = document
+        .querySelector('#maschinen-ansicht .klangbild-flach')
+        ?.getBoundingClientRect();
       return k ? Math.round(k.top) : null;
     })(),
     name: document.querySelector('.maschine-kopf h2')?.textContent?.trim() ?? '',
@@ -1014,7 +1094,7 @@ try {
        * Eine Leinwand mit Maßen sagt nichts; dieselbe Lehre wie beim
        * Fingerabdruck und beim Gebirge. Gezählt werden gesetzte Bildpunkte.
        */
-      const bild = document.querySelector('.klangbild-flach');
+      const bild = document.querySelector('#maschinen-ansicht .klangbild-flach');
       let gemalt = false;
       if (bild) {
         const stift = bild.getContext('2d');
@@ -1027,13 +1107,31 @@ try {
         }
       }
       const bildKasten = bild?.getBoundingClientRect();
-      const brief = document.querySelector('.maschine-briefing');
-      const briefKasten = brief?.getBoundingClientRect();
       const verlaufText = document.querySelector('.maschine-verlauf')?.textContent?.trim() ?? '';
+      /**
+       * Die Reiter des Analyseblatts.
+       *
+       * Gefragt wird nach `display`, nicht nach Höhe: Bei zugezogenem Blatt
+       * sind sie beschnitten und hätten Höhe 0 — der erste Versuch dieses
+       * Wächters meldete deshalb „das Blatt trägt ‚‘". Ob der richtige
+       * Reitersatz gilt, ist eine andere Frage als, ob man ihn gerade sieht.
+       */
+      const reiter = [...document.querySelectorAll('.tab-button')].filter(
+        (b) => getComputedStyle(b).display !== 'none'
+      );
       return {
-        briefing: brief?.textContent?.trim() ?? '',
-        briefingImBild: briefKasten ? briefKasten.bottom <= window.innerHeight : false,
-        briefingHoch: briefKasten ? Math.round(briefKasten.height) : 0,
+        blattOffen: document.body.classList.contains('sheet-open'),
+        reiterSichtbar: reiter.map((b) => b.textContent.trim()),
+        reiterHoch: reiter.length
+          ? Math.round(
+              Math.min(
+                ...reiter.map(
+                  (b) =>
+                    parseFloat(getComputedStyle(b).minHeight) || b.getBoundingClientRect().height
+                )
+              )
+            )
+          : 0,
         verlaufText,
         urteil: document.querySelector('.maschine-lage')?.textContent?.trim() ?? '',
         aktionsname: document.querySelector('.maschine-aktion')?.textContent?.trim() ?? '',
@@ -1046,10 +1144,10 @@ try {
         // Wo genau das Bild anfängt. Der Vergleich mit derselben Zahl im
         // Ergebnis ist der ganze Zweck des Bildplatzes.
         klangbildOben: bildKasten ? Math.round(bildKasten.top) : null,
-        klangbildQuellen: document.querySelectorAll('.klangbild-quelle').length,
-        klangbildQuellenNamen: [...document.querySelectorAll('.klangbild-quelle')].map((b) =>
-          b.textContent.trim()
-        ),
+        klangbildQuellen: document.querySelectorAll('#maschinen-ansicht .klangbild-quelle').length,
+        klangbildQuellenNamen: [
+          ...document.querySelectorAll('#maschinen-ansicht .klangbild-quelle'),
+        ].map((b) => b.textContent.trim()),
         ungenutztUnten: Math.round(window.innerHeight - unterste),
       };
     });
@@ -1067,7 +1165,18 @@ try {
       /prüfen/i.test(ruhe.aktionsname),
       `Fall C: die Ebene öffnet nicht im Ruhezustand — die Handlung heißt „${ruhe.aktionsname}"`
     );
-    pruefe(!ruhe.lupe, 'Fall C: die Hör-Lupe steht ungefragt im Bild, statt einen Tipp zu kosten');
+    /**
+     * Die Analyse drängt sich nicht auf.
+     *
+     * Bis zum 23.08.2026 hieß das „die Hör-Lupe steht nicht auf der Seite".
+     * Seit sie im Blatt liegt, ist die Frage eine andere und dieselbe: Das
+     * Blatt darf sich nicht von selbst aufziehen. Wer die Maschine öffnet,
+     * will prüfen — nicht analysieren.
+     */
+    pruefe(
+      !ruhe.blattOffen,
+      'Fall C: das Analyseblatt zieht sich von selbst auf, statt einen Zug zu kosten'
+    );
     pruefe(
       ruhe.nachhoeren.length > 0,
       'Fall C: kein Weg zur letzten Hör-Lupe, obwohl der Ton gespeichert ist'
@@ -1105,21 +1214,24 @@ try {
     );
 
     /**
-     * Das Briefing gehört auf die Seite, nicht in den Keller.
+     * ── DAS BRIEFING IST IN DAS BLATT GEZOGEN ─────────────────────────────
      *
      * Gemessen am 18.08.2026 stand „Geräusch-Briefing erstellen" bei
-     * y = 1027 px — 183 px unter dem Rand, und nur erreichbar, wenn man
-     * vorher die Hör-Lupe aufmachte. Für den Produktleuchtturm des Hauses ist
-     * das der falsche Ort.
+     * y = 1027 px — 183 px unter dem Rand, erreichbar nur über die Hör-Lupe.
+     * Der Schnitt vom 22.08. holte es als zweiten Knopf auf die Seite; seit
+     * dem 23.08. hat es einen eigenen Reiter im Analyseblatt, zusammen mit den
+     * beiden anderen Werkzeugen, die vorher je eine eigene Tür hatten.
+     *
+     * Geprüft wird deshalb der Reiter: Er muss dastehen, beschriftet sein und
+     * eine Fingerkuppe breit sein.
      */
     pruefe(
-      ruhe.briefing.length > 0,
-      'Fall C: kein Weg zum Geräusch-Briefing auf der Maschinenseite'
+      ruhe.reiterSichtbar.join(' ') === '2D 3D Briefing',
+      `Fall C: das Blatt trägt „${ruhe.reiterSichtbar.join(' · ')}" statt 2D · 3D · Briefing`
     );
-    pruefe(ruhe.briefingImBild, 'Fall C: das Briefing steht nicht ohne Scrollen im Bild');
     pruefe(
-      ruhe.briefingHoch >= BUDGET.antippgroesse,
-      `Fall C: der Briefing-Knopf ist ${ruhe.briefingHoch} px hoch`
+      ruhe.reiterHoch >= BUDGET.antippgroesse,
+      `Fall C: die Reiter des Blatts sind ${ruhe.reiterHoch} px hoch`
     );
 
     /**
@@ -1140,10 +1252,10 @@ try {
      * Briefing braucht: ein Normalzustand und eine Messung. Er kostet kein
      * zusätzliches Mikrofonsignal.
      */
+    await blattAufziehen(page, 'briefing');
     await page
-      .locator('.maschine-briefing')
-      .first()
-      .click({ force: true, timeout: 5000 })
+      .locator('.blatt-briefing-knopf')
+      .click({ timeout: 6000 })
       .catch(() => {});
     await page.waitForTimeout(1500);
     // Ein Wächter, der nur „ging nicht" sagt, ist einer, den man überblättert.
@@ -1267,15 +1379,20 @@ try {
      * 340 px Höhe ist genau der Fehler, den man auf einem Bildschirmfoto nicht
      * sieht. Dieselbe Lehre wie beim Fingerabdruck und beim Gebirge.
      */
+    // Ab hier wird im Analyseblatt gemessen: Quellen, Iris, Ziehen und Gebirge
+    // liegen seit dem 23.08.2026 dort. Das Bild auf der Seite ist Beleg.
+    await blattAufziehen(page, 'zweid');
     await page.evaluate(() => {
-      const knopf = [...document.querySelectorAll('.klangbild-quelle')].find((b) =>
+      const knopf = [...document.querySelectorAll('#tab-zweid .klangbild-quelle')].find((b) =>
         /iris/i.test(b.textContent)
       );
       knopf?.click();
     });
     await page.waitForTimeout(2500);
     const rund = await page.evaluate(() => {
-      const c = document.querySelector('.klangbild-iris');
+      const c = document.querySelector('#tab-zweid .klangbild-iris');
+      if (!c || !c.width || !c.height)
+        return { da: Boolean(c), gemalt: false, flachWeg: false, hinweisWeg: false, farbig: false };
       if (!c || c.hidden)
         return { da: false, gemalt: false, flachWeg: false, hinweisWeg: false, farbig: false };
       const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
@@ -1299,14 +1416,17 @@ try {
         if (b > r + 40) kalt = true;
         if (r > b + 60 && r > g + 40) warm = true;
       }
-      const flach = document.querySelector('.klangbild-flach');
-      const hinweis = document.querySelector('.klangbild-hinweis');
+      const flach = document.querySelector('#tab-zweid .klangbild-flach');
+      const hinweis = document.querySelector('#tab-zweid .klangbild-hinweis');
       return {
         da: true,
         gemalt,
         // Zwei Bilder übereinander wären zwei Aussagen über dieselbe Fläche.
         flachWeg: Boolean(flach && flach.hidden),
-        hinweisWeg: Boolean(hinweis && getComputedStyle(hinweis).display === 'none'),
+        // Seit dem 23.08.2026 trägt das Klangbild der Seite gar keinen
+        // „vergrößern"-Hinweis mehr: Es ist Beleg, nicht Werkzeug. Ein
+        // Versprechen, das es nicht halten kann, gibt es damit auch nicht.
+        hinweisWeg: !hinweis || getComputedStyle(hinweis).display === 'none',
         farbig: kalt && warm,
       };
     });
@@ -1340,14 +1460,14 @@ try {
      * Tipp und Zug auseinandergehalten werden, ist genau die Frage.
      */
     await page.evaluate(() => {
-      const knopf = [...document.querySelectorAll('.klangbild-quelle')].find((b) =>
+      const knopf = [...document.querySelectorAll('#tab-zweid .klangbild-quelle')].find((b) =>
         /messung/i.test(b.textContent)
       );
       knopf?.click();
     });
     await page.waitForTimeout(1200);
     const flaeche = await page.evaluate(() => {
-      const k = document.querySelector('.klangbild-flaeche')?.getBoundingClientRect();
+      const k = document.querySelector('#tab-zweid .klangbild-flaeche')?.getBoundingClientRect();
       return k ? { x: k.x, y: k.y, w: k.width, h: k.height } : null;
     });
     if (flaeche) {
@@ -1363,13 +1483,15 @@ try {
       await page.waitForTimeout(1200);
     }
     const zug = await page.evaluate(() => {
-      const rahmen = document.querySelector('.klangbild-auswahlrahmen');
-      const zeile = document.querySelector('.klangbild-auswahlzeile');
+      const rahmen = document.querySelector('#tab-zweid .klangbild-auswahlrahmen');
+      const zeile = document.querySelector('#tab-zweid .klangbild-auswahlzeile');
       const k = rahmen?.getBoundingClientRect();
       return {
         rahmenDa: Boolean(rahmen && !rahmen.hidden && k && k.width > 4 && k.height > 4),
         zeileDa: Boolean(zeile && !zeile.hidden),
-        bereich: document.querySelector('.klangbild-auswahl-bereich')?.textContent?.trim() ?? '',
+        bereich:
+          document.querySelector('#tab-zweid .klangbild-auswahl-bereich')?.textContent?.trim() ??
+          '',
         // Ein Zug darf das Gebirge NICHT geöffnet haben.
         gebirge: Boolean(document.querySelector('.spectro3d-panel')),
       };
@@ -1388,43 +1510,59 @@ try {
     );
 
     // Und sie muss zu hören sein.
-    await page.evaluate(() => document.querySelector('.klangbild-auswahl-spielen')?.click());
+    await page.evaluate(() =>
+      document.querySelector('#tab-zweid .klangbild-auswahl-spielen')?.click()
+    );
     await page.waitForTimeout(1800);
     const hoert = await page.evaluate(
-      () => document.querySelector('.klangbild-auswahl-spielen')?.textContent?.trim() ?? ''
+      () =>
+        document.querySelector('#tab-zweid .klangbild-auswahl-spielen')?.textContent?.trim() ?? ''
     );
     console.log(`  ein Tipp spielt die Auswahl ${hoert}`);
     pruefe(
       /stopp/i.test(hoert),
       `Fall C: die Auswahl lässt sich nicht abspielen — der Knopf sagt „${hoert}"`
     );
-    await page.evaluate(() => document.querySelector('.klangbild-auswahl-weg')?.click());
+    await page.evaluate(() => document.querySelector('#tab-zweid .klangbild-auswahl-weg')?.click());
     await page.waitForTimeout(600);
 
-    // Zurück auf eine flache Quelle — das Gebirge kommt aus dem Spektrogramm.
-    await page.evaluate(() => {
-      const knopf = [...document.querySelectorAll('.klangbild-quelle')].find((b) =>
-        /messung/i.test(b.textContent)
-      );
-      knopf?.click();
-    });
-    await page.waitForTimeout(1200);
-
-    // Ein Tipp auf das Bild → das Gebirge, an Ort und Stelle.
-    await page.evaluate(() => document.querySelector('.klangbild-flaeche')?.click());
-    await page.waitForTimeout(5000);
+    /**
+     * ── DAS GEBIRGE HAT EINEN EIGENEN REITER ───────────────────────────────
+     *
+     * Bis zum 23.08.2026 entstand es nach einem Tipp auf das Klangbild. Seit
+     * die Analyse im Blatt liegt, steht es im zweiten Reiter — immer an
+     * derselben Stelle, unabhängig davon, was oben gerade zu sehen ist.
+     *
+     * Der Tausch ist bewusst: ein Zug plus ein Tipp statt eines Tipps, dafür
+     * ein Ort statt dreier.
+     */
+    await blattAufziehen(page, 'dreid');
+    await page
+      .waitForFunction(
+        () => {
+          const c = document.querySelector('#tab-dreid .spectro3d canvas');
+          return Boolean(c && c.width > 0 && c.height > 0);
+        },
+        null,
+        { timeout: 25000 }
+      )
+      .catch(() => {});
     const tief = await page.evaluate(() => {
-      const c = document.querySelector('.spectro3d canvas');
+      const c = document.querySelector('#tab-dreid .spectro3d canvas');
+      const panel = document.querySelector('#tab-dreid .spectro3d-panel');
+      const inhalt = document.getElementById('tab-dreid');
       return {
-        panel: Boolean(document.querySelector('.spectro3d-panel')),
+        panel: Boolean(panel),
         leinwand: Boolean(c && c.width > 0 && c.height > 0),
+        masse: c ? `${c.width}×${c.height}` : '(keine Leinwand)',
+        text: inhalt?.textContent?.replace(/\s+/g, ' ').trim().slice(0, 80) ?? '',
         ebene: document.body.classList.contains('tiefe-maschine'),
       };
     });
-    console.log(`  Briefing                  ${ruhe.briefing || '(fehlt)'}`);
-    console.log(`  Verlauf                   ${ruhe.verlaufText || '(fehlt)'}`);
-    console.log(`  ein Tipp auf das Bild     ${tief.leinwand ? 'Gebirge steht' : 'NICHTS'}`);
-    pruefe(tief.panel && tief.leinwand, 'Fall C: ein Tipp auf das Klangbild bringt kein Gebirge');
+    console.log(
+      `  Reiter „3D"               ${tief.leinwand ? `Gebirge steht (${tief.masse})` : `NICHTS — Panel ${tief.panel ? 'da' : 'fehlt'}, ${tief.masse}, „${tief.text}"`}`
+    );
+    pruefe(tief.panel && tief.leinwand, 'Fall C: der Reiter „3D" bringt kein Gebirge');
 
     /**
      * ── AUCH DAS GEBIRGE WANDERT NICHT ────────────────────────────────────
@@ -1438,12 +1576,14 @@ try {
      * Stärkeanzeige darunter darf sich ändern, wie sie will — das Bild bleibt.
      */
     const gebirgeVorher = await page.evaluate(() => {
-      const c = document.querySelector('.spectro3d-panel canvas');
+      const c = document.querySelector('#tab-dreid .spectro3d-panel canvas');
       return c ? Math.round(c.getBoundingClientRect().top) : null;
     });
     const gewechselt = await page.evaluate(() => {
       const sichtbar = (e) => getComputedStyle(e).display !== 'none';
-      const chips = [...document.querySelectorAll('.spectro3d-toggle-row button')].filter(
+      const chips = [
+        ...document.querySelectorAll('#tab-dreid .spectro3d-toggle-row button'),
+      ].filter(
         (b) =>
           sichtbar(b) &&
           !b.classList.contains('spectro3d-reset') &&
@@ -1468,7 +1608,7 @@ try {
     });
     await page.waitForTimeout(3500);
     const gebirgeNachher = await page.evaluate(() => {
-      const c = document.querySelector('.spectro3d-panel canvas');
+      const c = document.querySelector('#tab-dreid .spectro3d-panel canvas');
       return c ? Math.round(c.getBoundingClientRect().top) : null;
     });
     console.log(
@@ -1492,9 +1632,8 @@ try {
       tief.ebene,
       'Fall C: das Gebirge öffnet eine neue Ebene — es soll an Ort und Stelle wachsen'
     );
-    // Wieder zumachen, damit der Rest des Laufs vorfindet, was er erwartet.
-    await page.evaluate(() => document.querySelector('.klangbild-flaeche')?.click());
-    await page.waitForTimeout(1200);
+    // Das Blatt wieder zuziehen, damit der Rest des Laufs die Seite vorfindet.
+    await blattZuziehen(page);
 
     await page
       .locator('.maschine-nachhoeren')
@@ -1619,6 +1758,7 @@ try {
         schalterUnten: schalter ? Math.round(schalter.bottom) : 0,
         streifenUnten: streifen ? Math.round(streifen.bottom) : 0,
         leisteOben: leiste ? Math.round(leiste.top) : 0,
+        blattOffen: document.body.classList.contains('sheet-open'),
         tiefeOben: tiefe ? Math.round(tiefe.top) : 0,
         tiefeUnten: tiefe ? Math.round(tiefe.bottom) : 0,
         kartenstilSichtbar: Boolean(sicht(document.querySelector('.basemap-control'))),
@@ -1646,8 +1786,18 @@ try {
       rahmen.tiefeOben >= rahmen.streifenUnten - 2,
       `S5d: die Tiefe beginnt bei ${rahmen.tiefeOben} px, der Kopfstreifen endet erst bei ${rahmen.streifenUnten} px — der Inhalt läuft darunter durch`
     );
+    /**
+     * Die Tiefe endet an der Guckhöhe des Blatts — solange es unten liegt.
+     *
+     * Seit dem 23.08.2026 kann das Blatt absichtlich aufgezogen sein: Dann
+     * liegt die Analyse darin und verdeckt die untere Hälfte der Seite. Das
+     * ist die Aufteilung, nicht ihr Bruch. Gemessen wird deshalb nur im
+     * geschlossenen Zustand — der erste Versuch dieses Wächters meldete nach
+     * dem Gebirge-Bein „das Blatt beginnt schon bei 270 px" und beschrieb
+     * damit genau das, was er messen sollte.
+     */
     pruefe(
-      rahmen.leisteOben === 0 || rahmen.tiefeUnten <= rahmen.leisteOben + 2,
+      rahmen.blattOffen || rahmen.leisteOben === 0 || rahmen.tiefeUnten <= rahmen.leisteOben + 2,
       `S5d: die Tiefe endet bei ${rahmen.tiefeUnten} px, das Blatt beginnt schon bei ${rahmen.leisteOben} px`
     );
     pruefe(
@@ -1983,7 +2133,18 @@ try {
       const l = lupe.getBoundingClientRect();
       return {
         breite: Math.round(ansicht.getBoundingClientRect().width),
-        nebeneinander: l.left >= a.right - 1,
+        /**
+         * Nebeneinander — und zwar auf beiden Seiten gültig.
+         *
+         * Bis zum 23.08.2026 hieß das „die Lupe steht rechts von der
+         * Handlung": Sie lag in der zweiten Spalte des Ergebnisses. Seit die
+         * Analyse im Blatt liegt, steht sie am Schreibtisch in der
+         * Seitenleiste — also LINKS. Die Frage ist dieselbe geblieben: Muss
+         * man scrollen, um an die Analyse zu kommen, oder liegt sie daneben?
+         */
+        nebeneinander: l.right <= a.left + 1 || l.left >= a.right - 1,
+        /** Und sie teilen sich wirklich die Höhe, statt untereinander zu liegen. */
+        gleicheHoehe: l.top < a.bottom && a.top < l.bottom,
         lupeOben: Math.round(l.top),
         aktionOben: Math.round(a.top),
       };
@@ -1991,7 +2152,11 @@ try {
 
     console.log('\n=== Reise, Teil 5: dasselbe Ergebnis am Schreibtisch (1440×900) ===');
     console.log(`  Breite der Fläche              ${tisch ? tisch.breite + ' px' : '(fehlt)'}`);
-    console.log(`  Hör-Lupe neben der Handlung    ${tisch?.nebeneinander ? 'ja' : 'NEIN'}`);
+    console.log(
+      `  Hör-Lupe neben der Handlung    ${tisch?.nebeneinander ? 'ja' : 'NEIN'}${
+        tisch?.gleicheHoehe ? ', auf gleicher Höhe' : ''
+      }`
+    );
 
     pruefe(Boolean(tisch), 'Schreibtisch: das Ergebnis ist nach dem Umschalten nicht mehr da');
     pruefe(
