@@ -227,6 +227,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Nur Deutsch und Englisch (die Rückfallsprachen) gehören in den
+          // Start. Die drei weiteren vollständigen Wörterbücher werden vom
+          // i18n-Modul erst bei passender Gerätesprache nachgeladen.
+          for (const sprache of ['fr', 'es', 'zh']) {
+            if (id.includes(`/src/i18n/locales/${sprache}.ts`)) {
+              return `locale-${sprache}`;
+            }
+          }
           // Keep TF.js in its own stably-named, lazily-loaded chunk so it is
           // excluded from the PWA precache (only fetched when YAMNet is used).
           if (id.includes('@tensorflow') || id.includes('node_modules/seedrandom')) {

@@ -16,9 +16,6 @@
 
 import { de } from './locales/de.js';
 import { en } from './locales/en.js';
-import { fr } from './locales/fr.js';
-import { es } from './locales/es.js';
-import { zh } from './locales/zh.js';
 
 /**
  * Supported language codes
@@ -33,20 +30,33 @@ export type TranslationDict = {
 };
 
 /**
- * All available translations
+ * Die beiden Rückfallsprachen liegen sofort bereit. Die übrigen Wörterbücher
+ * werden erst geladen, wenn das Gerät sie tatsächlich benutzt. Zuvor lagen
+ * alle fünf Sprachpakete im Startbündel – auch auf einem deutschen Gerät.
  */
-const translations: Record<SupportedLanguage, TranslationDict> = {
+const translations: Partial<Record<SupportedLanguage, TranslationDict>> = {
   de,
   en,
-  fr,
-  es,
-  zh,
 };
+
+const languageLoaders: Partial<Record<SupportedLanguage, () => Promise<TranslationDict>>> = {
+  fr: async () => (await import('./locales/fr.js')).fr,
+  es: async () => (await import('./locales/es.js')).es,
+  zh: async () => (await import('./locales/zh.js')).zh,
+};
+
+async function loadLanguage(lang: SupportedLanguage): Promise<void> {
+  if (translations[lang]) return;
+  const loader = languageLoaders[lang];
+  if (!loader) return;
+  translations[lang] = await loader();
+}
 
 /**
  * Current active language
  */
 let currentLanguage: SupportedLanguage = 'en';
+let languageChangeRequest = 0;
 
 /**
  * Custom event name for language change notifications
@@ -57,7 +67,10 @@ export const LANGUAGE_CHANGE_EVENT = 'i18n:languagechange';
 /**
  * Callback type for language change listeners
  */
-export type LanguageChangeCallback = (newLang: SupportedLanguage, oldLang: SupportedLanguage) => void;
+export type LanguageChangeCallback = (
+  newLang: SupportedLanguage,
+  oldLang: SupportedLanguage
+) => void;
 
 /**
  * Registered language change listeners
@@ -71,7 +84,8 @@ const languageChangeListeners: Set<LanguageChangeCallback> = new Set();
  */
 export function detectLanguage(): SupportedLanguage {
   // Get browser language (e.g., "de-DE", "en-US", "zh-CN")
-  const browserLang = navigator.language || (navigator as Navigator & { userLanguage?: string }).userLanguage || 'en';
+  const browserLang =
+    navigator.language || (navigator as Navigator & { userLanguage?: string }).userLanguage || 'en';
 
   // Extract primary language code (e.g., "de" from "de-DE")
   const primaryLang = browserLang.split('-')[0].toLowerCase();
@@ -95,8 +109,17 @@ export function detectLanguage(): SupportedLanguage {
  * - Initial language detection
  * - System language change listener (for when user changes device language)
  */
-export function initI18n(): SupportedLanguage {
-  currentLanguage = detectLanguage();
+export async function initI18n(): Promise<SupportedLanguage> {
+  let detectedLanguage = detectLanguage();
+  try {
+    await loadLanguage(detectedLanguage);
+  } catch (error) {
+    // Ein fehlgeschlagener Sprach-Download darf nicht die gesamte PWA
+    // unbenutzbar machen. Englisch liegt als Rückfall immer im Startbündel.
+    console.warn(`🌐 Language ${detectedLanguage} could not be loaded; using English.`, error);
+    detectedLanguage = 'en';
+  }
+  currentLanguage = detectedLanguage;
 
   // Update HTML lang attribute
   document.documentElement.lang = currentLanguage;
@@ -119,7 +142,7 @@ function handleSystemLanguageChange(): void {
 
   if (newLang !== currentLanguage) {
     console.log(`🌐 System language changed, updating app: ${currentLanguage} → ${newLang}`);
-    setLanguage(newLang, true);
+    void setLanguage(newLang, true);
   }
 }
 
@@ -137,13 +160,31 @@ export function getLanguage(): SupportedLanguage {
  * @param lang - Language code to set
  * @param updateUI - Whether to update DOM (default: true)
  */
-export function setLanguage(lang: SupportedLanguage, updateUI: boolean = true): void {
+export async function setLanguage(
+  lang: SupportedLanguage,
+  updateUI: boolean = true
+): Promise<void> {
+  // Auch ein Wechsel zurück zur aktuellen Sprache entwertet einen älteren,
+  // noch laufenden Download. Sonst könnte dessen spätere Antwort die neuere
+  // Nutzerentscheidung wieder überschreiben.
+  const request = ++languageChangeRequest;
   const oldLang = currentLanguage;
 
   // Skip if language hasn't changed
   if (oldLang === lang) {
     return;
   }
+
+  // Erst das Wörterbuch, dann die sichtbare Sprache umstellen. So gibt es
+  // keinen Zwischenzustand, in dem französische oder chinesische Geräte kurz
+  // englische Texte sehen.
+  try {
+    await loadLanguage(lang);
+  } catch (error) {
+    console.error(`🌐 Language ${lang} could not be loaded.`, error);
+    return;
+  }
+  if (request !== languageChangeRequest) return;
 
   currentLanguage = lang;
   document.documentElement.lang = lang;
@@ -158,9 +199,11 @@ export function setLanguage(lang: SupportedLanguage, updateUI: boolean = true): 
     translateDOM();
 
     // Dispatch custom event for components that need to re-render
-    window.dispatchEvent(new CustomEvent(LANGUAGE_CHANGE_EVENT, {
-      detail: { newLang: lang, oldLang }
-    }));
+    window.dispatchEvent(
+      new CustomEvent(LANGUAGE_CHANGE_EVENT, {
+        detail: { newLang: lang, oldLang },
+      })
+    );
   }
 }
 
@@ -168,7 +211,7 @@ export function setLanguage(lang: SupportedLanguage, updateUI: boolean = true): 
  * Notify all registered language change listeners
  */
 function notifyLanguageChange(oldLang: SupportedLanguage, newLang: SupportedLanguage): void {
-  languageChangeListeners.forEach(callback => {
+  languageChangeListeners.forEach((callback) => {
     try {
       callback(newLang, oldLang);
     } catch (error) {
@@ -226,16 +269,16 @@ function getNestedValue(obj: TranslationDict, path: string): string | undefined 
  */
 export function t(key: string, params?: Record<string, string | number>): string {
   // Get translation from current language
-  let translation = getNestedValue(translations[currentLanguage], key);
+  let translation = getNestedValue(translations[currentLanguage] ?? translations.en!, key);
 
   // Fallback to English if not found in current language
   if (translation === undefined && currentLanguage !== 'en') {
-    translation = getNestedValue(translations.en, key);
+    translation = getNestedValue(translations.en!, key);
   }
 
   // Fallback to German (original) if not found in English
   if (translation === undefined && currentLanguage !== 'de') {
-    translation = getNestedValue(translations.de, key);
+    translation = getNestedValue(translations.de!, key);
   }
 
   // Return key if translation not found

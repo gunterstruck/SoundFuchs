@@ -132,7 +132,7 @@ class ZanobotApp {
     });
 
     // Initialize i18n FIRST (before any UI text is displayed)
-    const detectedLang = initI18n();
+    const detectedLang = await initI18n();
     logger.info(`🌐 Language: ${detectedLang}`);
 
     // First-launch check: apply defaults if the app has never been initialized

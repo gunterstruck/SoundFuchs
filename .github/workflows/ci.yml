@@ -32,6 +32,7 @@ jobs:
       - run: npm run lint
       - run: npm run test:run
       - run: npm run build
+      - run: npm run start-budget
       # Zwei Prüfungen für Fehler, die sonst niemand meldet.
       #
       # check-i18n: Fünf Sprachen, ein Schlüsselsatz — und zusätzlich, ob ein
@@ -100,6 +101,8 @@ jobs:
       # Die Wächter laufen gegen `dist/`, nicht gegen den Entwicklungsserver.
       - run: npm run build
       - run: npm run a11y
+      - run: npm run sprachen-check
+      - run: npm run offline-check
       # Bedienlast, Textbreite und die mobile Nutzerreise sind Teil der
       # Freigabe. `wow` prüft zusätzlich Hell/Dunkel, Handy/Tablet/Desktop und
       # den echten Audio-Zustandswechsel bis zum Ergebnis.
