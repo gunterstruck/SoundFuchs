@@ -12,8 +12,8 @@ import { resolve } from 'node:path';
  *
  * Die Trennlinie, die dieses Projekt zieht:
  *
- *   Beschreibungen bleiben.  „läuft vollständig offline", „verwendet offen
- *                            beschriebene Verfahren", die IP-Tabelle
+ *   Beschreibungen bleiben.  „Messdaten werden lokal ausgewertet", „verwendet
+ *                            offen beschriebene Verfahren", die IP-Tabelle
  *   Zusicherungen gehen.     „wurde geprüft", „verletzt keine Patente",
  *                            „frei von Schutzrechtskonflikten"
  *
@@ -161,5 +161,30 @@ describe('Keine Zusicherungen in den Projekttexten', () => {
     // Die IP-Tabelle ist eine Beschreibung der eigenen Abgrenzung, kein Urteil.
     expect(readme).toContain('Relevante IP und technische Abgrenzung');
     expect(readme).toContain('keine schutzrechtliche Bewertung');
+  });
+
+  it('trennt lokale Messdaten von unvermeidbaren Netzverbindungen', () => {
+    /**
+     * „Kein Audio-Upload" ist eine überprüfbare Eigenschaft der Anwendung.
+     * „Keine Datenübertragung" wäre dagegen falsch: Schon der Seitenaufruf
+     * erreicht Vercel, Kartenkacheln kommen von Drittanbietern und YAMNet wird
+     * beim ersten Einsatz von Google geladen. Der obere Teil der README hatte
+     * diese pauschale Zusage noch, während der untere Teil sie bereits
+     * einschränkte. Dieser Wächter verhindert den nächsten Widerspruch.
+     */
+    const readme = lies('README.md');
+    expect(readme).not.toMatch(
+      /Keine Datenübertragung|keine Cloud-Komponenten|Es gibt keine Cloud-Services|einzige mögliche Netzzugriff/i
+    );
+    expect(readme).toContain('Netzwerktransparenz');
+    expect(readme).toContain('Vercel');
+    expect(readme).toContain('OpenStreetMap, CARTO oder Esri');
+    expect(readme).toContain('Google TensorFlow Hub');
+    expect(readme).toContain('kein eigenes Tracking');
+
+    const datenschutz = lies('index.html');
+    expect(datenschutz).toMatch(/Verbindung\s+zum Hosting-Anbieter entsteht bereits beim Aufruf/);
+    expect(datenschutz).toContain('SoundFuchs setzt kein eigenes');
+    expect(datenschutz).toContain('Besucher-Tracking ein');
   });
 });

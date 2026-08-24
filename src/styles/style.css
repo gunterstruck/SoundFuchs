@@ -6035,6 +6035,20 @@ select:focus-visible {
   overflow-y: auto;
 }
 
+/* Breite Tabellen bleiben auf dem Handy horizontal erreichbar. `tabindex`
+   macht den Scrollbereich auch für die Tastatur bedienbar; der sichtbare
+   Fokus verhindert, dass man dabei in einer unsichtbaren Zwischenstation
+   landet. */
+.about-ip-table-scroll {
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+}
+
+.about-ip-table-scroll:focus-visible {
+  outline: 3px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
 .legal-modal-body h4 {
   font-size: 1.125rem;
   font-weight: 600;

@@ -222,7 +222,12 @@
             🧪 <b data-i18n="stamm.demoBannerWord">Beispieldaten</b>
             <span data-i18n="stamm.demoBannerText">– das sind erfundene Standorte.</span>
           </span>
-          <button type="button" id="btn-demo-clear" class="demo-banner-cta" data-i18n="stamm.demoBannerCta">
+          <button
+            type="button"
+            id="btn-demo-clear"
+            class="demo-banner-cta"
+            data-i18n="stamm.demoBannerCta"
+          >
             Entfernen
           </button>
         </div>
@@ -395,20 +400,67 @@
         </nav>
 
         <!-- Reiter: Standorte -->
-        <section id="tab-daten" class="tab-panel active" data-ebene="karte" role="tabpanel" aria-labelledby="tab-button-daten"></section>
+        <section
+          id="tab-daten"
+          class="tab-panel active"
+          data-ebene="karte"
+          role="tabpanel"
+          aria-labelledby="tab-button-daten"
+        ></section>
 
         <!-- Reiter: Filter -->
-        <section id="tab-filter" class="tab-panel" data-ebene="karte" role="tabpanel" aria-labelledby="tab-button-filter" hidden></section>
+        <section
+          id="tab-filter"
+          class="tab-panel"
+          data-ebene="karte"
+          role="tabpanel"
+          aria-labelledby="tab-button-filter"
+          hidden
+        ></section>
 
         <!-- Reiter der Standortebene: was hier zuletzt passiert ist -->
-        <section id="tab-standortblatt" class="tab-panel" data-ebene="standort" role="tabpanel" aria-labelledby="tab-button-standortblatt" hidden></section>
+        <section
+          id="tab-standortblatt"
+          class="tab-panel"
+          data-ebene="standort"
+          role="tabpanel"
+          aria-labelledby="tab-button-standortblatt"
+          hidden
+        ></section>
 
         <!-- Reiter der Maschinenebene: die Analyse -->
-        <section id="tab-zweid" class="tab-panel" data-ebene="maschine" role="tabpanel" aria-labelledby="tab-button-zweid" hidden></section>
-        <section id="tab-dreid" class="tab-panel" data-ebene="maschine" role="tabpanel" aria-labelledby="tab-button-dreid" hidden></section>
-        <section id="tab-briefing" class="tab-panel" data-ebene="maschine" role="tabpanel" aria-labelledby="tab-button-briefing" hidden></section>
-        <section id="tab-details" class="tab-panel" data-ebene="maschine" role="tabpanel" aria-labelledby="tab-button-details" hidden></section>
-
+        <section
+          id="tab-zweid"
+          class="tab-panel"
+          data-ebene="maschine"
+          role="tabpanel"
+          aria-labelledby="tab-button-zweid"
+          hidden
+        ></section>
+        <section
+          id="tab-dreid"
+          class="tab-panel"
+          data-ebene="maschine"
+          role="tabpanel"
+          aria-labelledby="tab-button-dreid"
+          hidden
+        ></section>
+        <section
+          id="tab-briefing"
+          class="tab-panel"
+          data-ebene="maschine"
+          role="tabpanel"
+          aria-labelledby="tab-button-briefing"
+          hidden
+        ></section>
+        <section
+          id="tab-details"
+          class="tab-panel"
+          data-ebene="maschine"
+          role="tabpanel"
+          aria-labelledby="tab-button-details"
+          hidden
+        ></section>
       </aside>
 
       <!-- Knopfzeile über der Karte. Im Vorbild stehen hier „Kunden in meiner
@@ -444,9 +496,7 @@
           darunter, und dieser Kasten bietet den Schritt an, der sie füllt.
         -->
         <div class="map-empty" id="map-empty" style="display: none">
-          <p class="map-empty-title" data-i18n="map.emptyTitle">
-            Noch kein Standort auf der Karte
-          </p>
+          <p class="map-empty-title" data-i18n="map.emptyTitle">Noch kein Standort auf der Karte</p>
           <p class="map-empty-text" data-i18n="map.emptyText">
             Standorte entstehen beim Anlegen einer Maschine — oder hier, zum Ausprobieren.
           </p>
@@ -478,74 +528,78 @@
          ══════════════════════════════════════════════════════════════════ -->
     <div id="zanobo-tiefe" class="zanobo-tiefe" hidden>
       <div class="container">
-      <!-- Welle 2: Status Dashboard -->
-      <section class="status-dashboard" id="status-dashboard" style="display: none">
-        <!-- Summary Row: Counts by status -->
-        <div class="dashboard-summary" id="dashboard-summary">
-          <div class="dashboard-stat" id="dashboard-stat-total">
-            <span class="dashboard-stat-count" id="dashboard-count-total">0</span>
-            <span class="dashboard-stat-label" data-i18n="dashboard.totalMachines">Maschinen</span>
-          </div>
-          <div class="dashboard-stat dashboard-stat-healthy" id="dashboard-stat-healthy">
-            <span class="dashboard-stat-dot status-dot-healthy"></span>
-            <span class="dashboard-stat-count" id="dashboard-count-healthy">0</span>
-            <span class="dashboard-stat-label" data-i18n="dashboard.healthy">unauffällig</span>
-          </div>
-          <div class="dashboard-stat dashboard-stat-warning" id="dashboard-stat-warning">
-            <span class="dashboard-stat-dot status-dot-warning"></span>
-            <span class="dashboard-stat-count" id="dashboard-count-warning">0</span>
-            <span class="dashboard-stat-label" data-i18n="dashboard.warning">Abweichung</span>
-          </div>
-          <div class="dashboard-stat dashboard-stat-critical" id="dashboard-stat-critical">
-            <span class="dashboard-stat-dot status-dot-critical"></span>
-            <span class="dashboard-stat-count" id="dashboard-count-critical">0</span>
-            <span class="dashboard-stat-label" data-i18n="dashboard.critical">auffällig</span>
-          </div>
-          <div class="dashboard-stat dashboard-stat-unchecked" id="dashboard-stat-unchecked">
-            <span class="dashboard-stat-dot status-dot-unknown"></span>
-            <span class="dashboard-stat-count" id="dashboard-count-unchecked">0</span>
-            <span class="dashboard-stat-label" data-i18n="dashboard.unchecked">nicht geprüft</span>
-          </div>
-        </div>
-
-        <!-- Attention Card: Most urgent machine (if any) -->
-        <div class="dashboard-attention" id="dashboard-attention" style="display: none">
-          <div class="dashboard-attention-header">
-            <span class="dashboard-attention-icon" id="dashboard-attention-icon">⚠</span>
-            <span class="dashboard-attention-title" id="dashboard-attention-title"></span>
-          </div>
-          <div class="dashboard-attention-body">
-            <div class="dashboard-attention-info">
-              <span class="dashboard-attention-score" id="dashboard-attention-score"></span>
-              <span class="dashboard-attention-time" id="dashboard-attention-time"></span>
-              <span class="dashboard-attention-trend" id="dashboard-attention-trend"></span>
-            </div>
-            <div class="dashboard-attention-buttons">
-              <button
-                class="dashboard-attention-btn"
-                id="dashboard-attention-btn"
-                data-i18n="dashboard.checkNow"
+        <!-- Welle 2: Status Dashboard -->
+        <section class="status-dashboard" id="status-dashboard" style="display: none">
+          <!-- Summary Row: Counts by status -->
+          <div class="dashboard-summary" id="dashboard-summary">
+            <div class="dashboard-stat" id="dashboard-stat-total">
+              <span class="dashboard-stat-count" id="dashboard-count-total">0</span>
+              <span class="dashboard-stat-label" data-i18n="dashboard.totalMachines"
+                >Maschinen</span
               >
-                Jetzt prüfen
-              </button>
+            </div>
+            <div class="dashboard-stat dashboard-stat-healthy" id="dashboard-stat-healthy">
+              <span class="dashboard-stat-dot status-dot-healthy"></span>
+              <span class="dashboard-stat-count" id="dashboard-count-healthy">0</span>
+              <span class="dashboard-stat-label" data-i18n="dashboard.healthy">unauffällig</span>
+            </div>
+            <div class="dashboard-stat dashboard-stat-warning" id="dashboard-stat-warning">
+              <span class="dashboard-stat-dot status-dot-warning"></span>
+              <span class="dashboard-stat-count" id="dashboard-count-warning">0</span>
+              <span class="dashboard-stat-label" data-i18n="dashboard.warning">Abweichung</span>
+            </div>
+            <div class="dashboard-stat dashboard-stat-critical" id="dashboard-stat-critical">
+              <span class="dashboard-stat-dot status-dot-critical"></span>
+              <span class="dashboard-stat-count" id="dashboard-count-critical">0</span>
+              <span class="dashboard-stat-label" data-i18n="dashboard.critical">auffällig</span>
+            </div>
+            <div class="dashboard-stat dashboard-stat-unchecked" id="dashboard-stat-unchecked">
+              <span class="dashboard-stat-dot status-dot-unknown"></span>
+              <span class="dashboard-stat-count" id="dashboard-count-unchecked">0</span>
+              <span class="dashboard-stat-label" data-i18n="dashboard.unchecked"
+                >nicht geprüft</span
+              >
             </div>
           </div>
-        </div>
 
-        <!-- Welle 4: Trend Warnings -->
-        <div
-          class="dashboard-trend-warnings"
-          id="dashboard-trend-warnings"
-          style="display: none"
-        ></div>
+          <!-- Attention Card: Most urgent machine (if any) -->
+          <div class="dashboard-attention" id="dashboard-attention" style="display: none">
+            <div class="dashboard-attention-header">
+              <span class="dashboard-attention-icon" id="dashboard-attention-icon">⚠</span>
+              <span class="dashboard-attention-title" id="dashboard-attention-title"></span>
+            </div>
+            <div class="dashboard-attention-body">
+              <div class="dashboard-attention-info">
+                <span class="dashboard-attention-score" id="dashboard-attention-score"></span>
+                <span class="dashboard-attention-time" id="dashboard-attention-time"></span>
+                <span class="dashboard-attention-trend" id="dashboard-attention-trend"></span>
+              </div>
+              <div class="dashboard-attention-buttons">
+                <button
+                  class="dashboard-attention-btn"
+                  id="dashboard-attention-btn"
+                  data-i18n="dashboard.checkNow"
+                >
+                  Jetzt prüfen
+                </button>
+              </div>
+            </div>
+          </div>
 
-        <!-- Welle 4: Report Export Link -->
-        <button class="dashboard-report-link" id="dashboard-report-link" style="display: none">
-          <span data-i18n="report.exportButton">Bericht exportieren</span>
-        </button>
-      </section>
+          <!-- Welle 4: Trend Warnings -->
+          <div
+            class="dashboard-trend-warnings"
+            id="dashboard-trend-warnings"
+            style="display: none"
+          ></div>
 
-      <!-- Der Bestand steht vorn.
+          <!-- Welle 4: Report Export Link -->
+          <button class="dashboard-report-link" id="dashboard-report-link" style="display: none">
+            <span data-i18n="report.exportButton">Bericht exportieren</span>
+          </button>
+        </section>
+
+        <!-- Der Bestand steht vorn.
 
            Bis zum 14.08.2026 lag diese Liste in der Karte „Maschine auswählen"
            und war erst nach einem Tipp auf die Kachel „Gespeicherte Maschinen"
@@ -559,8 +613,8 @@
            trägt weiterhin Aufnahme und Prüfung. Erst wenn beide in die
            Maschinenansicht gezogen sind, wird aus ihr der Leerzustand.
            Siehe docs/startseite-entwurf.md, Abschnitt 5. -->
-      <div class="identify-section" id="machine-list-section">
-        <!-- Quick Select: Recently Used Machines
+        <div class="identify-section" id="machine-list-section">
+          <!-- Quick Select: Recently Used Machines
              Nur unter Profi. Die Schnellwahl zeigt die trainierten Maschinen,
              die Übersicht darunter alle — bei üblichem Bestand also weitgehend
              dieselben, nur nach Anlerndatum statt nach letzter Prüfung
@@ -581,249 +635,63 @@
              das `display:none`, das QuickSelectList selbst setzt, wenn es gar
              keine trainierte Maschine gibt. Die Sektion stünde dann unter Profi
              leer da. -->
-        <div id="quick-select-section" class="machine-selection-option" style="display: none">
-          <div class="option-divider">
-            <span data-i18n="identify.quickAccess">Schnellwahl</span>
+          <div id="quick-select-section" class="machine-selection-option" style="display: none">
+            <div class="option-divider">
+              <span data-i18n="identify.quickAccess">Schnellwahl</span>
+            </div>
+            <div class="option-header">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--primary-color)"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <!-- Professional History/Clock Icon -->
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <h5 class="option-title" data-i18n="identify.recentlyUsed">Zuletzt verwendet</h5>
+            </div>
+            <p class="option-description" data-i18n="identify.quickAccessDescription">
+              Schneller Zugriff auf kürzlich verwendete Maschinen
+            </p>
+            <div id="quick-select-list" class="quick-select-list">
+              <!-- Machine buttons will be added dynamically -->
+            </div>
           </div>
-          <div class="option-header">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--primary-color)"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <!-- Professional History/Clock Icon -->
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-            <h5 class="option-title" data-i18n="identify.recentlyUsed">Zuletzt verwendet</h5>
-          </div>
-          <p class="option-description" data-i18n="identify.quickAccessDescription">
-            Schneller Zugriff auf kürzlich verwendete Maschinen
-          </p>
-          <div id="quick-select-list" class="quick-select-list">
-            <!-- Machine buttons will be added dynamically -->
-          </div>
-        </div>
 
-        <!-- Sprint 7: Quick Compare CTA -->
-        <!-- Schnellvergleich und der Reiter Übersicht/Flottencheck sind Profi-
+          <!-- Sprint 7: Quick Compare CTA -->
+          <!-- Schnellvergleich und der Reiter Übersicht/Flottencheck sind Profi-
              Werkzeuge. Seit der Bestand vorn steht, würden sie sonst das
              Erstbild bestimmen: Die Messung stieg dadurch von 5 auf 10
              Bedienelemente. Unter Basis bleibt die Liste allein; wer sie
              braucht, ist einen Tipp entfernt — der Stufenschalter hängt
              sichtbar unter der Kopfleiste. -->
-        <div id="quick-compare-cta" class="quick-compare-cta" data-view-level="expert">
-          <button
-            id="quick-compare-btn"
-            class="action-btn quick-compare-btn"
-            data-i18n="quickCompare.startButton"
-          ></button>
-          <p class="quick-compare-hint" data-i18n="quickCompare.hint"></p>
-        </div>
+          <div id="quick-compare-cta" class="quick-compare-cta" data-view-level="expert">
+            <button
+              id="quick-compare-btn"
+              class="action-btn quick-compare-btn"
+              data-i18n="quickCompare.startButton"
+            ></button>
+            <p class="quick-compare-hint" data-i18n="quickCompare.hint"></p>
+          </div>
 
-        <!-- Maschinenübersicht -->
-        <!-- Über der Liste stand bis zum 14.08.2026 zweimal dasselbe: die
+          <!-- Maschinenübersicht -->
+          <!-- Über der Liste stand bis zum 14.08.2026 zweimal dasselbe: die
              Trennlinie „ÜBERSICHT" und direkt darunter die Überschrift
              „Maschinenübersicht". Die Trennlinie ist entfallen; die
              Überschrift bleibt, denn sie trägt das Symbol und den Hilfe-Knopf
              und ist für Vorlesewerkzeuge die eigentliche Gliederung. Bei den
              Abschnitten darüber (Schnellwahl) trennt sie weiterhin. -->
-        <div class="machine-selection-option" id="machine-overview-section">
-          <div class="option-header">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--primary-color)"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <!-- List/Grid Icon -->
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-            </svg>
-            <h5 class="option-title" data-i18n="identify.machineOverview">Maschinenübersicht</h5>
-            <button class="help-icon-btn" id="help-machines" aria-label="Hilfe: Maschinen">
+          <div class="machine-selection-option" id="machine-overview-section">
+            <div class="option-header">
               <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            </button>
-          </div>
-          <!-- Sprint 5 UX: Toggle + Help wrapper -->
-          <div class="workflow-toggle-row" data-view-level="expert">
-            <!-- Sprint 4 UX: Workflow mode toggle -->
-            <div class="workflow-toggle" id="workflow-toggle">
-              <button
-                class="toggle-btn toggle-btn-active"
-                id="toggle-series"
-                aria-pressed="true"
-                aria-label=""
-              >
-                <!-- Text set via i18n -->
-              </button>
-              <button class="toggle-btn" id="toggle-fleet" aria-pressed="false" aria-label="">
-                <!-- Text set via i18n -->
-              </button>
-            </div>
-            <button
-              class="help-icon-btn help-icon-inline"
-              id="help-fleet"
-              aria-label="Hilfe: Flottencheck"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            </button>
-          </div>
-
-          <div id="machine-overview" class="machine-list">
-            <!-- Machine items will be added dynamically -->
-            <!-- Sprint 2 UX: Empty state mini 1-2-3 guide -->
-            <div id="machine-overview-empty" class="empty-state-guide" style="display: none">
-              <p class="empty-state-title" data-i18n="identify.emptyGuide.title">
-                So funktioniert SoundFuchs
-              </p>
-              <div class="guide-steps">
-                <div class="guide-step">
-                  <span class="guide-step-number">1</span>
-                  <div class="guide-step-content">
-                    <strong data-i18n="identify.emptyGuide.step1Title">Maschine anlegen</strong>
-                    <span data-i18n="identify.emptyGuide.step1Desc"
-                      >Gib deiner Maschine einen eindeutigen Namen.</span
-                    >
-                  </div>
-                </div>
-                <div class="guide-step">
-                  <span class="guide-step-number">2</span>
-                  <div class="guide-step-content">
-                    <strong data-i18n="identify.emptyGuide.step2Title">Referenz aufnehmen</strong>
-                    <span data-i18n="identify.emptyGuide.step2Desc"
-                      >10 Sekunden Normalzustand aufnehmen.</span
-                    >
-                  </div>
-                </div>
-                <div class="guide-step">
-                  <span class="guide-step-number">3</span>
-                  <div class="guide-step-content">
-                    <strong data-i18n="identify.emptyGuide.step3Title">Zustand prüfen</strong>
-                    <span data-i18n="identify.emptyGuide.step3Desc"
-                      >Vergleiche jederzeit gegen die Referenz.</span
-                    >
-                  </div>
-                </div>
-              </div>
-              <button
-                class="guide-cta-btn"
-                id="empty-state-cta"
-                data-i18n="identify.emptyGuide.cta"
-              >
-                Erste Maschine anlegen
-              </button>
-            </div>
-          </div>
-          <button class="add-reference-btn" id="add-new-machine-btn">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            <span data-i18n="buttons.newMachine">Neue Maschine</span>
-          </button>
-        </div>
-
-        <!-- Historie (Prüf-Verlauf)
-             Über der Liste stand zweimal dasselbe Wort, aus demselben
-             Sprachschlüssel: die Trennlinie „VERLAUF" und direkt darunter die
-             Überschrift „Verlauf". Dieselbe Doppelung wie über der
-             Maschinenliste, dort am 14.08.2026 entfernt — und mit derselben
-             Auflösung: Die Trennlinie geht, die Überschrift bleibt, weil sie
-             das Symbol trägt und für Vorlesewerkzeuge die Gliederung ist. -->
-        <div class="machine-selection-option" id="history-section">
-          <div class="option-header">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--primary-color)"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <!-- Clock/History Icon -->
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-            <h5 class="option-title" data-i18n="identify.history">Historie</h5>
-          </div>
-          <div id="history-list" class="history-list">
-            <!-- History items will be added dynamically -->
-            <p class="empty-state" id="history-empty" data-i18n="identify.noMeasurements">
-              Noch keine Messungen vorhanden
-            </p>
-          </div>
-        </div>
-      </div>
-      <!-- /machine-list-section -->
-
-      <div class="main-actions">
-        <!-- Container 2: Scannen oder anlegen
-             Die Karte hieß bis zum 14.08.2026 „Maschine auswählen". Das stimmte
-             einmal: Die Liste der gespeicherten Maschinen lag darin. Seit sie
-             oben vor der Schrittleiter steht, ist die Liste die Auswahl — und
-             eine Karte darunter mit derselben Überschrift war eine zweite Tür
-             in denselben Raum. Was hier wirklich drinsteht, sind die zwei Wege
-             zu einer Maschine, die noch nicht in der Liste ist: scannen oder
-             von Hand anlegen. Genau das sagt die Überschrift jetzt. -->
-        <!-- Die Bestandskarte. Sie trägt die zwei Wege zu einer Maschine, die
-             noch nicht in der Liste ist — scannen oder anlegen. Beides sind
-             Bestandsaktionen: Sie gehören dorthin, wo man Maschinen sucht,
-             nicht dorthin, wo man an einer arbeitet. Der Bezeichner erlaubt
-             `tiefe.css`, sie in der Arbeitsebene herauszunehmen. -->
-        <section class="main-container collapsible" id="karte-bestandswege">
-          <div class="main-header section-header" data-target="select-machine-content">
-            <div class="header-with-icon">
-              <span class="step-badge" aria-hidden="true">1</span>
-              <svg
-                width="24"
-                height="24"
+                width="20"
+                height="20"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="var(--primary-color)"
@@ -831,409 +699,17 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <!-- Professional Machine/Settings Icon -->
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 1v6m0 6v10M1 12h6m6 0h10" />
-                <circle cx="12" cy="12" r="9" stroke-width="1.5" />
-                <path d="M16.24 7.76l-8.48 8.48M7.76 7.76l8.48 8.48" stroke-width="1" />
+                <!-- List/Grid Icon -->
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
               </svg>
-              <h3 class="container-title" data-i18n="identify.addMachine">Scannen oder anlegen</h3>
-            </div>
-            <svg
-              class="collapse-icon"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-          <div id="select-machine-content" class="collapsible-content" style="display: none">
-            <div class="container-content">
-              <!-- Welle 5: Entry tiles for "Maschine auswählen" -->
-              <div class="identify-tiles" id="identify-tiles">
-                <button class="identify-tile" id="identify-tile-scan" data-target="scan-section">
-                  <div class="identify-tile-icon">
-                    <svg
-                      width="32"
-                      height="32"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    >
-                      <rect x="3" y="3" width="7" height="7" />
-                      <rect x="14" y="3" width="7" height="7" />
-                      <rect x="3" y="14" width="7" height="7" />
-                      <line x1="17" y1="14" x2="17" y2="21" />
-                      <line x1="14" y1="17.5" x2="21" y2="17.5" />
-                    </svg>
-                  </div>
-                  <span class="identify-tile-label" data-i18n="identify.tiles.scanQR"
-                    >QR / Barcode</span
-                  >
-                </button>
-
-                <button
-                  class="identify-tile"
-                  id="identify-tile-create"
-                  data-target="create-section"
-                >
-                  <div class="identify-tile-icon">
-                    <svg
-                      width="32"
-                      height="32"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="8" x2="12" y2="16" />
-                      <line x1="8" y1="12" x2="16" y2="12" />
-                    </svg>
-                  </div>
-                  <span class="identify-tile-label" data-i18n="identify.tiles.newMachine"
-                    >Neue Maschine</span
-                  >
-                </button>
-              </div>
-
-              <!-- Welle 5: Scan section (initially hidden, shown via tile) -->
-              <div class="identify-section" id="scan-section" style="display: none">
-                <!-- Option 1: Scan QR Code -->
-                <div class="machine-selection-option">
-                  <div class="option-header">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="var(--primary-color)"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <!-- Professional QR/Scan Icon -->
-                      <rect x="3" y="3" width="8" height="8" rx="1" />
-                      <rect x="13" y="3" width="8" height="8" rx="1" />
-                      <rect x="3" y="13" width="8" height="8" rx="1" />
-                      <rect x="5" y="5" width="4" height="4" />
-                      <rect x="15" y="5" width="4" height="4" />
-                      <rect x="5" y="15" width="4" height="4" />
-                      <path d="M13 13h2v2m0 2h2v2m2-2h2v2" />
-                    </svg>
-                    <h5 class="option-title" data-i18n="identify.scanQrCode">QR-Code scannen</h5>
-                  </div>
-                  <p class="option-description" data-i18n="identify.scanQrDescription">
-                    Identifiziere Maschine via QR-Code
-                  </p>
-                  <button class="action-btn secondary-btn" id="scan-btn">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <!-- Professional Camera/Scan Icon -->
-                      <path
-                        d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-                      />
-                      <circle cx="12" cy="13" r="4" />
-                    </svg>
-                    <span data-i18n="buttons.scan">Scannen</span>
-                  </button>
-                </div>
-              </div>
-              <!-- /scan-section -->
-
-              <!-- Welle 5: Create section (initially hidden, shown via tile) -->
-              <div class="identify-section" id="create-section" style="display: none">
-                <div class="option-divider">
-                  <span data-i18n="common.or">oder</span>
-                </div>
-
-                <!-- Option 2: Manual Entry -->
-                <div class="machine-selection-option">
-                  <div class="option-header">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="var(--primary-color)"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <!-- Professional Edit/Create Icon -->
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                    <h5 class="option-title" data-i18n="identify.manualEntry">Manuell anlegen</h5>
-                  </div>
-                  <p class="option-description" data-i18n="identify.manualEntryDescription">
-                    Neue Maschine mit Namen erstellen
-                  </p>
-                  <div class="input-group input-group-required">
-                    <label for="machine-name-input">
-                      <span data-i18n="identify.machineName">Maschinenname</span
-                      ><span class="required-star">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="machine-name-input"
-                      class="machine-input"
-                      placeholder="z.B. Pumpe 3 – Westhalle"
-                      data-i18n-placeholder="identify.machineNamePlaceholder"
-                    />
-                    <span
-                      class="input-hint"
-                      id="machine-name-hint"
-                      data-i18n="identify.machineNameHint"
-                      >Eindeutiger Name, z.B. Pumpe 3 – Westhalle</span
-                    >
-                    <span
-                      class="input-error"
-                      id="machine-name-error"
-                      role="alert"
-                      data-i18n="identify.machineNameRequired"
-                      >Bitte gib einen Maschinennamen ein.</span
-                    >
-                  </div>
-                  <!--
-                    Standort — der Ort, an dem die Maschine steht. Kundenname,
-                    Postleitzahl, Stadt; der Name darf auch „Zuhause" sein.
-                    Steht bewusst vor der Maschinen-ID: Wo eine Maschine steht,
-                    weiß man beim Anlegen; eine SAP-Nummer trägt man später
-                    nach. Voreinstellung ist "kein Standort", das Feld kostet also
-                    niemanden etwas. Siehe docs/kunden-und-karte.md.
-                  -->
-                  <div class="input-group" id="machine-customer-form">
-                    <label for="machine-customer-select" data-i18n="customers.label"
-                      >Standort (optional)</label
-                    >
-                    <select id="machine-customer-select" class="machine-input">
-                      <!-- Die beiden festen Einträge stehen hier und nicht im
-                           Quelltext, damit sie beim Sprachwechsel mitziehen.
-                           Die Standorte selbst werden dazwischen eingefügt. -->
-                      <option value="" data-i18n="customers.none">— kein Standort —</option>
-                      <option value="__neu__" data-i18n="customers.new">+ Neuer Standort</option>
-                    </select>
-                    <div id="new-customer-fields" class="new-customer-fields" style="display: none">
-                      <div class="input-group input-group-required">
-                        <label for="customer-name-input">
-                          <span data-i18n="customers.nameLabel">Name</span
-                          ><span class="required-star">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="customer-name-input"
-                          class="machine-input"
-                          maxlength="80"
-                          autocomplete="off"
-                          placeholder="z.B. Müller Guss GmbH oder Zuhause"
-                          data-i18n-placeholder="customers.namePlaceholder"
-                        />
-                      </div>
-                      <div class="customer-place-row">
-                        <div class="input-group input-group-required">
-                          <label for="customer-plz-input">
-                            <span data-i18n="customers.plzLabel">PLZ</span
-                            ><span class="required-star">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            id="customer-plz-input"
-                            class="machine-input"
-                            inputmode="numeric"
-                            maxlength="5"
-                            autocomplete="postal-code"
-                            placeholder="45127"
-                            data-i18n-placeholder="customers.plzPlaceholder"
-                          />
-                        </div>
-                        <div class="input-group">
-                          <label for="customer-ort-input" data-i18n="customers.ortLabel">Ort</label>
-                          <input
-                            type="text"
-                            id="customer-ort-input"
-                            class="machine-input"
-                            maxlength="80"
-                            autocomplete="address-level2"
-                          />
-                        </div>
-                      </div>
-                      <span class="input-hint" id="customer-plz-hint" role="status"></span>
-                      <span class="input-hint" data-i18n="customers.hint"
-                        >Aus der Postleitzahl kommen Ort und Kartenpunkt — mehr wird nicht
-                        gebraucht.</span
-                      >
-                    </div>
-                  </div>
-
-                  <div class="input-group" data-view-level="advanced">
-                    <label for="machine-id-input" data-i18n="identify.machineId"
-                      >Maschinen-ID (optional)</label
-                    >
-                    <input
-                      type="text"
-                      id="machine-id-input"
-                      class="machine-input"
-                      placeholder="z.B. 1GB4-636A0-Ba1"
-                      data-i18n-placeholder="identify.machineId"
-                    />
-                    <span class="input-hint" data-i18n="identify.machineIdHint"
-                      >Optional: Interne Kennung (z.B. SAP-Nr.). Wird nicht für die Analyse
-                      verwendet.</span
-                    >
-                  </div>
-
-                  <!-- Sprint 4 UX: Fleet group input with autocomplete -->
-                  <div class="input-group" id="fleet-group-form">
-                    <label
-                      for="machine-fleet-group"
-                      class="form-label"
-                      id="fleet-group-label"
-                      data-i18n="fleet.group.label"
-                      >Flottengruppe (optional)</label
-                    >
-                    <input
-                      type="text"
-                      id="machine-fleet-group"
-                      class="machine-input"
-                      list="fleet-group-suggestions"
-                      maxlength="50"
-                      autocomplete="off"
-                      data-i18n-placeholder="fleet.group.hint"
-                    />
-                    <datalist id="fleet-group-suggestions">
-                      <!-- Populated dynamically from existing fleetGroup values -->
-                    </datalist>
-                    <span class="input-hint" id="fleet-group-hint" data-i18n="fleet.group.hint"
-                      >z.B. „Fernwärme Ost" – Maschinen mit gleicher Gruppe werden verglichen</span
-                    >
-                  </div>
-
-                  <button class="action-btn" id="create-machine-btn">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <!-- Professional Save Icon -->
-                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                      <polyline points="17 21 17 13 7 13 7 21" />
-                      <polyline points="7 3 7 8 15 8" />
-                    </svg>
-                    <span data-i18n="buttons.save">Speichern</span>
-                  </button>
-                  <div class="nfc-writer-actions">
-                    <button class="action-btn secondary-btn" id="open-nfc-writer-btn" type="button">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path d="M12 2v8m0 4v8" />
-                        <path d="M5 9h14v6H5z" />
-                        <path d="M7 9V7a5 5 0 0 1 10 0v2" />
-                      </svg>
-                      <span data-i18n="nfc.openWriter">NFC-Tag beschreiben</span>
-                    </button>
-                    <button
-                      class="action-btn secondary-btn"
-                      id="open-qr-generator-btn"
-                      type="button"
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <rect x="2" y="2" width="8" height="8" rx="1" />
-                        <rect x="14" y="2" width="8" height="8" rx="1" />
-                        <rect x="2" y="14" width="8" height="8" rx="1" />
-                        <rect x="14" y="14" width="4" height="4" />
-                        <rect x="20" y="14" width="2" height="2" />
-                        <rect x="14" y="20" width="2" height="2" />
-                        <rect x="20" y="20" width="2" height="2" />
-                      </svg>
-                      <span data-i18n="qrCode.openGenerator">QR-Code erstellen</span>
-                    </button>
-                    <p
-                      class="setting-description nfc-availability-hint"
-                      id="nfc-availability-hint"
-                      data-i18n="nfc.unavailableHint"
-                      style="display: none"
-                    >
-                      NFC-Schreiben ist nur in Chrome auf Android verfügbar.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <!-- /create-section -->
-
-              <!-- Welle 5: Machine overview section (initially hidden, shown via tile) -->
-            </div>
-          </div>
-        </section>
-
-        <!-- Container 3: Referenz aufnehmen -->
-        <!-- Die beiden Schrittkarten erscheinen erst, wenn eine Maschine
-             geladen ist (Router: lockPhases/unlockPhases setzen
-             body.zb-no-machine). Auf der Startseite ist der Bestand die
-             Startseite; ein Ablauf, der noch kein Ziel hat, gehört nicht
-             darüber. Siehe docs/startseite-entwurf.md §2 und §20. -->
-        <section class="main-container collapsible" id="card-record">
-          <div class="main-header section-header" data-target="record-reference-content">
-            <div class="header-with-icon">
-              <span class="step-badge" aria-hidden="true">2</span>
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--primary-color)"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <!-- Professional Microphone Icon -->
-                <rect x="9" y="2" width="6" height="12" rx="3" />
-                <path d="M5 10v2a7 7 0 0 0 14 0v-2" />
-                <line x1="12" y1="19" x2="12" y2="22" />
-                <line x1="8" y1="22" x2="16" y2="22" />
-              </svg>
-              <h3 class="container-title" data-i18n="reference.recordReference">
-                Referenz aufnehmen
-              </h3>
-              <button class="help-icon-btn" id="help-reference" aria-label="Hilfe: Referenz">
+              <h5 class="option-title" data-i18n="identify.machineOverview">Maschinenübersicht</h5>
+              <button class="help-icon-btn" id="help-machines" aria-label="Hilfe: Maschinen">
                 <svg
-                  width="18"
-                  height="18"
+                  width="16"
+                  height="16"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -1247,129 +723,989 @@
                 </svg>
               </button>
             </div>
-            <svg
-              class="collapse-icon"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <!-- Sprint 5 UX: Toggle + Help wrapper -->
+            <div class="workflow-toggle-row" data-view-level="expert">
+              <!-- Sprint 4 UX: Workflow mode toggle -->
+              <div class="workflow-toggle" id="workflow-toggle">
+                <button
+                  class="toggle-btn toggle-btn-active"
+                  id="toggle-series"
+                  aria-pressed="true"
+                  aria-label=""
+                >
+                  <!-- Text set via i18n -->
+                </button>
+                <button class="toggle-btn" id="toggle-fleet" aria-pressed="false" aria-label="">
+                  <!-- Text set via i18n -->
+                </button>
+              </div>
+              <button
+                class="help-icon-btn help-icon-inline"
+                id="help-fleet"
+                aria-label="Hilfe: Flottencheck"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </button>
+            </div>
+
+            <div id="machine-overview" class="machine-list">
+              <!-- Machine items will be added dynamically -->
+              <!-- Sprint 2 UX: Empty state mini 1-2-3 guide -->
+              <div id="machine-overview-empty" class="empty-state-guide" style="display: none">
+                <p class="empty-state-title" data-i18n="identify.emptyGuide.title">
+                  So funktioniert SoundFuchs
+                </p>
+                <div class="guide-steps">
+                  <div class="guide-step">
+                    <span class="guide-step-number">1</span>
+                    <div class="guide-step-content">
+                      <strong data-i18n="identify.emptyGuide.step1Title">Maschine anlegen</strong>
+                      <span data-i18n="identify.emptyGuide.step1Desc"
+                        >Gib deiner Maschine einen eindeutigen Namen.</span
+                      >
+                    </div>
+                  </div>
+                  <div class="guide-step">
+                    <span class="guide-step-number">2</span>
+                    <div class="guide-step-content">
+                      <strong data-i18n="identify.emptyGuide.step2Title">Referenz aufnehmen</strong>
+                      <span data-i18n="identify.emptyGuide.step2Desc"
+                        >10 Sekunden Normalzustand aufnehmen.</span
+                      >
+                    </div>
+                  </div>
+                  <div class="guide-step">
+                    <span class="guide-step-number">3</span>
+                    <div class="guide-step-content">
+                      <strong data-i18n="identify.emptyGuide.step3Title">Zustand prüfen</strong>
+                      <span data-i18n="identify.emptyGuide.step3Desc"
+                        >Vergleiche jederzeit gegen die Referenz.</span
+                      >
+                    </div>
+                  </div>
+                </div>
+                <button
+                  class="guide-cta-btn"
+                  id="empty-state-cta"
+                  data-i18n="identify.emptyGuide.cta"
+                >
+                  Erste Maschine anlegen
+                </button>
+              </div>
+            </div>
+            <button class="add-reference-btn" id="add-new-machine-btn">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span data-i18n="buttons.newMachine">Neue Maschine</span>
+            </button>
           </div>
-          <div id="record-reference-content" class="collapsible-content" style="display: none">
-            <!-- Level 1 (GMIA) Reference Content - State-based UI -->
-            <div class="level1-content" data-detection-mode="STATIONARY">
-              <!-- State B: No machine selected - Zero-friction recording enabled -->
-              <div id="reference-no-machine" class="container-content reference-state-content">
-                <!-- ZERO-FRICTION: Direct record button - machine will be auto-created -->
-                <div class="zero-friction-record">
-                  <p
-                    class="sub-description zero-friction-hint"
-                    data-i18n="zeroFriction.noMachineSelected"
+
+          <!-- Historie (Prüf-Verlauf)
+             Über der Liste stand zweimal dasselbe Wort, aus demselben
+             Sprachschlüssel: die Trennlinie „VERLAUF" und direkt darunter die
+             Überschrift „Verlauf". Dieselbe Doppelung wie über der
+             Maschinenliste, dort am 14.08.2026 entfernt — und mit derselben
+             Auflösung: Die Trennlinie geht, die Überschrift bleibt, weil sie
+             das Symbol trägt und für Vorlesewerkzeuge die Gliederung ist. -->
+          <div class="machine-selection-option" id="history-section">
+            <div class="option-header">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--primary-color)"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <!-- Clock/History Icon -->
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <h5 class="option-title" data-i18n="identify.history">Historie</h5>
+            </div>
+            <div id="history-list" class="history-list">
+              <!-- History items will be added dynamically -->
+              <p class="empty-state" id="history-empty" data-i18n="identify.noMeasurements">
+                Noch keine Messungen vorhanden
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- /machine-list-section -->
+
+        <div class="main-actions">
+          <!-- Container 2: Scannen oder anlegen
+             Die Karte hieß bis zum 14.08.2026 „Maschine auswählen". Das stimmte
+             einmal: Die Liste der gespeicherten Maschinen lag darin. Seit sie
+             oben vor der Schrittleiter steht, ist die Liste die Auswahl — und
+             eine Karte darunter mit derselben Überschrift war eine zweite Tür
+             in denselben Raum. Was hier wirklich drinsteht, sind die zwei Wege
+             zu einer Maschine, die noch nicht in der Liste ist: scannen oder
+             von Hand anlegen. Genau das sagt die Überschrift jetzt. -->
+          <!-- Die Bestandskarte. Sie trägt die zwei Wege zu einer Maschine, die
+             noch nicht in der Liste ist — scannen oder anlegen. Beides sind
+             Bestandsaktionen: Sie gehören dorthin, wo man Maschinen sucht,
+             nicht dorthin, wo man an einer arbeitet. Der Bezeichner erlaubt
+             `tiefe.css`, sie in der Arbeitsebene herauszunehmen. -->
+          <section class="main-container collapsible" id="karte-bestandswege">
+            <div class="main-header section-header" data-target="select-machine-content">
+              <div class="header-with-icon">
+                <span class="step-badge" aria-hidden="true">1</span>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--primary-color)"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <!-- Professional Machine/Settings Icon -->
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 1v6m0 6v10M1 12h6m6 0h10" />
+                  <circle cx="12" cy="12" r="9" stroke-width="1.5" />
+                  <path d="M16.24 7.76l-8.48 8.48M7.76 7.76l8.48 8.48" stroke-width="1" />
+                </svg>
+                <h3 class="container-title" data-i18n="identify.addMachine">
+                  Scannen oder anlegen
+                </h3>
+              </div>
+              <svg
+                class="collapse-icon"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            <div id="select-machine-content" class="collapsible-content" style="display: none">
+              <div class="container-content">
+                <!-- Welle 5: Entry tiles for "Maschine auswählen" -->
+                <div class="identify-tiles" id="identify-tiles">
+                  <button class="identify-tile" id="identify-tile-scan" data-target="scan-section">
+                    <div class="identify-tile-icon">
+                      <svg
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                      >
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                        <line x1="17" y1="14" x2="17" y2="21" />
+                        <line x1="14" y1="17.5" x2="21" y2="17.5" />
+                      </svg>
+                    </div>
+                    <span class="identify-tile-label" data-i18n="identify.tiles.scanQR"
+                      >QR / Barcode</span
+                    >
+                  </button>
+
+                  <button
+                    class="identify-tile"
+                    id="identify-tile-create"
+                    data-target="create-section"
                   >
-                    Keine Maschine ausgewählt – wird automatisch erstellt
+                    <div class="identify-tile-icon">
+                      <svg
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="16" />
+                        <line x1="8" y1="12" x2="16" y2="12" />
+                      </svg>
+                    </div>
+                    <span class="identify-tile-label" data-i18n="identify.tiles.newMachine"
+                      >Neue Maschine</span
+                    >
+                  </button>
+                </div>
+
+                <!-- Welle 5: Scan section (initially hidden, shown via tile) -->
+                <div class="identify-section" id="scan-section" style="display: none">
+                  <!-- Option 1: Scan QR Code -->
+                  <div class="machine-selection-option">
+                    <div class="option-header">
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="var(--primary-color)"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <!-- Professional QR/Scan Icon -->
+                        <rect x="3" y="3" width="8" height="8" rx="1" />
+                        <rect x="13" y="3" width="8" height="8" rx="1" />
+                        <rect x="3" y="13" width="8" height="8" rx="1" />
+                        <rect x="5" y="5" width="4" height="4" />
+                        <rect x="15" y="5" width="4" height="4" />
+                        <rect x="5" y="15" width="4" height="4" />
+                        <path d="M13 13h2v2m0 2h2v2m2-2h2v2" />
+                      </svg>
+                      <h5 class="option-title" data-i18n="identify.scanQrCode">QR-Code scannen</h5>
+                    </div>
+                    <p class="option-description" data-i18n="identify.scanQrDescription">
+                      Identifiziere Maschine via QR-Code
+                    </p>
+                    <button class="action-btn secondary-btn" id="scan-btn">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <!-- Professional Camera/Scan Icon -->
+                        <path
+                          d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+                        />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                      <span data-i18n="buttons.scan">Scannen</span>
+                    </button>
+                  </div>
+                </div>
+                <!-- /scan-section -->
+
+                <!-- Welle 5: Create section (initially hidden, shown via tile) -->
+                <div class="identify-section" id="create-section" style="display: none">
+                  <div class="option-divider">
+                    <span data-i18n="common.or">oder</span>
+                  </div>
+
+                  <!-- Option 2: Manual Entry -->
+                  <div class="machine-selection-option">
+                    <div class="option-header">
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="var(--primary-color)"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <!-- Professional Edit/Create Icon -->
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      <h5 class="option-title" data-i18n="identify.manualEntry">Manuell anlegen</h5>
+                    </div>
+                    <p class="option-description" data-i18n="identify.manualEntryDescription">
+                      Neue Maschine mit Namen erstellen
+                    </p>
+                    <div class="input-group input-group-required">
+                      <label for="machine-name-input">
+                        <span data-i18n="identify.machineName">Maschinenname</span
+                        ><span class="required-star">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="machine-name-input"
+                        class="machine-input"
+                        placeholder="z.B. Pumpe 3 – Westhalle"
+                        data-i18n-placeholder="identify.machineNamePlaceholder"
+                      />
+                      <span
+                        class="input-hint"
+                        id="machine-name-hint"
+                        data-i18n="identify.machineNameHint"
+                        >Eindeutiger Name, z.B. Pumpe 3 – Westhalle</span
+                      >
+                      <span
+                        class="input-error"
+                        id="machine-name-error"
+                        role="alert"
+                        data-i18n="identify.machineNameRequired"
+                        >Bitte gib einen Maschinennamen ein.</span
+                      >
+                    </div>
+                    <!--
+                    Standort — der Ort, an dem die Maschine steht. Kundenname,
+                    Postleitzahl, Stadt; der Name darf auch „Zuhause" sein.
+                    Steht bewusst vor der Maschinen-ID: Wo eine Maschine steht,
+                    weiß man beim Anlegen; eine SAP-Nummer trägt man später
+                    nach. Voreinstellung ist "kein Standort", das Feld kostet also
+                    niemanden etwas. Siehe docs/kunden-und-karte.md.
+                  -->
+                    <div class="input-group" id="machine-customer-form">
+                      <label for="machine-customer-select" data-i18n="customers.label"
+                        >Standort (optional)</label
+                      >
+                      <select id="machine-customer-select" class="machine-input">
+                        <!-- Die beiden festen Einträge stehen hier und nicht im
+                           Quelltext, damit sie beim Sprachwechsel mitziehen.
+                           Die Standorte selbst werden dazwischen eingefügt. -->
+                        <option value="" data-i18n="customers.none">— kein Standort —</option>
+                        <option value="__neu__" data-i18n="customers.new">+ Neuer Standort</option>
+                      </select>
+                      <div
+                        id="new-customer-fields"
+                        class="new-customer-fields"
+                        style="display: none"
+                      >
+                        <div class="input-group input-group-required">
+                          <label for="customer-name-input">
+                            <span data-i18n="customers.nameLabel">Name</span
+                            ><span class="required-star">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            id="customer-name-input"
+                            class="machine-input"
+                            maxlength="80"
+                            autocomplete="off"
+                            placeholder="z.B. Müller Guss GmbH oder Zuhause"
+                            data-i18n-placeholder="customers.namePlaceholder"
+                          />
+                        </div>
+                        <div class="customer-place-row">
+                          <div class="input-group input-group-required">
+                            <label for="customer-plz-input">
+                              <span data-i18n="customers.plzLabel">PLZ</span
+                              ><span class="required-star">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              id="customer-plz-input"
+                              class="machine-input"
+                              inputmode="numeric"
+                              maxlength="5"
+                              autocomplete="postal-code"
+                              placeholder="45127"
+                              data-i18n-placeholder="customers.plzPlaceholder"
+                            />
+                          </div>
+                          <div class="input-group">
+                            <label for="customer-ort-input" data-i18n="customers.ortLabel"
+                              >Ort</label
+                            >
+                            <input
+                              type="text"
+                              id="customer-ort-input"
+                              class="machine-input"
+                              maxlength="80"
+                              autocomplete="address-level2"
+                            />
+                          </div>
+                        </div>
+                        <span class="input-hint" id="customer-plz-hint" role="status"></span>
+                        <span class="input-hint" data-i18n="customers.hint"
+                          >Aus der Postleitzahl kommen Ort und Kartenpunkt — mehr wird nicht
+                          gebraucht.</span
+                        >
+                      </div>
+                    </div>
+
+                    <div class="input-group" data-view-level="advanced">
+                      <label for="machine-id-input" data-i18n="identify.machineId"
+                        >Maschinen-ID (optional)</label
+                      >
+                      <input
+                        type="text"
+                        id="machine-id-input"
+                        class="machine-input"
+                        placeholder="z.B. 1GB4-636A0-Ba1"
+                        data-i18n-placeholder="identify.machineId"
+                      />
+                      <span class="input-hint" data-i18n="identify.machineIdHint"
+                        >Optional: Interne Kennung (z.B. SAP-Nr.). Wird nicht für die Analyse
+                        verwendet.</span
+                      >
+                    </div>
+
+                    <!-- Sprint 4 UX: Fleet group input with autocomplete -->
+                    <div class="input-group" id="fleet-group-form">
+                      <label
+                        for="machine-fleet-group"
+                        class="form-label"
+                        id="fleet-group-label"
+                        data-i18n="fleet.group.label"
+                        >Flottengruppe (optional)</label
+                      >
+                      <input
+                        type="text"
+                        id="machine-fleet-group"
+                        class="machine-input"
+                        list="fleet-group-suggestions"
+                        maxlength="50"
+                        autocomplete="off"
+                        data-i18n-placeholder="fleet.group.hint"
+                      />
+                      <datalist id="fleet-group-suggestions">
+                        <!-- Populated dynamically from existing fleetGroup values -->
+                      </datalist>
+                      <span class="input-hint" id="fleet-group-hint" data-i18n="fleet.group.hint"
+                        >z.B. „Fernwärme Ost" – Maschinen mit gleicher Gruppe werden
+                        verglichen</span
+                      >
+                    </div>
+
+                    <button class="action-btn" id="create-machine-btn">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <!-- Professional Save Icon -->
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                        <polyline points="17 21 17 13 7 13 7 21" />
+                        <polyline points="7 3 7 8 15 8" />
+                      </svg>
+                      <span data-i18n="buttons.save">Speichern</span>
+                    </button>
+                    <div class="nfc-writer-actions">
+                      <button
+                        class="action-btn secondary-btn"
+                        id="open-nfc-writer-btn"
+                        type="button"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M12 2v8m0 4v8" />
+                          <path d="M5 9h14v6H5z" />
+                          <path d="M7 9V7a5 5 0 0 1 10 0v2" />
+                        </svg>
+                        <span data-i18n="nfc.openWriter">NFC-Tag beschreiben</span>
+                      </button>
+                      <button
+                        class="action-btn secondary-btn"
+                        id="open-qr-generator-btn"
+                        type="button"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <rect x="2" y="2" width="8" height="8" rx="1" />
+                          <rect x="14" y="2" width="8" height="8" rx="1" />
+                          <rect x="2" y="14" width="8" height="8" rx="1" />
+                          <rect x="14" y="14" width="4" height="4" />
+                          <rect x="20" y="14" width="2" height="2" />
+                          <rect x="14" y="20" width="2" height="2" />
+                          <rect x="20" y="20" width="2" height="2" />
+                        </svg>
+                        <span data-i18n="qrCode.openGenerator">QR-Code erstellen</span>
+                      </button>
+                      <p
+                        class="setting-description nfc-availability-hint"
+                        id="nfc-availability-hint"
+                        data-i18n="nfc.unavailableHint"
+                        style="display: none"
+                      >
+                        NFC-Schreiben ist nur in Chrome auf Android verfügbar.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <!-- /create-section -->
+
+                <!-- Welle 5: Machine overview section (initially hidden, shown via tile) -->
+              </div>
+            </div>
+          </section>
+
+          <!-- Container 3: Referenz aufnehmen -->
+          <!-- Die beiden Schrittkarten erscheinen erst, wenn eine Maschine
+             geladen ist (Router: lockPhases/unlockPhases setzen
+             body.zb-no-machine). Auf der Startseite ist der Bestand die
+             Startseite; ein Ablauf, der noch kein Ziel hat, gehört nicht
+             darüber. Siehe docs/startseite-entwurf.md §2 und §20. -->
+          <section class="main-container collapsible" id="card-record">
+            <div class="main-header section-header" data-target="record-reference-content">
+              <div class="header-with-icon">
+                <span class="step-badge" aria-hidden="true">2</span>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--primary-color)"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <!-- Professional Microphone Icon -->
+                  <rect x="9" y="2" width="6" height="12" rx="3" />
+                  <path d="M5 10v2a7 7 0 0 0 14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="22" />
+                  <line x1="8" y1="22" x2="16" y2="22" />
+                </svg>
+                <h3 class="container-title" data-i18n="reference.recordReference">
+                  Referenz aufnehmen
+                </h3>
+                <button class="help-icon-btn" id="help-reference" aria-label="Hilfe: Referenz">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </button>
+              </div>
+              <svg
+                class="collapse-icon"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            <div id="record-reference-content" class="collapsible-content" style="display: none">
+              <!-- Level 1 (GMIA) Reference Content - State-based UI -->
+              <div class="level1-content" data-detection-mode="STATIONARY">
+                <!-- State B: No machine selected - Zero-friction recording enabled -->
+                <div id="reference-no-machine" class="container-content reference-state-content">
+                  <!-- ZERO-FRICTION: Direct record button - machine will be auto-created -->
+                  <div class="zero-friction-record">
+                    <p
+                      class="sub-description zero-friction-hint"
+                      data-i18n="zeroFriction.noMachineSelected"
+                    >
+                      Keine Maschine ausgewählt – wird automatisch erstellt
+                    </p>
+                    <button
+                      class="action-btn reference-main-btn zero-friction-btn"
+                      id="record-reference-btn"
+                      data-i18n="buttons.record"
+                    >
+                      Aufnehmen
+                    </button>
+                  </div>
+                  <!-- Alternative: Manual machine selection -->
+                  <div class="reference-or-divider">
+                    <span data-i18n="common.or">oder</span>
+                  </div>
+                  <div class="diagnose-tiles">
+                    <!-- Tile 1: Scan QR/Barcode -->
+                    <button class="diagnose-tile" id="reference-scan-btn">
+                      <div class="diagnose-tile-icon">
+                        <svg
+                          width="40"
+                          height="40"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <rect x="3" y="3" width="7" height="7" rx="1" />
+                          <rect x="14" y="3" width="7" height="7" rx="1" />
+                          <rect x="3" y="14" width="7" height="7" rx="1" />
+                          <rect x="14" y="14" width="3" height="3" />
+                          <path d="M17 14h3v3m0 3h-3m3 0v-3" />
+                        </svg>
+                      </div>
+                      <span class="diagnose-tile-label" data-i18n="diagnose.scanCode"
+                        >QR scannen</span
+                      >
+                    </button>
+                    <!-- Tile 2: Select existing machine -->
+                    <button class="diagnose-tile" id="reference-select-btn">
+                      <div class="diagnose-tile-icon">
+                        <svg
+                          width="40"
+                          height="40"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <rect x="3" y="4" width="18" height="4" rx="1" />
+                          <rect x="3" y="10" width="18" height="4" rx="1" />
+                          <rect x="3" y="16" width="18" height="4" rx="1" />
+                        </svg>
+                      </div>
+                      <span class="diagnose-tile-label" data-i18n="diagnose.selectExisting"
+                        >Maschine wählen</span
+                      >
+                    </button>
+                    <!-- Tile 3: Create new machine -->
+                    <button class="diagnose-tile" id="reference-create-btn">
+                      <div class="diagnose-tile-icon">
+                        <svg
+                          width="40"
+                          height="40"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                      </div>
+                      <span class="diagnose-tile-label" data-i18n="diagnose.createNew"
+                        >Neue Maschine</span
+                      >
+                    </button>
+                  </div>
+                </div>
+
+                <!-- State A: Machine selected - Ready to record -->
+                <div
+                  id="reference-machine-ready"
+                  class="container-content reference-state-content"
+                  style="display: none"
+                >
+                  <div class="diagnose-machine-info">
+                    <div class="diagnose-machine-details">
+                      <h4 class="diagnose-machine-name" id="reference-selected-machine-name">—</h4>
+                      <p class="diagnose-machine-meta" id="reference-selected-machine-meta"></p>
+                    </div>
+                    <button
+                      class="diagnose-change-machine-btn"
+                      id="reference-change-machine-btn"
+                      data-i18n-title="reference.changeMachine"
+                      title="Maschine wechseln"
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="sub-description" id="reference-duration-text">
+                    10-Sekunden Referenzaufnahme
                   </p>
                   <button
-                    class="action-btn reference-main-btn zero-friction-btn"
-                    id="record-reference-btn"
+                    class="action-btn reference-main-btn"
+                    id="record-btn"
                     data-i18n="buttons.record"
                   >
                     Aufnehmen
                   </button>
                 </div>
-                <!-- Alternative: Manual machine selection -->
-                <div class="reference-or-divider">
-                  <span data-i18n="common.or">oder</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Container 4: Zustand prüfen (Primary CTA) -->
+          <section class="main-container collapsible" data-variant="primary" id="card-check">
+            <div class="main-header section-header" data-target="run-diagnosis-content">
+              <div class="header-with-icon">
+                <span class="step-badge" aria-hidden="true">3</span>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--primary-color)"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <!-- Stethoscope Icon -->
+                  <path d="M6 3v4a4 4 0 0 0 8 0V3" />
+                  <path d="M10 7v5a4 4 0 0 0 8 0v-2" />
+                  <circle cx="18" cy="12" r="2" />
+                </svg>
+                <h3 class="container-title" data-i18n="buttons.startDiagnosis">Zustand prüfen</h3>
+                <button class="help-icon-btn" id="help-diagnose" aria-label="Hilfe: Prüfung">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </button>
+              </div>
+              <svg
+                class="collapse-icon"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            <div id="run-diagnosis-content" class="collapsible-content" style="display: none">
+              <!-- NEW: Simplified Auto-Detection Flow -->
+              <!-- Primary CTA: "Jetzt prüfen" - starts auto-detection without machine selection -->
+              <div id="diagnose-no-machine" class="container-content diagnose-state-content">
+                <!-- Primary Action: Auto-detect button -->
+                <div class="auto-detect-primary">
+                  <button class="action-btn auto-detect-btn" id="diagnose-auto-detect-btn">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      <line x1="12" y1="19" x2="12" y2="23" />
+                      <line x1="8" y1="23" x2="16" y2="23" />
+                    </svg>
+                    <span data-i18n="autoDetect.startButton">Jetzt prüfen</span>
+                  </button>
+                  <p class="auto-detect-hint" data-i18n="autoDetect.hint">
+                    Das System erkennt automatisch bekannte Maschinen
+                  </p>
                 </div>
-                <div class="diagnose-tiles">
-                  <!-- Tile 1: Scan QR/Barcode -->
-                  <button class="diagnose-tile" id="reference-scan-btn">
-                    <div class="diagnose-tile-icon">
-                      <svg
-                        width="40"
-                        height="40"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
+
+                <!-- Secondary: Manual selection toggle -->
+                <button class="manual-selection-toggle" id="diagnose-show-manual-btn">
+                  <span data-i18n="autoDetect.showManualSelection">Maschine manuell auswählen</span>
+                  <svg
+                    class="chevron-icon"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                <!-- Manual selection options (hidden by default) -->
+                <div
+                  id="diagnose-manual-selection"
+                  class="manual-selection-options"
+                  style="display: none"
+                >
+                  <div class="diagnose-tiles">
+                    <!-- Tile 1: Scan QR/Barcode -->
+                    <button class="diagnose-tile" id="diagnose-scan-btn">
+                      <div class="diagnose-tile-icon">
+                        <svg
+                          width="40"
+                          height="40"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <rect x="3" y="3" width="7" height="7" rx="1" />
+                          <rect x="14" y="3" width="7" height="7" rx="1" />
+                          <rect x="3" y="14" width="7" height="7" rx="1" />
+                          <rect x="14" y="14" width="3" height="3" />
+                          <path d="M17 14h3v3m0 3h-3m3 0v-3" />
+                        </svg>
+                      </div>
+                      <span class="diagnose-tile-label" data-i18n="diagnose.scanCode"
+                        >QR scannen</span
                       >
-                        <rect x="3" y="3" width="7" height="7" rx="1" />
-                        <rect x="14" y="3" width="7" height="7" rx="1" />
-                        <rect x="3" y="14" width="7" height="7" rx="1" />
-                        <rect x="14" y="14" width="3" height="3" />
-                        <path d="M17 14h3v3m0 3h-3m3 0v-3" />
-                      </svg>
-                    </div>
-                    <span class="diagnose-tile-label" data-i18n="diagnose.scanCode"
-                      >QR scannen</span
+                    </button>
+                    <!-- Tile 2: Select existing machine -->
+                    <button class="diagnose-tile" id="diagnose-select-btn">
+                      <div class="diagnose-tile-icon">
+                        <svg
+                          width="40"
+                          height="40"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <rect x="3" y="4" width="18" height="4" rx="1" />
+                          <rect x="3" y="10" width="18" height="4" rx="1" />
+                          <rect x="3" y="16" width="18" height="4" rx="1" />
+                        </svg>
+                      </div>
+                      <span class="diagnose-tile-label" data-i18n="diagnose.selectExisting"
+                        >Maschine wählen</span
+                      >
+                    </button>
+                    <!-- Tile 3: Create new machine -->
+                    <button class="diagnose-tile" id="diagnose-create-btn">
+                      <div class="diagnose-tile-icon">
+                        <svg
+                          width="40"
+                          height="40"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                      </div>
+                      <span class="diagnose-tile-label" data-i18n="diagnose.createNew"
+                        >Neue Maschine</span
+                      >
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Sprint 9: Fleet Quick Check Separator -->
+                <div class="phase3-separator">
+                  <span class="phase3-separator-text" data-i18n="diagnose.orFleet">oder</span>
+                </div>
+
+                <!-- Sprint 9: Fleet Quick Check Button + Help Icon -->
+                <div class="phase3-fleet-action">
+                  <button
+                    class="phase3-fleet-btn"
+                    id="fleet-quickcheck-btn"
+                    data-i18n-aria-label="diagnose.fleetQuickCheckAria"
+                    aria-label="Flotten-Schnellcheck: Mehrere Maschinen vergleichen"
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
                     >
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                    <span data-i18n="diagnose.fleetQuickCheck">Flotten-Schnellcheck</span>
                   </button>
-                  <!-- Tile 2: Select existing machine -->
-                  <button class="diagnose-tile" id="reference-select-btn">
-                    <div class="diagnose-tile-icon">
-                      <svg
-                        width="40"
-                        height="40"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <rect x="3" y="4" width="18" height="4" rx="1" />
-                        <rect x="3" y="10" width="18" height="4" rx="1" />
-                        <rect x="3" y="16" width="18" height="4" rx="1" />
-                      </svg>
-                    </div>
-                    <span class="diagnose-tile-label" data-i18n="diagnose.selectExisting"
-                      >Maschine wählen</span
+                  <button
+                    class="help-icon-btn help-icon-inline"
+                    id="help-fleet-quickcheck"
+                    aria-label="Hilfe: Flotten-Schnellcheck"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
                     >
-                  </button>
-                  <!-- Tile 3: Create new machine -->
-                  <button class="diagnose-tile" id="reference-create-btn">
-                    <div class="diagnose-tile-icon">
-                      <svg
-                        width="40"
-                        height="40"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                      </svg>
-                    </div>
-                    <span class="diagnose-tile-label" data-i18n="diagnose.createNew"
-                      >Neue Maschine</span
-                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                      <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
                   </button>
                 </div>
               </div>
 
-              <!-- State A: Machine selected - Ready to record -->
+              <!-- State A: Machine selected - Ready to analyze -->
               <div
-                id="reference-machine-ready"
-                class="container-content reference-state-content"
+                id="diagnose-machine-ready"
+                class="container-content diagnose-state-content"
                 style="display: none"
               >
                 <div class="diagnose-machine-info">
                   <div class="diagnose-machine-details">
-                    <h4 class="diagnose-machine-name" id="reference-selected-machine-name">—</h4>
-                    <p class="diagnose-machine-meta" id="reference-selected-machine-meta"></p>
+                    <h4 class="diagnose-machine-name" id="diagnose-selected-machine-name">—</h4>
+                    <p class="diagnose-machine-meta" id="diagnose-selected-machine-meta"></p>
                   </div>
                   <button
                     class="diagnose-change-machine-btn"
-                    id="reference-change-machine-btn"
-                    data-i18n-title="reference.changeMachine"
+                    id="diagnose-change-machine-btn"
+                    data-i18n-title="diagnose.changeMachine"
                     title="Maschine wechseln"
                   >
                     <svg
@@ -1387,315 +1723,46 @@
                     </svg>
                   </button>
                 </div>
-                <p class="sub-description" id="reference-duration-text">
-                  10-Sekunden Referenzaufnahme
-                </p>
+                <!-- Analyze button only visible when machine is selected -->
                 <button
-                  class="action-btn reference-main-btn"
-                  id="record-btn"
-                  data-i18n="buttons.record"
+                  class="action-btn diagnose-main-btn"
+                  id="diagnose-btn"
+                  data-i18n="buttons.analyze"
                 >
-                  Aufnehmen
+                  Analysieren
                 </button>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
 
-        <!-- Container 4: Zustand prüfen (Primary CTA) -->
-        <section class="main-container collapsible" data-variant="primary" id="card-check">
-          <div class="main-header section-header" data-target="run-diagnosis-content">
-            <div class="header-with-icon">
-              <span class="step-badge" aria-hidden="true">3</span>
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--primary-color)"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <!-- Stethoscope Icon -->
-                <path d="M6 3v4a4 4 0 0 0 8 0V3" />
-                <path d="M10 7v5a4 4 0 0 0 8 0v-2" />
-                <circle cx="18" cy="12" r="2" />
-              </svg>
-              <h3 class="container-title" data-i18n="buttons.startDiagnosis">Zustand prüfen</h3>
-              <button class="help-icon-btn" id="help-diagnose" aria-label="Hilfe: Prüfung">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-              </button>
-            </div>
-            <svg
-              class="collapse-icon"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-          <div id="run-diagnosis-content" class="collapsible-content" style="display: none">
-            <!-- NEW: Simplified Auto-Detection Flow -->
-            <!-- Primary CTA: "Jetzt prüfen" - starts auto-detection without machine selection -->
-            <div id="diagnose-no-machine" class="container-content diagnose-state-content">
-              <!-- Primary Action: Auto-detect button -->
-              <div class="auto-detect-primary">
-                <button class="action-btn auto-detect-btn" id="diagnose-auto-detect-btn">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                    <line x1="12" y1="19" x2="12" y2="23" />
-                    <line x1="8" y1="23" x2="16" y2="23" />
-                  </svg>
-                  <span data-i18n="autoDetect.startButton">Jetzt prüfen</span>
-                </button>
-                <p class="auto-detect-hint" data-i18n="autoDetect.hint">
-                  Das System erkennt automatisch bekannte Maschinen
-                </p>
-              </div>
-
-              <!-- Secondary: Manual selection toggle -->
-              <button class="manual-selection-toggle" id="diagnose-show-manual-btn">
-                <span data-i18n="autoDetect.showManualSelection">Maschine manuell auswählen</span>
-                <svg
-                  class="chevron-icon"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-
-              <!-- Manual selection options (hidden by default) -->
-              <div
-                id="diagnose-manual-selection"
-                class="manual-selection-options"
-                style="display: none"
-              >
-                <div class="diagnose-tiles">
-                  <!-- Tile 1: Scan QR/Barcode -->
-                  <button class="diagnose-tile" id="diagnose-scan-btn">
-                    <div class="diagnose-tile-icon">
-                      <svg
-                        width="40"
-                        height="40"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <rect x="3" y="3" width="7" height="7" rx="1" />
-                        <rect x="14" y="3" width="7" height="7" rx="1" />
-                        <rect x="3" y="14" width="7" height="7" rx="1" />
-                        <rect x="14" y="14" width="3" height="3" />
-                        <path d="M17 14h3v3m0 3h-3m3 0v-3" />
-                      </svg>
-                    </div>
-                    <span class="diagnose-tile-label" data-i18n="diagnose.scanCode"
-                      >QR scannen</span
-                    >
-                  </button>
-                  <!-- Tile 2: Select existing machine -->
-                  <button class="diagnose-tile" id="diagnose-select-btn">
-                    <div class="diagnose-tile-icon">
-                      <svg
-                        width="40"
-                        height="40"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <rect x="3" y="4" width="18" height="4" rx="1" />
-                        <rect x="3" y="10" width="18" height="4" rx="1" />
-                        <rect x="3" y="16" width="18" height="4" rx="1" />
-                      </svg>
-                    </div>
-                    <span class="diagnose-tile-label" data-i18n="diagnose.selectExisting"
-                      >Maschine wählen</span
-                    >
-                  </button>
-                  <!-- Tile 3: Create new machine -->
-                  <button class="diagnose-tile" id="diagnose-create-btn">
-                    <div class="diagnose-tile-icon">
-                      <svg
-                        width="40"
-                        height="40"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                      </svg>
-                    </div>
-                    <span class="diagnose-tile-label" data-i18n="diagnose.createNew"
-                      >Neue Maschine</span
-                    >
-                  </button>
-                </div>
-              </div>
-
-              <!-- Sprint 9: Fleet Quick Check Separator -->
-              <div class="phase3-separator">
-                <span class="phase3-separator-text" data-i18n="diagnose.orFleet">oder</span>
-              </div>
-
-              <!-- Sprint 9: Fleet Quick Check Button + Help Icon -->
-              <div class="phase3-fleet-action">
-                <button
-                  class="phase3-fleet-btn"
-                  id="fleet-quickcheck-btn"
-                  data-i18n-aria-label="diagnose.fleetQuickCheckAria"
-                  aria-label="Flotten-Schnellcheck: Mehrere Maschinen vergleichen"
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                  </svg>
-                  <span data-i18n="diagnose.fleetQuickCheck">Flotten-Schnellcheck</span>
-                </button>
-                <button
-                  class="help-icon-btn help-icon-inline"
-                  id="help-fleet-quickcheck"
-                  aria-label="Hilfe: Flotten-Schnellcheck"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- State A: Machine selected - Ready to analyze -->
-            <div
-              id="diagnose-machine-ready"
-              class="container-content diagnose-state-content"
-              style="display: none"
-            >
-              <div class="diagnose-machine-info">
-                <div class="diagnose-machine-details">
-                  <h4 class="diagnose-machine-name" id="diagnose-selected-machine-name">—</h4>
-                  <p class="diagnose-machine-meta" id="diagnose-selected-machine-meta"></p>
-                </div>
-                <button
-                  class="diagnose-change-machine-btn"
-                  id="diagnose-change-machine-btn"
-                  data-i18n-title="diagnose.changeMachine"
-                  title="Maschine wechseln"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </button>
-              </div>
-              <!-- Analyze button only visible when machine is selected -->
-              <button
-                class="action-btn diagnose-main-btn"
-                id="diagnose-btn"
-                data-i18n="buttons.analyze"
-              >
-                Analysieren
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- Footer / Legal Info - Minimalist 2x2 Grid -->
-      <!-- Die Fußzeile ist verborgen, aber vollständig vorhanden.
+        <!-- Footer / Legal Info - Minimalist 2x2 Grid -->
+        <!-- Die Fußzeile ist verborgen, aber vollständig vorhanden.
 
            Ihre vier Wege stehen seit dem 14.08.2026 hinter dem Info-Knopf der
            Kopfleiste. Das Schiebefenster dort löst genau diese Knöpfe aus,
            statt deren Logik nachzubauen — deshalb bleiben sie im Markup. Wer
            sie entfernt, muss vier Modal-Verdrahtungen nachbauen und hat dabei
            nichts gewonnen. -->
-      <footer hidden class="footer">
-        <div class="footer-grid">
-          <button class="footer-link" id="settings-btn" data-i18n="footer.settings">
-            Einstellungen
-          </button>
-          <button class="footer-link" id="about-btn" data-i18n="footer.about">
-            Über SoundFuchs
-          </button>
-          <button class="footer-link" id="datenschutz-btn" data-i18n="footer.privacy">
-            Datenschutz
-          </button>
-          <button class="footer-link" id="impressum-btn" data-i18n="footer.impressum">
-            Impressum
-          </button>
-        </div>
-      </footer>
-    </div>
+        <footer hidden class="footer">
+          <div class="footer-grid">
+            <button class="footer-link" id="settings-btn" data-i18n="footer.settings">
+              Einstellungen
+            </button>
+            <button class="footer-link" id="about-btn" data-i18n="footer.about">
+              Über SoundFuchs
+            </button>
+            <button class="footer-link" id="datenschutz-btn" data-i18n="footer.privacy">
+              Datenschutz
+            </button>
+            <button class="footer-link" id="impressum-btn" data-i18n="footer.impressum">
+              Impressum
+            </button>
+          </div>
+        </footer>
+      </div>
 
-    <!-- ZWEI SCHWEBENDE PILLEN
+      <!-- ZWEI SCHWEBENDE PILLEN
          Vorbild ist die Knopfzeile über der Karte von TourFuchs
          (`.map-fab-row` / `.map-fab`): zwei gleichrangige Angebote, gleich
          aussehend, nebeneinander, jeweils mit einem Fuchs, der abwechselnd
@@ -1711,20 +1778,20 @@
          `left: 50%` zu arbeiten: Ein fixiertes Element ohne rechte Kante
          bekommt als verfügbare Breite nur den Rest rechts vom Startpunkt, und
          die zweite Pille bräche um. Steht so auch im Vorbild. -->
-    <div class="fab-row" id="fab-row">
-      <button type="button" class="fab" id="fab-detect">
-        <span class="fab-icon" aria-hidden="true">🎧</span>
-        <span class="fab-label" data-i18n="fab.detect">Erkennen</span>
-        <span class="fab-fox" aria-hidden="true">🦊</span>
-      </button>
-      <button type="button" class="fab" id="fab-new-machine">
-        <span class="fab-icon" aria-hidden="true">➕</span>
-        <span class="fab-label" data-i18n="fab.newMachine">Anlegen</span>
-        <span class="fab-fox" aria-hidden="true">🦊</span>
-      </button>
-    </div>
+      <div class="fab-row" id="fab-row">
+        <button type="button" class="fab" id="fab-detect">
+          <span class="fab-icon" aria-hidden="true">🎧</span>
+          <span class="fab-label" data-i18n="fab.detect">Erkennen</span>
+          <span class="fab-fox" aria-hidden="true">🦊</span>
+        </button>
+        <button type="button" class="fab" id="fab-new-machine">
+          <span class="fab-icon" aria-hidden="true">➕</span>
+          <span class="fab-label" data-i18n="fab.newMachine">Anlegen</span>
+          <span class="fab-fox" aria-hidden="true">🦊</span>
+        </button>
+      </div>
 
-    <!-- GRIFF AM UNTEREN RAND
+      <!-- GRIFF AM UNTEREN RAND
          Aufbau von TourFuchs übernommen und aus dem Entwurf der Startseite
          (docs/startseite-entwurf.md, Bild A): ein schmaler Streifen, der immer
          am unteren Rand liegt, mit Griffleiste und Beschriftung.
@@ -1739,16 +1806,16 @@
          das Fenster selbst bringt seine Griffleiste und das Wischen zum
          Schließen schon mit. Eine eigene Zieh-Erkennung wäre eine zweite
          Mechanik für dieselbe Geste. -->
-    <!-- Umbenannt am 16.08.2026 von `sheet-grip` auf `tiefe-grip`.
+      <!-- Umbenannt am 16.08.2026 von `sheet-grip` auf `tiefe-grip`.
          Der Stamm bringt seinen eigenen `#sheet-grip` mit — den Griff des
          Blatts, das die Karte trägt. Zwei Elemente desselben Namens im selben
          Dokument sind kein Stilfehler, sondern ein Fehler: `getElementById`
          liefert das erste, und welches das ist, entscheidet die Reihenfolge im
          HTML. Der Name gehört dem Stamm; dieser Griff hier bekommt den seinen. -->
-    <button type="button" class="tiefe-grip" id="tiefe-grip">
-      <span class="tiefe-grip-line" aria-hidden="true"></span>
-      <span class="tiefe-grip-label" data-i18n="search.sheetTitle">Einstellungen &amp; mehr</span>
-    </button>
+      <button type="button" class="tiefe-grip" id="tiefe-grip">
+        <span class="tiefe-grip-line" aria-hidden="true"></span>
+        <span class="tiefe-grip-label" data-i18n="search.sheetTitle">Einstellungen &amp; mehr</span>
+      </button>
     </div>
     <!-- Ende „hinter dem Scharnier" -->
 
@@ -2888,8 +2955,8 @@
             <strong>Dein Gerät ist der Server.</strong><br />
             SoundFuchs ist eine "Offline-First" Progressive Web App. Audio, Referenzprofile,
             Vergleiche und Datenbank-Einträge werden <strong>lokal</strong> in deinem Browser
-            verarbeitet und gespeichert. SoundFuchs sendet dein Audio nicht an den Betreiber oder
-            an Analyse-Dienste. Für Hosting, externe Karten und den erstmaligen optionalen
+            verarbeitet und gespeichert. SoundFuchs sendet dein Audio nicht an den Betreiber oder an
+            Analyse-Dienste. Für Hosting, externe Karten und den erstmaligen optionalen
             YAMNet-Download entstehen jedoch die unten beschriebenen Netzverbindungen.
           </p>
 
@@ -2909,10 +2976,11 @@
             auf.
           </p>
           <p>
-            Dabei werden standardmäßig technische Daten (sog. Server-Logfiles) erfasst, z. B. deine
+            Dabei können technische Daten (sog. Server-Logfiles) verarbeitet werden, z. B. deine
             IP-Adresse, Browser-Version und Zeit des Zugriffs. Dies dient der Sicherheit und
-            Stabilität des Betriebs (Art. 6 Abs. 1 lit. f DSGVO). Wir als Betreiber haben keinen
-            direkten Zugriff auf diese Daten und führen sie nicht mit anderen Daten zusammen.
+            Stabilität des Betriebs (Art. 6 Abs. 1 lit. f DSGVO). SoundFuchs setzt kein eigenes
+            Besucher-Tracking ein und führt diese Verbindungsdaten nicht mit den lokal gespeicherten
+            Messdaten zusammen. Weitere Angaben enthält die Datenschutzerklärung von Vercel.
           </p>
 
           <h4>4. Lokale Datenverarbeitung in der App</h4>
@@ -2928,9 +2996,11 @@
             Beim Öffnen der Karte lädt der Browser je nach gewähltem Kartenstil Kacheln von
             OpenStreetMap, CARTO oder Esri. Dabei sieht der jeweilige Anbieter technisch bedingt
             insbesondere die IP-Adresse und die angefragten Kartenausschnitte. Beim ersten Einsatz
-            der optionalen YAMNet-Methode wird das vortrainierte Modell von Google TF Hub geladen
-            und anschließend lokal in IndexedDB gespeichert. Dabei wird <strong>kein Audio</strong>
-            an TF Hub übertragen. Ohne diese optionalen Funktionen finden diese Abrufe nicht statt.
+            der optionalen YAMNet-Methode wird das vortrainierte Modell von Google TF Hub
+            beziehungsweise dessen Auslieferungsendpunkten geladen und anschließend lokal in
+            IndexedDB gespeichert. Dabei wird <strong>kein Audio</strong> an Google übertragen. Ohne
+            Karte beziehungsweise YAMNet finden die jeweiligen Abrufe nicht statt; die Verbindung
+            zum Hosting-Anbieter entsteht bereits beim Aufruf der PWA.
           </p>
           <ul>
             <li>
@@ -2968,8 +3038,8 @@
               Datenbank restlos geleert.
             </li>
             <li>
-              <strong>Browser-Daten:</strong> Wenn du deine Browser-Cookies/Cache leerst, sind die
-              App-Daten ebenfalls weg.
+              <strong>Website-Daten:</strong> Wenn du die gespeicherten Website-Daten für SoundFuchs
+              im Browser löschst, werden auch IndexedDB, Einstellungen und Offline-Cache entfernt.
             </li>
             <li>
               <strong>Export:</strong> Du hast das Recht, deine Daten jederzeit über die
@@ -4201,8 +4271,8 @@
               Score-Visualisierung.
             </li>
             <li>
-              <strong>Keine Daten verlassen das Gerät:</strong> Alle Klangdaten und Scores werden in
-              der lokalen IndexedDB gespeichert.
+              <strong>Lokale Messdaten:</strong> Klangdaten und Scores werden in der lokalen
+              IndexedDB gespeichert und von SoundFuchs nicht hochgeladen.
             </li>
           </ul>
 
@@ -4211,14 +4281,19 @@
             SoundFuchs wurde unabhängig als privates, nicht-kommerzielles Open-Source-Projekt unter
             der
             <strong>MIT-Lizenz</strong> entwickelt. Die Funktionalität basiert auf offen
-            beschriebenen mathematischen Verfahren (z.B. GMIA-ähnlicher Kosinus-Vergleich) und
-            nutzt daneben optional das vortrainierte offene YAMNet für Audio-Embeddings.
-            Referenzprofile und Vergleiche entstehen lokal; SoundFuchs trainiert kein eigenes
-            neuronales Netz und betreibt keine Cloud-Befundung.
+            beschriebenen mathematischen Verfahren (z.B. GMIA-ähnlicher Kosinus-Vergleich) und nutzt
+            daneben optional das vortrainierte offene YAMNet für Audio-Embeddings. Referenzprofile
+            und Vergleiche entstehen lokal; SoundFuchs trainiert kein eigenes neuronales Netz und
+            betreibt keine Cloud-Befundung.
           </p>
 
           <h5>Relevante IP und technische Abgrenzung</h5>
-          <div style="overflow-x: auto">
+          <div
+            class="about-ip-table-scroll"
+            tabindex="0"
+            role="region"
+            aria-label="Relevante IP und technische Abgrenzung"
+          >
             <table style="width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9em">
               <thead>
                 <tr
@@ -4279,8 +4354,8 @@
                     Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren
                   </td>
                   <td style="padding: 0.75rem; border: 1px solid var(--border-color)">
-                    SoundFuchs ist <strong>vollständig lokal</strong>, keine Cloud, keine Remote-DB,
-                    keine Befundung
+                    SoundFuchs wertet Messdaten lokal aus, ohne Analyse-Cloud, zentrale
+                    Messdatenbank oder Befundung
                   </td>
                 </tr>
                 <tr style="border-bottom: 1px solid var(--border-color)">
@@ -4324,8 +4399,8 @@
                     Klassifikation und Modelltraining von Signalprofilen
                   </td>
                   <td style="padding: 0.75rem; border: 1px solid var(--border-color)">
-                    SoundFuchs erstellt lokale Referenzprofile und Ähnlichkeitswerte, trainiert
-                    aber kein eigenes neuronales Netz
+                    SoundFuchs erstellt lokale Referenzprofile und Ähnlichkeitswerte, trainiert aber
+                    kein eigenes neuronales Netz
                   </td>
                 </tr>
                 <tr>
@@ -4485,7 +4560,6 @@
              noch eine Hülle; es verschwindet, sobald der letzte Weg hinein
              umgehängt ist. -->
         <div class="customer-map-canvas" id="customer-map"></div>
-
       </div>
     </div>
 

@@ -1,0 +1,23 @@
+name: Production Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Täglich, bewusst außerhalb der üblichen vollen Stunde.
+    - cron: '17 5 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  production-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run production-check

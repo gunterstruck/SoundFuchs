@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import path from 'path';
 
 // Die App wird unter dem Wurzelpfad ausgeliefert (soundfuchs.vercel.app).
@@ -19,6 +21,27 @@ const base = '/';
  * geht nicht. Deshalb kommt eine Angabe dazu, die sich bei jedem Bau ändert.
  */
 const bauzeit = new Date().toISOString();
+const paket = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
+  version: string;
+};
+
+/**
+ * Der tatsächlich ausgelieferte Git-Stand. Vercel und GitHub liefern ihn als
+ * Umgebungsvariable; lokal fällt die Konfiguration auf das Repository zurück.
+ * `version.json` macht damit nach dem Deploy beweisbar, ob `main` wirklich in
+ * Produktion angekommen ist.
+ */
+function ermittleRevision(): string {
+  const ausUmgebung = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA;
+  if (ausUmgebung) return ausUmgebung;
+  try {
+    return execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  } catch {
+    return 'unbekannt';
+  }
+}
+
+const revision = ermittleRevision();
 
 export default defineConfig({
   base,
@@ -35,6 +58,16 @@ export default defineConfig({
     },
   },
   plugins: [
+    {
+      name: 'soundfuchs-build-info',
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'version.json',
+          source: `${JSON.stringify({ version: paket.version, revision, builtAt: bauzeit }, null, 2)}\n`,
+        });
+      },
+    },
     VitePWA({
       filename: 'service-worker.js',
       // 'prompt': a new version waits instead of silently taking over, so we can

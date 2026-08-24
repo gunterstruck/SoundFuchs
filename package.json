@@ -19,6 +19,8 @@
     "attention-check": "node tools/attention-check.mjs",
     "token-check": "node tools/token-check.mjs",
     "css-check": "node tools/css-check.mjs",
+    "a11y": "node tools/a11y-lauf.mjs",
+    "production-check": "node tools/production-lauf.mjs",
     "durchlauf": "node tools/durchlauf.mjs",
     "wow": "node tools/wow.mjs",
     "runde": "node tools/runde-lauf.mjs",
@@ -38,6 +40,7 @@
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@eslint/js": "^9.39.2",
     "@types/leaflet": "^1.9.22",
     "@types/leaflet.markercluster": "^1.5.6",

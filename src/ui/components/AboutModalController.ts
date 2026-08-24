@@ -264,7 +264,7 @@ export class AboutModalController {
     const rowIndices = ['0', '1', '2', '3', '4', '5'];
 
     return `
-      <div style="overflow-x: auto;">
+      <div class="about-ip-table-scroll" tabindex="0" role="region" aria-label="${headers.reference} – ${headers.soundfuchsDiff}">
         <table style="width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9em;">
           <thead>
             <tr style="background: var(--surface-color); border-bottom: 2px solid var(--border-color);">
