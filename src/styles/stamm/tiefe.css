@@ -1243,6 +1243,9 @@ body.tiefe-arbeit #karte-bestandswege {
 .klangbild-flaeche-beleg {
   cursor: default;
   touch-action: auto;
+  /* Sicherheitsnetz gegen globale bzw. Browser-Regeln für deaktivierte
+     Bedienelemente: Ein Bildbeleg wird niemals visuell abgeblendet. */
+  opacity: 1;
 }
 
 /* ── DAS BLATT AUF DER STANDORTEBENE ────────────────────────────────────────

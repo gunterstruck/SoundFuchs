@@ -462,7 +462,8 @@ try {
         ? Math.round((flaeche.getBoundingClientRect().height / window.innerHeight) * 100)
         : 0,
       touchAction: flaeche ? getComputedStyle(flaeche).touchAction : '(keine Fläche)',
-      deaktiviert: flaeche ? flaeche.disabled : null,
+      deaktiviert: flaeche ? flaeche.matches(':disabled') : null,
+      deckkraft: flaeche ? Number.parseFloat(getComputedStyle(flaeche).opacity) : 0,
       hinweis:
         flaeche?.closest('.klangbild')?.querySelector('.klangbild-ziehhinweis')?.textContent?.trim() ??
         '',
@@ -505,6 +506,7 @@ try {
   console.log(`  mittlere Sättigung        ${bildbefund.bild?.mittlereSaettigung ?? '—'}`);
   console.log(`  touch-action              ${bildbefund.touchAction}`);
   console.log(`  Fläche deaktiviert        ${bildbefund.deaktiviert}`);
+  console.log(`  Deckkraft                 ${bildbefund.deckkraft}`);
   console.log(`  Hinweis darunter          ${bildbefund.hinweis || '(keiner)'}`);
   /**
    * Die Zusage: Ein Bild, das keine Geste annimmt, darf den Finger auch nicht
@@ -546,6 +548,18 @@ try {
     'das Bild wird nicht gestreckt',
     streckung > 0 && streckung <= 1.05,
     bildbefund.bild?.streckung ?? '(kein Bild)'
+  );
+  /**
+   * Ein deaktivierter Button erbte 45 % Deckkraft und zog damit einen
+   * graublauen Schleier über das gesamte Canvas. Die Farbsättigung im Canvas
+   * selbst blieb korrekt; nur die zusammengesetzte Bildschirmdarstellung war
+   * fahl. Deshalb muss der Wächter die berechnete Deckkraft der Fläche messen.
+   */
+  pruefe(
+    '19a',
+    'das Klangbild wird nicht abgeblendet',
+    bildbefund.deckkraft === 1,
+    `Deckkraft ${bildbefund.deckkraft}`
   );
 
   /**

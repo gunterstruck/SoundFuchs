@@ -61,13 +61,13 @@ jobs:
   # rund einer Minute durch; die Browserläufe brauchen ein Vielfaches. Wer
   # einen Tippfehler gemacht hat, soll das nicht nach acht Minuten erfahren.
   #
-  # WARUM PLAYWRIGHT NICHT IN package.json STEHT
+  # WARUM PLAYWRIGHT FEST IM LOCKFILE STEHT
   #
-  # Es wird nur hier gebraucht. In den Abhängigkeiten stünde es bei jedem
-  # `npm ci` jedes Entwicklers und jedes anderen Jobs — und zöge Browser nach,
-  # die dort niemand benutzt. Deshalb `--no-save`: Der Bestand bleibt sauber,
-  # und die Fehlermeldung der Wächter („Playwright fehlt. Einmalig: …") bleibt
-  # wahr.
+  # Der Wächter ist Teil der Freigabe und muss deshalb reproduzierbar sein.
+  # `npm i --no-save playwright` zog zuvor bei jedem Lauf die dann gerade
+  # neueste Fassung. So konnte die CI ohne eine einzige Codeänderung brechen.
+  # Die Bibliothek ist jetzt exakt gepinnt; nur der Chromium-Browser wird in
+  # diesem Job nachgeladen.
   #
   # WELCHE LÄUFE
   #
@@ -85,7 +85,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm i --no-save playwright
       - run: npx playwright install --with-deps chromium
       # Die Wächter laufen gegen `dist/`, nicht gegen den Entwicklungsserver.
       - run: npm run build

@@ -204,8 +204,20 @@ export class Klangbild {
      * was es tut. Ein Bild, das man antippen kann, ohne dass es als Bedienung
      * angekündigt ist, ist für diese Nutzer nicht vorhanden.
      */
-    const flaeche = document.createElement('button');
-    flaeche.type = 'button';
+    /**
+     * Auf der Maschinenseite ist das Klangbild nur ein Beleg, kein Schalter.
+     * Dort einen deaktivierten Button zu verwenden sah zwar „nicht klickbar"
+     * aus, erbte aber die globale Regel `button:disabled { opacity: .45 }`.
+     * Damit wurde nicht nur der Rahmen, sondern das komplette Canvas
+     * durchsichtig – genau der graue Schleier aus dem Handy-Screenshot vom
+     * 24.08.2026. Ein reines Bild bekommt deshalb auch semantisch eine reine
+     * Fläche. Nur eine wirklich bedienbare Ansicht wird zum Button.
+     */
+    const istBeleg = Boolean(optionen.ohneGebirge && optionen.ohneAuswahl);
+    const flaeche: HTMLDivElement | HTMLButtonElement = istBeleg
+      ? document.createElement('div')
+      : document.createElement('button');
+    if (flaeche instanceof HTMLButtonElement) flaeche.type = 'button';
     flaeche.className = 'klangbild-flaeche';
     flaeche.appendChild(this.leinwand);
     flaeche.appendChild(this.iris);
@@ -244,9 +256,10 @@ export class Klangbild {
       });
     }
     if (optionen.ohneAuswahl) {
-      // Eine Fläche, die man ansieht — kein Knopf, der nichts tut.
-      flaeche.disabled = true;
-      flaeche.classList.add('klangbild-flaeche-beleg');
+      // Eine Fläche, die man ansieht — kein Knopf, der nichts tut. Der seltene
+      // Mischfall (Gebirge an, Auswahl aus) bleibt ein echter, aktiver Button
+      // und bekommt deshalb nicht die Gestaltung eines reinen Belegs.
+      if (istBeleg) flaeche.classList.add('klangbild-flaeche-beleg');
       this.stumm = true;
     } else {
       this.verdrahteZiehen(flaeche);
