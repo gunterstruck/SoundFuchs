@@ -2344,7 +2344,8 @@ dialog footer { margin-top: 14px; display: flex; justify-content: flex-end; gap:
     transform-origin: 50% 70%;
     animation: mns-wiggle 3.2s ease-in-out infinite;
 }
-.lasso-toggle .mns-fox { animation-delay: 1.6s; }
+.lasso-toggle .mns-fox,
+#btn-schnellcheck .mns-fox { animation-delay: 1.6s; }
 .lasso-toggle.active .mns-fox { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {

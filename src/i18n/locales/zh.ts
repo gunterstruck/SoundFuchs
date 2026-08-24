@@ -73,7 +73,8 @@ export const zh: TranslationDict = {
     schlechteste: '最差 {{wert}} %',
   },
   schnellcheck: {
-    knopf: '检查一段声音',
+    knopf: '导入',
+    knopfAria: '从文件导入声音',
     standortname: '我的声音',
     ohneNamen: '带来的声音',
   },
@@ -348,7 +349,8 @@ export const zh: TranslationDict = {
     tabMap: '地图',
     tabData: '📄 机器地点',
     tabFilter: '筛选',
-    recognizeMachine: '识别机器',
+    recognizeMachine: '识别',
+    recognizeMachineAria: '通过声音识别机器',
     dropzone: '📥 将 Excel 或 CSV 文件拖放到此处',
   },
   schale: {

@@ -80,7 +80,8 @@ export const de: TranslationDict = {
     schlechteste: 'schlechteste {{wert}} %',
   },
   schnellcheck: {
-    knopf: 'Geräusch prüfen',
+    knopf: 'Import',
+    knopfAria: 'Geräusch aus Datei importieren',
     standortname: 'Meine Geräusche',
     ohneNamen: 'Mitgebrachtes Geräusch',
   },
@@ -389,7 +390,8 @@ export const de: TranslationDict = {
     tabMap: 'Karte',
     tabData: '📄 Standorte',
     tabFilter: 'Filter',
-    recognizeMachine: 'Maschine erkennen',
+    recognizeMachine: 'Erkennen',
+    recognizeMachineAria: 'Maschine am Geräusch erkennen',
     dropzone: '📥 Excel- oder CSV-Datei hier ablegen',
   },
   schale: {

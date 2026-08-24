@@ -74,7 +74,8 @@ export const fr: TranslationDict = {
     schlechteste: 'pire {{wert}} %',
   },
   schnellcheck: {
-    knopf: 'Contrôler un bruit',
+    knopf: 'Importer',
+    knopfAria: 'Importer un bruit depuis un fichier',
     standortname: 'Mes bruits',
     ohneNamen: 'Bruit apporté',
   },
@@ -375,7 +376,8 @@ export const fr: TranslationDict = {
     tabMap: 'Carte',
     tabData: '📄 Sites',
     tabFilter: 'Filtre',
-    recognizeMachine: 'Reconnaître la machine',
+    recognizeMachine: 'Reconnaître',
+    recognizeMachineAria: 'Reconnaître une machine par son bruit',
     dropzone: '📥 Déposez ici un fichier Excel ou CSV',
   },
   schale: {

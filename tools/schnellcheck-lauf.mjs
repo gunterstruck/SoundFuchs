@@ -428,10 +428,20 @@ try {
       nk && nk.width ? document.elementFromPoint(nk.x + nk.width / 2, nk.y + nk.height / 2) : null;
     return {
       text: b?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      aria: b?.getAttribute('aria-label') ?? '',
+      fuechse: b?.querySelectorAll('.mns-fox').length ?? 0,
+      fuchsVerzoegerung: b?.querySelector('.mns-fox')
+        ? getComputedStyle(b.querySelector('.mns-fox')).animationDelay
+        : '',
       hoch: k ? Math.round(k.height) : 0,
       imBild: k ? k.bottom <= window.innerHeight && k.right <= window.innerWidth : false,
       frei: Boolean(mitte && b && (mitte === b || b.contains(mitte))),
       nachbar: n?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      nachbarAria: n?.getAttribute('aria-label') ?? '',
+      nachbarFuechse: n?.querySelectorAll('.mns-fox').length ?? 0,
+      nachbarFuchsVerzoegerung: n?.querySelector('.mns-fox')
+        ? getComputedStyle(n.querySelector('.mns-fox')).animationDelay
+        : '',
       nachbarHoch: nk ? Math.round(nk.height) : 0,
       nachbarImBild: nk ? nk.bottom <= window.innerHeight && nk.right <= window.innerWidth : false,
       nachbarFrei: Boolean(nachbarMitte && n && (nachbarMitte === n || n.contains(nachbarMitte))),
@@ -441,12 +451,30 @@ try {
   console.log(`  Schnellcheck              ${knopf.text || 'FEHLT'} (${knopf.hoch} px)`);
   pruefe(knopf.text.length > 0, 'über der Karte führt kein Weg zu einem Geräusch ohne Maschine');
   pruefe(
-    /Maschine erkennen/.test(knopf.nachbar),
-    `der Live-Weg sagt nicht, was er erkennt — „${knopf.nachbar || '(fehlt)'}"`
+    /Erkennen/.test(knopf.nachbar),
+    `der Live-Weg ist nicht knapp als „Erkennen“ beschriftet — „${knopf.nachbar || '(fehlt)'}“`
   );
-  pruefe(knopf.nachbarHoch >= 44, `„Maschine erkennen" ist ${knopf.nachbarHoch} px hoch`);
-  pruefe(knopf.nachbarImBild, '„Maschine erkennen" steht nicht vollständig im Bild');
-  pruefe(knopf.nachbarFrei, '„Maschine erkennen" ist an seiner Mitte verdeckt');
+  pruefe(
+    /Maschine.*Geräusch.*erkennen/i.test(knopf.nachbarAria),
+    '„Erkennen“ hat keinen eindeutigen zugänglichen Namen'
+  );
+  pruefe(knopf.nachbarFuechse === 1, 'am Erkennen-Knopf fehlt der Fuchs');
+  pruefe(
+    /Import/.test(knopf.text),
+    `der Datei-Weg ist nicht knapp als „Import“ beschriftet — „${knopf.text || '(fehlt)'}“`
+  );
+  pruefe(
+    /Geräusch.*Datei.*importieren/i.test(knopf.aria),
+    '„Import“ hat keinen eindeutigen zugänglichen Namen'
+  );
+  pruefe(knopf.fuechse === 1, 'am Import-Knopf fehlt der Fuchs');
+  pruefe(
+    knopf.fuchsVerzoegerung !== knopf.nachbarFuchsVerzoegerung,
+    'die beiden Füchse wackeln nicht zeitversetzt'
+  );
+  pruefe(knopf.nachbarHoch >= 44, `„Erkennen" ist ${knopf.nachbarHoch} px hoch`);
+  pruefe(knopf.nachbarImBild, '„Erkennen" steht nicht vollständig im Bild');
+  pruefe(knopf.nachbarFrei, '„Erkennen" ist an seiner Mitte verdeckt');
   pruefe(knopf.imBild, 'der Schnellcheck-Knopf steht nicht vollständig im Bild');
   /**
    * Und er ist so groß wie jeder andere Knopf dieser App.

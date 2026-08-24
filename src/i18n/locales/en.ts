@@ -74,7 +74,8 @@ export const en: TranslationDict = {
     schlechteste: 'worst {{wert}} %',
   },
   schnellcheck: {
-    knopf: 'Check a sound',
+    knopf: 'Import',
+    knopfAria: 'Import sound from a file',
     standortname: 'My sounds',
     ohneNamen: 'Sound brought along',
   },
@@ -372,7 +373,8 @@ export const en: TranslationDict = {
     tabMap: 'Map',
     tabData: '📄 Sites',
     tabFilter: 'Filter',
-    recognizeMachine: 'Recognize machine',
+    recognizeMachine: 'Recognize',
+    recognizeMachineAria: 'Recognize a machine by its sound',
     dropzone: '📥 Drop an Excel or CSV file here',
   },
   schale: {

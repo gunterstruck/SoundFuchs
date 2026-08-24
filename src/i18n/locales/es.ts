@@ -74,7 +74,8 @@ export const es: TranslationDict = {
     schlechteste: 'peor {{wert}} %',
   },
   schnellcheck: {
-    knopf: 'Revisar un sonido',
+    knopf: 'Importar',
+    knopfAria: 'Importar un sonido desde un archivo',
     standortname: 'Mis sonidos',
     ohneNamen: 'Sonido traído',
   },
@@ -372,7 +373,8 @@ export const es: TranslationDict = {
     tabMap: 'Mapa',
     tabData: '📄 Ubicaciones',
     tabFilter: 'Filtro',
-    recognizeMachine: 'Reconocer máquina',
+    recognizeMachine: 'Reconocer',
+    recognizeMachineAria: 'Reconocer una máquina por su sonido',
     dropzone: '📥 Suelta aquí un archivo Excel o CSV',
   },
   schale: {

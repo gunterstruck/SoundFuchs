@@ -467,9 +467,15 @@
            Geräusch, das noch keiner geöffneten Maschine zugeordnet ist:
            live erkennen oder eine vorhandene Datei prüfen. -->
       <div id="map-fab-row" class="map-fab-row">
-        <button id="btn-sound-detect" class="map-fab" type="button">
+        <button
+          id="btn-sound-detect"
+          class="map-fab"
+          type="button"
+          aria-label="Maschine am Geräusch erkennen"
+          data-i18n-aria="stamm.recognizeMachineAria"
+        >
           <span class="mns-icon" aria-hidden="true">🎙️</span>
-          <span class="mns-label" data-i18n="stamm.recognizeMachine">Maschine erkennen</span>
+          <span class="mns-label" data-i18n="stamm.recognizeMachine">Erkennen</span>
           <span class="mns-fox" aria-hidden="true">🦊</span>
         </button>
         <!--
@@ -480,9 +486,16 @@
           einer Motorhaube auf dem Telefon hat, soll ihn ansehen können, bevor
           er ein Formular sieht.
         -->
-        <button id="btn-schnellcheck" class="map-fab" type="button">
+        <button
+          id="btn-schnellcheck"
+          class="map-fab"
+          type="button"
+          aria-label="Geräusch aus Datei importieren"
+          data-i18n-aria="schnellcheck.knopfAria"
+        >
           <span class="mns-icon" aria-hidden="true">🎞</span>
-          <span class="mns-label" data-i18n="schnellcheck.knopf">Geräusch prüfen</span>
+          <span class="mns-label" data-i18n="schnellcheck.knopf">Import</span>
+          <span class="mns-fox" aria-hidden="true">🦊</span>
         </button>
       </div>
 
