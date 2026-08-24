@@ -372,7 +372,7 @@ export const en: TranslationDict = {
     tabMap: 'Map',
     tabData: '📄 Sites',
     tabFilter: 'Filter',
-    nearby: 'Nearby',
+    recognizeMachine: 'Recognize machine',
     dropzone: '📥 Drop an Excel or CSV file here',
   },
   schale: {

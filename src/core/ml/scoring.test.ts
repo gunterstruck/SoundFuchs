@@ -657,5 +657,18 @@ describe('Auto-detection is engine-aware (cosine machines are recognized)', () =
     expect(result.outcome).toBe('high_confidence'); // previously 'no_match'
     expect(result.bestMatch?.machine.id).toBe('cos-machine');
     expect(result.bestMatch?.similarity).toBeGreaterThan(80);
+
+    // Zwei praktisch gleiche Maschinen dürfen trotz hoher Einzelwerte nicht
+    // automatisch verwechselt werden. Dann ist eine Rückfrage ehrlicher als
+    // ein selbstbewusster, aber beliebiger Treffer.
+    const twin = {
+      ...machine,
+      id: 'cos-twin',
+      name: 'Cosine Twin',
+      referenceModels: [{ ...model, machineId: 'cos-twin' }],
+    };
+    const ambiguous = classifyAcrossAllMachines([machine, twin], liveFeature, 48000);
+    expect(ambiguous.outcome).toBe('uncertain');
+    expect(ambiguous.candidates).toHaveLength(2);
   });
 });

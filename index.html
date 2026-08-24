@@ -463,13 +463,13 @@
         ></section>
       </aside>
 
-      <!-- Knopfzeile über der Karte. Im Vorbild stehen hier „Kunden in meiner
-           Nähe" und „Lasso ziehen" nebeneinander; das Lasso entfällt fachlich,
-           die Nähe-Suche bleibt. -->
+      <!-- Knopfzeile über der Karte. Hier liegen die zwei Wege für ein
+           Geräusch, das noch keiner geöffneten Maschine zugeordnet ist:
+           live erkennen oder eine vorhandene Datei prüfen. -->
       <div id="map-fab-row" class="map-fab-row">
-        <button id="btn-nearby" class="map-fab" type="button">
-          <span class="mns-icon" aria-hidden="true">📍</span>
-          <span class="mns-label" data-i18n="stamm.nearby">In der Nähe</span>
+        <button id="btn-sound-detect" class="map-fab" type="button">
+          <span class="mns-icon" aria-hidden="true">🎙️</span>
+          <span class="mns-label" data-i18n="stamm.recognizeMachine">Maschine erkennen</span>
           <span class="mns-fox" aria-hidden="true">🦊</span>
         </button>
         <!--
@@ -4623,7 +4623,7 @@
       </div>
     </div>
 
-    <!-- Modal: Machine Recognized (Fall A - High Confidence ≥80%) -->
+    <!-- Modal: Machine Recognized (Fall A - ≥80% with a clear lead) -->
     <div
       id="machine-recognized-modal"
       class="modal"

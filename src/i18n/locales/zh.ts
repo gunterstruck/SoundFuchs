@@ -348,7 +348,7 @@ export const zh: TranslationDict = {
     tabMap: '地图',
     tabData: '📄 机器地点',
     tabFilter: '筛选',
-    nearby: '附近',
+    recognizeMachine: '识别机器',
     dropzone: '📥 将 Excel 或 CSV 文件拖放到此处',
   },
   schale: {

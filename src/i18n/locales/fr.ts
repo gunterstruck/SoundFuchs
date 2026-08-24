@@ -375,7 +375,7 @@ export const fr: TranslationDict = {
     tabMap: 'Carte',
     tabData: '📄 Sites',
     tabFilter: 'Filtre',
-    nearby: 'À proximité',
+    recognizeMachine: 'Reconnaître la machine',
     dropzone: '📥 Déposez ici un fichier Excel ou CSV',
   },
   schale: {

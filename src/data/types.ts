@@ -725,6 +725,8 @@ export interface DBSchema {
 export const AUTO_DETECTION_THRESHOLDS = {
   /** High confidence: Automatic recognition (≥80%) */
   HIGH_CONFIDENCE: 80,
+  /** A winner must also lead the runner-up clearly; otherwise ask the user. */
+  MIN_CONFIDENCE_LEAD: 8,
   /** Low confidence: Below this, no match found (<40%) */
   LOW_CONFIDENCE: 40,
   /** Minimum models required: At least one reference model needed */

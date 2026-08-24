@@ -420,20 +420,33 @@ try {
   const knopf = await page.evaluate(() => {
     const b = document.getElementById('btn-schnellcheck');
     const k = b?.getBoundingClientRect();
+    const n = document.getElementById('btn-sound-detect');
+    const nk = n?.getBoundingClientRect();
     const mitte =
       k && k.width ? document.elementFromPoint(k.x + k.width / 2, k.y + k.height / 2) : null;
+    const nachbarMitte =
+      nk && nk.width ? document.elementFromPoint(nk.x + nk.width / 2, nk.y + nk.height / 2) : null;
     return {
       text: b?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
       hoch: k ? Math.round(k.height) : 0,
       imBild: k ? k.bottom <= window.innerHeight && k.right <= window.innerWidth : false,
       frei: Boolean(mitte && b && (mitte === b || b.contains(mitte))),
-      nachbar:
-        document.getElementById('btn-nearby')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      nachbar: n?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      nachbarHoch: nk ? Math.round(nk.height) : 0,
+      nachbarImBild: nk ? nk.bottom <= window.innerHeight && nk.right <= window.innerWidth : false,
+      nachbarFrei: Boolean(nachbarMitte && n && (nachbarMitte === n || n.contains(nachbarMitte))),
     };
   });
   console.log(`  Nachbar                   ${knopf.nachbar || '(keiner)'}`);
   console.log(`  Schnellcheck              ${knopf.text || 'FEHLT'} (${knopf.hoch} px)`);
   pruefe(knopf.text.length > 0, 'über der Karte führt kein Weg zu einem Geräusch ohne Maschine');
+  pruefe(
+    /Maschine erkennen/.test(knopf.nachbar),
+    `der Live-Weg sagt nicht, was er erkennt — „${knopf.nachbar || '(fehlt)'}"`
+  );
+  pruefe(knopf.nachbarHoch >= 44, `„Maschine erkennen" ist ${knopf.nachbarHoch} px hoch`);
+  pruefe(knopf.nachbarImBild, '„Maschine erkennen" steht nicht vollständig im Bild');
+  pruefe(knopf.nachbarFrei, '„Maschine erkennen" ist an seiner Mitte verdeckt');
   pruefe(knopf.imBild, 'der Schnellcheck-Knopf steht nicht vollständig im Bild');
   /**
    * Und er ist so groß wie jeder andere Knopf dieser App.
@@ -452,6 +465,47 @@ try {
    * unter der Karte ist ein Knopf, den es nicht gibt.
    */
   pruefe(knopf.frei, 'an der Mitte des Schnellcheck-Knopfs liegt etwas anderes — er ist verdeckt');
+
+  /**
+   * Der frühere Knopf „In der Nähe" tat gar nichts. Deshalb reicht es hier
+   * nicht, die neue Beschriftung zu sehen: Ein Tipp muss bis zum vorhandenen
+   * Erkennungsablauf gelangen. Die Beispieldaten haben absichtlich noch keine
+   * Normalzustände, also ist dessen ehrlicher erster Ausgang „Normalzustand
+   * fehlt" — ohne Mikrofonabfrage und damit stabil im Browserwächter.
+   */
+  await page
+    .locator('#btn-sound-detect')
+    .click({ timeout: 8000 })
+    .catch(() => {});
+  await page
+    .waitForSelector('.unified-flow-modal', { state: 'visible', timeout: 8000 })
+    .catch(() => {});
+  const erkennen = await page.evaluate(() => {
+    const dialog = document.querySelector('.unified-flow-modal');
+    return {
+      offen: Boolean(dialog),
+      titel: dialog?.querySelector('h3')?.textContent?.trim() ?? '',
+      ausgang: dialog?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+    };
+  });
+  console.log(`  Maschine erkennen         ${erkennen.titel || 'OHNE REAKTION'}`);
+  pruefe(erkennen.offen, '„Maschine erkennen" reagiert auf einen Tipp nicht');
+  pruefe(
+    /Normalzustand/.test(erkennen.ausgang),
+    `ohne angelernte Maschinen erklärt der Erkennungsweg den nächsten Schritt nicht — „${erkennen.ausgang}"`
+  );
+  await page
+    .locator('.unified-flow-cancel')
+    .click({ timeout: 6000 })
+    .catch(() => {});
+  await page.waitForTimeout(500);
+  pruefe(
+    !(await page
+      .locator('.unified-flow-modal')
+      .isVisible()
+      .catch(() => false)),
+    'der Erkennungsdialog lässt sich nicht abbrechen'
+  );
 
   // ── 3. Eine Datei ohne Maschine ─────────────────────────────────────────
   console.log(`\n=== Ein Geräusch ohne Maschine (${WAV.split('/').pop()}) ===`);

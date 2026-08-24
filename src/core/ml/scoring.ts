@@ -897,8 +897,8 @@ export function classifyAgainstMachine(
  *
  * This is the core function for automatic machine recognition.
  * It compares the test audio against all machines and determines:
- * - High confidence (≥80%): Automatic recognition
- * - Uncertain (40-79%): Show selection to user
+ * - High confidence (≥80% and a clear lead): Automatic recognition
+ * - Uncertain (40-79%, or two close high matches): Show selection to user
  * - No match (<40%): Unknown sound
  *
  * @param machines - All machines to compare against
@@ -951,10 +951,14 @@ export function classifyAcrossAllMachines(
   // Determine outcome based on best match
   const bestMatch = candidates[0] || null;
   const bestSimilarity = bestMatch?.similarity || 0;
+  const secondSimilarity = candidates[1]?.similarity ?? 0;
+  const hasClearLead =
+    candidates.length === 1 ||
+    bestSimilarity - secondSimilarity >= AUTO_DETECTION_THRESHOLDS.MIN_CONFIDENCE_LEAD;
 
   let outcome: AutoDetectionResult['outcome'];
 
-  if (bestSimilarity >= AUTO_DETECTION_THRESHOLDS.HIGH_CONFIDENCE) {
+  if (bestSimilarity >= AUTO_DETECTION_THRESHOLDS.HIGH_CONFIDENCE && hasClearLead) {
     outcome = 'high_confidence';
     logger.info(
       `✅ Auto-detection: High confidence match! ${bestMatch?.machine.name} (${bestSimilarity.toFixed(1)}%)`
@@ -962,7 +966,8 @@ export function classifyAcrossAllMachines(
   } else if (bestSimilarity >= AUTO_DETECTION_THRESHOLDS.LOW_CONFIDENCE) {
     outcome = 'uncertain';
     logger.info(
-      `⚠️ Auto-detection: Uncertain match. Best: ${bestMatch?.machine.name} (${bestSimilarity.toFixed(1)}%)`
+      `⚠️ Auto-detection: Uncertain match. Best: ${bestMatch?.machine.name} (${bestSimilarity.toFixed(1)}%), ` +
+        `runner-up: ${secondSimilarity.toFixed(1)}%`
     );
   } else {
     outcome = 'no_match';

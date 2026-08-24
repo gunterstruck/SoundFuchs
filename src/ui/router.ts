@@ -581,7 +581,7 @@ export class Router {
   }
 
   /**
-   * Fall A: Machine recognized with high confidence (≥80%)
+   * Fall A: Machine recognized with high confidence (≥80% and a clear lead)
    * Auto-select the machine and show diagnosis result
    */
   private handleMachineRecognized(machine: Machine, result: AutoDetectionResult): void {

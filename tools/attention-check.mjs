@@ -1467,7 +1467,7 @@ try {
     pruefe(steht.blatt, 'Stamm: das Blatt fehlt im Baum');
     pruefe(
       steht.knopfzeile,
-      'Stamm: die Knopfzeile über der Karte fehlt — „In der Nähe" ist unerreichbar'
+      'Stamm: die Knopfzeile über der Karte fehlt — „Maschine erkennen" ist unerreichbar'
     );
     pruefe(
       steht.tiefeImStreifen,

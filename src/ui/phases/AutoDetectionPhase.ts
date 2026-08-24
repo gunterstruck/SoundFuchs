@@ -13,8 +13,8 @@
  * 1. User clicks "Zustand prüfen" (no machine pre-selection required)
  * 2. Audio is captured and compared against ALL machines in database
  * 3. Based on similarity score, one of three outcomes:
- *    - Fall A (≥80%): Automatic recognition, show result immediately
- *    - Fall B (40-79%): Uncertain, show selection to user
+ *    - Fall A (≥80% and a clear lead): Automatic recognition, show result immediately
+ *    - Fall B (40-79%, or two close high matches): Uncertain, show selection to user
  *    - Fall C (<40%): No match, offer to create reference
  */
 

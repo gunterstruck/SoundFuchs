@@ -1251,23 +1251,25 @@ class ZanobotApp {
   }
 
   /**
-   * Die zwei schwebenden Pillen verdrahten.
+   * Die sichtbaren Einstiegsknöpfe verdrahten.
    *
    * Sie decken die beiden Fälle ab, in denen die Liste nicht weiterhilft:
    *
-   *   „Erkennen"      — hinhalten, die App hört hin und sagt, welche Maschine
-   *                     das ist. Das kann sie längst (AutoDetectionPhase); der
-   *                     Weg dorthin lag bisher in der eingeklappten Prüf-Karte.
+   *   „Maschine erkennen" — hinhalten, die App hört hin und sagt, welche
+   *                          Maschine das ist. Das kann sie längst
+   *                          (AutoDetectionPhase); der Weg dorthin lag bisher
+   *                          in der eingeklappten Prüf-Karte.
    *   „Neue Maschine" — die gibt es noch gar nicht.
    *
-   * Beide lösen den vorhandenen Knopf aus, statt dessen Logik nachzubauen —
-   * derselbe Weg wie beim Schiebefenster. Der Erkennen-Knopf liegt seit dem
-   * 14.08.2026 in einer Karte, die ohne geladene Maschine verborgen ist; ein
-   * Klick per Skript erreicht ihn trotzdem, denn `display:none` nimmt einem
-   * Element nicht seine Ereignisse.
+   * Sie lösen vorhandene Knöpfe aus, statt deren Logik nachzubauen — derselbe
+   * Weg wie beim Schiebefenster. Der Erkennen-Knopf liegt seit dem 14.08.2026
+   * in einer Karte, die ohne geladene Maschine verborgen ist; ein Klick per
+   * Skript erreicht ihn trotzdem, denn `display:none` nimmt einem Element
+   * nicht seine Ereignisse.
    */
   private setupPillen(): void {
     const paare: Array<[string, string]> = [
+      ['btn-sound-detect', 'diagnose-auto-detect-btn'],
       ['fab-detect', 'diagnose-auto-detect-btn'],
       ['fab-new-machine', 'add-new-machine-btn'],
     ];

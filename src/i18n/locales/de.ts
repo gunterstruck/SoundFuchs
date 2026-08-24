@@ -389,7 +389,7 @@ export const de: TranslationDict = {
     tabMap: 'Karte',
     tabData: '📄 Standorte',
     tabFilter: 'Filter',
-    nearby: 'In der Nähe',
+    recognizeMachine: 'Maschine erkennen',
     dropzone: '📥 Excel- oder CSV-Datei hier ablegen',
   },
   schale: {
