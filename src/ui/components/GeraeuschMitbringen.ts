@@ -643,11 +643,48 @@ export function geraeuschMitbringen(optionen: MitbringenOptions): void {
   feld.type = 'file';
   feld.accept = 'audio/*,video/*';
   feld.hidden = true;
+
+  /**
+   * Aufräumen genau einmal — egal, wie der Dialog ausgeht.
+   *
+   * Bis zum 24.08.2026 hing das Entfernen allein am `change`-Ereignis. Wer die
+   * Dateiauswahl abbrach, ließ das Feld im Baum zurück, und beim nächsten
+   * Anlauf kam das nächste dazu. Zu sehen ist davon nichts — `hidden` —, aber
+   * es sammelt sich, und ein Baum, in dem etwas liegen bleibt, ist der Anfang
+   * der Sorte Fehler, die niemand einem Knopf ansieht.
+   */
+  let weg = false;
+  const aufraeumen = (): void => {
+    if (weg) return;
+    weg = true;
+    feld.remove();
+  };
+
   feld.addEventListener('change', () => {
     const datei = feld.files?.[0];
-    feld.remove();
+    aufraeumen();
     if (datei) new Vorschau(datei, optionen);
   });
+
+  /**
+   * `cancel` sagt es direkt — wo es das gibt.
+   *
+   * Das Ereignis ist jung; ältere Browser kennen es nicht. Deshalb zusätzlich
+   * der Rückweg über `focus`: Sobald das Fenster die Aufmerksamkeit
+   * zurückbekommt, ist der Dateidialog vorbei — dann liegt entweder schon eine
+   * Datei vor (dann hat `change` bereits aufgeräumt) oder es kam keine. Der
+   * kleine Aufschub gibt `change` den Vortritt, denn die Reihenfolge der
+   * beiden ist zwischen den Browsern nicht dieselbe.
+   */
+  feld.addEventListener('cancel', aufraeumen);
+  window.addEventListener(
+    'focus',
+    () => {
+      setTimeout(aufraeumen, 500);
+    },
+    { once: true }
+  );
+
   document.body.appendChild(feld);
   feld.click();
 }

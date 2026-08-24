@@ -45,6 +45,7 @@ import { HashRouter } from '@ui/HashRouter.js';
 import { ReferenceLoadingOverlay } from '@ui/components/ReferenceLoadingOverlay.js';
 import { notify } from '@utils/notifications.js';
 import { logger } from '@utils/logger.js';
+import { ersteLaufNachfuehren } from '@utils/ersteLauf.js';
 import { GlobalSearch } from '@ui/GlobalSearch.js';
 import { InfoBottomSheet } from '@ui/components/InfoBottomSheet.js';
 import { CustomerMap } from '@ui/components/CustomerMap.js';
@@ -266,9 +267,9 @@ class ZanobotApp {
 
       // UX (geführter Erst-Lauf): Ohne Maschinen stehen die Startkarten in
       // Workflow-Reihenfolge (①②③ mit Schritt-Badges) statt „Prüfen zuerst".
-      // Schon beim App-Start setzen — der Dashboard-Renderer hält die Klasse
-      // danach aktuell (DashboardRenderer.update()).
-      document.body.classList.toggle('zb-first-run', stats.machines === 0);
+      // Schon beim App-Start setzen; wer danach eine Maschine anlegt, ruft
+      // dieselbe Stelle erneut (utils/ersteLauf.ts).
+      await ersteLaufNachfuehren(stats.machines);
 
       // UPDATE-/DATEN-SICHERHEIT (Betreiber-Anforderung): Persistenten
       // Speicher anfordern. Ohne "persistent" darf der Browser die

@@ -802,6 +802,17 @@ body {
   transition: var(--btn-transition);
   text-transform: uppercase;
   letter-spacing: var(--btn-letter-spacing);
+  /* 44 px, wie überall.
+
+     Ohne diese Zeile ergibt sich die Höhe allein aus Polsterung und
+     Schriftgröße — gemessen am 24.08.2026: 42 px. Zwei Pixel unter dem Maß,
+     das an jeder anderen Stelle dieser App gilt und das die Wächter dort auch
+     messen. Aufgefallen ist es erst, als der Update-Weg einen eigenen Wächter
+     bekam; die Knöpfe dieses Dialogs hatte vorher keiner angesehen.
+
+     `min-height` und nicht `height`: Wer zwei Zeilen Text hat — lange
+     Übersetzungen tun das —, soll wachsen dürfen. */
+  min-height: 44px;
 }
 
 .action-btn:hover {

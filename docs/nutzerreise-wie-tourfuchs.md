@@ -4520,6 +4520,98 @@ Zwei Lehren, die über diesen Schnitt hinausgehen:
    während „Details" selbst offen stand — dort ist die Zusage gar nicht zu
    verletzen. Sie misst jetzt nach dem Wechsel zurück auf 2D.
 
+## 7j. Ein Prüfbericht von außen (24.08.2026)
+
+_Fünf Befunde, unabhängig erhoben. Vier bestätigt und behoben, einer bereits
+behoben. Dazu ein struktureller Hinweis, der wichtiger war als jeder einzelne
+Befund._
+
+### Was gemeldet wurde, und was daraus wurde
+
+| # | Schwere | Befund | Ergebnis |
+| --- | --- | --- | --- |
+| 1 | hoch | PWA-Update in der Sackgasse: „Neue Fassung gefunden" führte nirgendwohin | bestätigt, behoben |
+| 2 | mittel | „Filter" mobil nicht erreichbar (Reiter 0 × 0) | schon behoben, nachgemessen |
+| 3 | mittel | README behauptet „kein Machine Learning", YAMNet lädt ein Modell | bestätigt, richtiggestellt |
+| 4 | niedrig | Schnellcheck lässt `zb-first-run` stehen | bestätigt, behoben |
+| 5 | niedrig | Abgebrochene Dateiauswahl lässt das Feld im Baum | bestätigt, behoben |
+
+### Befund 1: eine Sackgasse aus einem Sichtbarkeitsproblem
+
+`updatePending`, `maybeShowPrompt` und `updateSW` lagen sämtlich in der Closure
+von `initPwaUpdate`. `pruefeAufUpdate` steht daneben und kam an keines davon
+heran — die Prüfung KONNTE ihren Fund nicht weitergeben. Was der Nutzer sah:
+einen Satz, und sonst nichts.
+
+Drei Dinge waren nötig, nicht eines:
+
+1. Der Zustand liegt jetzt im Modul, nicht in der Closure.
+2. Ein Arbeiter, der beim Start schon wartet, wird erkannt. `onNeedRefresh`
+   meldet nur den Übergang; wer die App schließt, während einer wartet, und
+   später wiederkommt, erlebt ihn nie. Genau so sah die gemeldete Lage aus.
+3. Der Dialog hat einen Knopf „Jetzt aktualisieren" bekommen. Ein Fund, der auf
+   einen Hinweis verweist, ist keine Handlung — und der Hinweis kam ja gerade
+   nicht.
+
+Der Satz im Dialog war obendrein unwahr: „der Hinweis zum Aktualisieren kommt
+gleich." Er kam nie. Er lautet jetzt, was tatsächlich geschieht.
+
+### Befund 3: die README war zu absolut
+
+Die Aussagen sind eine IP-Abgrenzung und deshalb keine Marketingprosa — sie
+müssen stimmen. „Kein Machine Learning – keine trainierten Modelle" stimmte
+nicht, solange die YAMNet-Methode mitgeliefert wird.
+
+Was tatsächlich gilt, steht jetzt dort, und zwar aufgeschlüsselt: GMIA ist
+voreingestellt und rechnet ohne gelerntes Modell. YAMNet ist eine von vier
+wählbaren Methoden, benutzt ein vortrainiertes öffentliches Modell als
+**Merkmalsextraktor**, lädt es einmalig von `tfhub.dev` und trainiert selbst
+nichts — auf dem Gerät entsteht eine Sammlung eigener Merkmalsvektoren, gegen
+die per Kosinus-Ähnlichkeit verglichen wird. **Kein Ton und kein Messwert
+verlässt das Gerät, mit keiner Methode.** Diese Aussage trug und trägt.
+
+Die App selbst war übrigens nie unehrlich: In den Einstellungen steht seit
+jeher „Neuronaler Klang-Fingerabdruck per KI-Modell … Lädt beim ersten Mal ein
+Modell." Nur die README widersprach ihr.
+
+### Befund 4: zwei Stellen führten dieselbe Klasse
+
+`body.zb-first-run` wurde in `main.ts` und im `DashboardRenderer` gesetzt,
+beide an die Startseite gebunden. Der Schnellcheck legt eine Maschine an, ohne
+dort vorbeizukommen. Zwei Stellen, die dasselbe entscheiden, sind schon eine zu
+viel; drei wären die Garantie, dass sie auseinanderlaufen. Die Entscheidung
+steht jetzt in `utils/ersteLauf.ts`, und die Aufrufer sagen nur noch „sieh
+nach".
+
+### Der strukturelle Hinweis war der wichtigste Teil
+
+> „Allerdings laufen die vorhandenen Browserabläufe mitbringen und schnellcheck
+> nicht in der CI-Konfiguration. Genau deshalb konnten die beiden UI-Fehler
+> trotz grüner CI bestehen bleiben."
+
+Das ist richtig und war die eigentliche Lücke. Die CI prüfte Typen, Regeln,
+Einheiten und Textschlüssel — niemand tippte auf einen Knopf. Ein Reiter mit
+0 × 0 Pixeln sieht `tsc` nicht.
+
+Die CI hat deshalb einen zweiten Job `browser-guards`: `durchlauf`,
+`mitbringen`, `schnellcheck`. Als eigener Job, damit die schnelle Rückmeldung
+schnell bleibt; Playwright wird dort mit `--no-save` installiert, damit es
+nicht in den Abhängigkeiten jedes Entwicklers landet. `stammvergleich` fehlt
+bewusst — er braucht eine Arbeitskopie von TourFuchs.
+
+### Der neue Wächter hat sofort etwas gefunden
+
+`update-weg` prüft die Stelle, an der Befund 1 saß: Wenn ein Arbeiter wartet,
+führt der Fund dann zu einer Handlung? Beim ersten Lauf meldete er „„Jetzt
+aktualisieren" ist 42 px hoch" — `.action-btn` hatte nie eine Mindesthöhe, und
+die Knöpfe dieses Dialogs hatte vorher kein Wächter angesehen. Zwei Pixel unter
+dem Maß, das überall sonst gilt.
+
+Jeder der vier Fixes ist einzeln widerlegt worden: Knopf-Enthüllung entfernt →
+`update-weg` meldet die Sackgasse; `ersteLaufNachfuehren` entfernt →
+`schnellcheck` meldet „STEHT NOCH"; `cancel`/`focus` entfernt → `mitbringen`
+meldet 0 → 3 liegengebliebene Dateifelder.
+
 ## 8. Risiken, offen benannt
 
 **Die Abtastrate des Modells und die der aufbewahrten Aufnahme können

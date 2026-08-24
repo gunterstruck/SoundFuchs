@@ -118,6 +118,20 @@ export class AboutModalController {
           <span>${t('about.checkUpdate')}</span>
         </button>
         <p class="setting-status-line" id="check-update-status"></p>
+        <!-- Der Weg aus dem Fund heraus.
+
+             Bis zum 24.08.2026 stand hier nur die Statuszeile. „Neue Fassung
+             gefunden" war damit eine Auskunft ohne Handlung — der Nutzer stand
+             im Dialog und konnte nichts tun. Der Hinweis, auf den der Satz
+             verwies, kam obendrein nie, weil die Prüfung ihn gar nicht
+             auslösen konnte (pwaUpdate.ts).
+
+             Jetzt steht die Handlung dort, wo die Auskunft steht. Verborgen,
+             solange es nichts anzuwenden gibt: Ein Knopf „Jetzt aktualisieren"
+             ohne wartende Fassung wäre ein Knopf, der nichts tut. -->
+        <button type="button" class="action-btn primary-btn" id="apply-update-btn" hidden>
+          <span>${t('about.applyUpdate')}</span>
+        </button>
       </div>
 
       ${this.renderDatenherkunft()}
@@ -187,6 +201,31 @@ export class AboutModalController {
 
     const knopf = this.modalBody?.querySelector<HTMLButtonElement>('#check-update-btn');
     const zeile = this.modalBody?.querySelector('#check-update-status');
+    const anwenden = this.modalBody?.querySelector<HTMLButtonElement>('#apply-update-btn');
+
+    anwenden?.addEventListener('click', () => {
+      void (async () => {
+        anwenden.disabled = true;
+        const { wendeUpdateAn } = await import('@utils/pwaUpdate.js');
+        wendeUpdateAn();
+      })();
+    });
+
+    /**
+     * Wartet schon etwas, bevor überhaupt jemand tippt?
+     *
+     * Wer den Dialog aufmacht, weil er die neue Fassung sucht, soll sie hier
+     * vorfinden — nicht erst nach einem Tipp auf „Nach Update suchen", der ihm
+     * dasselbe noch einmal sagt.
+     */
+    void (async () => {
+      const { updateWartet } = await import('@utils/pwaUpdate.js');
+      if (updateWartet() && anwenden) {
+        anwenden.hidden = false;
+        if (zeile) zeile.textContent = t('about.checkFound');
+      }
+    })();
+
     knopf?.addEventListener('click', () => {
       void (async () => {
         knopf.disabled = true;
@@ -202,6 +241,9 @@ export class AboutModalController {
                 : 'about.checkUnavailable'
           );
         }
+        // Der Fund bekommt seinen Ausgang. Ohne diese Zeile bliebe „gefunden"
+        // ein Satz, und der Nutzer stünde wieder da, wo der Befund ihn fand.
+        if (anwenden) anwenden.hidden = ergebnis !== 'update-bereit';
         knopf.disabled = false;
       })();
     });
