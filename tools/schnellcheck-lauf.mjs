@@ -502,6 +502,7 @@ try {
       return Boolean(c && c.width > 0 && c.height > 0);
     })(),
     normalKnopf: document.querySelectorAll('.maschine-mitbringen').length,
+    erstlauf: document.body.classList.contains('zb-first-run'),
   }));
   console.log(`  Standort                  ${nachher.standort ? `„${nachher.standort.name}" · geo ${nachher.standort.geo}` : 'KEINER'}`);
   console.log(`  Maschinen darin           ${nachher.maschinen.join(' · ') || '(keine)'}`);
@@ -509,7 +510,23 @@ try {
   console.log(`  Blatt                     ${sicht.blattOffen ? 'offen' : 'ZU'} · ${sicht.reiter}`);
   console.log(`  Klangbild                 ${sicht.bild ? 'gemalt' : 'LEER'}`);
 
+  console.log(`  Erstlauf-Zustand          ${sicht.erstlauf ? 'STEHT NOCH' : 'aufgehoben'}`);
+
   pruefe(Boolean(nachher.standort), 'der Schnellcheck hat keinen Standort angelegt');
+  /**
+   * Nach der ersten Maschine ist es kein Erstlauf mehr.
+   *
+   * Gemeldet am 24.08.2026: `body.zb-first-run` blieb nach dem Schnellcheck
+   * stehen. Die Startseite zeigte weiter die Anleitung für die erste
+   * Maschine — mit einer angelegten Maschine in der Ablage.
+   *
+   * Der Grund lag im Weg: Die Klasse wurde an zwei Stellen geführt, und beide
+   * hängen an der Startseite. Der Schnellcheck geht an ihr vorbei.
+   */
+  pruefe(
+    !sicht.erstlauf,
+    'nach dem Schnellcheck steht der Erstlauf-Zustand noch — die App zeigt die Anleitung für eine Maschine, die es gibt'
+  );
   /**
    * Ohne Postleitzahl — und das ist Absicht.
    *

@@ -42,3 +42,53 @@ jobs:
       # niemandem auf. Beim Entfernen des Hero-Bereichs blieben 13 solche
       # Regeln stehen, insgesamt lagen 126 im Bestand.
       - run: npm run css-check
+
+  # ── DIE BROWSER-WÄCHTER ───────────────────────────────────────────────────
+  #
+  # Der Anlass, 24.08.2026: Ein Prüfbericht fand zwei Oberflächenfehler bei
+  # grüner CI und schrieb den Grund gleich dazu — „die vorhandenen
+  # Browserabläufe mitbringen und schnellcheck laufen nicht in der
+  # CI-Konfiguration."
+  #
+  # Das war richtig und der Kern der Sache. Die Wächter oben prüfen Typen,
+  # Regeln, Einheiten und Textschlüssel. Keiner von ihnen tippt auf einen
+  # Knopf. Ein Reiter mit 0 × 0 Pixeln, ein Knopf, der ins Leere führt, ein
+  # Feld, das leer bleibt — davon sieht `tsc` nichts.
+  #
+  # WARUM EIN ZWEITER JOB
+  #
+  # Damit die schnelle Rückmeldung schnell bleibt. `build-and-test` ist in
+  # rund einer Minute durch; die Browserläufe brauchen ein Vielfaches. Wer
+  # einen Tippfehler gemacht hat, soll das nicht nach acht Minuten erfahren.
+  #
+  # WARUM PLAYWRIGHT NICHT IN package.json STEHT
+  #
+  # Es wird nur hier gebraucht. In den Abhängigkeiten stünde es bei jedem
+  # `npm ci` jedes Entwicklers und jedes anderen Jobs — und zöge Browser nach,
+  # die dort niemand benutzt. Deshalb `--no-save`: Der Bestand bleibt sauber,
+  # und die Fehlermeldung der Wächter („Playwright fehlt. Einmalig: …") bleibt
+  # wahr.
+  #
+  # WELCHE LÄUFE
+  #
+  # Die drei, die den gemeldeten Fehlerklassen entsprechen: der Hauptweg von
+  # vorn bis hinten samt der drei Auflagen (`durchlauf`), die mitgebrachte
+  # Datei (`mitbringen`) und der Weg ohne Maschine samt Filter
+  # (`schnellcheck`). `stammvergleich` fehlt bewusst — er braucht eine
+  # Arbeitskopie von TourFuchs, die hier nicht liegt.
+  browser-guards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm i --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      # Die Wächter laufen gegen `dist/`, nicht gegen den Entwicklungsserver.
+      - run: npm run build
+      - run: npm run durchlauf
+      - run: npm run mitbringen
+      - run: npm run schnellcheck

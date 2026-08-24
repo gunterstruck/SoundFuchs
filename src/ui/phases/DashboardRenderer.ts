@@ -25,6 +25,7 @@ import {
 import { InfoBottomSheet } from '../components/InfoBottomSheet.js';
 import { calculateMedian } from './fleetStats.js';
 import type { Machine } from '@data/types.js';
+import { ersteLaufNachfuehren } from '@utils/ersteLauf.js';
 
 /** Phase-side behaviour the dashboard needs. */
 export interface DashboardDeps {
@@ -47,7 +48,9 @@ export class DashboardRenderer {
     // die Karten stehen dann in Workflow-Reihenfolge (① Maschine wählen →
     // ② Normalzustand aufnehmen → ③ Zustand prüfen) mit Schritt-Badges,
     // statt der „Prüfen zuerst"-Anordnung für Wiederkehrer (Focus-Theme).
-    document.body.classList.toggle('zb-first-run', machines.length === 0);
+    // Entschieden wird das an einer Stelle (utils/ersteLauf.ts); die Zahl
+    // liegt hier schon vor und wird deshalb mitgegeben.
+    await ersteLaufNachfuehren(machines.length);
 
     // Hide dashboard if no machines exist (Empty State Guide handles this)
     if (machines.length === 0) {

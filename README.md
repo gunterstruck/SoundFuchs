@@ -122,27 +122,46 @@ npm run dev
 
 ## Architektur und technische Abgrenzung
 
-SoundFuchs wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Projekt** unter der **MIT-Lizenz** entwickelt. Die Funktionalität basiert auf **offen beschriebenen mathematischen Verfahren** (Frequenzanalyse, GMIA-ähnliche Kosinus-Vergleiche) und integriert **keine patentierte Systemlogik**, **keine Klassifikationsmechanismen** und **keine Lernmodelle**.
+SoundFuchs wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Projekt** unter der **MIT-Lizenz** entwickelt. Die Auswertung im Auslieferungszustand basiert auf **offen beschriebenen mathematischen Verfahren** (Frequenzanalyse, GMIA-ähnliche Kosinus-Vergleiche) und integriert **keine patentierte Systemlogik** und **keine Klassifikationsmechanismen**.
 
 **Was SoundFuchs baulich nicht enthält:**
 
-- **Kein Cloud-Upload** – die Auswertung findet vollständig auf dem Gerät statt
+- **Kein Cloud-Upload von Messdaten** – Aufnahmen, Referenzen und Ergebnisse verlassen das Gerät nie, mit keiner Auswertungsmethode
 - **Keine IoT-Hardware** – ausschließlich das eingebaute Mikrofon, keine Spezialsensorik
-- **Kein automatisiertes Diagnosesystem** – keine Klassifikation, keine Handlungsempfehlungen
-- **Kein Machine Learning** – keine trainierten Modelle, keine Encoder-Decoder-Architekturen
+- **Kein automatisiertes Diagnosesystem** – keine Klassifikation in Schadensbilder, keine Handlungsempfehlungen
+- **Kein Backend und kein Konto** – es gibt keinen Server, an den etwas ginge
+
+**Die Voreinstellung rechnet ohne gelerntes Modell.** GMIA vergleicht Spektren
+mathematisch; nichts davon ist trainiert, alles läuft offline.
+
+**Eine der vier wählbaren Methoden ist ausdrücklich eine KI-Methode.** In den
+Einstellungen (Profi) lässt sich als Auswertungsmethode **YAMNet** wählen. Sie
+benutzt ein **vortrainiertes, öffentlich verfügbares Modell von TensorFlow Hub**
+als Merkmalsextraktor. Was das für die Aussagen oben bedeutet, gehört genannt:
+
+| | |
+| --- | --- |
+| **Voreingestellt?** | Nein. Voreingestellt ist GMIA; YAMNet muss ausdrücklich gewählt werden. |
+| **Netzzugriff** | Einmalig beim ersten Gebrauch: Das Modell wird von `tfhub.dev` geladen und danach im Browser-Cache gehalten. Ab dann offline. |
+| **Was übertragen wird** | Nur die Anfrage nach dem Modell. **Kein Ton, keine Aufnahme, kein Messwert** — die Auswertung selbst läuft weiterhin ausschließlich auf dem Gerät. |
+| **Was auf dem Gerät „gelernt" wird** | Kein Modelltraining. Aus der eigenen Aufnahme entsteht eine Sammlung von Merkmalsvektoren, gegen die per Kosinus-Ähnlichkeit (k-NN) verglichen wird. Es werden keine Gewichte angepasst. |
+| **Klassifikation** | Auch hier keine. Das Ergebnis ist ein Ähnlichkeitswert zum eigenen Normalzustand, kein Schadensbild. |
+
+Wer die Aussage „vollständig offline, kein fremdes Modell" ohne Einschränkung
+braucht, bleibt bei der Voreinstellung — sie ist genau das.
 
 **Zusammenfassung der Architektur:**
 
 - Handelsübliche Mikrofone (keine Spezialhardware)
-- Lokale Analyse (Spektrogramm, Ähnlichkeit) – rein mathematisch-statistisch (Level 1)
-- Vollständige Offline-Verarbeitung (Edge AI)
+- Lokale Analyse (Spektrogramm, Ähnlichkeit) – in der Voreinstellung rein mathematisch-statistisch (Level 1)
+- Verarbeitung der Messdaten ausschließlich auf dem Gerät; der einzige mögliche Netzzugriff ist der einmalige Modell-Download der optionalen YAMNet-Methode
 
 ### Relevante IP und technische Abgrenzung
 
 | Referenz / Technik              | Quelle                                   | Geschützter Bereich                                                          | Abgrenzung zu SoundFuchs                                                                                          |
 | ------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | **Siemens AG** (PAPDEOTT005125) | Defensive Veröffentlichung, 2016         | Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren | SoundFuchs arbeitet vollständig lokal, ohne Cloud, ohne zentrale Datenbank, ohne Diagnose                         |
-| **Siemens AG** (EP3701708B1)    | Europäisches Patent, 2022                | ML-basierte Remote-Diagnose mit trainierten Modellen und Sensorik            | SoundFuchs verwendet kein Machine Learning, keine Cloud, keine eingebettete Diagnose-Logik                        |
+| **Siemens AG** (EP3701708B1)    | Europäisches Patent, 2022                | ML-basierte Remote-Diagnose mit trainierten Modellen und Sensorik            | SoundFuchs kennt keine Remote-Diagnose: keine Cloud, keine eingebettete Diagnose-Logik, keine Klassifikation in Schadensbilder. Die optionale YAMNet-Methode nutzt ein vortrainiertes, öffentliches Modell allein als Merkmalsextraktor auf dem Gerät — sie trainiert nichts und sendet keine Messdaten. |
 | **Siemens Corp.** (US9263041B2) | US-Patent, 2016                          | Anwendung von GMIA für Sprach- und Hörsysteme                                | SoundFuchs nutzt GMIA-ähnliche Mathematik ausschließlich für Nicht-Sprache und lokale Vergleiche                  |
 | **Siemens** (US9443201B2)       | US-Patent, 2016                          | Klassifikation und Modelltraining von Sensorsignaturen                       | SoundFuchs führt keine Klassifikation und kein Modelltraining durch                                               |
 | **Schlumberger** (US9602781B2)  | US-Patent, 2017                          | Trennung seismischer Signale mittels GMIA                                    | Unterschiedliche Domäne und Signalart, nicht verwandt                                                             |
@@ -170,7 +189,7 @@ SoundFuchs ist **kein medizinisches Gerät** und **kein technisches Diagnosesyst
 
 Die Ergebnisse dienen ausschließlich der **musterbasierten Visualisierung** von Ähnlichkeiten und Abweichungen. Die **Interpretationshoheit** liegt stets beim Nutzer.
 
-Alle Verarbeitungen erfolgen **offline**. Es werden **keine Nutzerdaten übertragen, gespeichert oder ausgewertet**.
+Alle Verarbeitungen der Messdaten erfolgen **auf dem Gerät**. Es werden **keine Nutzerdaten übertragen, extern gespeichert oder ausgewertet**. Der einzige mögliche Netzzugriff der Auswertung ist der einmalige Download des YAMNet-Modells, wenn diese Methode ausdrücklich gewählt wird — dabei geht eine Anfrage nach dem Modell hinaus, sonst nichts.
 
 ---
 

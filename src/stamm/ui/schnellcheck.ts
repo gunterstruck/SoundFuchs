@@ -47,6 +47,7 @@ import type { Customer, Machine } from '@data/types.js';
 import { ReferencePhase } from '@ui/phases/2-Reference.js';
 import { zeigeMitgebrachtesGeraeusch } from './maschinenansicht.js';
 import { t } from '../../i18n/index.js';
+import { ersteLaufNachfuehren } from '@utils/ersteLauf.js';
 import { logger } from '@utils/logger.js';
 
 const KNOPF_ID = 'btn-schnellcheck';
@@ -144,7 +145,23 @@ export function schnellcheckAufbauen(): void {
      */
     let angelegt: Machine | null = null;
     const maschine = async (dateiname: string): Promise<Machine> => {
-      if (!angelegt) angelegt = await maschineFuerGeraeusch(dateiname);
+      if (!angelegt) {
+        angelegt = await maschineFuerGeraeusch(dateiname);
+        /**
+         * Ab hier ist es kein Erstlauf mehr.
+         *
+         * Gemeldet am 24.08.2026: Nach dem Schnellcheck blieb
+         * `body.zb-first-run` stehen — die App zeigte weiter die Anleitung für
+         * die erste Maschine, während eine dastand.
+         *
+         * Der Grund liegt im Weg selbst: Der Schnellcheck legt eine Maschine
+         * an, ohne über die Startseite zu gehen, und die beiden Stellen, die
+         * die Klasse bisher führten, hängen beide an ihr. Jetzt sagt jeder
+         * Weg, der etwas anlegt, derselben Stelle Bescheid
+         * (utils/ersteLauf.ts).
+         */
+        void ersteLaufNachfuehren();
+      }
       return angelegt;
     };
 

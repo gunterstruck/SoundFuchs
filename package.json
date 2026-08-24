@@ -25,6 +25,7 @@
     "reihe": "node tools/reihe-lauf.mjs",
     "mitbringen": "node tools/mitbringen-lauf.mjs",
     "schnellcheck": "node tools/schnellcheck-lauf.mjs",
+    "update-weg": "node tools/update-lauf.mjs",
     "stammvergleich": "node tools/stammvergleich.mjs"
   },
   "dependencies": {

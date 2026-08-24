@@ -200,6 +200,45 @@ try {
   pruefe(weg.hoch >= 44, `„Geräusch mitbringen" ist ${weg.hoch} px hoch`);
   pruefe(weg.imBild, '„Geräusch mitbringen" steht nicht ohne Scrollen im Bild');
 
+  /**
+   * ── 0. DER ABBRUCH HINTERLÄSST NICHTS ───────────────────────────────────
+   *
+   * Gemeldet am 24.08.2026: Das versteckte `<input type="file">` wurde nur beim
+   * `change`-Ereignis entfernt. Wer die Dateiauswahl abbrach, ließ es im Baum
+   * zurück — und beim nächsten Anlauf das nächste.
+   *
+   * Zu sehen ist davon nichts, und genau deshalb steht es hier: Ein Baum, in
+   * dem etwas liegen bleibt, meldet sich nie von selbst.
+   *
+   * Der Dateidialog des Browsers lässt sich von außen nicht abbrechen. Statt
+   * ihn zu öffnen, wird deshalb dreimal derselbe Weg angestoßen und danach
+   * gezählt: Bleibt bei jedem Anlauf eines liegen, stehen am Ende drei.
+   */
+  console.log('\n=== Der Abbruch hinterlässt nichts ===');
+  const felderVorher = await page.evaluate(
+    () => document.querySelectorAll('input[type="file"]').length
+  );
+  for (let i = 0; i < 3; i += 1) {
+    await page.evaluate(() => {
+      document.querySelector('.maschine-mitbringen')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true })
+      );
+    });
+    await page.waitForTimeout(300);
+    // Kein `change`, kein Abbruch von außen — nur der Rückweg über `focus`,
+    // den ein Mensch mit dem Schließen des Dialogs ebenfalls auslöst.
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await page.waitForTimeout(900);
+  }
+  const felderNachher = await page.evaluate(
+    () => document.querySelectorAll('input[type="file"]').length
+  );
+  console.log(`  Dateifelder im Baum       ${felderVorher} → ${felderNachher} (nach 3 Anläufen)`);
+  pruefe(
+    felderNachher <= felderVorher,
+    `nach 3 abgebrochenen Anläufen liegen ${felderNachher - felderVorher} Dateifelder mehr im Baum`
+  );
+
   // ── 1. Eine lesbare Datei ───────────────────────────────────────────────
   console.log('\n=== Eine Datei, die dieser Browser lesen kann (WAV, 14 s) ===');
   const wahl = page.waitForEvent('filechooser');
