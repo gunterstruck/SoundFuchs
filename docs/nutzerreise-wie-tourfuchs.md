@@ -4612,6 +4612,72 @@ Jeder der vier Fixes ist einzeln widerlegt worden: Knopf-Enthüllung entfernt �
 `schnellcheck` meldet „STEHT NOCH"; `cancel`/`focus` entfernt → `mitbringen`
 meldet 0 → 3 liegengebliebene Dateifelder.
 
+## 7k. Der Maßstab neben der Zahl, und der ungeprüfte Anker (24.08.2026)
+
+_Aus einem PO-Urteil: „Die angezeigte Präzision ist größer als die bisher
+nachgewiesene Zuverlässigkeit." Zwei Stellen, an denen das konkret wird._
+
+### Die Auflösungszeile war gebaut, getestet — und unsichtbar
+
+`resolutionLine.ts` beantwortet die Frage, die unter jedem Prozentwert steht:
+**wie genau ist diese Zahl?** Es hat Tests, es hat Texte in fünf Sprachen, und
+es stand seit dem 23.08.2026 nirgends mehr — sein Aufrufer lag im
+Ergebnisdialog, den §7f abgerissen hat. Das Modul sagt selbst, wo es hingehört
+(„das Setzen von `textContent` bleibt in 3-Diagnose"), und genau diese Stelle
+gibt es nicht mehr.
+
+Warum das mehr ist als eine fehlende Zeile: `baselineSpread.ts` hält die eigenen
+Messwerte des Projekts fest — **93–94 % über verschiedene Geräte, 95–97 % bei
+bloßer Wiederholung auf demselben Gerät.** In diesem Band ist „88 %" ohne
+Maßstab keine Auskunft. Das Modul zieht daraus schon den richtigen Schluss:
+„Eine FESTE Prozentschwelle hat in diesem Band keinen stabilen Platz: sie feuert
+auf Gerätewechsel und Messwiederholung, bevor sie auf eine Maschinenänderung
+feuert."
+
+Die Zeile steht jetzt unter dem Beleg auf der Maschinenseite. Sie entscheidet
+weiterhin nichts — die Ampel bleibt an ihren festen Schwellen, wie
+`baselineSpread.ts` es ausdrücklich festhält („Messgerät vor Experiment").
+
+**Nur bei genau einem Normalzustand.** Welche Referenz den Score erzeugt hat,
+hält `DiagnosisResult` nicht fest. Bei einer gesunden Referenz ist die Frage
+beantwortet; bei mehreren wäre der Rückfall auf die erste ein stilles Raten, und
+dann stünde eine echte Zahl unter einem Score, zu dem sie nicht gehört. Lieber
+keine Zeile als eine, die zur falschen Referenz gehört.
+
+### Der Flotten-Schnellvergleich benennt seinen Anker
+
+`QuickCompareController` macht die erste Maschine zur Vergleichsbasis für alle
+anderen — ausdrücklich, im Quelltext: `// First machine is the gold standard`.
+Ist ausgerechnet sie auffällig, weichen alle anderen von IHR ab, und der
+Bildschirm meldet vier kranke Maschinen statt einer schlechten Basis.
+
+Drei Änderungen, alle klein:
+
+1. Der Assistent sagt jetzt, was die erste Aufnahme wird — „nimm sie an einer
+   Maschine auf, die dir unauffällig vorkommt" — statt „wird automatisch als
+   Vergleichsbasis verwendet".
+2. Weicht **jede** geprüfte Vergleichsmaschine ab, steht ein Satz daneben: dann
+   kann die Basis selbst die auffällige sein. Keine Umkehrung des Ergebnisses —
+   der Satz, der die zweite Lesart überhaupt erlaubt.
+3. Die Regel dafür ist eine reine, exportierte Funktion mit Test. Eine
+   Bedingung, die man nur über einen Bildschirm mit fünf echten Aufnahmen
+   erreicht, wird sonst nie falsifiziert.
+
+**Zurückgezogen:** Zuerst hatte ich das Mitkopieren von `refT60` (Nachhallzeit)
+auf die übrigen Maschinen als Fehler notiert. Am Code nachgesehen treibt es eine
+**Umgebungswarnung** — „der Raum unterscheidet sich vom Referenzraum". Im
+Parallelvergleich IST die Referenz Maschine 01 samt ihrem Raum; die Warnung ist
+dort richtig. Der Einwand war falsch und ist gestrichen.
+
+### Was NICHT geändert wurde
+
+Die Zahl heißt in der deutschen Oberfläche längst „Ähnlichkeit", nicht
+„Gesundheit" — „Ähnlichkeit 72 % · gerade eben" auf der Maschinenseite,
+„Ähnlichkeits-Score" im Verlauf, und §7 der Rechtstexte sagt ausdrücklich „kein
+Befundungswerkzeug". Die vorgeschlagene Umbenennung war zum größten Teil schon
+geschehen. Was fehlte, war die Unsicherheit daneben — und das war die
+Auflösungszeile.
+
 ## 8. Risiken, offen benannt
 
 **Die Abtastrate des Modells und die der aufbewahrten Aufnahme können

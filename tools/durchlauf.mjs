@@ -415,6 +415,7 @@ try {
       satz: document.querySelector('.maschine-ergebnissatz')?.textContent?.trim() ?? '',
       bild: Boolean(document.querySelector('.klangbild-flach')),
       alterDialog: sichtbar(dialog),
+      aufloesung: document.querySelector('.maschine-aufloesung')?.textContent?.trim() ?? '',
     };
   });
   pruefe(
@@ -428,6 +429,27 @@ try {
     'der alte Ergebnisdialog bleibt zu',
     !ergebnisort.alterDialog,
     ergebnisort.alterDialog ? 'er steht offen' : 'zu'
+  );
+  /**
+   * NEBEN DER ZAHL STEHT IHR MASSSTAB.
+   *
+   * `resolutionLine.ts` gab es schon, getestet, mit Texten in fünf Sprachen —
+   * und seit dem 23.08.2026 stand es nirgends mehr, weil sein Aufrufer im
+   * abgerissenen Ergebnisdialog lag (#100). Ein halbes Jahr Denkarbeit, das
+   * niemand mehr sah.
+   *
+   * Warum das zählt: `baselineSpread.ts` hält die eigenen Messwerte des
+   * Projekts fest — 93–94 % über verschiedene Geräte, 95–97 % bei bloßer
+   * Wiederholung auf demselben Gerät. In diesem Band ist „88 %" ohne Maßstab
+   * keine Auskunft. Die Zeile liefert den Maßstab.
+   *
+   * Geprüft wird, dass sie DA ist und eine Zahl trägt — nicht ihr Wortlaut.
+   */
+  pruefe(
+    25,
+    'neben der Ähnlichkeit steht, was sie auflöst',
+    ergebnisort.aufloesung.length > 0 && /\d/.test(ergebnisort.aufloesung),
+    ergebnisort.aufloesung || '(keine Auflösungszeile)'
   );
 
   /**

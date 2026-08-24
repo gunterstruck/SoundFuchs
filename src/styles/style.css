@@ -9419,6 +9419,18 @@ html[data-view-level='expert'] .settings-divider[data-view-level='expert'] {
   font-weight: 600;
 }
 
+/* Der Hinweis, dass die Vergleichsbasis selbst der Verdächtige sein kann.
+
+   Bewusst NICHT in Warnfarbe: Er widerspricht der Meldung darüber nicht, er
+   fügt die zweite Lesart hinzu. Eine zweite rote Zeile daneben läse sich wie
+   ein zweiter Alarm — es ist aber eine Einordnung des ersten. */
+.qc-result-anker-hinweis {
+  margin-top: var(--spacing-xs, 0.5rem);
+  color: var(--text-secondary);
+  font-size: var(--font-sm, 0.875rem);
+  line-height: 1.45;
+}
+
 /* Result ranking items */
 .qc-result-list {
   margin-bottom: var(--spacing-md, 1.5rem);

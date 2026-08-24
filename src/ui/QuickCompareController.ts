@@ -24,6 +24,25 @@ import { notify } from '@utils/notifications.js';
 import { averageSpectrum } from '@core/dsp/spectrumSummary.js';
 import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
 
+/**
+ * Ist die Vergleichsbasis selbst der Verdächtige?
+ *
+ * Rein und exportiert, damit die Regel prüfbar ist statt nur eingebaut. Eine
+ * Bedingung, die man nur über einen Bildschirm mit fünf aufgenommenen
+ * Maschinen erreicht, wird nie falsifiziert.
+ *
+ * @param checked      geprüfte Maschinen INKLUSIVE der Basis
+ * @param outlierCount wie viele davon abweichen
+ */
+export function basisIstVerdaechtig(checked: number, outlierCount: number): boolean {
+  // Ohne die Basis selbst: Sie ist der Maßstab, sie kann von sich nicht abweichen.
+  const geprueftOhneBasis = Math.max(0, checked - 1);
+  // Unter zwei Vergleichsmaschinen ist „alle weichen ab" keine Aussage — bei
+  // einer einzigen ist es schlicht dieselbe Zahl noch einmal.
+  if (geprueftOhneBasis < 2) return false;
+  return outlierCount >= geprueftOhneBasis;
+}
+
 export class QuickCompareController {
   private machineCount: number = 0;
   private goldStandardId: string | null = null;
@@ -422,6 +441,33 @@ export class QuickCompareController {
       alert.className = 'qc-result-outlier-alert';
       alert.textContent = t('quickCompare.result.outlierFound', { count: String(outlierCount) });
       headerDiv.appendChild(alert);
+
+      /**
+       * WENN FAST ALLE ABWEICHEN, IST DIE BASIS DER VERDÄCHTIGE.
+       *
+       * Der Schnellvergleich misst jede Maschine gegen die erste. Ist ausgerechnet
+       * die erste auffällig — anders belastet, kälter, schon beschädigt —, dann
+       * weichen alle anderen von IHR ab, und der Bildschirm meldet vier kranke
+       * Maschinen statt einer schlechten Vergleichsbasis.
+       *
+       * Genau umgekehrt zu lesen ist es, und niemand sagt es. Ein Prüfbericht vom
+       * 24.08.2026 hat auf diese Stelle gezeigt: „Ist Maschine 01 ungewöhnlich,
+       * anders belastet oder bereits beschädigt, werden alle anderen gegen einen
+       * schlechten Anker verglichen."
+       *
+       * Die Schwelle ist ALLE geprüften außer der Basis. Bei „drei von vier"
+       * kann es echt sein; wenn ausnahmslos jede geprüfte Maschine abweicht, ist
+       * die gemeinsame Ursache wahrscheinlicher als vier einzelne.
+       *
+       * Es ist keine Diagnose und keine Umkehrung des Ergebnisses — es ist der
+       * Satz, der die andere Lesart überhaupt erst erlaubt.
+       */
+      if (basisIstVerdaechtig(checked, outlierCount)) {
+        const ankerHinweis = document.createElement('div');
+        ankerHinweis.className = 'qc-result-anker-hinweis';
+        ankerHinweis.textContent = t('quickCompare.result.basisVerdaechtig');
+        headerDiv.appendChild(ankerHinweis);
+      }
     } else if (checked > 0) {
       const allGood = document.createElement('div');
       allGood.className = 'qc-result-all-good';
