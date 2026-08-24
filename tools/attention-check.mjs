@@ -50,10 +50,10 @@
  *   npm run attention-check
  *   npm run attention-check -- --frei      (nur messen, keine Budgets prüfen)
  *
- * Voraussetzung, bewusst **nicht** in `package.json`, damit ein normales
- * `npm install` keinen Browser-Download auslöst:
+ * Voraussetzung: Playwright ist als exakt gepinnte Entwicklungsabhängigkeit
+ * installiert; der Browser selbst wird bewusst separat bereitgestellt:
  *
- *   npm i -D playwright && npx playwright install chromium
+ *   npm ci && npx playwright install chromium
  *
  * In Umgebungen mit vorhandenem Browser:
  *   PLAYWRIGHT_CHROMIUM_PATH=/pfad/zu/chrome npm run attention-check
@@ -405,9 +405,7 @@ try {
   ({ chromium } = require('playwright'));
 } catch {
   vorschau.kill();
-  console.error(
-    'Playwright fehlt. Einmalig:  npm i -D playwright && npx playwright install chromium'
-  );
+  console.error('Playwright fehlt. Bitte zuerst `npm ci` ausführen.');
   process.exit(1);
 }
 

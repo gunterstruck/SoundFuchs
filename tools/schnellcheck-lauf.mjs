@@ -32,21 +32,11 @@ try {
   ({ chromium } = require('playwright'));
 } catch {
   /**
-   * Kein Fehler ohne Satz — auch nicht beim Werkzeug selbst.
-   *
-   * Playwright steht bewusst NICHT in `package.json`: Die CI führt `npm ci`
-   * aus und keinen einzigen Browser-Wächter; es dort zu installieren lüde bei
-   * jedem Lauf Browser herunter, die niemand benutzt.
-   *
-   * Der Preis dafür ist, dass es nach einem frischen `npm ci` fehlen kann.
-   * Dann muss hier ein Satz stehen, der sagt, was zu tun ist. Am 23.08.2026
-   * stürzten sechs von acht Wächtern stattdessen mit einer Stapelspur ab —
-   * und ein Wächter, der gar nicht läuft, sieht in einem Protokoll aus wie
-   * einer, der nichts gefunden hat.
+   * Playwright ist exakt im Lockfile gepinnt. Fehlt das Paket trotzdem, ist
+   * die Arbeitskopie nicht vollständig installiert; der Browser selbst wird
+   * separat mit `playwright install chromium` bereitgestellt.
    */
-  console.error(
-    'Playwright fehlt. Einmalig:  npm i -D playwright  (der Browser liegt schon bereit)'
-  );
+  console.error('Playwright fehlt. Bitte zuerst `npm ci` ausführen.');
   process.exit(1);
 }
 /**
@@ -267,12 +257,19 @@ try {
       aufheben: Boolean(feld?.querySelector('.standortfilter-aufheben')),
     };
   });
-  console.log(`  aktiver Reiter            ${vorFilter.aktiv} · Feld aktiv ${vorFilter.feldAktiv} · ${vorFilter.kinder} Kinder`);
+  console.log(
+    `  aktiver Reiter            ${vorFilter.aktiv} · Feld aktiv ${vorFilter.feldAktiv} · ${vorFilter.kinder} Kinder`
+  );
   console.log(`  Inhalt                    ${vorFilter.roh || '(leer)'}`);
   console.log(`  Reihen                    ${vorFilter.reihen}`);
-  console.log(`  Chips                     ${vorFilter.chips.map((c) => c.text).join(' · ') || '(keine)'}`);
+  console.log(
+    `  Chips                     ${vorFilter.chips.map((c) => c.text).join(' · ') || '(keine)'}`
+  );
   console.log(`  Stand                     ${vorFilter.stand || '(keiner)'}`);
-  pruefe(vorFilter.reihen >= 2, `der Filter hat ${vorFilter.reihen} Reihe(n) statt Zustand und Alter`);
+  pruefe(
+    vorFilter.reihen >= 2,
+    `der Filter hat ${vorFilter.reihen} Reihe(n) statt Zustand und Alter`
+  );
   pruefe(
     vorFilter.chips.length > 0 && vorFilter.chips.every((c) => c.hoch >= 44 && c.breit >= 44),
     `ein Chip ist kleiner als 44 px — ${vorFilter.chips.map((c) => `${c.breit}×${c.hoch}`).join(' · ')}`
@@ -355,7 +352,9 @@ try {
 
   if (leerChip) {
     const leer = await listeNach(leerChip.text);
-    console.log(`  nach „${leerChip.text}"${' '.repeat(Math.max(1, 18 - leerChip.text.length))}${leer.zeilen} Zeilen · „${leer.leersatz || '(kein Satz)'}"`);
+    console.log(
+      `  nach „${leerChip.text}"${' '.repeat(Math.max(1, 18 - leerChip.text.length))}${leer.zeilen} Zeilen · „${leer.leersatz || '(kein Satz)'}"`
+    );
     pruefe(leer.zeilen === 0, `„${leerChip.text}" führt zu ${leer.zeilen} Zeilen statt zu keiner`);
     /**
      * Eine leere Liste braucht einen Satz.
@@ -379,7 +378,9 @@ try {
   if (vollChip) {
     const soll = zahlVon(vollChip.text);
     const voll = await listeNach(vollChip.text);
-    console.log(`  nach „${vollChip.text}"${' '.repeat(Math.max(1, 18 - vollChip.text.length))}${voll.zeilen} Zeilen (am Chip steht ${soll})`);
+    console.log(
+      `  nach „${vollChip.text}"${' '.repeat(Math.max(1, 18 - vollChip.text.length))}${voll.zeilen} Zeilen (am Chip steht ${soll})`
+    );
     console.log(`  Zeile über der Liste      ${voll.zeile || '(keine)'}`);
     /**
      * Die Zahl am Chip ist ein Versprechen.
@@ -426,7 +427,8 @@ try {
       hoch: k ? Math.round(k.height) : 0,
       imBild: k ? k.bottom <= window.innerHeight && k.right <= window.innerWidth : false,
       frei: Boolean(mitte && b && (mitte === b || b.contains(mitte))),
-      nachbar: document.getElementById('btn-nearby')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      nachbar:
+        document.getElementById('btn-nearby')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
     };
   });
   console.log(`  Nachbar                   ${knopf.nachbar || '(keiner)'}`);
@@ -454,7 +456,9 @@ try {
   // ── 3. Eine Datei ohne Maschine ─────────────────────────────────────────
   console.log(`\n=== Ein Geräusch ohne Maschine (${WAV.split('/').pop()}) ===`);
   const vorher = await ablage();
-  console.log(`  vorher                    ${vorher.standorte} Standorte · Sammelstandort ${vorher.standort ? 'da' : 'nein'}`);
+  console.log(
+    `  vorher                    ${vorher.standorte} Standorte · Sammelstandort ${vorher.standort ? 'da' : 'nein'}`
+  );
 
   const wahl = page.waitForEvent('filechooser');
   await page
@@ -504,7 +508,9 @@ try {
     normalKnopf: document.querySelectorAll('.maschine-mitbringen').length,
     erstlauf: document.body.classList.contains('zb-first-run'),
   }));
-  console.log(`  Standort                  ${nachher.standort ? `„${nachher.standort.name}" · geo ${nachher.standort.geo}` : 'KEINER'}`);
+  console.log(
+    `  Standort                  ${nachher.standort ? `„${nachher.standort.name}" · geo ${nachher.standort.geo}` : 'KEINER'}`
+  );
   console.log(`  Maschinen darin           ${nachher.maschinen.join(' · ') || '(keine)'}`);
   console.log(`  Ebene                     ${sicht.ebene} · ${sicht.titel || '(kein Titel)'}`);
   console.log(`  Blatt                     ${sicht.blattOffen ? 'offen' : 'ZU'} · ${sicht.reiter}`);
@@ -545,7 +551,10 @@ try {
     nachher.maschinen[0] === ERWARTETER_NAME,
     `die Maschine heißt „${nachher.maschinen[0]}" statt „${ERWARTETER_NAME}" — der Dateiname ging verloren`
   );
-  pruefe(/tiefe-maschine/.test(sicht.ebene), 'die Maschinenebene ging nach dem Übernehmen nicht auf');
+  pruefe(
+    /tiefe-maschine/.test(sicht.ebene),
+    'die Maschinenebene ging nach dem Übernehmen nicht auf'
+  );
   pruefe(
     sicht.titel === ERWARTETER_NAME,
     `oben steht „${sicht.titel}" statt der frisch angelegten Maschine`
@@ -569,7 +578,9 @@ try {
   // ── 4. Und der Weg zurück ───────────────────────────────────────────────
   console.log('\n=== Der Weg zurück in vier Wochen ===');
   await page.evaluate(() => {
-    document.querySelector('.tiefe-zurueck')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    document
+      .querySelector('.tiefe-zurueck')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   });
   await page.waitForTimeout(1200);
   // Bis zur Karte zurück — von der Maschine über den Standort.

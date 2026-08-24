@@ -46,9 +46,7 @@ let chromium;
 try {
   ({ chromium } = require('playwright'));
 } catch {
-  console.error(
-    'Playwright fehlt. Einmalig:  npm i -D playwright  (der Browser liegt schon bereit)'
-  );
+  console.error('Playwright fehlt. Bitte zuerst `npm ci` ausführen.');
   process.exit(1);
 }
 
@@ -111,7 +109,9 @@ try {
       : null,
   }));
   console.log(`  Prüfknopf                 ${ruhe.pruefknopf ? 'da' : 'FEHLT'}`);
-  console.log(`  „Jetzt aktualisieren"     ${ruhe.anwendenDa === false ? 'verborgen' : ruhe.anwendenDa}`);
+  console.log(
+    `  „Jetzt aktualisieren"     ${ruhe.anwendenDa === false ? 'verborgen' : ruhe.anwendenDa}`
+  );
   pruefe(ruhe.pruefknopf, 'im Dialog steht kein Knopf, mit dem man von Hand nachsehen kann');
   /**
    * Ein Knopf, der nichts anzuwenden hat, darf nicht dastehen.
@@ -167,10 +167,7 @@ try {
       fund.anwendenDa,
       'die Prüfung meldet einen Fund und bietet keinen Weg dorthin — die gemeldete Sackgasse'
     );
-    pruefe(
-      fund.anwendenHoch >= 44,
-      `„${fund.anwendenText}" ist ${fund.anwendenHoch} px hoch`
-    );
+    pruefe(fund.anwendenHoch >= 44, `„${fund.anwendenText}" ist ${fund.anwendenHoch} px hoch`);
   }
 
   console.log(`\nSeitenfehler                ${seitenfehler.length}`);

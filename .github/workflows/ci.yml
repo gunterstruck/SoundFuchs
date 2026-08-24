@@ -79,14 +79,16 @@ jobs:
   #
   # WELCHE LÄUFE
   #
-  # Die drei, die den gemeldeten Fehlerklassen entsprechen: der Hauptweg von
-  # vorn bis hinten samt der drei Auflagen (`durchlauf`), die mitgebrachte
-  # Datei (`mitbringen`) und der Weg ohne Maschine samt Filter
-  # (`schnellcheck`). `stammvergleich` fehlt bewusst — er braucht eine
-  # Arbeitskopie von TourFuchs, die hier nicht liegt.
+  # Die Kernwege, die den gemeldeten Fehlerklassen entsprechen: der Hauptweg
+  # von vorn bis hinten samt der drei Auflagen (`durchlauf`), die mitgebrachte
+  # Datei (`mitbringen`), der Weg ohne Maschine samt Filter (`schnellcheck`)
+  # sowie Bedienbudgets und die responsive Audio-Reise. Runde und Reihe laufen
+  # wegen mehrerer vollständiger Aufnahmen wöchentlich im erweiterten UI-Lauf.
+  # `stammvergleich` fehlt bewusst — er braucht eine Arbeitskopie von
+  # TourFuchs, die hier nicht liegt.
   browser-guards:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -98,6 +100,11 @@ jobs:
       # Die Wächter laufen gegen `dist/`, nicht gegen den Entwicklungsserver.
       - run: npm run build
       - run: npm run a11y
+      # Bedienlast, Textbreite und die mobile Nutzerreise sind Teil der
+      # Freigabe. `wow` prüft zusätzlich Hell/Dunkel, Handy/Tablet/Desktop und
+      # den echten Audio-Zustandswechsel bis zum Ergebnis.
+      - run: npm run attention-check
+      - run: npm run wow
       - run: npm run durchlauf
       - run: npm run mitbringen
       - run: npm run schnellcheck

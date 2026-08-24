@@ -32,21 +32,11 @@ try {
   ({ chromium } = require('playwright'));
 } catch {
   /**
-   * Kein Fehler ohne Satz — auch nicht beim Werkzeug selbst.
-   *
-   * Playwright steht bewusst NICHT in `package.json`: Die CI führt `npm ci`
-   * aus und keinen einzigen Browser-Wächter; es dort zu installieren lüde bei
-   * jedem Lauf Browser herunter, die niemand benutzt.
-   *
-   * Der Preis dafür ist, dass es nach einem frischen `npm ci` fehlen kann.
-   * Dann muss hier ein Satz stehen, der sagt, was zu tun ist. Am 23.08.2026
-   * stürzten sechs von acht Wächtern stattdessen mit einer Stapelspur ab —
-   * und ein Wächter, der gar nicht läuft, sieht in einem Protokoll aus wie
-   * einer, der nichts gefunden hat.
+   * Playwright ist exakt im Lockfile gepinnt. Fehlt das Paket trotzdem, ist
+   * die Arbeitskopie nicht vollständig installiert; der Browser selbst wird
+   * separat mit `playwright install chromium` bereitgestellt.
    */
-  console.error(
-    'Playwright fehlt. Einmalig:  npm i -D playwright  (der Browser liegt schon bereit)'
-  );
+  console.error('Playwright fehlt. Bitte zuerst `npm ci` ausführen.');
   process.exit(1);
 }
 /**
@@ -220,9 +210,9 @@ try {
   );
   for (let i = 0; i < 3; i += 1) {
     await page.evaluate(() => {
-      document.querySelector('.maschine-mitbringen')?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true })
-      );
+      document
+        .querySelector('.maschine-mitbringen')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
     await page.waitForTimeout(300);
     // Kein `change`, kein Abbruch von außen — nur der Rückweg über `focus`,
@@ -323,7 +313,10 @@ try {
     `  Fokus im Dialog           rückwärts ${fokusRueckwaerts.imDialog ? 'ja' : 'NEIN'} · vorwärts ${fokusVorwaerts ? 'ja' : 'NEIN'}`
   );
   pruefe(fokusRueckwaerts.imDialog && fokusVorwaerts, 'Tab verlässt den modalen Dateidialog');
-  pruefe(fokusRueckwaerts.hintergrundInert, 'der Hintergrund bleibt trotz offenem Dialog bedienbar');
+  pruefe(
+    fokusRueckwaerts.hintergrundInert,
+    'der Hintergrund bleibt trotz offenem Dialog bedienbar'
+  );
 
   /**
    * ── DER DIALOG LIEGT ÜBER DER KOPFLEISTE ──────────────────────────────
@@ -646,8 +639,7 @@ try {
         `  nach „Abbrechen"          ${nachAbbruch.modelle} Modelle · Vorschau ${zurueckInVorschau ? 'wieder da' : 'WEG'}`
       );
       pruefe(
-        nachAbbruch.modelle === vorher.modelle &&
-          nachAbbruch.refAufnahmen === vorher.refAufnahmen,
+        nachAbbruch.modelle === vorher.modelle && nachAbbruch.refAufnahmen === vorher.refAufnahmen,
         'nach „Abbrechen" hat sich die Ablage trotzdem verändert'
       );
       pruefe(zurueckInVorschau, 'nach „Abbrechen" steht die Vorschau nicht wieder da');
@@ -734,7 +726,10 @@ try {
        */
       console.log(`  Satz                      ${ausgang.fehlersatz || '(KEINER)'}`);
       console.log(`  Weg weiter                ${ausgang.wegWeiter.trim() || '(KEINER)'}`);
-      pruefe(ausgang.fehlersatz.length > 0, 'der Normalzustand kam nicht zustande, und keiner sagt warum');
+      pruefe(
+        ausgang.fehlersatz.length > 0,
+        'der Normalzustand kam nicht zustande, und keiner sagt warum'
+      );
       pruefe(ausgang.wegWeiter.trim().length > 0, 'nach der Ablehnung gibt es keinen Weg weiter');
       pruefe(
         nachher.modelle === vorher.modelle && nachher.refAufnahmen === vorher.refAufnahmen,
@@ -806,7 +801,9 @@ try {
   });
   console.log(`  Satz                      ${angebot2.satz || '(keiner)'}`);
   console.log(`  Knopf                     ${angebot2.knopf || 'FEHLT'} (${angebot2.hoch} px)`);
-  console.log(`  leiser Weg                ${angebot2.leiserWeg || '(keiner)'} (${angebot2.leiseHoch} px)`);
+  console.log(
+    `  leiser Weg                ${angebot2.leiserWeg || '(keiner)'} (${angebot2.leiseHoch} px)`
+  );
   /**
    * Mit Normalzustand ist die Prüfung das Angebot, nicht das Ersetzen.
    *
@@ -818,18 +815,12 @@ try {
     /Prüfung/i.test(angebot2.knopf),
     `mit Normalzustand bietet die Vorschau „${angebot2.knopf}" statt der Prüfung an`
   );
-  pruefe(
-    angebot2.hoch >= 44,
-    `„${angebot2.knopf}" ist ${angebot2.hoch} px hoch`
-  );
+  pruefe(angebot2.hoch >= 44, `„${angebot2.knopf}" ist ${angebot2.hoch} px hoch`);
   pruefe(
     /Normalzustand/i.test(angebot2.leiserWeg),
     'das Ersetzen des Normalzustands ist nicht mehr erreichbar'
   );
-  pruefe(
-    angebot2.leiseHoch >= 44,
-    `der leise Weg ist ${angebot2.leiseHoch} px hoch`
-  );
+  pruefe(angebot2.leiseHoch >= 44, `der leise Weg ist ${angebot2.leiseHoch} px hoch`);
 
   await page
     .locator('.mitbringen-normal-knopf')
@@ -942,7 +933,10 @@ try {
   await page.waitForTimeout(900);
   // Aufziehen, dann wählen: Auf Guckhöhe ist der Inhalt 0 px hoch, und eine
   // Leinwand, die beim Zeichnen 0 px misst, bleibt leer.
-  await page.locator('#sheet-grip').click({ force: true, timeout: 6000 }).catch(() => {});
+  await page
+    .locator('#sheet-grip')
+    .click({ force: true, timeout: 6000 })
+    .catch(() => {});
   await page.waitForTimeout(800);
   await page
     .locator('.tab-button[data-tab="details"]')
@@ -968,7 +962,9 @@ try {
   console.log(`  Leinwand                  ${detail.hoch} px`);
   console.log(`  Betriebspunkte            ${detail.punkte.length}`);
   for (const p of detail.punkte) {
-    console.log(`    ${p.name || '(ohne Namen)'} — ${p.wert || '(ohne Wert)'} · Balken ${p.balken} px`);
+    console.log(
+      `    ${p.name || '(ohne Namen)'} — ${p.wert || '(ohne Wert)'} · Balken ${p.balken} px`
+    );
   }
   if (detail.leer) console.log(`  statt Liste               ${detail.leer}`);
 

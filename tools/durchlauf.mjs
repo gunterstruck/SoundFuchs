@@ -38,12 +38,11 @@
  *
  *   npm run durchlauf
  *
- * Bewusst **nicht** in der CI: Der Lauf dauert rund anderthalb Minuten und
- * braucht einen Browser. Er gehört vor jede Änderung an Navigation, Aufnahme
- * oder Prüfung — dorthin, wo ein Mensch hinschaut.
+ * Der Lauf ist Teil der Browser-Freigabe in CI. Navigation, Aufnahme und
+ * Prüfung werden damit vor jedem Merge dort geprüft, wo ein Mensch tippt.
  *
  * Voraussetzung wie bei attention-check:
- *   npm i -D playwright && npx playwright install chromium
+ *   npm ci && npx playwright install chromium
  *   PLAYWRIGHT_CHROMIUM_PATH=/pfad/zu/chrome npm run durchlauf
  */
 import { createRequire } from 'node:module';
@@ -88,9 +87,7 @@ let chromium;
 try {
   ({ chromium } = require('playwright'));
 } catch {
-  console.error(
-    'Playwright fehlt. Einmalig:  npm i -D playwright && npx playwright install chromium'
-  );
+  console.error('Playwright fehlt. Bitte zuerst `npm ci` ausführen.');
   process.exit(1);
 }
 
@@ -410,7 +407,9 @@ try {
   const ergebnisort = await page.evaluate(() => {
     const dialog = document.getElementById('diagnosis-modal');
     const sichtbar = (el) =>
-      Boolean(el) && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0;
+      Boolean(el) &&
+      getComputedStyle(el).display !== 'none' &&
+      el.getBoundingClientRect().height > 0;
     return {
       aufDerMaschine: document.body.classList.contains('tiefe-maschine'),
       satz: document.querySelector('.maschine-ergebnissatz')?.textContent?.trim() ?? '',
@@ -465,8 +464,10 @@ try {
       deaktiviert: flaeche ? flaeche.matches(':disabled') : null,
       deckkraft: flaeche ? Number.parseFloat(getComputedStyle(flaeche).opacity) : 0,
       hinweis:
-        flaeche?.closest('.klangbild')?.querySelector('.klangbild-ziehhinweis')?.textContent?.trim() ??
-        '',
+        flaeche
+          ?.closest('.klangbild')
+          ?.querySelector('.klangbild-ziehhinweis')
+          ?.textContent?.trim() ?? '',
     };
     if (!c || !c.width) return { ...erg, bild: null };
     const g = c.getContext('2d');
@@ -482,7 +483,8 @@ try {
       const min = Math.min(r, gg, bb);
       sat += max === 0 ? 0 : (max - min) / max;
       // Fünf Körbe entlang des Turbo-Verlaufs: 0 = tiefblau … 4 = rot
-      eimer[Math.min(4, Math.floor(((r > bb ? (gg > 0.6 ? 0.8 : 1) : gg > 0.4 ? 0.5 : 0.2) * 5)))] += 1;
+      eimer[Math.min(4, Math.floor((r > bb ? (gg > 0.6 ? 0.8 : 1) : gg > 0.4 ? 0.5 : 0.2) * 5))] +=
+        1;
       n += 1;
     }
     return {
@@ -540,9 +542,7 @@ try {
    * Gemessen wird deshalb das Verhältnis von Anzeigebreite zu Leinwandbreite.
    * Es muss 1 sein — dann malt der Browser Bildpunkt auf Bildpunkt.
    */
-  const streckung = bildbefund.bild
-    ? Number.parseFloat(bildbefund.bild.streckung)
-    : 0;
+  const streckung = bildbefund.bild ? Number.parseFloat(bildbefund.bild.streckung) : 0;
   pruefe(
     19,
     'das Bild wird nicht gestreckt',
@@ -579,7 +579,11 @@ try {
    */
   const fotoKnopf = page.locator('#maschinen-ansicht .klangbild-quelle', { hasText: 'Foto' });
   const fotoDa = (await fotoKnopf.count()) > 0;
-  if (fotoDa) await fotoKnopf.first().click({ timeout: 6000 }).catch(() => {});
+  if (fotoDa)
+    await fotoKnopf
+      .first()
+      .click({ timeout: 6000 })
+      .catch(() => {});
   await page.waitForTimeout(700);
   const foto = await page.evaluate(() => {
     const img = document.querySelector('#maschinen-ansicht .klangbild-foto');
@@ -589,12 +593,16 @@ try {
       sichtbar: Boolean(img) && !img.hidden && (k?.height ?? 0) > 0,
       geladen: img ? img.naturalWidth > 0 : false,
       groesse: k ? `${Math.round(k.width)}×${Math.round(k.height)}` : '—',
-      hinweis: document.querySelector('#maschinen-ansicht .klangbild-ziehhinweis')?.textContent?.trim() ?? '',
+      hinweis:
+        document.querySelector('#maschinen-ansicht .klangbild-ziehhinweis')?.textContent?.trim() ??
+        '',
     };
   });
   console.log('\n  — Das Positionsbild —');
   console.log(`  Quelle „Foto"             ${fotoDa ? 'da' : 'FEHLT'}`);
-  console.log(`  Bild                      ${foto.sichtbar ? foto.groesse : 'nicht sichtbar'} · geladen ${foto.geladen}`);
+  console.log(
+    `  Bild                      ${foto.sichtbar ? foto.groesse : 'nicht sichtbar'} · geladen ${foto.geladen}`
+  );
   console.log(`  Hinweis                   ${foto.hinweis || '(keiner)'}`);
   pruefe(
     20,
@@ -667,9 +675,15 @@ try {
    *
    * Ein Mensch zieht auf und tippt dann. Der Griff ist der Weg dorthin.
    */
-  await page.locator('#sheet-grip').click({ force: true, timeout: 6000 }).catch(() => {});
+  await page
+    .locator('#sheet-grip')
+    .click({ force: true, timeout: 6000 })
+    .catch(() => {});
   await page.waitForTimeout(900);
-  await page.locator('.tab-button[data-tab="details"]').click({ force: true }).catch(() => {});
+  await page
+    .locator('.tab-button[data-tab="details"]')
+    .click({ force: true })
+    .catch(() => {});
   await page.waitForTimeout(1600);
 
   /** Was wirklich in der Ablage steht — damit ein leerer Reiter erklärbar ist. */
@@ -682,9 +696,7 @@ try {
           const tx = a.result.transaction(['machines'], 'readonly');
           const alle = tx.objectStore('machines').getAll();
           tx.oncomplete = () =>
-            fertig(
-              (alle.result ?? []).reduce((n, m) => n + (m.referenceModels?.length ?? 0), 0)
-            );
+            fertig((alle.result ?? []).reduce((n, m) => n + (m.referenceModels?.length ?? 0), 0));
           tx.onerror = () => fertig(-1);
         };
       })
@@ -737,23 +749,29 @@ try {
       const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
       const gesehen = new Set();
       for (let i = 0; i < d.length; i += 4 * 7) {
-        gesehen.add(
-          `${d[i] >> 5},${d[i + 1] >> 5},${d[i + 2] >> 5},${d[i + 3] >> 5}`
-        );
+        gesehen.add(`${d[i] >> 5},${d[i + 1] >> 5},${d[i + 2] >> 5},${d[i + 3] >> 5}`);
       }
       erg.farben = gesehen.size;
     }
     return erg;
   });
   console.log('\n  — Der Reiter „Details" —');
-  console.log(`  auf Basis                 ${detailsAufBasis.sichtbar ? 'SICHTBAR' : 'verborgen'} (im Baum: ${detailsAufBasis.da})`);
-  console.log(`  auf Profi                 ${details.knopfSichtbar ? 'sichtbar' : 'VERBORGEN'} · Feld offen ${details.feldOffen}`);
+  console.log(
+    `  auf Basis                 ${detailsAufBasis.sichtbar ? 'SICHTBAR' : 'verborgen'} (im Baum: ${detailsAufBasis.da})`
+  );
+  console.log(
+    `  auf Profi                 ${details.knopfSichtbar ? 'sichtbar' : 'VERBORGEN'} · Feld offen ${details.feldOffen}`
+  );
   console.log(`  gezeigte Felder           ${details.gezeigteFelder.join(' · ') || '(keins)'}`);
   console.log(`  Überschrift               ${details.ueberschrift || '(keine)'}`);
   console.log(`  Leinwand                  ${details.hoch} px · ${details.farben} Farbstufen`);
-  console.log(`  Betriebspunkte            ${details.punkte.length} (Modelle in der Ablage: ${ablageModelle})`);
+  console.log(
+    `  Betriebspunkte            ${details.punkte.length} (Modelle in der Ablage: ${ablageModelle})`
+  );
   for (const p of details.punkte.slice(0, 4)) {
-    console.log(`    ${p.name || '(ohne Namen)'} — ${p.wert || '(ohne Wert)'} · Balken ${p.breit} px`);
+    console.log(
+      `    ${p.name || '(ohne Namen)'} — ${p.wert || '(ohne Wert)'} · Balken ${p.breit} px`
+    );
   }
   if (details.leer) console.log(`  leerer Zustand            ${details.leer}`);
 
@@ -812,7 +830,10 @@ try {
   );
 
   // Zurück auf den 2D-Reiter — und genau HIER wird nachgesehen.
-  await page.locator('.tab-button[data-tab="zweid"]').click({ force: true }).catch(() => {});
+  await page
+    .locator('.tab-button[data-tab="zweid"]')
+    .click({ force: true })
+    .catch(() => {});
   await page.waitForTimeout(900);
   const nachWechsel = await page.evaluate(() =>
     [...document.querySelectorAll('.tab-panel')]
@@ -960,7 +981,6 @@ try {
   await page.waitForTimeout(1200);
   await inDieTiefe();
   await page.waitForTimeout(800);
-
 
   /**
    * Tippen, wenn es etwas zu tippen gibt — sonst weitergehen.

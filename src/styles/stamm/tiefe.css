@@ -1072,6 +1072,13 @@ body.tiefe-arbeit #karte-bestandswege {
   flex: 1 1 auto;
   width: auto;
   margin-top: 0;
+  /* Auf dem Handy bricht „Jetzt 10 Sekunden prüfen" in zwei Zeilen um,
+     während „Unterschied anhören" in eine Zeile passt. Ohne einen gemeinsamen
+     Bildsockel wurde die Ergebnisansicht dadurch 8 px kürzer und das direkt
+     folgende Klangbild sprang beim Zustandswechsel sichtbar nach oben. Die
+     Höhe entspricht dem zweizeiligen deutschen Hauptweg; längere
+     Übersetzungen dürfen sie über `min-height` weiterhin vergrößern. */
+  min-height: 66px;
 }
 
 /* Die Runde: das Angebot, weiterzugehen.
