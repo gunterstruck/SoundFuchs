@@ -1407,6 +1407,7 @@ export const zh: TranslationDict = {
   },
   workPointRanking: {
     title: '状态分析',
+    state: '状态',
     states: '状态',
     ariaLabel: '检测到的机器状态排名',
     statusHealthy: '正常',
@@ -1563,10 +1564,11 @@ export const zh: TranslationDict = {
     title: '关于 SoundFuchs',
     subtitle: '机器状态声学比较助手',
     intro:
-      '<strong>SoundFuchs 2.0</strong> 是一个注重隐私的<strong>声音助手</strong>。这个渐进式 Web 应用在本地录制、比较和标记机器声音，并为专业人员或外部 AI 准备<strong>声音简报</strong>，无需云服务或账户。<br><br><strong>SoundFuchs 不作诊断。</strong>它让接收者清楚用户所指的声音；专业检查和判断由接收者完成。',
+      '<strong>SoundFuchs 2.0</strong> 是一个注重隐私的<strong>声音助手</strong>。这个渐进式 Web 应用在本地录制、比较和标记机器声音，并为专业人员或外部 AI 准备<strong>声音简报</strong>，无需 SoundFuchs 分析账户或自有分析云。<br><br><strong>SoundFuchs 不作诊断。</strong>它让接收者清楚用户所指的声音；专业检查和判断由接收者完成。',
     coreFeaturesTitle: '核心功能',
     coreFeatures: {
-      offlineFirst: '<strong>离线优先：</strong>所有录音和计算都在浏览器本地进行。',
+      offlineFirst:
+        '<strong>离线优先：</strong>录音和声学计算在浏览器本地进行。网站托管、地图以及首次可选的 YAMNet 下载需要网络。',
       similarityScore:
         '<strong>相似度评分（0-100%）：</strong>SoundFuchs 计算参考录音和比较录音之间的数学相似度（余弦相似度）。',
       userThreshold:
@@ -1577,7 +1579,7 @@ export const zh: TranslationDict = {
     },
     legalTitle: '技术界定',
     legalIntro:
-      'SoundFuchs 作为<strong>私人非商业开源项目</strong>独立开发，采用 <strong>MIT 许可证</strong>。其功能基于<strong>公开描述的数学程序</strong>（例如频率分析和类 GMIA 余弦比较），不包含<strong>任何专利系统逻辑</strong>、<strong>任何分类机制</strong>和<strong>任何学习模型</strong>。',
+      'SoundFuchs 作为<strong>私人非商业开源项目</strong>独立开发，采用 <strong>MIT 许可证</strong>。它使用<strong>公开描述的数学方法</strong>，并可选使用预训练的开放 <strong>YAMNet</strong> 生成音频嵌入。参考特征、比较和阈值标记均在本地产生；SoundFuchs 不训练自有神经网络，也不进行云端诊断。',
     ipTableTitle: '相关知识产权和技术差异',
     ipTable: {
       headers: {
@@ -1591,13 +1593,14 @@ export const zh: TranslationDict = {
           reference: '<strong>PAPDEOTT005125</strong><br><em>机器诊断程序</em>',
           source: '防御性出版物，西门子公司，2016',
           protectedScope: '使用中央数据库和移动传感器的基于云的诊断系统',
-          soundfuchsDiff: 'SoundFuchs 完全在本地运行，无云、无中央数据库、无检查',
+          soundfuchsDiff: 'SoundFuchs 在本地评估，无自有分析云、无中央测量库，也不作诊断',
         },
         '1': {
           reference: '<strong>EP3701708B1</strong><br><em>远程机器状态分析</em>',
           source: '欧洲专利，西门子公司，2022',
           protectedScope: '基于机器学习的远程诊断，带有训练模型和传感器',
-          soundfuchsDiff: 'SoundFuchs 不使用机器学习，无云、无嵌入式检查逻辑',
+          soundfuchsDiff:
+            'SoundFuchs 在本地比较；可选的预训练 YAMNet 生成音频嵌入。无远程诊断，也无自有分析云',
         },
         '2': {
           reference: '<strong>US9263041B2</strong><br><em>使用 GMIA 进行噪声中的信道检测</em>',
@@ -1609,7 +1612,8 @@ export const zh: TranslationDict = {
           reference: '<strong>US9443201B2</strong><br><em>传感器特征学习</em>',
           source: '西门子，2016',
           protectedScope: '传感器特征的分类和模型训练',
-          soundfuchsDiff: 'SoundFuchs 不进行分类和模型训练',
+          soundfuchsDiff:
+            'SoundFuchs 创建本地参考特征和相似度，但不训练自有神经网络，也不判定故障原因',
         },
         '4': {
           reference: '<strong>US9602781B2</strong><br><em>地震信号去混合（GMIA）</em>',
@@ -1671,9 +1675,9 @@ export const zh: TranslationDict = {
     nfcInterpretation: '比较结果的解读始终由用户负责。',
     transparencyTitle: '透明度和意图',
     transparencyText1:
-      'SoundFuchs <strong>不是诊断工具</strong>，<strong>不进行自动技术评估</strong>。它提供<strong>视觉和数学比较辅助</strong>，并准备可分享的<strong>声音简报</strong>。',
+      'SoundFuchs <strong>不是诊断工具</strong>，也不判定故障原因。它会自动计算<strong>相似度</strong>，并按用户设定的阈值标记偏差；专业判断仍由用户负责。',
     transparencyText2:
-      '所有处理都<strong>离线</strong>进行。<strong>不传输、存储或评估用户数据</strong>。',
+      '<strong>音频、参考特征和评分在本地处理并存储。</strong>访问 Vercel 托管、外部地图图块以及首次使用可选 YAMNet 模型（TF Hub）时会产生网络请求。相应提供商会收到技术连接数据；SoundFuchs 不会向它们发送音频。',
     transparencyText3: '这种透明度表达了对责任、数据保护和第三方权利的自觉态度。',
     transparencyList: {
       noClassification: '无状态分类',

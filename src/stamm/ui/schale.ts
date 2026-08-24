@@ -290,10 +290,15 @@ export function schaleAnwenden(): void {
 export function reiterOeffnen(reiter: Reiter): void {
   zustand.reiter = reiter;
   document.querySelectorAll<HTMLElement>('.tab-button').forEach((b) => {
-    b.classList.toggle('active', b.dataset.tab === reiter);
+    const aktiv = b.dataset.tab === reiter;
+    b.classList.toggle('active', aktiv);
+    b.setAttribute('aria-selected', String(aktiv));
+    b.setAttribute('tabindex', aktiv ? '0' : '-1');
   });
   document.querySelectorAll<HTMLElement>('.tab-panel').forEach((p) => {
-    p.classList.toggle('active', p.id === `tab-${reiter}`);
+    const aktiv = p.id === `tab-${reiter}`;
+    p.classList.toggle('active', aktiv);
+    p.hidden = !aktiv;
   });
   melde(REITER_GEWECHSELT, reiter);
 }
@@ -626,6 +631,35 @@ export function schaleAufbauen(): void {
        */
       if (tiefeIstOffen() && knopf.dataset.ebene === 'karte') schliesseTiefe();
       reiterOeffnen(ziel);
+    });
+
+    /**
+     * WAI-ARIA-Reiternavigation: Links/Rechts (und Home/End) wechseln nur
+     * innerhalb des sichtbaren Reitersatzes. Damit sind die Reiter nicht bloß
+     * als solche bezeichnet, sondern auch ohne Zeigegerät bedienbar.
+     */
+    knopf.addEventListener('keydown', (ereignis) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(ereignis.key)) return;
+      const ebene = knopf.dataset.ebene;
+      if (!ebene) return;
+      const gruppe = [...document.querySelectorAll<HTMLElement>('.tab-button')].filter(
+        (b) => b.dataset.ebene === ebene && !b.hidden && b.getClientRects().length > 0
+      );
+      const hier = gruppe.indexOf(knopf);
+      if (hier < 0 || gruppe.length === 0) return;
+      ereignis.preventDefault();
+      const naechster =
+        ereignis.key === 'Home'
+          ? 0
+          : ereignis.key === 'End'
+            ? gruppe.length - 1
+            : (hier + (ereignis.key === 'ArrowRight' ? 1 : -1) + gruppe.length) % gruppe.length;
+      const zielknopf = gruppe[naechster];
+      const ziel = zielknopf?.dataset.tab;
+      if (!zielknopf || !istReiter(ziel)) return;
+      if (tiefeIstOffen() && zielknopf.dataset.ebene === 'karte') schliesseTiefe();
+      reiterOeffnen(ziel);
+      zielknopf.focus();
     });
   });
 

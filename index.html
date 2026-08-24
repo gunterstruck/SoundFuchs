@@ -293,6 +293,10 @@
             data-tab="daten"
             data-ebene="karte"
             role="tab"
+            id="tab-button-daten"
+            aria-controls="tab-daten"
+            aria-selected="true"
+            tabindex="0"
             data-i18n="stamm.tabData"
           >
             📄 Standorte
@@ -302,6 +306,10 @@
             data-tab="filter"
             data-ebene="karte"
             role="tab"
+            id="tab-button-filter"
+            aria-controls="tab-filter"
+            aria-selected="false"
+            tabindex="-1"
             data-i18n="stamm.tabFilter"
           >
             Filter
@@ -312,6 +320,10 @@
             data-tab="standortblatt"
             data-ebene="standort"
             role="tab"
+            id="tab-button-standortblatt"
+            aria-controls="tab-standortblatt"
+            aria-selected="false"
+            tabindex="-1"
             data-i18n="blatt.tabStandort"
           >
             Verlauf
@@ -322,6 +334,10 @@
             data-tab="zweid"
             data-ebene="maschine"
             role="tab"
+            id="tab-button-zweid"
+            aria-controls="tab-zweid"
+            aria-selected="false"
+            tabindex="-1"
             data-i18n="blatt.tabZweiD"
           >
             2D
@@ -331,6 +347,10 @@
             data-tab="dreid"
             data-ebene="maschine"
             role="tab"
+            id="tab-button-dreid"
+            aria-controls="tab-dreid"
+            aria-selected="false"
+            tabindex="-1"
             data-i18n="blatt.tabDreiD"
           >
             3D
@@ -351,6 +371,10 @@
             data-tab="briefing"
             data-ebene="maschine"
             role="tab"
+            id="tab-button-briefing"
+            aria-controls="tab-briefing"
+            aria-selected="false"
+            tabindex="-1"
             data-i18n="blatt.tabBriefing"
           >
             Briefing
@@ -360,6 +384,10 @@
             data-tab="details"
             data-ebene="maschine"
             role="tab"
+            id="tab-button-details"
+            aria-controls="tab-details"
+            aria-selected="false"
+            tabindex="-1"
             data-i18n="blatt.tabDetails"
           >
             Details
@@ -367,19 +395,19 @@
         </nav>
 
         <!-- Reiter: Standorte -->
-        <section id="tab-daten" class="tab-panel active" data-ebene="karte"></section>
+        <section id="tab-daten" class="tab-panel active" data-ebene="karte" role="tabpanel" aria-labelledby="tab-button-daten"></section>
 
         <!-- Reiter: Filter -->
-        <section id="tab-filter" class="tab-panel" data-ebene="karte"></section>
+        <section id="tab-filter" class="tab-panel" data-ebene="karte" role="tabpanel" aria-labelledby="tab-button-filter" hidden></section>
 
         <!-- Reiter der Standortebene: was hier zuletzt passiert ist -->
-        <section id="tab-standortblatt" class="tab-panel" data-ebene="standort"></section>
+        <section id="tab-standortblatt" class="tab-panel" data-ebene="standort" role="tabpanel" aria-labelledby="tab-button-standortblatt" hidden></section>
 
         <!-- Reiter der Maschinenebene: die Analyse -->
-        <section id="tab-zweid" class="tab-panel" data-ebene="maschine"></section>
-        <section id="tab-dreid" class="tab-panel" data-ebene="maschine"></section>
-        <section id="tab-briefing" class="tab-panel" data-ebene="maschine"></section>
-        <section id="tab-details" class="tab-panel" data-ebene="maschine"></section>
+        <section id="tab-zweid" class="tab-panel" data-ebene="maschine" role="tabpanel" aria-labelledby="tab-button-zweid" hidden></section>
+        <section id="tab-dreid" class="tab-panel" data-ebene="maschine" role="tabpanel" aria-labelledby="tab-button-dreid" hidden></section>
+        <section id="tab-briefing" class="tab-panel" data-ebene="maschine" role="tabpanel" aria-labelledby="tab-button-briefing" hidden></section>
+        <section id="tab-details" class="tab-panel" data-ebene="maschine" role="tabpanel" aria-labelledby="tab-button-details" hidden></section>
 
       </aside>
 
@@ -2858,10 +2886,11 @@
           <h4>1. Das Wichtigste in Kürze</h4>
           <p>
             <strong>Dein Gerät ist der Server.</strong><br />
-            SoundFuchs ist eine "Offline-First" Progressive Web App. Das bedeutet: Alle Analysen,
-            Audio-Daten und Datenbank-Einträge werden <strong>ausschließlich lokal</strong> in
-            deinem Browser gespeichert. Es findet keinerlei Übertragung deiner sensiblen Messdaten
-            an uns oder Dritte statt.
+            SoundFuchs ist eine "Offline-First" Progressive Web App. Audio, Referenzprofile,
+            Vergleiche und Datenbank-Einträge werden <strong>lokal</strong> in deinem Browser
+            verarbeitet und gespeichert. SoundFuchs sendet dein Audio nicht an den Betreiber oder
+            an Analyse-Dienste. Für Hosting, externe Karten und den erstmaligen optionalen
+            YAMNet-Download entstehen jedoch die unten beschriebenen Netzverbindungen.
           </p>
 
           <h4>2. Verantwortlicher</h4>
@@ -2875,9 +2904,9 @@
 
           <h4>3. Hosting &amp; Technische Logfiles</h4>
           <p>
-            Diese PWA wird über <strong>GitHub Pages</strong> (ein Dienst von GitHub Inc., USA)
-            bereitgestellt. Wenn du die Seite aufrufst, muss dein Browser technisch bedingt eine
-            Verbindung zu den Servern von GitHub aufbauen.
+            Diese PWA wird über <strong>Vercel</strong> bereitgestellt. Wenn du die Seite aufrufst,
+            baut dein Browser technisch bedingt eine Verbindung zu den Servern des Hosting-Anbieters
+            auf.
           </p>
           <p>
             Dabei werden standardmäßig technische Daten (sog. Server-Logfiles) erfasst, z. B. deine
@@ -2892,6 +2921,16 @@
             Der Zugriff auf dein Mikrofon erfolgt nur, wenn du aktiv auf "Aufnehmen" oder
             "Analysieren" klickst. Die Audio-Daten werden in Echtzeit im Arbeitsspeicher (RAM)
             deines Geräts verarbeitet (via Web Audio API / AudioWorklets).
+          </p>
+
+          <h5>Optionale Karten und YAMNet</h5>
+          <p>
+            Beim Öffnen der Karte lädt der Browser je nach gewähltem Kartenstil Kacheln von
+            OpenStreetMap, CARTO oder Esri. Dabei sieht der jeweilige Anbieter technisch bedingt
+            insbesondere die IP-Adresse und die angefragten Kartenausschnitte. Beim ersten Einsatz
+            der optionalen YAMNet-Methode wird das vortrainierte Modell von Google TF Hub geladen
+            und anschließend lokal in IndexedDB gespeichert. Dabei wird <strong>kein Audio</strong>
+            an TF Hub übertragen. Ohne diese optionalen Funktionen finden diese Abrufe nicht statt.
           </p>
           <ul>
             <li>
@@ -2940,7 +2979,7 @@
 
           <h4>7. Stand der Erklärung</h4>
           <p>
-            Januar 2026<br />
+            August 2026<br />
             <em
               >Diese Datenschutzerklärung wurde speziell für den privaten Betrieb ohne
               Gewinnerzielungsabsicht erstellt.</em
@@ -4138,9 +4177,9 @@
           <p>
             <strong>SoundFuchs 2.0</strong> ist eine datenschutzfreundliche Progressive Web App
             (PWA) für die vergleichende Analyse von Maschinenakustik. Sie ermöglicht es Nutzern,
-            Maschinengeräusche vollständig <strong>offline</strong> aufzuzeichnen und zu
-            vergleichen, ohne auf Cloud-Dienste, externe Sensoren oder KI-Modelle angewiesen zu
-            sein.
+            Maschinengeräusche lokal aufzuzeichnen und zu vergleichen, ohne eine SoundFuchs-
+            Analyse-Cloud oder ein Konto zu benötigen. Optional kann ein vortrainiertes YAMNet-
+            Modell lokal als Merkmalsextraktor verwendet werden.
           </p>
 
           <h4>Kernfunktionen</h4>
@@ -4173,7 +4212,9 @@
             der
             <strong>MIT-Lizenz</strong> entwickelt. Die Funktionalität basiert auf offen
             beschriebenen mathematischen Verfahren (z.B. GMIA-ähnlicher Kosinus-Vergleich) und
-            integriert keine patentierte Systemlogik oder Lernmechanismen.
+            nutzt daneben optional das vortrainierte offene YAMNet für Audio-Embeddings.
+            Referenzprofile und Vergleiche entstehen lokal; SoundFuchs trainiert kein eigenes
+            neuronales Netz und betreibt keine Cloud-Befundung.
           </p>
 
           <h5>Relevante IP und technische Abgrenzung</h5>
@@ -4253,8 +4294,8 @@
                     ML-basierte Remote-Befundung mit trainierten Modellen und Sensoren
                   </td>
                   <td style="padding: 0.75rem; border: 1px solid var(--border-color)">
-                    SoundFuchs verwendet <strong>kein ML</strong>, keine Cloud, keine eingebettete
-                    Logik
+                    SoundFuchs vergleicht lokal; optional erzeugt ein vortrainiertes YAMNet
+                    Audio-Embeddings. Es gibt keine Remote-Befundung
                   </td>
                 </tr>
                 <tr style="border-bottom: 1px solid var(--border-color)">
@@ -4283,7 +4324,8 @@
                     Klassifikation und Modelltraining von Signalprofilen
                   </td>
                   <td style="padding: 0.75rem; border: 1px solid var(--border-color)">
-                    SoundFuchs macht <strong>keine Klassifikation</strong>, kein Modelltraining
+                    SoundFuchs erstellt lokale Referenzprofile und Ähnlichkeitswerte, trainiert
+                    aber kein eigenes neuronales Netz
                   </td>
                 </tr>
                 <tr>
@@ -4307,9 +4349,11 @@
           <h4>Transparenz und Intention</h4>
           <p>
             SoundFuchs ist <strong>kein Befundungswerkzeug</strong> und nimmt keine automatisierten
-            technischen Bewertungen vor. Es bietet lediglich eine visuelle und mathematische
-            Vergleichshilfe unter vollständiger Kontrolle des Nutzers. Alle Verarbeitungen erfolgen
-            offline. Es werden keine Nutzerdaten übertragen, extern gespeichert oder ausgewertet.
+            Schadensursachen fest. Es berechnet automatisiert Ähnlichkeitswerte und markiert
+            Abweichungen anhand der vom Nutzer gewählten Schwellen. Audio, Referenzprofile und
+            Scores bleiben lokal. Netzverbindungen entstehen für Vercel-Hosting, externe
+            Kartenkacheln und den ersten optionalen YAMNet-Download; Audio wird dabei nicht
+            übertragen.
           </p>
           <p>
             Diese Transparenz spiegelt ein starkes Engagement für verantwortungsvolle

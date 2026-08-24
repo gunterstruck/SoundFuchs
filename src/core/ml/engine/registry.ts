@@ -121,6 +121,32 @@ export function classifyWithEngines(
   return best as DiagnosisResult;
 }
 
+/**
+ * Engine-übergreifende asynchrone Auswertung.
+ *
+ * Anders als der historische Echtzeitpfad nimmt dieser Dispatcher auch
+ * YAMNet auf. Synchrone Engines bleiben synchron und werden nur in ein Promise
+ * gehoben. Damit können Datei- und Detailauswertung denselben Modellbestand
+ * vollständig bewerten, statt YAMNet still zu verwerfen.
+ */
+export async function classifyWithEnginesAsync(
+  models: ReferenceModel[],
+  frame: FrameInput
+): Promise<DiagnosisResult> {
+  if (models.length === 0) throw new Error('No reference models available for classification');
+  const groups = groupByEngine(models);
+  let best: DiagnosisResult | null = null;
+  for (const [id, groupModels] of groups) {
+    const engine = getEngine(id);
+    const result = isAsyncEngine(engine)
+      ? await engine.classify(groupModels, frame)
+      : engine.classify(groupModels, frame);
+    if (!best || result.healthScore > best.healthScore) best = result;
+  }
+  if (!best) throw new Error('No reference models available for classification');
+  return best;
+}
+
 /** Per-model ranking scores dispatched by engine (for WorkPointRanking). */
 export function scoreAllWithEngines(
   models: ReferenceModel[],
@@ -131,6 +157,24 @@ export function scoreAllWithEngines(
   const all: WorkPointScore[] = [];
   for (const [id, groupModels] of groups) {
     all.push(...getSyncEngine(id).scoreAll(groupModels, frame));
+  }
+  all.sort((a, b) => b.score - a.score);
+  return all;
+}
+
+/** Vollständige Rangliste einschließlich asynchroner Engines (YAMNet). */
+export async function scoreAllWithEnginesAsync(
+  models: ReferenceModel[],
+  frame: FrameInput
+): Promise<WorkPointScore[]> {
+  const groups = groupByEngine(models);
+  const all: WorkPointScore[] = [];
+  for (const [id, groupModels] of groups) {
+    const engine = getEngine(id);
+    const scores = isAsyncEngine(engine)
+      ? await engine.scoreAll(groupModels, frame)
+      : engine.scoreAll(groupModels, frame);
+    all.push(...scores);
   }
   all.sort((a, b) => b.score - a.score);
   return all;

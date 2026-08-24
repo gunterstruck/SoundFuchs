@@ -304,6 +304,28 @@ try {
   pruefe(sicht.hinweis.length > 0, 'die Vorschau sagt nicht, was man mit dem Ausschnitt tun kann');
 
   /**
+   * Ein `aria-modal` allein sperrt den Hintergrund nicht. Tastatur und
+   * Screenreader müssen im Dialog bleiben, bis er geschlossen wird.
+   */
+  await page.locator('.mitbringen-schliessen').focus();
+  await page.keyboard.press('Shift+Tab');
+  const fokusRueckwaerts = await page.evaluate(() => ({
+    imDialog: Boolean(document.activeElement?.closest('.mitbringen-dialog')),
+    hintergrundInert: [...document.body.children]
+      .filter((e) => !e.classList.contains('mitbringen-overlay'))
+      .every((e) => e.inert),
+  }));
+  await page.keyboard.press('Tab');
+  const fokusVorwaerts = await page.evaluate(() =>
+    Boolean(document.activeElement?.closest('.mitbringen-dialog'))
+  );
+  console.log(
+    `  Fokus im Dialog           rückwärts ${fokusRueckwaerts.imDialog ? 'ja' : 'NEIN'} · vorwärts ${fokusVorwaerts ? 'ja' : 'NEIN'}`
+  );
+  pruefe(fokusRueckwaerts.imDialog && fokusVorwaerts, 'Tab verlässt den modalen Dateidialog');
+  pruefe(fokusRueckwaerts.hintergrundInert, 'der Hintergrund bleibt trotz offenem Dialog bedienbar');
+
+  /**
    * ── DER DIALOG LIEGT ÜBER DER KOPFLEISTE ──────────────────────────────
    *
    * Der Auftraggeber hat am 23.08.2026 ein Bildschirmfoto von seinem Telefon

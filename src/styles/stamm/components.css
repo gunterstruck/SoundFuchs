@@ -2525,6 +2525,23 @@ body.lasso-active .mobile-next-step { display: none; }
     .map-fab .mns-icon { font-size: 1rem; }
 }
 
+/* 320-px-Geräte: Zwei halbe Pillen kürzen beide Hauptaktionen bis zur
+   Unkenntlichkeit. Unter 360 px stehen sie deshalb untereinander und dürfen
+   ihre vollständige Beschriftung zeigen. */
+@media (max-width: 359px) {
+    .map-fab-row {
+        flex-direction: column;
+        align-items: center;
+    }
+    .map-fab {
+        max-width: calc(100vw - 24px);
+    }
+    .map-fab .mns-label {
+        overflow: visible;
+        text-overflow: clip;
+    }
+}
+
 /* ---- Entscheidungsvorlage (Roadmap 3.1) -----------------------------------
    Steht nur da, wenn eine Simulation läuft – `hidden` setzt das Cockpit.
    Zwei Ausgabewege für zwei Adressaten: die aggregierte Druckvorlage für die

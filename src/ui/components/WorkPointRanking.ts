@@ -148,7 +148,11 @@ export class WorkPointRanking {
     this.container.innerHTML = `
       <div class="ranking-header">
         <h4 class="ranking-title">${t('workPointRanking.title')}</h4>
-        <span class="ranking-count">${this.currentData.length} ${t('workPointRanking.states')}</span>
+        <span class="ranking-count">${this.currentData.length} ${
+          this.currentData.length === 1
+            ? t('workPointRanking.state')
+            : t('workPointRanking.states')
+        }</span>
       </div>
       <div class="ranking-list" role="list" aria-label="${t('workPointRanking.ariaLabel')}">
         ${html}

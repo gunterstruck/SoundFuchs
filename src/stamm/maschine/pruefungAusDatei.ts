@@ -41,7 +41,10 @@
 
 import type { DiagnosisResult, Machine } from '@data/types.js';
 import { extractFeatures, DEFAULT_DSP_CONFIG } from '@core/dsp/features.js';
-import { classifyWithEngines } from '@core/ml/engine/registry.js';
+import {
+  classifyWithEnginesAsync,
+  resolveEngineId,
+} from '@core/ml/engine/registry.js';
 import { classifyHealthStatus } from '@core/ml/scoring.js';
 import { clipAggregate } from '../../lab/clipAggregate.js';
 import { getRecordingsForMachine, saveDiagnosis, saveRecording } from '@data/db.js';
@@ -123,8 +126,25 @@ export async function pruefeMitgebrachtenTon(
      */
     const werte: number[] = [];
     let letzteVertrauen = 0;
-    for (const feature of merkmale) {
-      const urteil = classifyWithEngines(modelle, { feature, sampleRate: rate });
+    const mono = mischeMono(ton);
+    const mitYamnet = modelle.some((modell) => resolveEngineId(modell) === 'yamnet');
+    // YAMNet braucht 0,96-s-Rohfenster. Sein nativer Vorschub von 0,48 s
+    // vermeidet dutzende teure, fast identische Inferenzen pro Sekunde. Die
+    // synchronen Engines bekommen bei Mischbeständen das zeitlich passende
+    // 330-ms-Merkmalsfenster aus derselben Aufnahme.
+    const fenster = Math.round((mitYamnet ? 0.96 : DEFAULT_DSP_CONFIG.windowSize) * rate);
+    const schritt = Math.max(
+      1,
+      Math.round((mitYamnet ? 0.48 : DEFAULT_DSP_CONFIG.hopSize) * rate)
+    );
+    const merkmalsSchritt = Math.max(1, Math.round(DEFAULT_DSP_CONFIG.hopSize * rate));
+    for (let start = 0; start + fenster <= mono.length; start += schritt) {
+      const feature = merkmale[Math.min(merkmale.length - 1, Math.round(start / merkmalsSchritt))];
+      const urteil = await classifyWithEnginesAsync(modelle, {
+        feature,
+        rawChunk: mitYamnet ? mono.slice(start, start + fenster) : undefined,
+        sampleRate: rate,
+      });
       werte.push(urteil.healthScore);
       letzteVertrauen = urteil.confidence;
     }
@@ -191,6 +211,17 @@ export async function pruefeMitgebrachtenTon(
     logger.error('Prüfung aus Datei fehlgeschlagen:', fehler);
     return { ok: false, satz: t('mitbringen.pruefungGingNicht') };
   }
+}
+
+/** Mehrkanal-Dateien so mischen wie die Merkmalsextraktion. */
+function mischeMono(ton: AudioBuffer): Float32Array {
+  if (ton.numberOfChannels === 1) return ton.getChannelData(0);
+  const mono = new Float32Array(ton.length);
+  for (let kanal = 0; kanal < ton.numberOfChannels; kanal++) {
+    const daten = ton.getChannelData(kanal);
+    for (let i = 0; i < mono.length; i++) mono[i] += daten[i] / ton.numberOfChannels;
+  }
+  return mono;
 }
 
 /** Der jüngste aufbewahrte Normalzustand — für Klangbild und Hör-Lupe. */

@@ -122,7 +122,10 @@ async function maschineFuerGeraeusch(dateiname: string): Promise<Machine> {
     referenceModels: [],
   };
   await saveMachine(maschine);
-  logger.info(`🎞 Schnellcheck: Maschine „${name}" angelegt`);
+  // Der Schnellcheck umgeht den alten Router-Auswahlweg. Dessen Körperklasse
+  // darf deshalb nicht weiter behaupten, es gebe keine Maschine.
+  document.body.classList.remove('zb-no-machine');
+  logger.info(`🎞 Schnellcheck: Maschine „${name}“ angelegt`);
   return maschine;
 }
 

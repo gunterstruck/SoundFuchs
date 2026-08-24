@@ -95,6 +95,21 @@ export default defineConfig({
         ],
       },
       workbox: {
+        /**
+         * Rettungsanker für bereits installierte Fassungen.
+         *
+         * Ein alter SoundFuchs-Client kann die neue Dialoglogik naturgemäß
+         * nicht laden. Würde der neue Worker weiter im Zustand `waiting`
+         * bleiben, müsste ausgerechnet der alte, fehlerhafte Client ihn
+         * freigeben. `skipWaiting` löst diesen Zirkel: Der neue Worker wird
+         * aktiv und übernimmt offene Seiten. Die Seite selbst wird dabei nicht
+         * neu geladen; pwaUpdate.ts bietet den Neustart erst nach Ende einer
+         * laufenden Messung an. Spätestens beim nächsten normalen Start kommt
+         * damit auch eine sehr alte Installation auf den aktuellen Stand.
+         */
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Keep the PWA install lean: do NOT precache the large TF.js chunk
         // (~1.9 MB, only needed for the optional YAMNet engine). It is loaded on

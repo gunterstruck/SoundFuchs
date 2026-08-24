@@ -99,6 +99,7 @@ class Vorschau {
   private zu = false;
   private gezogenVerdrahtet = false;
   private readonly vorherFokus: HTMLElement | null;
+  private readonly zuvorInert = new Map<HTMLElement, boolean>();
 
   constructor(
     private readonly datei: File,
@@ -157,12 +158,46 @@ class Vorschau {
     this.dialog.appendChild(this.fuss);
 
     this.dialog.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') this.schliesse();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        this.schliesse();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const fokus = this.fokussierbareElemente();
+      if (fokus.length === 0) {
+        e.preventDefault();
+        this.dialog.focus();
+        return;
+      }
+      const erstes = fokus[0];
+      const letztes = fokus[fokus.length - 1];
+      if (e.shiftKey && document.activeElement === erstes) {
+        e.preventDefault();
+        letztes.focus();
+      } else if (!e.shiftKey && document.activeElement === letztes) {
+        e.preventDefault();
+        erstes.focus();
+      }
     });
 
     document.body.appendChild(this.overlay);
+    // Ein modaler Dialog nimmt den Rest der Anwendung auch für Tastatur und
+    // Screenreader aus dem Verkehr. Vorhandene inert-Zustände werden beim
+    // Schließen exakt wiederhergestellt.
+    for (const kind of [...document.body.children]) {
+      if (!(kind instanceof HTMLElement) || kind === this.overlay) continue;
+      this.zuvorInert.set(kind, kind.inert);
+      kind.inert = true;
+    }
     zuKnopf.focus();
     void this.lade();
+  }
+
+  private fokussierbareElemente(): HTMLElement[] {
+    return [...this.dialog.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )].filter((element) => !element.hidden && element.getClientRects().length > 0);
   }
 
   private zeigeWarten(): void {
@@ -627,6 +662,8 @@ class Vorschau {
       this.videoUrl = null;
     }
     this.overlay.remove();
+    for (const [kind, warInert] of this.zuvorInert) kind.inert = warInert;
+    this.zuvorInert.clear();
     this.vorherFokus?.focus();
   }
 }

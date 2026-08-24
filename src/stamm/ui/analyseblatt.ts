@@ -46,7 +46,10 @@ import { WorkPointRanking, type WorkPoint } from '@ui/components/WorkPointRankin
 import { renderAnalysisCanvas } from '@ui/phases/analysisRender.js';
 import { averageSpectrum } from '@core/dsp/spectrumSummary.js';
 import { extractFeatures, DEFAULT_DSP_CONFIG } from '@core/dsp/features.js';
-import { scoreAllWithEngines } from '@core/ml/engine/registry.js';
+import {
+  resolveEngineId,
+  scoreAllWithEnginesAsync,
+} from '@core/ml/engine/registry.js';
 import type { ReferenceModel } from '@data/types.js';
 import { logger } from '@utils/logger.js';
 import { t } from '../../i18n/index.js';
@@ -196,7 +199,7 @@ function baue(reiter: keyof typeof PLAETZE): void {
   }
 
   if (reiter === 'details') {
-    baueDetails(ziel);
+    void baueDetails(ziel);
     return;
   }
 
@@ -259,7 +262,7 @@ function baue(reiter: keyof typeof PLAETZE): void {
  * rechnet dieselbe Mittelung wie die Prüfung selbst (`mean` über alle Fenster),
  * damit ihr erster Platz mit der Zahl oben zusammenfällt statt daneben.
  */
-function baueDetails(ziel: HTMLElement): void {
+async function baueDetails(ziel: HTMLElement): Promise<void> {
   if (!stoff?.messung) {
     leerzustand(ziel, t('blatt.detailsBrauchtMessung'));
     return;
@@ -346,7 +349,7 @@ function baueDetails(ziel: HTMLElement): void {
     kurvenbeobachter.observe(leinwand);
   }
 
-  const befund = betriebspunkte(messung, stoff.modelle ?? []);
+  const befund = await betriebspunkte(messung, stoff.modelle ?? []);
   if (befund.art === 'rateAnders') {
     leerzustand(
       ziel,
@@ -407,10 +410,16 @@ type Punktebefund =
  * Signalverarbeitungs-Entscheidung, die man trifft und begründet — nicht eine,
  * die man einbaut, damit ein Reiter voll aussieht.
  */
-function betriebspunkte(messung: AudioBuffer, modelle: ReferenceModel[]): Punktebefund {
+async function betriebspunkte(
+  messung: AudioBuffer,
+  modelle: ReferenceModel[]
+): Promise<Punktebefund> {
   if (modelle.length === 0) return { art: 'nichts' };
   const rate = messung.sampleRate;
   const fremd = modelle.find((m) => {
+    // YAMNet wandelt Rohdaten selbst auf 16 kHz um und ist deshalb nicht an
+    // die Aufnahmerate des Referenzgeräts gebunden.
+    if (resolveEngineId(m) === 'yamnet') return false;
     const r = (m as { sampleRate?: number }).sampleRate;
     return typeof r === 'number' && r > 0 && r !== rate;
   });
@@ -430,8 +439,22 @@ function betriebspunkte(messung: AudioBuffer, modelle: ReferenceModel[]): Punkte
     if (merkmale.length === 0) return { art: 'nichts' };
 
     const summe = new Map<string, { wert: number; anzahl: number; gesund: boolean; datum?: number }>();
-    for (const feature of merkmale) {
-      for (const punkt of scoreAllWithEngines(modelle, { feature, sampleRate: rate })) {
+    const mono = mischeMono(messung);
+    const mitYamnet = modelle.some((modell) => resolveEngineId(modell) === 'yamnet');
+    const fenster = Math.round((mitYamnet ? 0.96 : DEFAULT_DSP_CONFIG.windowSize) * rate);
+    const schritt = Math.max(
+      1,
+      Math.round((mitYamnet ? 0.48 : DEFAULT_DSP_CONFIG.hopSize) * rate)
+    );
+    const merkmalsSchritt = Math.max(1, Math.round(DEFAULT_DSP_CONFIG.hopSize * rate));
+    for (let start = 0; start + fenster <= mono.length; start += schritt) {
+      const feature = merkmale[Math.min(merkmale.length - 1, Math.round(start / merkmalsSchritt))];
+      const punkte = await scoreAllWithEnginesAsync(modelle, {
+        feature,
+        rawChunk: mitYamnet ? mono.slice(start, start + fenster) : undefined,
+        sampleRate: rate,
+      });
+      for (const punkt of punkte) {
         const bisher = summe.get(punkt.label);
         if (bisher) {
           bisher.wert += punkt.score;
@@ -460,6 +483,17 @@ function betriebspunkte(messung: AudioBuffer, modelle: ReferenceModel[]): Punkte
     logger.warn('Details: Betriebspunkte nicht berechnet', fehler);
     return { art: 'nichts' };
   }
+}
+
+/** Mehrkanal-Aufnahmen lokal auf Mono mischen. */
+function mischeMono(ton: AudioBuffer): Float32Array {
+  if (ton.numberOfChannels === 1) return ton.getChannelData(0);
+  const mono = new Float32Array(ton.length);
+  for (let kanal = 0; kanal < ton.numberOfChannels; kanal++) {
+    const daten = ton.getChannelData(kanal);
+    for (let i = 0; i < mono.length; i++) mono[i] += daten[i] / ton.numberOfChannels;
+  }
+  return mono;
 }
 
 /**

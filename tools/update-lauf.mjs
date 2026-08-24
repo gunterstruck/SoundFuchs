@@ -39,6 +39,7 @@
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
+import { readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 let chromium;
@@ -56,6 +57,21 @@ const pruefe = (bedingung, text) => {
   console.log(`${bedingung ? '✓' : '✗'} ${text}`);
   if (!bedingung) befunde.push(text);
 };
+
+/**
+ * Der alte Client kann neuen Anwendungscode nicht ausführen. Deshalb muss der
+ * ausgelieferte Worker den Wartestand selbst auflösen. Diese zwei Zusagen
+ * werden am tatsächlich erzeugten Artefakt geprüft, nicht nur an vite.config.
+ */
+const worker = readFileSync('dist/service-worker.js', 'utf8');
+pruefe(
+  worker.includes('self.skipWaiting()'),
+  'der ausgelieferte Worker bleibt hinter einer alten Installation im Wartestand'
+);
+pruefe(
+  /\.clientsClaim\(\)/.test(worker),
+  'der ausgelieferte Worker übernimmt bereits offene SoundFuchs-Seiten nicht'
+);
 
 const port = await new Promise((res) => {
   const s = createServer();

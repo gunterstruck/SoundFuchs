@@ -146,7 +146,7 @@ export async function initDB(): Promise<IDBPDatabase<ZanobotDB>> {
       // SIMPLIFIED MIGRATION: Due to race condition issues with asynchronous cursor operations
       // in the synchronous upgrade callback, we simply recreate the store.
       // This results in data loss for v1 users, but prevents database corruption.
-      if (db.objectStoreNames.contains('diagnoses') && oldVersion < 2) {
+      if (db.objectStoreNames.contains('diagnoses') && oldVersion > 0 && oldVersion < 2) {
         logger.warn('🔄 Migrating diagnoses store from v1 to v2');
         logger.warn(
           '   ⚠️ Old diagnosis data will be lost due to schema change (keyPath: timestamp → id)'

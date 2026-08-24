@@ -10,9 +10,9 @@
  * existing UI are untouched. This engine is async (model load + inference) and
  * runs on a dedicated path; the synchronous dispatcher skips 'yamnet' models.
  *
- * OFFLINE/PWA: TF.js is lazy-loaded (code-split) only when this engine is used,
- * and the model is fetched once and kept in the browser cache. (Service-worker
- * precaching for full offline is a follow-up.)
+ * OFFLINE/PWA: TF.js is lazy-loaded (code-split) only when this engine is used.
+ * The model is persisted in IndexedDB after the first successful download and
+ * loaded from there first on later starts.
  *
  * ⚠️ Inference (the TF.js model run) can only be validated on a real device; the
  * surrounding structure (resampling, windowing, cosine k-NN, calibration) is
@@ -36,6 +36,7 @@ import { logger } from '@utils/logger.js';
  * cache. Kept as a constant so it is trivial to repoint on device.
  */
 const YAMNET_MODEL_URL = 'https://tfhub.dev/google/tfjs-model/yamnet/tfjs/1';
+const YAMNET_STORAGE_URL = 'indexeddb://soundfuchs-yamnet-tfjs-1';
 
 const EMBEDDING_DIM = 1024;
 /** YAMNet frame: 0.96 s window, 0.48 s hop, at 16 kHz. */
@@ -80,11 +81,40 @@ export class YamnetEngine implements AsyncDiagnosisEngine {
     if (this.model) return;
     if (this.loading) return this.loading;
     this.loading = (async () => {
-      logger.info('🧠 Loading TF.js + YAMNet model (first use)…');
-      this.tf = await import('@tensorflow/tfjs');
-      await this.tf.ready();
-      this.model = await this.tf.loadGraphModel(YAMNET_MODEL_URL, { fromTFHub: true });
-      logger.info('✅ YAMNet model loaded');
+      try {
+        logger.info('🧠 Loading TF.js + YAMNet model…');
+        this.tf = await import('@tensorflow/tfjs');
+        await this.tf.ready();
+
+        // IndexedDB ist der belastbare Offline-Speicher. Der normale HTTP-
+        // Cache darf geräumt werden und ist deshalb kein Offline-Versprechen.
+        try {
+          this.model = await this.tf.loadGraphModel(YAMNET_STORAGE_URL);
+          logger.info('✅ YAMNet model loaded from local IndexedDB');
+          return;
+        } catch {
+          logger.info('⬇️ No local YAMNet model; downloading once from TF Hub…');
+        }
+
+        this.model = await this.tf.loadGraphModel(YAMNET_MODEL_URL, { fromTFHub: true });
+        try {
+          await this.model.save(YAMNET_STORAGE_URL);
+          logger.info('✅ YAMNet model downloaded and stored for offline use');
+        } catch (saveError) {
+          // In private browsing or under a storage policy the model can still
+          // be used for this session. Be honest about the missing persistence.
+          logger.warn('YAMNet model could not be persisted in IndexedDB', saveError);
+        }
+      } catch (error) {
+        // A rejected promise must not poison the singleton forever. A user who
+        // reconnects or frees storage can retry without reloading the app.
+        this.model?.dispose();
+        this.model = null;
+        this.tf = null;
+        throw error;
+      } finally {
+        this.loading = null;
+      }
     })();
     return this.loading;
   }

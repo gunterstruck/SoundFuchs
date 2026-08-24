@@ -122,7 +122,7 @@ npm run dev
 
 ## Architektur und technische Abgrenzung
 
-SoundFuchs wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Projekt** unter der **MIT-Lizenz** entwickelt. Die Auswertung im Auslieferungszustand basiert auf **offen beschriebenen mathematischen Verfahren** (Frequenzanalyse, GMIA-ähnliche Kosinus-Vergleiche) und integriert **keine patentierte Systemlogik** und **keine Klassifikationsmechanismen**.
+SoundFuchs wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Projekt** unter der **MIT-Lizenz** entwickelt. Die Auswertung basiert auf **offen beschriebenen mathematischen Verfahren** (Frequenzanalyse, Kosinus-Vergleiche) und optional dem vortrainierten offenen **YAMNet** als lokalem Merkmalsextraktor. SoundFuchs bildet lokale Referenzprofile und markiert Abweichungen anhand einstellbarer Schwellen; es trainiert kein eigenes neuronales Netz und leitet keine Schadensursache ab.
 
 **Was SoundFuchs baulich nicht enthält:**
 
@@ -142,7 +142,7 @@ als Merkmalsextraktor. Was das für die Aussagen oben bedeutet, gehört genannt:
 | | |
 | --- | --- |
 | **Voreingestellt?** | Nein. Voreingestellt ist GMIA; YAMNet muss ausdrücklich gewählt werden. |
-| **Netzzugriff** | Einmalig beim ersten Gebrauch: Das Modell wird von `tfhub.dev` geladen und danach im Browser-Cache gehalten. Ab dann offline. |
+| **Netzzugriff** | Einmalig beim ersten Gebrauch: Das Modell wird von `tfhub.dev` geladen und danach in IndexedDB gespeichert. Spätere Starts laden es von dort; schlägt die lokale Speicherung fehl, weist das Protokoll darauf hin und für den nächsten Start ist erneut Netz nötig. |
 | **Was übertragen wird** | Nur die Anfrage nach dem Modell. **Kein Ton, keine Aufnahme, kein Messwert** — die Auswertung selbst läuft weiterhin ausschließlich auf dem Gerät. |
 | **Was auf dem Gerät „gelernt" wird** | Kein Modelltraining. Aus der eigenen Aufnahme entsteht eine Sammlung von Merkmalsvektoren, gegen die per Kosinus-Ähnlichkeit (k-NN) verglichen wird. Es werden keine Gewichte angepasst. |
 | **Klassifikation** | Auch hier keine. Das Ergebnis ist ein Ähnlichkeitswert zum eigenen Normalzustand, kein Schadensbild. |
@@ -163,7 +163,7 @@ braucht, bleibt bei der Voreinstellung — sie ist genau das.
 | **Siemens AG** (PAPDEOTT005125) | Defensive Veröffentlichung, 2016         | Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren | SoundFuchs arbeitet vollständig lokal, ohne Cloud, ohne zentrale Datenbank, ohne Diagnose                         |
 | **Siemens AG** (EP3701708B1)    | Europäisches Patent, 2022                | ML-basierte Remote-Diagnose mit trainierten Modellen und Sensorik            | SoundFuchs kennt keine Remote-Diagnose: keine Cloud, keine eingebettete Diagnose-Logik, keine Klassifikation in Schadensbilder. Die optionale YAMNet-Methode nutzt ein vortrainiertes, öffentliches Modell allein als Merkmalsextraktor auf dem Gerät — sie trainiert nichts und sendet keine Messdaten. |
 | **Siemens Corp.** (US9263041B2) | US-Patent, 2016                          | Anwendung von GMIA für Sprach- und Hörsysteme                                | SoundFuchs nutzt GMIA-ähnliche Mathematik ausschließlich für Nicht-Sprache und lokale Vergleiche                  |
-| **Siemens** (US9443201B2)       | US-Patent, 2016                          | Klassifikation und Modelltraining von Sensorsignaturen                       | SoundFuchs führt keine Klassifikation und kein Modelltraining durch                                               |
+| **Siemens** (US9443201B2)       | US-Patent, 2016                          | Klassifikation und Modelltraining von Sensorsignaturen                       | SoundFuchs erstellt lokale Referenzprofile und Ähnlichkeitswerte, trainiert aber kein eigenes neuronales Netz und leitet keine Schadensursache ab |
 | **Schlumberger** (US9602781B2)  | US-Patent, 2017                          | Trennung seismischer Signale mittels GMIA                                    | Unterschiedliche Domäne und Signalart, nicht verwandt                                                             |
 | **ABB**                         | Öffentliche Industrie-Präsentation, 2015 | Mobile Sensorik zur ad-hoc Diagnose mit Cloud- und Service-Integration       | SoundFuchs vermeidet Diagnose, Service-Workflows und Cloud-Anbindung                                              |
 | **Prophecy Sensors**            | Industrie                                | Audio-Upload zur Diagnose                                                    | SoundFuchs speichert keine Daten extern                                                                           |

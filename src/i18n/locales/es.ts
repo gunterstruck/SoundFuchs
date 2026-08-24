@@ -1494,6 +1494,7 @@ export const es: TranslationDict = {
   },
   workPointRanking: {
     title: 'Análisis de estados',
+    state: 'Estado',
     states: 'Estados',
     ariaLabel: 'Ranking de estados detectados de la máquina',
     statusHealthy: 'Normal',
@@ -1659,11 +1660,11 @@ export const es: TranslationDict = {
     title: 'Acerca de SoundFuchs',
     subtitle: 'Asistente para comparación acústica de estados de máquinas',
     intro:
-      '<strong>SoundFuchs 2.0</strong> es un <strong>asistente sonoro</strong> respetuoso con la privacidad. La Progressive Web App graba, compara y marca sonidos de máquinas localmente y prepara un <strong>briefing sonoro</strong> para especialistas o una IA externa, sin nube ni cuenta.<br><br><strong>SoundFuchs no diagnostica.</strong> Hace comprensible lo que quiere mostrar el usuario; la revisión e interpretación corresponden al destinatario.',
+      '<strong>SoundFuchs 2.0</strong> es un <strong>asistente sonoro</strong> respetuoso con la privacidad. La Progressive Web App graba, compara y marca sonidos de máquinas localmente y prepara un <strong>briefing sonoro</strong> para especialistas o una IA externa, sin cuenta ni nube de análisis propia de SoundFuchs.<br><br><strong>SoundFuchs no diagnostica.</strong> Hace comprensible lo que quiere mostrar el usuario; la revisión e interpretación corresponden al destinatario.',
     coreFeaturesTitle: 'Características principales',
     coreFeatures: {
       offlineFirst:
-        '<strong>Offline-First:</strong> Todas las grabaciones y cálculos se realizan localmente en el navegador.',
+        '<strong>Offline-First:</strong> Las grabaciones y los cálculos acústicos se realizan localmente en el navegador. El alojamiento, los mapas y la primera descarga opcional de YAMNet requieren conexión.',
       similarityScore:
         '<strong>Puntuación de similitud (0–100%):</strong> SoundFuchs calcula una similitud matemática (similitud del coseno) entre grabación de referencia y de comparación.',
       userThreshold:
@@ -1675,7 +1676,7 @@ export const es: TranslationDict = {
     },
     legalTitle: 'Delimitación técnica',
     legalIntro:
-      'SoundFuchs fue desarrollado independientemente como un <strong>proyecto privado de código abierto no comercial</strong> bajo la <strong>licencia MIT</strong>. Su funcionalidad se basa en <strong>procedimientos matemáticos descritos abiertamente</strong> (p. ej., análisis de frecuencia y comparaciones de coseno similares a GMIA) y no incorpora <strong>ninguna lógica de sistema patentada</strong>, <strong>ningún mecanismo de clasificación</strong> ni <strong>ningún modelo de aprendizaje</strong>.',
+      'SoundFuchs fue desarrollado independientemente como un <strong>proyecto privado de código abierto no comercial</strong> bajo la <strong>licencia MIT</strong>. Utiliza <strong>procedimientos matemáticos descritos abiertamente</strong> y, opcionalmente, el modelo abierto preentrenado <strong>YAMNet</strong> para embeddings de audio. Los perfiles, comparaciones y umbrales se calculan localmente; SoundFuchs no entrena una red neuronal propia ni realiza diagnósticos en la nube.',
     ipTableTitle: 'Propiedad intelectual relevante y diferenciación técnica',
     ipTable: {
       headers: {
@@ -1692,7 +1693,7 @@ export const es: TranslationDict = {
           protectedScope:
             'Sistema de diagnóstico basado en la nube que utiliza bases de datos centrales y sensores móviles',
           soundfuchsDiff:
-            'SoundFuchs opera completamente local, sin nube, sin base de datos central, sin diagnósticos',
+            'SoundFuchs evalúa localmente, sin nube de análisis propia, base central de mediciones ni diagnósticos',
         },
         '1': {
           reference:
@@ -1700,7 +1701,7 @@ export const es: TranslationDict = {
           source: 'Patente europea, Siemens AG, 2022',
           protectedScope: 'Diagnóstico remoto basado en ML con modelos entrenados y sensores',
           soundfuchsDiff:
-            'SoundFuchs no usa aprendizaje automático, sin nube, sin lógica de diagnóstico integrada',
+            'SoundFuchs compara localmente; un YAMNet preentrenado opcional genera embeddings. No hay diagnóstico remoto ni nube de análisis propia',
         },
         '2': {
           reference:
@@ -1714,7 +1715,8 @@ export const es: TranslationDict = {
           reference: '<strong>US9443201B2</strong><br><em>Aprendizaje de firmas de sensores</em>',
           source: 'Siemens, 2016',
           protectedScope: 'Clasificación y entrenamiento de modelos de firmas de sensores',
-          soundfuchsDiff: 'SoundFuchs no realiza clasificación ni entrenamiento de modelos',
+          soundfuchsDiff:
+            'SoundFuchs crea perfiles de referencia y similitudes locales, pero no entrena una red neuronal propia ni determina causas de avería',
         },
         '4': {
           reference:
@@ -1785,9 +1787,9 @@ export const es: TranslationDict = {
       'La interpretación de los resultados de comparación siempre corresponde al usuario.',
     transparencyTitle: 'Transparencia e intención',
     transparencyText1:
-      'SoundFuchs <strong>no es una herramienta de diagnóstico</strong> y <strong>no realiza evaluaciones técnicas automatizadas</strong>. Proporciona una <strong>ayuda de comparación visual y matemática</strong> y prepara un <strong>briefing sonoro</strong> para compartir.',
+      'SoundFuchs <strong>no es una herramienta de diagnóstico</strong> y no determina causas de avería. Calcula automáticamente <strong>similitudes</strong> y marca desviaciones según los umbrales elegidos por el usuario; la valoración profesional sigue correspondiendo al usuario.',
     transparencyText2:
-      'Todo el procesamiento ocurre <strong>offline</strong>. <strong>No se transmiten, almacenan ni evalúan datos del usuario</strong>.',
+      '<strong>El audio, los perfiles de referencia y las puntuaciones se procesan y almacenan localmente.</strong> Hay conexiones de red para el alojamiento en Vercel, las teselas de mapas externas y el primer uso del modelo YAMNet opcional (TF Hub). Esos proveedores reciben datos técnicos de conexión; SoundFuchs no les envía audio.',
     transparencyText3:
       'Esta transparencia expresa un enfoque consciente hacia la responsabilidad, la protección de datos y los derechos de terceros.',
     transparencyList: {

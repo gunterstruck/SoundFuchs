@@ -54,6 +54,8 @@ let anmeldung: ServiceWorkerRegistration | null = null;
 let updatePending = false;
 let promptVisible = false;
 let applying = false;
+/** Der neue Worker kontrolliert diese Seite bereits; zum Wechsel fehlt nur Reload. */
+let updateActivated = false;
 /** Von `initPwaUpdate` gesetzt — vorher gibt es nichts anzuwenden. */
 let zeigeHinweis: (() => void) | null = null;
 let wendeAn: (() => void) | null = null;
@@ -111,6 +113,10 @@ export async function pruefeAufUpdate(): Promise<Updateergebnis> {
   if (!anmeldung.waiting && anmeldung.installing) {
     await warteAufWartestand(anmeldung.installing);
   }
+  // Der Worker darf sofort aktiv werden. In diesem Fall gibt es absichtlich
+  // keinen `waiting` mehr, wohl aber eine neue Fassung, die per Reload
+  // sichtbar wird.
+  if (updateActivated || updatePending) return 'update-bereit';
   if (!anmeldung.waiting) return 'aktuell';
 
   updatePending = true;
@@ -137,10 +143,30 @@ function warteAufWartestand(arbeiter: ServiceWorker): Promise<void> {
 export function initPwaUpdate(): void {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 
+  /**
+   * Der Worker darf sich selbst aktivieren, damit auch alte Installationen aus
+   * ihrem Wartestand herauskommen. Aktivieren ist aber nicht gleich neu laden:
+   * Eine laufende Messung bleibt unberührt. Sobald der Controller wechselt,
+   * behandeln wir die neue Fassung wie jedes andere bereitstehende Update.
+   *
+   * Der allererste Controller einer Neuinstallation ist kein Update und soll
+   * deshalb keinen unnötigen Neustart-Hinweis auslösen.
+   */
+  let hatteController = Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hatteController) {
+      hatteController = true;
+      return;
+    }
+    updateActivated = true;
+    updatePending = true;
+    zeigeHinweis?.();
+  });
+
   const updateSW = registerSW({
     onNeedRefresh() {
-      // A new service worker is waiting (registerType: 'prompt' → it does NOT
-      // auto-activate, so the current session keeps running until we apply it).
+      // Fallback für Browser/Fassungen, in denen ein Worker doch wartet. Der
+      // aktuelle Rettungs-Worker aktiviert sich normalerweise selbst.
       updatePending = true;
       maybeShowPrompt();
     },
@@ -218,13 +244,15 @@ export function initPwaUpdate(): void {
       onMeasurementEnd(() => {
         if (!applying) {
           applying = true;
-          void updateSW(true); // skipWaiting + reload
+          if (updateActivated) window.location.reload();
+          else void updateSW(true); // wartenden Altfall aktivieren + neu laden
         }
       });
       return;
     }
     applying = true;
-    void updateSW(true); // skipWaiting + reload into the new version
+    if (updateActivated) window.location.reload();
+    else void updateSW(true); // wartenden Altfall aktivieren + neu laden
   }
 
   function maybeShowPrompt(): void {

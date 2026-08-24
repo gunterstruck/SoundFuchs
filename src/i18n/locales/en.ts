@@ -1666,6 +1666,7 @@ export const en: TranslationDict = {
   // Work Point Ranking (Probability Distribution View)
   workPointRanking: {
     title: 'State Analysis',
+    state: 'State',
     states: 'States',
     ariaLabel: 'Ranking of detected machine states',
     statusHealthy: 'Normal',
@@ -1902,13 +1903,13 @@ export const en: TranslationDict = {
 
     // Introduction
     intro:
-      '<strong>SoundFuchs 2.0</strong> is a privacy-friendly <strong>sound assistant</strong>. The Progressive Web App records, compares and marks machine sounds locally and prepares a <strong>sound briefing</strong> for specialists or external AI — without cloud services or an account.<br><br><strong>SoundFuchs does not diagnose.</strong> It makes clear what the user means; professional review and interpretation remain with the recipient.',
+      '<strong>SoundFuchs 2.0</strong> is a privacy-friendly <strong>sound assistant</strong>. The Progressive Web App records, compares and marks machine sounds locally and prepares a <strong>sound briefing</strong> for specialists or external AI — without a SoundFuchs analysis account or proprietary analysis cloud.<br><br><strong>SoundFuchs does not diagnose.</strong> It makes clear what the user means; professional review and interpretation remain with the recipient.',
 
     // Core Features
     coreFeaturesTitle: 'Core Features',
     coreFeatures: {
       offlineFirst:
-        '<strong>Offline-First:</strong> All recordings and calculations are performed locally in the browser.',
+        '<strong>Offline-First:</strong> Audio recordings and acoustic calculations stay in the browser. Hosting, maps and the optional first YAMNet download require a network.',
       similarityScore:
         '<strong>Similarity Score (0–100%):</strong> SoundFuchs computes a mathematical similarity (cosine similarity) between reference and comparison recording.',
       userThreshold:
@@ -1922,7 +1923,7 @@ export const en: TranslationDict = {
     // Technische Abgrenzung
     legalTitle: 'Technical Delimitation',
     legalIntro:
-      'SoundFuchs was independently developed as a <strong>private, non-commercial open-source project</strong> under the <strong>MIT license</strong>. Its functionality is based on <strong>openly described mathematical procedures</strong> (e.g., frequency analysis and GMIA-like cosine comparisons) and incorporates <strong>no patented system logic</strong>, <strong>no classification mechanisms</strong>, and <strong>no learning models</strong>.',
+      'SoundFuchs was independently developed as a <strong>private, non-commercial open-source project</strong> under the <strong>MIT license</strong>. It uses <strong>openly described mathematical procedures</strong> (including frequency analysis and cosine comparisons) and optionally the pretrained open <strong>YAMNet</strong> for audio embeddings. Reference profiles, comparisons and threshold labels are created locally; SoundFuchs does not train its own neural network or run cloud diagnostics.',
 
     // IP Table
     ipTableTitle: 'Relevant IP and Technical Differentiation',
@@ -1948,7 +1949,7 @@ export const en: TranslationDict = {
           source: 'European Patent, Siemens AG, 2022',
           protectedScope: 'ML-based remote diagnostics with trained models and sensors',
           soundfuchsDiff:
-            'SoundFuchs uses no machine learning, no cloud, no embedded diagnostic logic',
+            'SoundFuchs compares locally; an optional pretrained YAMNet produces audio embeddings. There is no remote diagnosis or SoundFuchs analysis cloud',
         },
         '2': {
           reference:
@@ -1962,7 +1963,8 @@ export const en: TranslationDict = {
           reference: '<strong>US9443201B2</strong><br><em>Learning of sensor signatures</em>',
           source: 'Siemens, 2016',
           protectedScope: 'Classification and model training of sensor signatures',
-          soundfuchsDiff: 'SoundFuchs performs no classification and no model training',
+          soundfuchsDiff:
+            'SoundFuchs creates local reference profiles and similarity scores, but trains no neural network and infers no damage cause',
         },
         '4': {
           reference: '<strong>US9602781B2</strong><br><em>Seismic signal deblending (GMIA)</em>',
@@ -2046,9 +2048,9 @@ export const en: TranslationDict = {
     // Transparency
     transparencyTitle: 'Transparency and Intent',
     transparencyText1:
-      'SoundFuchs is <strong>not a diagnostic tool</strong> and makes <strong>no automated technical assessments</strong>. It provides a <strong>visual and mathematical comparison aid</strong> and prepares a shareable <strong>sound briefing</strong>.',
+      'SoundFuchs is <strong>not a diagnostic tool</strong> and does not determine damage causes. It automatically calculates <strong>similarity scores</strong> and marks deviations using thresholds selected by the user; professional assessment remains with the user.',
     transparencyText2:
-      'All processing happens <strong>offline</strong>. <strong>No user data is transmitted, stored, or evaluated</strong>.',
+      '<strong>Audio, reference profiles and scores are processed and stored locally.</strong> Network requests occur for Vercel hosting, external map tiles and the first use of the optional YAMNet model (TF Hub). Those providers receive technical connection data; SoundFuchs sends no audio to them.',
     transparencyText3:
       'This transparency expresses a conscious approach to responsibility, data protection, and third-party rights.',
     transparencyList: {

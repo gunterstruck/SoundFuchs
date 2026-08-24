@@ -92,3 +92,4 @@ jobs:
       - run: npm run durchlauf
       - run: npm run mitbringen
       - run: npm run schnellcheck
+      - run: npm run update-weg
