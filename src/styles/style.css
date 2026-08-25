@@ -11417,6 +11417,12 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   align-items: center;
   gap: 10px;
   width: 100%;
+  /* 44 px, wie jedes andere Fingerziel dieser App.
+
+     Gemessen am 24.08.2026, als die Liste zum ersten Mal wirklich sichtbar
+     war: 37 px. Vorher konnte das niemandem auffallen — eine Liste auf
+     `display: none` hat keine Höhe, und kein Wächter misst, was 0 × 0 ist. */
+  min-height: 44px;
   padding: 10px 13px;
   border: none;
   border-bottom: 1px solid var(--bg-secondary);
@@ -11435,8 +11441,37 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   background: var(--bg-secondary);
 }
 
+/* Die Marke vorn: Standort oder Maschine?
+
+   Sie steht VOR dem Namen, weil sie entscheidet, was ein Tipp tut — eine
+   Ebene tiefer oder zwei. Als schmale Pille und nicht als Farbe allein: Wer
+   Farben nicht unterscheidet, liest sonst zwei gleich aussehende Zeilen.
+
+   `flex: 0 0 auto` mit fester Mindestbreite, damit Namen darunter bündig
+   beginnen; eine ausgefranste linke Kante liest sich schlechter als eine
+   Spalte, auch wenn sie ein paar Pixel spart. */
+.search-hit-art {
+  flex: 0 0 auto;
+  min-width: 62px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: var(--font-xs);
+  text-align: center;
+}
+
+.search-hit-standort .search-hit-art {
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--color-primary-dark, var(--primary-color));
+}
+
 .search-hit-name {
   font-weight: 600;
+  /* Lange Standortnamen dürfen kürzen, statt die Zeile zu sprengen. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .search-hit-meta {

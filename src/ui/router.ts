@@ -234,20 +234,10 @@ export class Router {
   }
 
   /**
-   * Die Maschinenansicht für eine Maschine öffnen (Suche in der Kopfleiste).
-   *
-   * Der Router reicht durch, statt dass die Suche sich die Identify-Phase
-   * selbst heraussucht: So bleibt es bei einem Weg von außen in die Phasen.
-   */
-  public showMachineView(machine: Machine): void {
-    this.identifyPhase.showMachineView(machine);
-  }
-
-  /**
    * Eine Maschine zur Arbeit auswählen — ohne Auswahlfenster.
    *
-   * `showMachineView()` öffnet das Maschinenfenster, in dem man die Maschine
-   * bestätigt und dann weitergeht. Die neue Arbeitsebene
+   * Das alte Maschinenfenster (`#machine-detail-modal`) ließ die Maschine
+   * bestätigen und ging dann weiter. Die neue Arbeitsebene
    * (`stamm/ui/maschinenansicht.ts`) hat diese Bestätigung schon hinter sich:
    * Wer dort auf „Jetzt prüfen" tippt, hat die Maschine zweimal gewählt.
    *

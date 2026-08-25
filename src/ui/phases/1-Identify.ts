@@ -1593,16 +1593,6 @@ export class IdentifyPhase {
     this.onMachineSelected(freshMachine);
   }
 
-  /**
-   * Die Maschinenansicht von außen öffnen — heute die Suche in der Kopfleiste.
-   *
-   * Ein Treffer soll dasselbe zeigen wie ein Tipp auf die Zeile, sonst hätte
-   * dieselbe Maschine je nach Weg zwei Gesichter.
-   */
-  public showMachineView(machine: Machine): void {
-    void this.handleMachineDetails(machine);
-  }
-
   /** Den Verlauf einer Maschine öffnen — für die neue Arbeitsebene. */
   public zeigeVerlauf(machine: Machine): void {
     void this.machineHistoryModal.show(machine);

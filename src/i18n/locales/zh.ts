@@ -401,6 +401,8 @@ export const zh: TranslationDict = {
   },
 
   search: {
+    artStandort: '地点',
+    artMaschine: '机器',
     placeholder: '搜索地点、机器、邮编…',
     noHits: '未找到结果。',
     sheetTitle: '设置及更多',

@@ -427,6 +427,8 @@ export const en: TranslationDict = {
   },
 
   search: {
+    artStandort: 'Site',
+    artMaschine: 'Machine',
     placeholder: 'Search site, machine, postcode…',
     noHits: 'Nothing found.',
     sheetTitle: 'Settings & more',

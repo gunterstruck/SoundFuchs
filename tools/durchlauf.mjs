@@ -242,6 +242,68 @@ try {
     namen.some((n) => n.includes('Pumpe 17'))
   );
 
+  /**
+   * ── DIE SUCHE IN DER KOPFLEISTE ─────────────────────────────────────────
+   *
+   * Der Auftraggeber am 24.08.2026, mit Bildschirmfoto: „brau" im Feld, und
+   * darunter passiert nichts. Gemessen wurden dann ZWEI Fehler übereinander,
+   * und keiner davon war zu sehen, solange der andere stand:
+   *
+   *   1. Die Trefferliste stand auf `display: none` — 0 × 0 px, obwohl
+   *      `hidden = false` war und die Treffer im DOM standen. Wer nur das DOM
+   *      liest, sieht hier acht Treffer und meldet „geht".
+   *   2. Ein Tipp auf einen Maschinen-Treffer öffnete das ALTE Fenster
+   *      (`#machine-detail-modal`, gemessen 1280 × 900), während ein
+   *      Standort-Treffer daneben die neue Ebene öffnete. Zwei Zeilen
+   *      derselben Liste, zwei Oberflächen. Das war vorher nicht zu bemerken,
+   *      weil Fehler 1 die Liste unantippbar machte.
+   *
+   * Deshalb wird hier nicht das DOM gezählt, sondern der GEMALTE Kasten
+   * gemessen, und danach wirklich getippt. Der Lauf hat zu diesem Zeitpunkt
+   * genau eine Maschine („Pumpe 17"); Standorte gibt es nicht, weil die
+   * Beispieldaten abgelehnt sind — die Maschinenhälfte ist die, die brach war.
+   */
+  await page.fill('#global-search', 'Pumpe');
+  await page.waitForTimeout(1200);
+  const suchbild = await page.evaluate(() => {
+    const liste = document.getElementById('search-results');
+    const treffer = [...(liste?.querySelectorAll('.search-hit') ?? [])];
+    const kasten = treffer[0]?.getBoundingClientRect();
+    return {
+      anzahl: treffer.length,
+      hoehe: kasten ? Math.round(kasten.height) : 0,
+      breite: kasten ? Math.round(kasten.width) : 0,
+      name: treffer[0]?.querySelector('.search-hit-name')?.textContent?.trim() ?? '',
+    };
+  });
+  pruefe(
+    26,
+    'die Suche zeigt einen sichtbaren Treffer',
+    suchbild.anzahl > 0 &&
+      suchbild.name.includes('Pumpe 17') &&
+      suchbild.hoehe >= 44 &&
+      suchbild.breite > 0,
+    suchbild.anzahl
+      ? `„${suchbild.name}" · ${suchbild.breite} × ${suchbild.hoehe} px`
+      : 'kein Treffer im Bild',
+  );
+
+  await page.locator('.search-hit[data-art="maschine"]').first().click({ timeout: 4000 });
+  await page.waitForTimeout(1800);
+  const nachTipp = await page.evaluate(() => ({
+    ebene: document.body.className.match(/tiefe-[\w-]+/g)?.join(' ') ?? '(keine)',
+    altesFenster: (() => {
+      const m = document.getElementById('machine-detail-modal');
+      return Boolean(m) && getComputedStyle(m).display !== 'none';
+    })(),
+  }));
+  pruefe(
+    27,
+    'ein Treffer öffnet die Maschinenebene, nicht das alte Fenster',
+    nachTipp.ebene.includes('tiefe-maschine') && !nachTipp.altesFenster,
+    `${nachTipp.ebene}${nachTipp.altesFenster ? ' · altes Fenster offen' : ''}`,
+  );
+
   // Nach dem Anlegen steht die Schale in der Prüf-Zoomstufe — zurück in den
   // Bestand, bevor der Zeilen-Tipp kommt.
   await inDieTiefe();
