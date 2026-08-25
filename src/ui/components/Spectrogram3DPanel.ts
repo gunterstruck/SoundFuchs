@@ -37,6 +37,16 @@ export type Spectro3DSource = 'measurement' | 'reference' | 'difference' | 'sign
 export interface Spectrogram3DPanelOptions {
   reference?: AudioBuffer | null;
   measurement?: AudioBuffer | null;
+  /**
+   * Kein „🏔️ 3D-Ansicht"-Knopf.
+   *
+   * Für Aufrufer, die das Panel selbst aufmachen (`oeffne()`): Wer den Reiter
+   * „3D" gewählt oder auf das Klangbild getippt hat, hat die Frage schon
+   * beantwortet. Der Knopf wäre dort ein zweiter Ausgang neben der
+   * Reiterzeile — und im Analyseblatt führte er ins Leere: zugeklappt zeigt
+   * der Reiter „3D" nur noch seine eigenen Knöpfe und sonst nichts.
+   */
+  ohneSchalter?: boolean;
 }
 
 export class Spectrogram3DPanel {
@@ -93,12 +103,47 @@ export class Spectrogram3DPanel {
 
     this.hasContent = sources.length > 0 && Spectrogram3DPanel.isSupported();
 
+    /**
+     * ── ZWEI ZEILEN STATT EINEM HAUFEN ───────────────────────────────────
+     *
+     * Der Auftraggeber am 25.08.2026, mit Bildschirmfoto: „Die Knöpfe sind
+     * irgendwie ungeordnet und bringen Unruhe rein. Zudem nehmen sie viel
+     * Platz weg."
+     *
+     * Gemessen (390 × 790, Reiter „3D"):
+     *
+     *     684   59 – 331   🏔️ 3D-Ansicht schließen │ Messung
+     *     736   80 – 310   Normalzustand │ Unterschied
+     *     788   41 – 350   Mehr oder weniger │ Ansicht zurücksetzen
+     *     840   53 – 337   ⚖ Stärke vergleichen │ ⏱ Gleiche Zeit
+     *     ───────────────────────────────────────────────────────────
+     *     Knopfzeile 200 px · Leinwand 260 px
+     *
+     * Vier Reihen, jede mit einem anderen linken UND rechten Rand — das ist
+     * `justify-content: center` mit `flex-wrap`: Jede Reihe wird so breit, wie
+     * ihr Inhalt gerade ist, und nichts fluchtet. Und 200 px Bedienung für
+     * 260 px Bild.
+     *
+     * Die Unruhe hat aber noch einen zweiten Grund, der schwerer wiegt: Acht
+     * gleich aussehende Pillen sind in Wahrheit VIER verschiedene Dinge —
+     * ein Ausgang, eine Wahl unter vier Ansichten, eine Handlung und zwei
+     * Schalter. Wer alles gleich anzieht, zwingt das Auge, jedes Wort einzeln
+     * zu lesen, statt Gruppen zu sehen.
+     *
+     * Deshalb: Was BESTIMMT, was man sieht, steht über der Leinwand. Was man
+     * am Gesehenen NACHSTELLT — Kamera, Maßstab, Zeitfenster — steht darunter,
+     * bei dem, worauf es wirkt.
+     */
     const row = document.createElement('div');
     row.className = 'spectro3d-toggle-row';
     this.host = document.createElement('div');
 
+    const werkzeuge = document.createElement('div');
+    werkzeuge.className = 'spectro3d-werkzeug-row';
+
     this.toggle = this.makeChip(`🏔️ ${t('spectro3d.show')}`, () => this.setShown(!this.shown));
-    row.appendChild(this.toggle);
+    this.toggle.classList.add('spectro3d-schalter');
+    if (!options.ohneSchalter) row.appendChild(this.toggle);
 
     for (const key of sources) {
       const el = this.makeChip(this.labelOf(key), () => this.mount(key));
@@ -114,7 +159,7 @@ export class Spectrogram3DPanel {
     });
     this.reset.classList.add('spectro3d-reset');
     this.reset.style.display = 'none';
-    row.appendChild(this.reset);
+    werkzeuge.appendChild(this.reset);
 
     this.scale = this.makeChip(t('spectro3d.compareScale'), () => {
       this.sharedScale = !this.sharedScale;
@@ -127,7 +172,7 @@ export class Spectrogram3DPanel {
     this.scale.classList.add('spectro3d-scale');
     this.scale.setAttribute('aria-pressed', 'false');
     this.scale.style.display = 'none';
-    row.appendChild(this.scale);
+    werkzeuge.appendChild(this.scale);
 
     this.zeit = this.makeChip(t('spectro3d.sameTime'), () => {
       this.gleicheZeit = !this.gleicheZeit;
@@ -140,7 +185,7 @@ export class Spectrogram3DPanel {
     this.zeit.classList.add('spectro3d-time');
     this.zeit.setAttribute('aria-pressed', 'true');
     this.zeit.style.display = 'none';
-    row.appendChild(this.zeit);
+    werkzeuge.appendChild(this.zeit);
 
     /**
      * Das Gebirge steht ÜBER seiner Beurteilung, nicht darunter.
@@ -156,10 +201,17 @@ export class Spectrogram3DPanel {
      *
      * Dieselbe Regel wie auf der Maschinenseite (§S5a): Was man vergleicht,
      * bleibt stehen; was es beurteilt, steht darunter. Über dem Bild liegt nur
-     * die Knopfzeile, und die hat in jedem Zustand dieselbe Höhe.
+     * die Auswahl, und die hat in jedem Zustand dieselbe Höhe.
+     *
+     * Die Werkzeugzeile steht seit dem 25.08.2026 zwischen Gebirge und
+     * Stärkeanzeige — auch sie hat eine feste Höhe und schiebt das Gebirge
+     * deshalb nicht. Sie steht dort nicht, um Platz zu sparen, sondern weil
+     * Kamera, Maßstab und Zeitfenster etwas am GESEHENEN nachstellen: Sie
+     * gehören zu dem, worauf sie wirken, nicht davor.
      */
     root.appendChild(row);
     root.appendChild(this.host);
+    root.appendChild(werkzeuge);
     root.appendChild(this.strength.element);
 
     if (!this.hasContent) root.style.display = 'none';

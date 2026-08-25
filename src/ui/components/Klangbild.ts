@@ -532,6 +532,10 @@ export class Klangbild {
     const panel = new Spectrogram3DPanel({
       reference: this.referenz,
       measurement: this.messung,
+      // Der Tipp auf das Bild hat das Gebirge schon bestellt (s. `oeffne()`
+      // unten). Ein „3D-Ansicht"-Knopf wäre dieselbe Frage ein zweites Mal;
+      // zurück geht es über denselben Tipp, der hierher geführt hat.
+      ohneSchalter: true,
     });
     if (!panel.hasContent) {
       this.tief = false;
