@@ -119,6 +119,60 @@
   margin-top: 10px;
 }
 
+/* ── DIE VIER ANSICHTEN ALS EIN BLOCK ───────────────────────────────────────
+
+   Sie schließen einander aus. Als vier einzeln stehende Pillen war das nur
+   durch Tippen zu erfahren: Der einzige Unterschied zwischen gewählt und nicht
+   gewählt war ein farbiger Rand — und ein Rand sagt nicht, dass mit dem einen
+   die anderen drei ausgehen.
+
+   Verbunden sagt die Form es selbst: ein Rahmen, vier Felder darin, eins
+   ausgefüllt.
+
+   Die Trennlinien sind 1 px Lücke, durch die der Hintergrund des Blocks
+   scheint. Kein `:nth-child`-Rechnen mit Ecken: Bei einer einzigen Aufnahme
+   gibt es nur eine Quelle statt vier, und eine Regel, die vier zählt, zeichnet
+   dann in die Luft. `overflow: hidden` rundet die Außenecken, egal wie viele
+   Felder darin liegen. */
+.spectro3d-ansichten {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--border-color, rgba(var(--overlay-rgb), 0.15));
+  border: 1px solid var(--border-color, rgba(var(--overlay-rgb), 0.15));
+  border-radius: var(--radius-md, 8px);
+  overflow: hidden;
+}
+
+/* Innen keine eigenen Ränder und keine eigenen Ecken — die trägt der Block.
+   Die Fläche muss aber gefüllt sein, sonst schiene der Blockhintergrund nicht
+   nur in den Fugen durch, sondern überall. */
+.spectro3d-ansichten .listen-btn {
+  border: 0;
+  border-radius: 0;
+  background: var(--bg-secondary, var(--color-surface, #fff));
+}
+
+/* Die gewählte Ansicht ist gefüllt, nicht umrandet.
+
+   `.listen-btn.listen-btn-active` färbt sonst nur Rand und Schrift — im Block
+   gäbe das eine Zelle mit farbiger Schrift neben drei mit grauer, und welche
+   gilt, bliebe eine Frage der Aufmerksamkeit. Gefüllt ist es keine. */
+.spectro3d-ansichten .listen-btn.listen-btn-active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Der Hover-Ton von `.listen-btn:hover` würde die Füllung überschreiben
+   (Klasse + Pseudoklasse gewinnt gegen Klasse) — die gewählte Ansicht würde
+   unter dem Finger grau. */
+.spectro3d-ansichten .listen-btn.listen-btn-active:hover {
+  background: var(--primary-color);
+}
+
 /* Der Ausgang nimmt die ganze Zeile.
 
    Er ist kein fünftes Angebot neben den vier Ansichten, sondern der Weg

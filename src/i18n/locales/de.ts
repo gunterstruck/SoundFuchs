@@ -2213,6 +2213,7 @@ export const de: TranslationDict = {
     sourceReference: 'Normalzustand',
     sourceDifference: 'Unterschied',
     sourceSigned: 'Mehr oder weniger',
+    ansichtenGruppe: 'Welche Ansicht',
     sameTime: '⏱ Gleiche Zeit',
     fullTime: '⏱ Ganze Aufnahme',
     resetView: 'Ansicht zurücksetzen',

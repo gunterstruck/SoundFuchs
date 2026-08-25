@@ -1306,20 +1306,46 @@ try {
     const sichtbar = (el) => Boolean(el) && el.getBoundingClientRect().height > 0;
     const panel = [...document.querySelectorAll('.spectro3d-panel')].find(sichtbar);
     if (!panel) return null;
+
+    /**
+     * Gemessen wird, was das Auge als Kante sieht — nicht jeder Knopf.
+     *
+     * Seit die vier Ansichten in einem Block liegen, sitzen ihre Knöpfe 1 px
+     * innerhalb dessen Rahmens: Die Knöpfe ergaben 33–357, der Block 32–358.
+     * Wer die Knöpfe zählt, meldet einen Versatz, den niemand sieht, und
+     * übersieht den Rahmen, den jeder sieht.
+     *
+     * Geprüft werden deshalb die REIHEN der Zeile (Ausgang, Block) und
+     * getrennt davon die Felder INNERHALB des Blocks.
+     */
     const reihen = new Map();
-    for (const b of panel.querySelectorAll('.spectro3d-toggle-row .listen-btn')) {
-      if (!sichtbar(b)) continue;
-      const k = b.getBoundingClientRect();
+    const zeile = panel.querySelector('.spectro3d-toggle-row');
+    for (const el of zeile ? zeile.children : []) {
+      if (!sichtbar(el)) continue;
+      const k = el.getBoundingClientRect();
       const oben = Math.round(k.top);
       const r = reihen.get(oben) ?? { von: Infinity, bis: -Infinity };
       r.von = Math.min(r.von, Math.round(k.left));
       r.bis = Math.max(r.bis, Math.round(k.right));
       reihen.set(oben, r);
     }
+
+    // Und innen: die Felder des Blocks, Reihe für Reihe.
+    const innen = new Map();
+    for (const b of panel.querySelectorAll('.spectro3d-ansichten .listen-btn')) {
+      if (!sichtbar(b)) continue;
+      const k = b.getBoundingClientRect();
+      const oben = Math.round(k.top);
+      const r = innen.get(oben) ?? { von: Infinity, bis: -Infinity };
+      r.von = Math.min(r.von, Math.round(k.left));
+      r.bis = Math.max(r.bis, Math.round(k.right));
+      innen.set(oben, r);
+    }
     const leinwand = panel.querySelector('canvas');
     const werkzeug = panel.querySelector('.spectro3d-werkzeug-row');
     return {
       reihen: [...reihen.values()],
+      innen: [...innen.values()],
       leinwandOben: leinwand ? Math.round(leinwand.getBoundingClientRect().top) : null,
       werkzeugOben: sichtbar(werkzeug)
         ? Math.round(werkzeug.getBoundingClientRect().top)
@@ -1327,17 +1353,72 @@ try {
     };
   });
 
+  const flucht = (rs) => rs.length > 0 && rs.every((r) => r.von === rs[0].von && r.bis === rs[0].bis);
   const raender = zeilen?.reihen ?? [];
-  const fluchtet =
-    raender.length >= 2 &&
-    raender.every((r) => r.von === raender[0].von && r.bis === raender[0].bis);
+  const innen = zeilen?.innen ?? [];
+  const zeige = (rs) => rs.map((r) => `${r.von}–${r.bis}`).join(' · ') || '(nichts)';
   pruefe(
     30,
     'die Knöpfe über dem Gebirge stehen in einer Flucht',
-    fluchtet,
-    raender.length
-      ? raender.map((r) => `${r.von}–${r.bis}`).join(' · ')
-      : 'keine Knopfzeile gefunden'
+    raender.length >= 1 && innen.length >= 1 && flucht(raender) && flucht(innen),
+    raender.length ? `außen ${zeige(raender)} · innen ${zeige(innen)}` : 'keine Knopfzeile gefunden'
+  );
+
+  /**
+   * ── EINE WAHL SIEHT AUS WIE EINE WAHL ────────────────────────────────────
+   *
+   * Die vier Ansichten schließen einander aus. Als vier einzeln stehende
+   * Pillen war das nur durch Tippen zu erfahren: Der einzige Unterschied
+   * zwischen gewählt und nicht gewählt war ein farbiger RAND — und ein Rand
+   * sagt nicht, dass mit dem einen die anderen drei ausgehen.
+   *
+   * Geprüft wird die gemalte Fläche, nicht eine Klasse: Ob `listen-btn-active`
+   * gesetzt ist, sagt nichts darüber, ob man es sieht. Genau so ist die
+   * Trefferliste der Suche monatelang unsichtbar geblieben (Prüfung 26).
+   *
+   * Und zusätzlich die Auszeichnung: Wer die Seite hört statt sie zu sehen,
+   * hört ohne `radiogroup`/`aria-checked` vier gleichrangige Schaltflächen.
+   */
+  const wahl = await page.evaluate(() => {
+    const sichtbar = (el) => Boolean(el) && el.getBoundingClientRect().height > 0;
+    const panel = [...document.querySelectorAll('.spectro3d-panel')].find(sichtbar);
+    const gruppe = panel?.querySelector('.spectro3d-ansichten');
+    if (!sichtbar(gruppe)) return null;
+    const felder = [...gruppe.querySelectorAll('.listen-btn')].filter(sichtbar);
+    const flaeche = (el) => getComputedStyle(el).backgroundColor;
+    const gewaehlt = felder.filter((b) => b.getAttribute('aria-checked') === 'true');
+    return {
+      anzahl: felder.length,
+      gewaehlt: gewaehlt.length,
+      rolle: gruppe.getAttribute('role'),
+      // Die Füllung der gewählten muss sich von der der anderen unterscheiden.
+      fuellungGewaehlt: gewaehlt[0] ? flaeche(gewaehlt[0]) : '',
+      fuellungenAndere: [
+        ...new Set(felder.filter((b) => !gewaehlt.includes(b)).map(flaeche)),
+      ],
+    };
+  });
+
+  const abgehoben =
+    wahl != null &&
+    wahl.anzahl >= 2 &&
+    wahl.gewaehlt === 1 &&
+    wahl.rolle === 'radiogroup' &&
+    wahl.fuellungenAndere.length > 0 &&
+    !wahl.fuellungenAndere.includes(wahl.fuellungGewaehlt);
+  pruefe(
+    32,
+    'genau eine Ansicht ist gewählt, und man sieht es an ihrer Fläche',
+    abgehoben,
+    wahl
+      ? [
+          `${wahl.gewaehlt} von ${wahl.anzahl}`,
+          `${wahl.fuellungGewaehlt} gegen ${wahl.fuellungenAndere.join(' / ') || '(nichts)'}`,
+          // Die Rolle mitnennen: Fehlt sie, zeigte die Meldung sonst nur
+          // Farben, die in Ordnung aussehen — und der Grund bliebe im Dunkeln.
+          `Rolle ${wahl.rolle ?? '(keine)'}`,
+        ].join(' · ')
+      : 'kein Ansichtenblock sichtbar'
   );
 
   /**

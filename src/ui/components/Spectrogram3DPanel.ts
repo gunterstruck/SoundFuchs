@@ -59,6 +59,8 @@ export class Spectrogram3DPanel {
   private view: Spectrogram3D | null = null;
   private shown = false;
   private toggle: HTMLButtonElement;
+  /** Der Block der vier Ansichten — eine Wahl, kein Haufen Knöpfe. */
+  private ansichten: HTMLElement;
   private reset: HTMLButtonElement;
   private scale: HTMLButtonElement;
   private chips: Array<{ key: Spectro3DSource; el: HTMLButtonElement }> = [];
@@ -145,10 +147,37 @@ export class Spectrogram3DPanel {
     this.toggle.classList.add('spectro3d-schalter');
     if (!options.ohneSchalter) row.appendChild(this.toggle);
 
+    /**
+     * ── DIE VIER ANSICHTEN SIND EINE WAHL, KEINE VIER KNÖPFE ──────────────
+     *
+     * Sie schließen einander aus — es ist immer genau eine im Bild. Als vier
+     * einzeln stehende Pillen war das nur durch Tippen zu erfahren: Der
+     * einzige Unterschied zwischen „gewählt" und „nicht gewählt" war ein
+     * farbiger Rand, und der sagt nichts darüber, dass die anderen drei damit
+     * ausgehen.
+     *
+     * Zu einem Block verbunden, sagt die Form selbst, was gilt: ein Rahmen,
+     * vier Felder darin, eins davon ausgefüllt. Dieselbe Aussage bekommt die
+     * Auszeichnung mit `role="radiogroup"` und `aria-checked` — wer die Seite
+     * hört statt sie zu sehen, hört sonst vier gleichrangige Schaltflächen.
+     *
+     * Die Trennlinien entstehen aus 1 px Lücke, durch die der Hintergrund des
+     * Blocks scheint (s. `spectrogram-3d.css`). Nicht über `:nth-child`: Bei
+     * einer einzigen Aufnahme gibt es nur eine Quelle statt vier, und eine
+     * Regel, die vier zählt, zeichnet dann in die Luft.
+     */
+    this.ansichten = document.createElement('div');
+    this.ansichten.className = 'spectro3d-ansichten';
+    this.ansichten.setAttribute('role', 'radiogroup');
+    this.ansichten.setAttribute('aria-label', t('spectro3d.ansichtenGruppe'));
+    this.ansichten.style.display = 'none';
+    row.appendChild(this.ansichten);
+
     for (const key of sources) {
       const el = this.makeChip(this.labelOf(key), () => this.mount(key));
-      el.style.display = 'none';
-      row.appendChild(el);
+      el.setAttribute('role', 'radio');
+      el.setAttribute('aria-checked', 'false');
+      this.ansichten.appendChild(el);
       this.chips.push({ key, el });
     }
     this.preferredKey = sources[0] ?? null;
@@ -248,9 +277,13 @@ export class Spectrogram3DPanel {
     this.shown = shown;
     if (shown) {
       this.toggle.textContent = `🏔️ ${t('spectro3d.hide')}`;
-      // Nur eine Quelle → Chips wären eine Wahl ohne Alternative.
+      // Nur eine Quelle → der Block wäre eine Wahl ohne Alternative.
+      //
+      // Ein- und ausgeblendet wird jetzt der BLOCK, nicht jeder Knopf einzeln:
+      // Ein leerer Block behielte sonst seinen Rahmen und seine Trennlinien und
+      // stünde als leeres gerahmtes Feld da.
       const multi = this.chips.length > 1;
-      for (const c of this.chips) c.el.style.display = multi ? '' : 'none';
+      this.ansichten.style.display = multi ? '' : 'none';
       this.reset.style.display = '';
       this.scale.style.display = multi ? '' : 'none';
       // Ein gemeinsames Zeitfenster ergibt nur Sinn, wenn es etwas zu
@@ -262,7 +295,7 @@ export class Spectrogram3DPanel {
     } else {
       this.mountRequest++;
       this.toggle.textContent = `🏔️ ${t('spectro3d.show')}`;
-      for (const c of this.chips) c.el.style.display = 'none';
+      this.ansichten.style.display = 'none';
       this.reset.style.display = 'none';
       this.scale.style.display = 'none';
       this.zeit.style.display = 'none';
@@ -404,7 +437,12 @@ export class Spectrogram3DPanel {
     this.host.appendChild(this.view.element);
     this.activeKey = key;
     this.preferredKey = key;
-    for (const c of this.chips) c.el.classList.toggle('listen-btn-active', c.key === key);
+    for (const c of this.chips) {
+      const gewaehlt = c.key === key;
+      c.el.classList.toggle('listen-btn-active', gewaehlt);
+      // Die Auszeichnung sagt dasselbe wie die Füllung: genau eine ist es.
+      c.el.setAttribute('aria-checked', gewaehlt ? 'true' : 'false');
+    }
   }
 
   public destroy(): void {
