@@ -660,6 +660,57 @@ body.tiefe-arbeit #karte-bestandswege {
   padding: 0 12px;
 }
 
+/* ── DER VERLAUFSSTREIFEN ────────────────────────────────────────────────────
+
+   Ab der zweiten Prüfung trägt der Verweis seine Kurve bei sich.
+
+   Gemessen am 25.08.2026 (390 × 844, Maschine mit drei Prüfungen): Die letzte
+   Zeile endete bei 381 px — unter ihr lag mehr als die halbe Bildschirmhöhe
+   leer, und die ganze Vorgeschichte war die Zahl „Zuletzt 87 %". Der Streifen
+   füllt diesen Platz; die eine Handlung bleibt bei 163 px, wo sie war.
+
+   Er behält die volle Breite und wird nicht zentriert wie der bloße Verweis:
+   Eine Kurve, die schmaler ist als der Text darüber, sieht aus wie ein Fehler. */
+.maschine-verlauf-streifen {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 10px 12px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.maschine-verlauf-kopf {
+  font-weight: 600;
+}
+
+/* Die Höhe kommt aus dem viewBox (320 × 120) und damit aus dem Zeichner, nicht
+   aus einer zweiten Zahl hier. Stünde sie hier noch einmal, entschiede beim
+   nächsten Umbau der Zufall, welche der beiden gilt.
+
+   ── WOHER DIE 480 KOMMT ──────────────────────────────────────────────────
+
+   Nicht aus dem Geschmack. `.history-chart-svg` deckelt die Höhe bei 180 px.
+   Wird der Streifen breiter gezogen, als dieser Deckel erlaubt, hört die
+   Skalierung bei 180 px auf und das Bild bekommt links und rechts Leerränder —
+   gemessen am Schreibtisch (1280 × 900): 826 px breiter Kasten, 180 px hoch,
+   die Kurve 173 px vom linken Rand entfernt in der Mitte schwebend.
+
+   Bei einem viewBox von 320 × 120 ist 480 die Breite, bei der die Höhe genau
+   den Deckel erreicht: 480 × 0,375 = 180. Darunter passt es, darüber schwimmt
+   es. Ein Diagramm mit drei Punkten über die ganze Bildschirmbreite zu ziehen
+   wäre ohnehin keine Auskunft, sondern eine Dehnung. */
+.maschine-verlaufsbild {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+}
+
 /* ── Der Fingerabdruck-Moment ────────────────────────────────────────────────
 
    Nach dem Speichern des Normalzustands. Kein Konfetti und kein Haken —

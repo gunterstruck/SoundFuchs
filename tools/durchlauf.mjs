@@ -1279,6 +1279,105 @@ try {
       : 'kein Panel'
   );
 
+  /**
+   * ── DER VERLAUF BEIM ANKOMMEN ────────────────────────────────────────────
+   *
+   * Der Auftraggeber am 25.08.2026: „Normalerweise will man doch die Historie
+   * sehen, dann prüfen." Gemessen war die ganze Vorgeschichte einer Maschine
+   * eine Zahl („Zuletzt 87 %") und ein Link; die letzte Zeile endete bei
+   * 381 px von 844 px, darunter lag mehr als die halbe Bildschirmhöhe leer.
+   *
+   * Der Lauf hat an dieser Stelle genau EINE Prüfung — und aus einem Punkt
+   * wird keine Linie. Die zweite wird deshalb direkt in die Ablage gelegt:
+   * Geprüft wird die Zeichenregel, nicht die Prüfstrecke; die steht in den
+   * Nummern 1–14 und ist dort schon gemessen.
+   *
+   * Danach wird neu geladen und über die Suche wieder hineingegangen — das ist
+   * der Weg des Nutzers und derselbe, den die Nummern 26 und 27 belegen.
+   */
+  const zweiteAbgelegt = await page.evaluate(async () => {
+    const db = await new Promise((r, j) => {
+      const x = indexedDB.open('zanobot-db');
+      x.onsuccess = () => r(x.result);
+      x.onerror = () => j(x.error);
+    });
+    const maschinen = await new Promise((r, j) => {
+      const q = db.transaction('machines').objectStore('machines').getAll();
+      q.onsuccess = () => r(q.result);
+      q.onerror = () => j(q.error);
+    });
+    const maschine = maschinen.find((m) => m.name === 'Pumpe 17');
+    if (!maschine) return false;
+    await new Promise((r, j) => {
+      const tx = db.transaction('diagnoses', 'readwrite');
+      tx.objectStore('diagnoses').put({
+        id: 'durchlauf-zweite',
+        machineId: maschine.id,
+        timestamp: Date.now() - 86400000,
+        healthScore: 92,
+        status: 'healthy',
+        confidence: 90,
+      });
+      tx.oncomplete = () => r();
+      tx.onerror = () => j(tx.error);
+    });
+    return true;
+  });
+
+  let streifen = { da: false, grund: 'zweite Prüfung nicht ablegbar' };
+  if (zweiteAbgelegt) {
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(7000);
+    await page.fill('#global-search', 'Pumpe 17');
+    await page.waitForTimeout(1200);
+    const treffer = page.locator('.search-hit[data-art="maschine"]').first();
+    if (await treffer.count()) {
+      await treffer.click({ timeout: 4000 }).catch(() => {});
+      await page.waitForTimeout(3500);
+    }
+    streifen = await page.evaluate(() => {
+      const kasten = (el) => (el ? el.getBoundingClientRect() : null);
+      const bild = kasten(document.querySelector('.maschine-verlaufsbild'));
+      const handlung = kasten(
+        document.querySelector('.maschine-aktionszeile .action-btn') ??
+          document.querySelector('.maschine-aktionszeile button:last-of-type')
+      );
+      return {
+        da: Boolean(bild) && bild.width > 0 && bild.height > 0,
+        imBild: Boolean(bild) && bild.top >= 0 && bild.top < window.innerHeight,
+        masse: bild ? `${Math.round(bild.width)} × ${Math.round(bild.height)} px` : '(keine Kurve)',
+        handlungOben: handlung ? Math.round(handlung.top) : null,
+        verlaufOben: bild ? Math.round(bild.top) : null,
+      };
+    });
+  }
+
+  pruefe(
+    28,
+    'der Verlauf steht beim Ankommen im Bild',
+    streifen.da && streifen.imBild,
+    streifen.masse ?? streifen.grund
+  );
+
+  /**
+   * UND ER SCHIEBT DIE HANDLUNG NICHT WEG.
+   *
+   * Die Frage war „erst die Historie, dann prüfen" — die Antwort ist nicht,
+   * das Prüfen nach unten zu schieben. Wer die App aufmacht, will meistens
+   * prüfen; der Verlauf ist der Zusammenhang, in dem das Ergebnis steht.
+   * Diese Reihenfolge ist eine Zusage und wird deshalb gemessen.
+   */
+  pruefe(
+    29,
+    'die eine Handlung steht weiter über dem Verlauf',
+    streifen.handlungOben !== null &&
+      streifen.verlaufOben !== null &&
+      streifen.handlungOben < streifen.verlaufOben,
+    streifen.handlungOben !== null
+      ? `Handlung bei ${streifen.handlungOben} px, Verlauf bei ${streifen.verlaufOben} px`
+      : 'keine Handlung gefunden'
+  );
+
   if (seitenfehler.length) {
     console.log('\nSeitenfehler:');
     for (const f of seitenfehler) console.log(`  ✗ ${f}`);
