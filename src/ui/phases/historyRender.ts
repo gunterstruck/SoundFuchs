@@ -96,10 +96,27 @@ export function generateSparkline(scores: number[]): SVGSVGElement | null {
 /**
  * Welle 3: Generate an SVG time series chart for diagnosis history.
  * Larger version of the sparkline with axes and interactive data points.
+ *
+ * ── WARUM DIE HÖHE EINSTELLBAR IST ──────────────────────────────────────────
+ *
+ * Seit dem 25.08.2026 steht dieselbe Kurve an zwei Stellen: im Verlaufsfenster
+ * (Filter, Liste, Bericht) und als Streifen auf der Maschinenebene, wo sie in
+ * den Platz zwischen der einen Handlung und dem unteren Rand passen muss.
+ *
+ * Ein zweiter Zeichner wäre die naheliegende Lösung und die falsche: Zwei
+ * Kurven derselben Daten laufen beim nächsten Umbau auseinander, und dann
+ * zeigt dieselbe Maschine an zwei Stellen zwei Formen. Einstellbar ist
+ * deshalb nur die Höhe — alles andere rechnet sich aus ihr.
+ *
+ * @param options.height Höhe des viewBox. Voreinstellung 160, wie bisher; der
+ *   Streifen nimmt 120 und wird dadurch flacher, nicht kleiner.
  */
-export function generateHistoryChart(diagnoses: DiagnosisResult[]): SVGSVGElement {
+export function generateHistoryChart(
+  diagnoses: DiagnosisResult[],
+  options: { height?: number } = {}
+): SVGSVGElement {
   const WIDTH = 320;
-  const HEIGHT = 160;
+  const HEIGHT = options.height ?? 160;
   const PADDING = { top: 10, right: 15, bottom: 25, left: 35 };
   const chartW = WIDTH - PADDING.left - PADDING.right;
   const chartH = HEIGHT - PADDING.top - PADDING.bottom;

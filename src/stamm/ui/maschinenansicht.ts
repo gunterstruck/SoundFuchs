@@ -54,6 +54,7 @@ import {
 import { oeffneTiefe, TIEFE_GEOEFFNET, TIEFE_GESCHLOSSEN, type TiefeDetail } from './scharnier.js';
 import { NORMALZUSTAND_GESPEICHERT, ReferencePhase } from '@ui/phases/2-Reference.js';
 import { renderMachineFingerprint } from '@ui/components/MachineFingerprint.js';
+import { generateHistoryChart } from '@ui/phases/historyRender.js';
 import { getReferenceIrisVector } from '@ui/phases/referenceIris.js';
 import { getMachine } from '@data/db.js';
 import { Klangbild } from '@ui/components/Klangbild.js';
@@ -709,6 +710,133 @@ async function zeichne(maschine: Machine): Promise<void> {
   ziel.appendChild(mitbringen);
 
   /**
+   * ── DER VERLAUF, BEIM ANKOMMEN SICHTBAR ──────────────────────────────────
+   *
+   * Der Auftraggeber am 25.08.2026: „Sollte bei Aufruf einer Maschine nicht
+   * die Übersicht gezeigt werden, sofern Daten vorhanden sind? Normalerweise
+   * will man doch die Historie sehen, dann prüfen."
+   *
+   * Gemessen an genau diesem Fall (390 × 844, Maschine mit drei Prüfungen):
+   *
+   *     111  Name · „Zuletzt 87 % · vor 1 Tagen"        38 px
+   *     163  ‹ Zur Karte │ Jetzt 10 Sekunden prüfen     66 px
+   *     237  Geräusch mitbringen                        44 px
+   *     299  „Halte das Gerät wie beim letzten Mal…"    20 px
+   *     337  Verlauf · 3 Prüfungen                      44 px
+   *          ─────────────────────────────────────────────────
+   *          Letzte Zeile endet bei 381 px von 844 px
+   *
+   * Die ganze Vorgeschichte war EINE Zahl und ein Link. Dass es 98 → 89 → 87
+   * war, stand nirgends — und unter der letzten Zeile lag mehr als die halbe
+   * Höhe des Bildschirms leer.
+   *
+   * ## Warum nicht einfach das Fenster aufgehen lassen
+   *
+   * Das wäre die wörtliche Lesart der Frage und die schlechtere Antwort: Ein
+   * Fenster, das sich von selbst öffnet, ist ein Fenster, das man erst
+   * wegtippen muss, bevor man irgendetwas tun kann — bei JEDEM Aufruf, auch
+   * dem hundertsten, auch wenn man nur prüfen will. Der Verlauf steht deshalb
+   * AUF der Ebene, nicht davor.
+   *
+   * ## Und warum kein Urteil dabeisteht
+   *
+   * Die Kurve zeigt die Zahlen; ein Satz wie „gefallen" wäre die App, die aus
+   * drei Punkten eine Entwicklung erklärt. Bei einer Streuung von 93–97 % über
+   * Geräte und Wiederholungen (README, `baselineSpread.ts`) ist ein Rückgang
+   * von 98 auf 95 nicht von der Messung zu unterscheiden. Der Nutzer liest die
+   * Kurve selbst — die App behauptet nichts dazu.
+   *
+   * ## Warum genau hier: über dem Bild, unter den beiden Handlungen
+   *
+   * Der erste Entwurf setzte den Streifen ans Ende, wo der Verweis stand. Der
+   * eigene Wächter hat das widerlegt — auf einer Maschine mit gespeicherter
+   * Aufnahme (390 × 790) sah die Ebene so aus:
+   *
+   *     111  Kopf                                 38 px
+   *     163  Handlung                             66 px
+   *     237  Geräusch mitbringen                  44 px
+   *     299  Bildplatz (Klangbild)               404 px
+   *     711  Hinweis                              20 px
+   *     745  „Letzten Unterschied anhören"        48 px
+   *     811  Verlauf                             165 px  → endet bei 976 px
+   *
+   * Das Klangbild allein nimmt 404 px. Hinter ihm ist der Verlauf nicht
+   * „sekundär", sondern unauffindbar — die Frage des Auftraggebers wäre
+   * unbeantwortet geblieben, obwohl der Streifen schon gebaut war.
+   *
+   * Prüfen bleibt trotzdem oben: Es ist der Grund, warum jemand die App
+   * aufmacht. Der Verlauf ist der Zusammenhang, in dem das nächste Ergebnis
+   * stehen wird — also unter der Handlung und vor dem Beleg der letzten.
+   */
+  if (maschine.lastDiagnosisAt) {
+    const verlauf = document.createElement('button');
+    verlauf.type = 'button';
+    verlauf.className = 'linklike maschine-verlauf';
+    verlauf.textContent = t('history.viewHistory');
+    /**
+     * Die Zahl kommt nach.
+     *
+     * „Verlauf" allein war ein Wort in Kleinschrift, hinter dem niemand etwas
+     * vermutete; die Zahl sagt, dass dort etwas liegt. Sie zu zählen heißt
+     * aber, alle Diagnosen dieser Maschine zu lesen — und darauf soll die
+     * Seite nicht warten. Sie trägt sich nach, wenn sie da ist.
+     */
+    void getDiagnosesForMachine(maschine.id).then((alle) => {
+      if (alle.length === 0 || !verlauf.isConnected) return;
+      // Eine Prüfung ist keine „1 Prüfungen".
+      verlauf.textContent =
+        alle.length === 1
+          ? t('maschine.verlaufEine')
+          : t('maschine.verlaufMitZahl', { anzahl: String(alle.length) });
+
+      /**
+       * Ab der zweiten Prüfung wird aus dem Link ein Streifen.
+       *
+       * Erst zwei Punkte ergeben eine Linie. Bei einer einzigen Prüfung wäre
+       * die Kurve ein Punkt in einem leeren Feld — viel Fläche für die Zahl,
+       * die zwei Zeilen weiter oben schon steht.
+       *
+       * Und nicht im frischen Ergebnis. Ein Zwischenentwurf zeigte ihn dort
+       * auch, mit dem Argument, das Klangbild solle zwischen Ergebnis und Ruhe
+       * nicht springen. Der Quelltext widerlegt das Argument: Der Ergebnissatz
+       * (`urteilsblock`) wird NACH dem Bildplatz angehängt und steht damit
+       * ohnehin hinter 404 px Bild. Der Streifen hätte ihn um weitere 165 px
+       * nach unten geschoben — das Urteil der Prüfung, die man gerade laufen
+       * ließ, für einen Zusammenhang, den man in diesem Moment nicht sucht.
+       *
+       * Und die Sorge um den Sprung trägt nicht: Beim Tippen auf „Fertig" baut
+       * sich die Seite ohnehin um — Urteil und „Trotzdem hören" verschwinden,
+       * der Tonplatz kommt dazu. Was die Notiz am Bildplatz schützt, ist das
+       * Umschalten INNERHALB des Klangbilds (Normalzustand ↔ Messung), und das
+       * findet in einem Zustand statt, nicht zwischen zweien.
+       */
+      if (alle.length < 2 || frisch) return;
+
+      /**
+       * Die Beschriftung kommt in eine eigene Zeile.
+       *
+       * Ein nackter Textknoten neben dem Bild wäre ein anonymes Flex-Kind:
+       * es ließe sich nicht ansprechen, und die erste Regel, die jemand für
+       * die Zeile schreibt, ginge daneben.
+       */
+      const kopf = document.createElement('span');
+      kopf.className = 'maschine-verlauf-kopf';
+      kopf.textContent = verlauf.textContent;
+      verlauf.textContent = '';
+      verlauf.appendChild(kopf);
+
+      // Nur die letzten zehn: Der Streifen ist der jüngste Zusammenhang, nicht
+      // das Archiv. Alles Weitere steht hinter dem Tipp im Fenster.
+      const streifen = generateHistoryChart(alle.slice(0, 10), { height: 120 });
+      streifen.classList.add('maschine-verlaufsbild');
+      verlauf.classList.add('maschine-verlauf-streifen');
+      verlauf.appendChild(streifen);
+    });
+    verlauf.addEventListener('click', () => deps?.zeigeVerlauf(maschine));
+    ziel.appendChild(verlauf);
+  }
+
+  /**
    * ── DER BILDPLATZ ────────────────────────────────────────────────────────
    *
    * Ab hier steht das Bild — und zwar in JEDEM Zustand an derselben Stelle.
@@ -938,32 +1066,6 @@ async function zeichne(maschine: Machine): Promise<void> {
   tonplatz.className = 'maschine-tonplatz';
   if (!frisch && letzte && zustand === 'ready') ziel.appendChild(tonplatz);
 
-  // ── Sekundär: der Verlauf ────────────────────────────────────────────────
-  if (maschine.lastDiagnosisAt) {
-    const verlauf = document.createElement('button');
-    verlauf.type = 'button';
-    verlauf.className = 'linklike maschine-verlauf';
-    verlauf.textContent = t('history.viewHistory');
-    /**
-     * Die Zahl kommt nach.
-     *
-     * „Verlauf" allein war ein Wort in Kleinschrift, hinter dem niemand etwas
-     * vermutete; die Zahl sagt, dass dort etwas liegt. Sie zu zählen heißt
-     * aber, alle Diagnosen dieser Maschine zu lesen — und darauf soll die
-     * Seite nicht warten. Sie trägt sich nach, wenn sie da ist.
-     */
-    void getDiagnosesForMachine(maschine.id).then((alle) => {
-      if (alle.length > 0 && verlauf.isConnected) {
-        // Eine Prüfung ist keine „1 Prüfungen".
-        verlauf.textContent =
-          alle.length === 1
-            ? t('maschine.verlaufEine')
-            : t('maschine.verlaufMitZahl', { anzahl: String(alle.length) });
-      }
-    });
-    verlauf.addEventListener('click', () => deps?.zeigeVerlauf(maschine));
-    ziel.appendChild(verlauf);
-  }
 
   if (!frisch && letzte && zustand === 'ready') {
     const { referenz, messungen } = await toeneDerMaschine(maschine);
