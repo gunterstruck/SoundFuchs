@@ -288,7 +288,21 @@ try {
       : 'kein Treffer im Bild',
   );
 
-  await page.locator('.search-hit[data-art="maschine"]').first().click({ timeout: 4000 });
+  /**
+   * Der Tipp darf scheitern, der Lauf nicht abstürzen.
+   *
+   * Bei der Widerlegung von Prüfung 26 (Liste zurück auf `display: none`)
+   * flog der Klick mit einer Zeitüberschreitung heraus und riss den ganzen
+   * Lauf mit — Prüfung 27 kam gar nicht mehr dazu, sich zu melden. Ein
+   * benannter Fehler ist mehr wert als ein Absturz, der drei weitere
+   * Prüfungen verschluckt.
+   */
+  const tippFehler = await page
+    .locator('.search-hit[data-art="maschine"]')
+    .first()
+    .click({ timeout: 4000 })
+    .then(() => '')
+    .catch((e) => String(e).split('\n')[0]);
   await page.waitForTimeout(1800);
   const nachTipp = await page.evaluate(() => ({
     ebene: document.body.className.match(/tiefe-[\w-]+/g)?.join(' ') ?? '(keine)',
@@ -300,8 +314,10 @@ try {
   pruefe(
     27,
     'ein Treffer öffnet die Maschinenebene, nicht das alte Fenster',
-    nachTipp.ebene.includes('tiefe-maschine') && !nachTipp.altesFenster,
-    `${nachTipp.ebene}${nachTipp.altesFenster ? ' · altes Fenster offen' : ''}`,
+    !tippFehler && nachTipp.ebene.includes('tiefe-maschine') && !nachTipp.altesFenster,
+    tippFehler
+      ? `nicht antippbar: ${tippFehler}`
+      : `${nachTipp.ebene}${nachTipp.altesFenster ? ' · altes Fenster offen' : ''}`,
   );
 
   // Nach dem Anlegen steht die Schale in der Prüf-Zoomstufe — zurück in den
