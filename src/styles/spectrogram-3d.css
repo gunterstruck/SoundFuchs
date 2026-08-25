@@ -76,16 +76,70 @@
   text-align: center;
 }
 
+/* ── DIE AUSWAHL: WAS MAN SIEHT ──────────────────────────────────────────────
+
+   Der Auftraggeber am 25.08.2026: „Die Knöpfe sind irgendwie ungeordnet und
+   bringen Unruhe rein. Zudem nehmen sie viel Platz weg."
+
+   Gemessen (390 × 790, Reiter „3D"), vier Reihen mit `justify-content: center`
+   und `flex-wrap`:
+
+       684    59 – 331   🏔️ 3D-Ansicht schließen │ Messung
+       736    80 – 310   Normalzustand │ Unterschied
+       788    41 – 350   Mehr oder weniger │ Ansicht zurücksetzen
+       840    53 – 337   ⚖ Stärke vergleichen │ ⏱ Gleiche Zeit
+
+   Jede Reihe ein anderer linker UND rechter Rand. Das ist keine Nachlässigkeit
+   im Abstand, sondern die Regel selbst: Zentriert umbrechende Pillen werden so
+   breit, wie ihr Wort gerade ist, und nichts fluchtet.
+
+   Ein Raster mit gleichen Spalten macht daraus einen Block: Alle Knöpfe gleich
+   breit, beide Ränder in einer Flucht, und die Reihen ergeben sich aus der
+   Anzahl statt aus der Wortlänge. */
 .spectro3d-toggle-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
 }
 
-.spectro3d-toggle-row .listen-btn {
+/* ── DIE WERKZEUGE: WAS MAN AM GESEHENEN NACHSTELLT ─────────────────────────
+
+   Kamera, Maßstab, Zeitfenster — sie stehen unter der Leinwand, bei dem, worauf
+   sie wirken. Drei Spalten, damit auch diese Zeile fluchtet; die Beschriftungen
+   sind kürzer als die der Ansichten und tragen die schmalere Spalte.
+
+   Verborgene Knöpfe (`display: none`) belegen im Raster keine Spalte — die
+   Zeile bleibt also auch dann in der Flucht, wenn nur eine Quelle da ist und
+   Maßstab und Zeitfenster wegfallen. */
+.spectro3d-werkzeug-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Der Ausgang nimmt die ganze Zeile.
+
+   Er ist kein fünftes Angebot neben den vier Ansichten, sondern der Weg
+   hinaus. Stand er in derselben Spalte, blieb eine Ansicht als Einzelstück in
+   der letzten Reihe übrig — gemessen: „Mehr oder weniger" allein von 32 bis
+   191 px, daneben ein Loch. Über die volle Breite gesetzt, stehen darunter
+   glatte zwei mal zwei. */
+.spectro3d-schalter {
+  grid-column: 1 / -1;
+}
+
+.spectro3d-toggle-row .listen-btn,
+.spectro3d-werkzeug-row .listen-btn {
   min-height: 44px;
+}
+
+/* Ein Raster zwingt jede Zelle auf dieselbe Breite; ein zu langes Wort würde
+   sonst die Spalte sprengen und die Flucht wieder aufheben. */
+.spectro3d-werkzeug-row .listen-btn {
+  padding-inline: 8px;
+  font-size: 0.82rem;
 }
 
 .spectro3d-reset {

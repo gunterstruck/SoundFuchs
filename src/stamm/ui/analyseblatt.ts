@@ -183,6 +183,10 @@ function baue(reiter: keyof typeof PLAETZE): void {
     gebirge = new Spectrogram3DPanel({
       reference: stoff.referenz,
       measurement: stoff.messung,
+      // Ohne „3D-Ansicht schließen": Der Reiter IST die Bitte (s. unten), und
+      // zugeklappt zeigte dieser Reiter nur noch seine eigenen Knöpfe. Der Weg
+      // hinaus ist die Reiterzeile darüber.
+      ohneSchalter: true,
     });
     ziel.appendChild(gebirge.element);
     /**

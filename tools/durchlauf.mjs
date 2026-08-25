@@ -1268,6 +1268,8 @@ try {
     }
   }
 
+  // Den Reiter „3D" des Analyseblatts aufmachen — das ist der Bildschirm aus
+  // dem Foto des Auftraggebers.
   pruefe(
     14,
     '3D-Gebirge',
@@ -1277,6 +1279,83 @@ try {
         ? `Leinwand steht · ${richtung}`
         : `Panel da, aber ${richtung || 'keine Leinwand'}`
       : 'kein Panel'
+  );
+
+  /**
+   * ── DIE KNOPFZEILE FLUCHTET, UND DIE WERKZEUGE STEHEN AM BILD ────────────
+   *
+   * Der Auftraggeber am 25.08.2026, mit Bildschirmfoto: „Die Knöpfe sind
+   * irgendwie ungeordnet und bringen Unruhe rein. Zudem nehmen sie viel Platz
+   * weg."
+   *
+   * Gemessen (390 × 790), vorher:
+   *
+   *     684    59 – 331   3D-Ansicht schließen │ Messung
+   *     736    80 – 310   Normalzustand │ Unterschied
+   *     788    41 – 350   Mehr oder weniger │ Ansicht zurücksetzen
+   *     840    53 – 337   Stärke vergleichen │ Gleiche Zeit
+   *
+   * Jede Reihe ein anderer linker UND rechter Rand — das ist zentriertes
+   * Umbrechen: Jede Reihe wird so breit, wie ihre Wörter gerade sind. Genau
+   * das ist die „Unruhe", und sie ist messbar: gleiche Ränder oder nicht.
+   *
+   * Gemessen wird die Flucht, nicht eine Höhe. Eine Höhe hinge an der Sprache
+   * — „Mehr oder weniger" ist im Englischen kürzer und bräche anders um.
+   */
+  const zeilen = await page.evaluate(() => {
+    const sichtbar = (el) => Boolean(el) && el.getBoundingClientRect().height > 0;
+    const panel = [...document.querySelectorAll('.spectro3d-panel')].find(sichtbar);
+    if (!panel) return null;
+    const reihen = new Map();
+    for (const b of panel.querySelectorAll('.spectro3d-toggle-row .listen-btn')) {
+      if (!sichtbar(b)) continue;
+      const k = b.getBoundingClientRect();
+      const oben = Math.round(k.top);
+      const r = reihen.get(oben) ?? { von: Infinity, bis: -Infinity };
+      r.von = Math.min(r.von, Math.round(k.left));
+      r.bis = Math.max(r.bis, Math.round(k.right));
+      reihen.set(oben, r);
+    }
+    const leinwand = panel.querySelector('canvas');
+    const werkzeug = panel.querySelector('.spectro3d-werkzeug-row');
+    return {
+      reihen: [...reihen.values()],
+      leinwandOben: leinwand ? Math.round(leinwand.getBoundingClientRect().top) : null,
+      werkzeugOben: sichtbar(werkzeug)
+        ? Math.round(werkzeug.getBoundingClientRect().top)
+        : null,
+    };
+  });
+
+  const raender = zeilen?.reihen ?? [];
+  const fluchtet =
+    raender.length >= 2 &&
+    raender.every((r) => r.von === raender[0].von && r.bis === raender[0].bis);
+  pruefe(
+    30,
+    'die Knöpfe über dem Gebirge stehen in einer Flucht',
+    fluchtet,
+    raender.length
+      ? raender.map((r) => `${r.von}–${r.bis}`).join(' · ')
+      : 'keine Knopfzeile gefunden'
+  );
+
+  /**
+   * Und die Werkzeuge stehen bei dem, worauf sie wirken.
+   *
+   * Kamera, Maßstab und Zeitfenster stellen etwas am GESEHENEN nach. Über dem
+   * Bild waren sie zwei Reihen, die man liest, bevor man weiß, worauf sie sich
+   * beziehen — und sie schoben das Gebirge nach unten.
+   */
+  pruefe(
+    31,
+    'Kamera, Maßstab und Zeitfenster stehen unter dem Gebirge',
+    zeilen?.werkzeugOben != null &&
+      zeilen?.leinwandOben != null &&
+      zeilen.werkzeugOben > zeilen.leinwandOben,
+    zeilen?.werkzeugOben != null
+      ? `Leinwand bei ${zeilen.leinwandOben} px, Werkzeuge bei ${zeilen.werkzeugOben} px`
+      : 'keine Werkzeugzeile sichtbar'
   );
 
   /**
