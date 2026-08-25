@@ -1867,6 +1867,7 @@ export const fr: TranslationDict = {
     sourceReference: 'État normal',
     sourceDifference: 'Différence',
     sourceSigned: 'Plus ou moins',
+    ansichtenGruppe: 'Quelle vue',
     sameTime: '⏱ Même durée',
     fullTime: '⏱ Enregistrement entier',
     resetView: 'Réinitialiser la vue',

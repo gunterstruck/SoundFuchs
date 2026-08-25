@@ -1739,6 +1739,7 @@ export const zh: TranslationDict = {
     sourceReference: '正常状态',
     sourceDifference: '差异',
     sourceSigned: '变多或变少',
+    ansichtenGruppe: '选择视图',
     sameTime: '⏱ 相同时间段',
     fullTime: '⏱ 完整录音',
     resetView: '重置视图',
