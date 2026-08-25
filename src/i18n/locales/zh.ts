@@ -1995,7 +1995,7 @@ export const zh: TranslationDict = {
       howMany: 'How many machines do you want to compare?',
       customCount: 'Custom count',
       explanation:
-        'Go to each machine in order and record it. The first recording is automatically used as the comparison baseline.',
+        '依次走到每台机器并录音。第一次录音将成为其余所有机器的比较基准——请在你认为无异常的机器上录制。',
       next: 'Next',
       minMachines: 'At least 2 machines',
       maxMachines: 'Maximum 30 machines',
@@ -2003,7 +2003,7 @@ export const zh: TranslationDict = {
     reference: {
       title: '录制正常状态',
       instruction: '录制第一台机器',
-      hint: '自动用作比较基准。',
+      hint: '这段录音将成为其余所有机器的比较基准。',
       startRecording: '录制正常状态',
       saved: '正常状态已保存',
       goldName: 'Reference (Gold)',
@@ -2022,6 +2022,8 @@ export const zh: TranslationDict = {
       allGood: 'All machines within normal range',
       outlierFound: '{{count}} machine(s) show deviation',
       notChecked: 'Not checked',
+      basisVerdaechtig:
+        '每一台受检机器都偏离了比较基准。这时基准本身也可能才是异常的那一台——请在另一台机器上重新录制。',
       goldLabel: 'Comparison baseline',
       saveAsFleet: 'Save as fleet',
       saveFleetName: 'Fleet name (optional):',

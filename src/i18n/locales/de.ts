@@ -2530,7 +2530,7 @@ export const de: TranslationDict = {
       howMany: 'Wie viele Maschinen willst du vergleichen?',
       customCount: 'Eigene Anzahl',
       explanation:
-        'Geh der Reihe nach zu jeder Maschine und nimm sie auf. Die erste Aufnahme wird automatisch als Vergleichsbasis verwendet.',
+        'Geh der Reihe nach zu jeder Maschine und nimm sie auf. Die erste Aufnahme wird zur Vergleichsbasis für alle anderen — nimm sie an einer Maschine auf, die dir unauffällig vorkommt.',
       next: 'Weiter',
       minMachines: 'Mindestens 2 Maschinen',
       maxMachines: 'Maximal 30 Maschinen',
@@ -2538,7 +2538,7 @@ export const de: TranslationDict = {
     reference: {
       title: 'Normalzustand aufnehmen',
       instruction: 'Erste Maschine aufnehmen',
-      hint: 'Wird automatisch als Vergleichsbasis verwendet.',
+      hint: 'Diese Aufnahme wird zur Vergleichsbasis für alle anderen Maschinen.',
       startRecording: 'Normalzustand aufnehmen',
       saved: 'Normalzustand gespeichert',
       goldName: 'Referenz (Gold)',
@@ -2557,6 +2557,8 @@ export const de: TranslationDict = {
       allGood: 'Alle Maschinen im Normalbereich',
       outlierFound: '{{count}} Maschine(n) weichen ab',
       notChecked: 'Nicht geprüft',
+      basisVerdaechtig:
+        'Jede geprüfte Maschine weicht von der Vergleichsbasis ab. Dann kann auch die Basis selbst die auffällige sein — nimm sie an einer anderen Maschine neu auf.',
       goldLabel: 'Vergleichsbasis',
       saveAsFleet: 'Als Flotte speichern',
       saveFleetName: 'Flottenname (optional):',

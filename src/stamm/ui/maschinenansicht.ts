@@ -61,6 +61,8 @@ import { geraeuschMitbringen } from '@ui/components/GeraeuschMitbringen.js';
 import { holeErgebnis, PRUEFUNG_FERTIG, vergissErgebnis } from '../maschine/ergebnis.js';
 import { pruefeMitgebrachtenTon } from '../maschine/pruefungAusDatei.js';
 import { classifyHealthStatus } from '@core/ml/scoring.js';
+import { resolutionLineState } from '@ui/phases/resolutionLine.js';
+import { isViewLevelAtLeast } from '@utils/viewLevelSettings.js';
 import {
   analyseblattFuellen,
   analyseblattLeeren,
@@ -551,6 +553,46 @@ async function zeichne(maschine: Machine): Promise<void> {
       wann: vorWieLange(frisch.zeitpunkt),
     });
     urteilsblock.appendChild(beleg);
+
+    /**
+     * WIE GENAU IST DIESE ZAHL? — die Auflösungszeile, zurückgeholt.
+     *
+     * `resolutionLine.ts` gibt es seit langem, es ist getestet, und es war
+     * seit dem 23.08.2026 **nirgends mehr zu sehen**: Sein Aufrufer stand im
+     * alten Ergebnisdialog, den ich mit #100 abgerissen habe. Das Modul sagt
+     * selbst, wo es hingehört — „das Setzen von `textContent` bleibt in
+     * 3-Diagnose" —, und genau diese Stelle gibt es nicht mehr. Das Ergebnis
+     * steht heute hier.
+     *
+     * Warum sie zählt: `baselineSpread.ts` hält fest, dass die eigenen
+     * Cross-Device-Messwerte des Projekts bei 93–94 % liegen und die
+     * Wiederholstreuung auf demselben Gerät bei 95–97 %. In diesem Band sagt
+     * „88 %" ohne Maßstab nichts. Die Zeile setzt den Maßstab daneben.
+     *
+     * ## Warum nur bei GENAU EINEM Normalzustand
+     *
+     * Die Zahl gehört zu der Referenz, die den Score erzeugt hat. Welche das
+     * war, hält die Prüfung nicht fest — `DiagnosisResult` hat kein Feld
+     * dafür. Bei genau einer gesunden Referenz ist die Frage beantwortet;
+     * bei mehreren wäre der Rückfall auf die erste ein stilles Raten, und
+     * dann stünde eine echte Zahl unter einem Score, zu dem sie nicht gehört.
+     * Genau davor warnt `resolutionLine.ts` in seinem eigenen Kopf.
+     *
+     * Lieber keine Zeile als eine, die zur falschen Referenz gehört.
+     */
+    const gesunde = (maschine.referenceModels ?? []).filter((m) => m.type === 'healthy');
+    if (gesunde.length === 1) {
+      const stand = resolutionLineState(gesunde, '', isViewLevelAtLeast('advanced'));
+      if (stand.kind !== 'hidden') {
+        const zeile = document.createElement('p');
+        zeile.className = 'muted small maschine-aufloesung';
+        zeile.textContent =
+          stand.kind === 'value'
+            ? t('resultAmpel.resolution', { points: stand.points })
+            : t('resultAmpel.resolutionUnknown');
+        urteilsblock.appendChild(zeile);
+      }
+    }
   } else if (letzte) {
     // Neben den Namen, nicht darunter: Der letzte Stand gehört zum Steckbrief
     // der Maschine. Der Beleg eines frischen Ergebnisses gehört dagegen unter

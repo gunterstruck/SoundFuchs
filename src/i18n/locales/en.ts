@@ -2431,7 +2431,7 @@ export const en: TranslationDict = {
       howMany: 'How many machines do you want to compare?',
       customCount: 'Custom count',
       explanation:
-        'Go to each machine in order and record it. The first recording is automatically used as the comparison baseline.',
+        'Go to each machine in turn and record it. The first recording becomes the comparison baseline for all the others — record it on a machine that seems unremarkable to you.',
       next: 'Next',
       minMachines: 'At least 2 machines',
       maxMachines: 'Maximum 30 machines',
@@ -2439,7 +2439,7 @@ export const en: TranslationDict = {
     reference: {
       title: 'Record normal state',
       instruction: 'Record the first machine',
-      hint: 'Automatically used as the comparison baseline.',
+      hint: 'This recording becomes the comparison baseline for all other machines.',
       startRecording: 'Record normal state',
       saved: 'Normal state saved',
       goldName: 'Reference (Gold)',
@@ -2458,6 +2458,8 @@ export const en: TranslationDict = {
       allGood: 'All machines within normal range',
       outlierFound: '{{count}} machine(s) show deviation',
       notChecked: 'Not checked',
+      basisVerdaechtig:
+        'Every machine checked deviates from the comparison baseline. Then the baseline itself may be the conspicuous one — record it on a different machine.',
       goldLabel: 'Comparison baseline',
       saveAsFleet: 'Save as fleet',
       saveFleetName: 'Fleet name (optional):',
