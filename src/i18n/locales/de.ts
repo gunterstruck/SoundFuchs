@@ -444,6 +444,8 @@ export const de: TranslationDict = {
   },
 
   search: {
+    artStandort: 'Standort',
+    artMaschine: 'Maschine',
     placeholder: 'Standort, Maschine, PLZ suchen…',
     noHits: 'Nichts gefunden.',
     sheetTitle: 'Einstellungen & mehr',

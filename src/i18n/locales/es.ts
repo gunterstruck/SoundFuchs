@@ -426,6 +426,8 @@ export const es: TranslationDict = {
   },
 
   search: {
+    artStandort: 'Ubicación',
+    artMaschine: 'Máquina',
     placeholder: 'Buscar ubicación, máquina, código postal…',
     noHits: 'No se encontró nada.',
     sheetTitle: 'Ajustes y más',

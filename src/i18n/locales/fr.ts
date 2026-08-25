@@ -430,6 +430,8 @@ export const fr: TranslationDict = {
   },
 
   search: {
+    artStandort: 'Site',
+    artMaschine: 'Machine',
     placeholder: 'Rechercher site, machine, code postal…',
     noHits: 'Aucun résultat.',
     sheetTitle: 'Réglages et plus',

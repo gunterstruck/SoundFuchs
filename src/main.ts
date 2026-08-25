@@ -998,16 +998,44 @@ class ZanobotApp {
    * auf eine Zeile der Übersicht nimmt. Wer sucht, will zuerst sehen; geprüft
    * wird von dort aus mit einem zweiten, bewussten Tipp.
    *
-   * Der Aufruf geht über den Router, weil `main` die Phasen nicht kennt. Bis
-   * zum 14.08.2026 stand hier stattdessen ein `location.hash = '#/identify?…'`
-   * — eine Route, die es nie gab: Der Treffer änderte nur die Adresszeile und
-   * sonst nichts. Ein Aufruf, der ins Leere zeigt, fällt still aus; ein
-   * Methodenaufruf tut das nicht.
+   * ── ZWEI TREFFER, ZWEI WELTEN ───────────────────────────────────────────
+   *
+   * Bis zum 25.08.2026 stand für die Maschine `router.showMachineView()` hier.
+   * Gemessen im Browser, ein Tipp auf jede der beiden Trefferarten:
+   *
+   *     Standort „Brauerei 0005"  →  tiefe-offen · Titel steht · Fenster: none
+   *     Maschine „Kompressor 5"   →  (keine Tiefe) · #machine-detail-modal
+   *                                   display: flex · 1280 × 900
+   *
+   * Derselbe Treffer, dieselbe Liste — und dahinter zwei verschiedene
+   * Oberflächen: die neue Ebene für den Standort, das alte Fenster für die
+   * Maschine. Das war vorher nicht zu sehen, weil die Trefferliste selbst auf
+   * `display: none` stand und niemand sie antippen konnte.
+   *
+   * Jetzt geht auch die Maschine durch `oeffneMaschine` — dieselbe Stelle, die
+   * schon die Karte, die Standortansicht und das Standortblatt benutzen. Der
+   * Kommentar dort (17.08.2026) erklärt, warum `showMachineView` an genau
+   * dieser Stelle aufgegeben wurde; die Suche war die letzte, die ihn noch
+   * rief.
    */
   private setupGlobalSearch(): void {
-    const suche = new GlobalSearch((machine) => {
-      this.router?.showMachineView(machine);
-    });
+    const suche = new GlobalSearch(
+      (machine) => {
+        this.oeffneMaschine(machine);
+      },
+      /**
+       * Ein Standort-Treffer führt auf die Standortebene.
+       *
+       * Nicht auf die Karte und nicht auf eine seiner Maschinen: Wer „Brauerei"
+       * tippt, will den Ort — und von dort sind seine Maschinen einen Tipp
+       * entfernt. Derselbe Weg, den auch ein Tipp auf die Standortliste nimmt;
+       * ein zweiter wäre eine zweite Stelle, die beim nächsten Umbau vergessen
+       * wird.
+       */
+      (kunde) => {
+        oeffneTiefe(kunde.id, 'standort');
+      }
+    );
     if (!suche.istVerfuegbar) return;
     suche.init();
     logger.debug('🔍 Suche in der Kopfleiste bereit');

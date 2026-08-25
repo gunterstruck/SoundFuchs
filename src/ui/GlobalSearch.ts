@@ -16,26 +16,23 @@
  * eine Suche, die eine gerade angelegte Maschine nicht findet, ist schlimmer
  * als keine.
  */
-import { getAllMachines } from '@data/db.js';
-import type { Machine } from '@data/types.js';
+import { getAllCustomers, getAllMachines } from '@data/db.js';
+import type { Customer, Machine } from '@data/types.js';
+import { MAX_TREFFER, MINDESTLAENGE, sucheTreffer, type Treffer } from './sucheTreffer.js';
 import { logger } from '@utils/logger.js';
 import { escapeHtml } from '@utils/sanitize.js';
 import { t } from '../i18n/index.js';
-
-/** Ab so vielen Zeichen wird gesucht. Ein einzelner Buchstabe trifft fast alles. */
-const MINDESTLAENGE = 2;
-
-/** Mehr Treffer als das passt kaum auf einen Handybildschirm. */
-const MAX_TREFFER = 8;
 
 export class GlobalSearch {
   private readonly feld: HTMLInputElement;
   private readonly liste: HTMLElement;
   private readonly beiAuswahl: (machine: Machine) => void;
-  private treffer: Machine[] = [];
+  private readonly beiStandort: ((kunde: Customer) => void) | null;
+  private treffer: Treffer[] = [];
 
-  constructor(beiAuswahl: (machine: Machine) => void) {
+  constructor(beiAuswahl: (machine: Machine) => void, beiStandort?: (kunde: Customer) => void) {
     this.beiAuswahl = beiAuswahl;
+    this.beiStandort = beiStandort ?? null;
     this.feld = document.getElementById('global-search') as HTMLInputElement;
     this.liste = document.getElementById('search-results') as HTMLElement;
   }
@@ -74,22 +71,27 @@ export class GlobalSearch {
     }
 
     let machines: Machine[] = [];
+    let customers: Customer[] = [];
     try {
-      machines = await getAllMachines();
+      /**
+       * Beide Bestände, nebeneinander gelesen.
+       *
+       * Bis zum 24.08.2026 stand hier nur `getAllMachines()` — und damit fand
+       * ein Feld, auf dem „Standort, Maschine, PLZ suchen…" steht, keinen
+       * einzigen Standort. Gemessen: „brau" → nichts, obwohl hundert
+       * Brauereien im Bestand lagen.
+       *
+       * `Promise.all` und nicht nacheinander: Es sind zwei unabhängige Lesungen
+       * derselben Datenbank, und die Suche läuft bei jedem Tastendruck.
+       */
+      [machines, customers] = await Promise.all([getAllMachines(), getAllCustomers()]);
     } catch (error) {
-      logger.warn('Suche: Maschinen konnten nicht gelesen werden', error);
+      logger.warn('Suche: Bestand konnte nicht gelesen werden', error);
       this.schliessen();
       return;
     }
 
-    this.treffer = machines
-      .filter((m) =>
-        [m.name, m.location ?? '', m.id].some((feld) => feld.toLowerCase().includes(wort))
-      )
-      // Zuletzt geprüfte zuerst: Wer sucht, meint meist die Maschine, an der
-      // er gerade war.
-      .sort((a, b) => (b.lastDiagnosisAt ?? 0) - (a.lastDiagnosisAt ?? 0))
-      .slice(0, MAX_TREFFER);
+    this.treffer = sucheTreffer(wort, customers, machines, MAX_TREFFER);
 
     this.zeichnen(wort);
   }
@@ -106,25 +108,44 @@ export class GlobalSearch {
       return;
     }
 
-    for (const machine of this.treffer) {
+    for (const treffer of this.treffer) {
       const knopf = document.createElement('button');
       knopf.type = 'button';
-      knopf.className = 'search-hit';
+      knopf.className = `search-hit search-hit-${treffer.art}`;
       knopf.setAttribute('role', 'option');
+      knopf.dataset.art = treffer.art;
+
+      /**
+       * WAS ist das hier — Standort oder Maschine?
+       *
+       * Ohne diese Marke stünden „Brauerei 0005" und „Kompressor 3"
+       * ununterscheidbar untereinander, und ein Tipp führte mal eine Ebene
+       * tiefer und mal zwei. Das Wort steht vorn, weil es entscheidet, was der
+       * Tipp tut — nicht als Verzierung dahinter.
+       */
+      const art = document.createElement('span');
+      art.className = 'search-hit-art';
+      art.textContent = t(
+        treffer.art === 'standort' ? 'search.artStandort' : 'search.artMaschine'
+      );
 
       const name = document.createElement('span');
       name.className = 'search-hit-name';
-      name.innerHTML = this.hervorheben(machine.name, wort);
+      name.innerHTML = this.hervorheben(treffer.titel, wort);
 
       const meta = document.createElement('span');
       meta.className = 'search-hit-meta';
-      meta.textContent = machine.location || machine.id;
+      // Der Zusatz darf leer sein — eine Maschine ohne Standortvermerk hat
+      // keinen. Dann steht dort nichts, statt einer inneren Kennung, die dem
+      // Nutzer nichts sagt.
+      meta.textContent = treffer.zusatz;
 
-      knopf.append(name, meta);
+      knopf.append(art, name, meta);
       knopf.addEventListener('click', () => {
         this.schliessen();
         this.feld.value = '';
-        this.beiAuswahl(machine);
+        if (treffer.art === 'standort') this.beiStandort?.(treffer.kunde);
+        else this.beiAuswahl(treffer.maschine);
       });
       this.liste.appendChild(knopf);
     }

@@ -208,6 +208,38 @@ body.tiefe-arbeit .tab-panel[data-ebene]:not([data-ebene='maschine']) {
   display: none;
 }
 
+/* ── DIE TREFFERLISTE DER SUCHE WAR NIE ZU SEHEN ───────────────────────────
+
+   Gemeldet am 24.08.2026 mit einem Bildschirmfoto: „brau" im Suchfeld, und
+   nichts passiert. Zwei Fehler lagen übereinander. Der erste war die Regel,
+   welche Treffer überhaupt entstehen (Standorte wurden gar nicht durchsucht,
+   siehe `ui/sucheTreffer.ts`). Der zweite ist dieser hier, und er war der
+   schwerere: **Die Liste stand auf `display: none`, immer.**
+
+   Gemessen im Browser, mit fünf gefundenen Standorten im Baum:
+
+     #search-results   hidden = false   ·   display: none   ·   0 × 0 px
+
+   Zwei Mechaniken kollidieren. Der Stamm schaltet die Liste über eine Klasse
+   und lässt sie deshalb grundsätzlich verborgen:
+
+     stamm/layout.css:63   .search-results { display: none; ... }
+
+   SoundFuchs schaltet über das `hidden`-Attribut (`GlobalSearch.schliessen`),
+   und die passende Regel dazu steht in style.css — die aber VOR dem Stamm
+   geladen wird (main.ts: erst `style.css`, dann `stamm/layout.css`). Gleiche
+   Spezifität, spätere Regel gewinnt: Der Stamm deckelt die Liste zu.
+
+   Der Stamm wird dafür nicht angefasst (§0h). Diese Regel hier gewinnt über
+   den Bezeichner und macht `hidden` wieder zur einzigen Wahrheit — genau dem
+   Attribut, das der Code ohnehin setzt.
+
+   Warum das so lange niemandem auffiel: Wer den DOM abfragt, sieht die Treffer
+   stehen. Erst wer die gezeichnete Fläche misst, sieht die Null. */
+#search-results:not([hidden]) {
+  display: block;
+}
+
 /* ── DER REITER „DETAILS" GILT NUR AUF PROFI ───────────────────────────────
 
    Zuerst stand dafür `data-view-level="expert"` am Knopf und am Feld — die
