@@ -980,6 +980,42 @@ body {
   margin-bottom: 0;
 }
 
+.customer-gps-btn {
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: var(--spacing-xs);
+}
+
+.customer-gps-status,
+.site-create-gps-status {
+  display: block;
+  min-height: 1.25em;
+  margin: 0;
+}
+
+.input-error-visible {
+  color: var(--status-error) !important;
+}
+
+.customer-location-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-sm) 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.customer-location-divider::before,
+.customer-location-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--divider-color);
+}
+
 /* PLZ und Ort in einer Zeile: die PLZ braucht fuenf Zeichen, der Ort den Rest.
    Zwei volle Zeilen fuer zusammen acht Zeichen waeren verschenkter Platz. */
 .customer-place-row {
@@ -1725,6 +1761,24 @@ body {
 
 .modal-body {
   padding: var(--spacing-lg);
+}
+
+.site-create-content {
+  max-width: 440px;
+}
+
+.site-create-content #site-create-gps {
+  width: 100%;
+}
+
+.site-create-privacy {
+  margin-top: var(--spacing-xs);
+}
+
+.input-error.site-create-error {
+  display: block;
+  min-height: 1.25em;
+  margin: 0;
 }
 
 /* Machine Detail Modal */
@@ -11669,6 +11723,15 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   }
 }
 
+/* Im geöffneten Anlegen-Formular wären beide Bestandspillen doppelt und
+   lägen auf kleinen Handys vor dem Speichern-Knopf. `:has()` bindet die Regel
+   an den tatsächlich sichtbaren Abschnitt: Sobald der Nutzer zur Kachelwahl
+   zurückgeht oder eine andere Kachel öffnet, kommen die Pillen von selbst
+   zurück — ohne einen zweiten JavaScript-Zustand, der hängen bleiben kann. */
+body.tiefe-bestand:has(#create-section:not([style*='display: none'])) .fab-row {
+  display: none;
+}
+
 /* Auf sehr schmalen Geräten (iPhone SE, 320 px) reicht 46vw nicht für
    „Erkennen" samt Zeichen und Fuchs — die Beschriftung wurde beschnitten.
    Weniger Polsterung und ein etwas kleineres Zeichen holen die nötigen Pixel,
@@ -12070,6 +12133,40 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   font-size: var(--font-xs);
   color: var(--text-secondary);
   line-height: 1.45;
+}
+
+/* Der eigene Bestand ist im Leerzustand die Hauptsache. Beispieldaten bleiben
+   erreichbar, treten aber als zweite, ruhigere Aktion zurück. Zwei gestapelte
+   Knöpfe dürfen hier Platz brauchen: Der Kasten erklärt den Erstlauf und ist
+   keine dauerhaft schwebende Knopfzeile. */
+.map-empty-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.map-empty-primary {
+  background: var(--primary-color);
+  color: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.map-empty-primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.map-empty-demo {
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.map-empty-demo:hover {
+  background: rgba(var(--primary-rgb), 0.06);
+  color: var(--primary-color);
 }
 
 /* Ohne Empfang bleibt die Flaeche grau. Das ist die einzige echte

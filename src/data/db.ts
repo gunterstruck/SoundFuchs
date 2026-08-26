@@ -1666,7 +1666,7 @@ export async function getAllReferenceDatabases(): Promise<ReferenceDatabase[]> {
 export async function saveCustomer(customer: Customer): Promise<void> {
   const db = await initDB();
   await db.put('customers', customer);
-  logger.info(`💾 Kunde gespeichert: ${customer.name} (${customer.plz})`);
+  logger.info(`💾 Kunde gespeichert: ${customer.name} (${customer.plz || customer.geo})`);
 }
 
 /**

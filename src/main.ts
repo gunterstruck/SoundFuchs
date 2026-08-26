@@ -66,8 +66,10 @@ import { standortansichtAufbauen } from './stamm/ui/standortansicht.js';
 import { standortblattAufbauen } from './stamm/ui/standortblatt.js';
 import { maschinenansichtAufbauen } from './stamm/ui/maschinenansicht.js';
 import { standortelisteAufbauen } from './stamm/ui/standorteliste.js';
+import { standortAnlegenAufbauen, standortAnlegenOeffnen } from './stamm/ui/standortAnlegen.js';
+import { STANDORT_GESPEICHERT } from './services/standortCreate.js';
 import { schnellcheckAufbauen } from './stamm/ui/schnellcheck.js';
-import type { Machine } from '@data/types.js';
+import type { Customer, Machine } from '@data/types.js';
 import { escapeHtml } from '@utils/sanitize.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
 import { initPwaUpdate } from '@utils/pwaUpdate.js';
@@ -759,6 +761,19 @@ class ZanobotApp {
     standortelisteAufbauen();
 
     /**
+     * Ein Standort darf vor seiner ersten Maschine entstehen. Nach dem
+     * Speichern öffnet sich genau dieser Standort; dort steht bereits der
+     * vorhandene Weg „Neue Maschine anlegen". So endet der neue Einstieg
+     * nicht wieder in einer Sackgasse.
+     */
+    standortAnlegenAufbauen();
+    document.addEventListener(STANDORT_GESPEICHERT, (ereignis) => {
+      const standort = (ereignis as CustomEvent<Customer>).detail;
+      void this.kundenkarte.zeigeImGrund();
+      oeffneTiefe(standort.id, 'standort');
+    });
+
+    /**
      * Der Schnellcheck über der Karte.
      *
      * Er braucht keine Abhängigkeiten: Die Maschine, die er anlegt, gibt er
@@ -1300,6 +1315,7 @@ class ZanobotApp {
       ['btn-sound-detect', 'diagnose-auto-detect-btn'],
       ['fab-detect', 'diagnose-auto-detect-btn'],
       ['fab-new-machine', 'add-new-machine-btn'],
+      ['map-empty-new-machine-btn', 'add-new-machine-btn'],
     ];
 
     for (const [pille, ziel] of paare) {
@@ -1312,8 +1328,25 @@ class ZanobotApp {
         logger.warn(`Pille ${pille} entfernt — Ziel ${ziel} fehlt`);
         continue;
       }
-      knopf.addEventListener('click', () => zielKnopf.click());
+      knopf.addEventListener('click', () => {
+        /**
+         * Der große Knopf im Karten-Leerzustand liegt VOR dem Scharnier. Das
+         * vorhandene Anlegen-Formular liegt dahinter auf der Bestandsebene.
+         * Nur den verborgenen Zielknopf auszulösen würde zwar den Abschnitt
+         * öffnen, aber weiterhin die Karte zeigen — nach außen also nichts
+         * tun. Die beiden schwebenden Pillen hinter dem Scharnier brauchen
+         * diesen Übergang nicht; sie stehen bereits auf der Bestandsebene.
+         */
+        if (pille === 'map-empty-new-machine-btn') oeffneTiefe(null, 'bestand');
+        zielKnopf.click();
+      });
     }
+
+    // Kein Umweg durch das Maschinenformular: Dieser Knopf bereitet nur den
+    // Ort vor. Die Maschine folgt anschließend aus der Standortansicht.
+    document
+      .getElementById('map-empty-new-site-btn')
+      ?.addEventListener('click', standortAnlegenOeffnen);
   }
 
   /**

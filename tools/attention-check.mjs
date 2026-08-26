@@ -1059,6 +1059,9 @@ try {
 
     let flaechen = 0;
     let einstiegDa = false;
+    let eigeneMaschineDa = false;
+    let eigenerStandortDa = false;
+    let standortDialogDa = false;
     let markerNachEinstieg = 0;
 
     if (karteImMenue) {
@@ -1070,8 +1073,24 @@ try {
         .locator('#map-empty')
         .isVisible()
         .catch(() => false);
+      eigeneMaschineDa = await page
+        .locator('#map-empty-new-machine-btn')
+        .isVisible()
+        .catch(() => false);
+      eigenerStandortDa = await page
+        .locator('#map-empty-new-site-btn')
+        .isVisible()
+        .catch(() => false);
 
       if (einstiegDa) {
+        if (eigenerStandortDa) {
+          await page.locator('#map-empty-new-site-btn').click();
+          standortDialogDa = await page
+            .locator('#site-create-modal')
+            .isVisible()
+            .catch(() => false);
+          await page.locator('#site-create-cancel').click();
+        }
         await page.locator('#map-empty-demo-btn').click();
         await page.waitForTimeout(9000);
         markerNachEinstieg = await page.locator('#map .leaflet-marker-icon').count();
@@ -1084,6 +1103,9 @@ try {
     console.log(`„Standorte" im Menü       ${kundenImMenue ? 'ja' : 'NEIN'}`);
     console.log(`PLZ-Gebiete ohne Punkte   ${flaechen}`);
     console.log(`Einstieg in der Karte     ${einstiegDa ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Eigene Maschine anlegen   ${eigeneMaschineDa ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Eigenen Standort anlegen  ${eigenerStandortDa ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Standortdialog öffnet     ${standortDialogDa ? 'ja' : 'NEIN'}`);
     console.log(`Marker nach dem Einstieg  ${markerNachEinstieg}`);
 
     pruefe(
@@ -1099,6 +1121,14 @@ try {
       `Weg hinein: nur ${flaechen} Flächen auf der leeren Karte — ohne Standorte bliebe sie ein graues Feld statt Deutschland zu zeigen`
     );
     pruefe(einstiegDa, 'Weg hinein: die leere Karte bietet keinen Schritt an, der sie füllt');
+    pruefe(
+      eigeneMaschineDa,
+      'Weg hinein: die leere Karte bietet nur Beispieldaten statt der ersten eigenen Maschine an'
+    );
+    pruefe(
+      eigenerStandortDa && standortDialogDa,
+      'Weg hinein: ein eigener Standort lässt sich nicht unabhängig von einer Maschine vorbereiten'
+    );
     pruefe(
       markerNachEinstieg > 0,
       'Weg hinein: der Knopf in der leeren Karte bringt keine Standorte auf die Karte'

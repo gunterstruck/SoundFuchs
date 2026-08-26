@@ -11,6 +11,12 @@ Karten-Frage vorgeschlagen hat._
 > die Sache weiterhin `customer`. Wer hier „Kunde" liest, lese „Standort";
 > die Begründungen unten gelten unverändert.
 
+> **Nachtrag 26.08.2026 — GPS ist eine ausdrücklich gewählte Alternative.**
+> Im Erstlauf kann ein Standort vor seiner ersten Maschine vorbereitet werden.
+> Der Mensch wählt dabei entweder „Aktuellen Standort verwenden" oder gibt wie
+> bisher eine Postleitzahl ein. Die App fragt GPS nie selbstständig an und
+> speichert die Koordinaten nur in ihrer lokalen Datenbank.
+
 ## 1. Warum das den Streit auflöst
 
 Gegen eine Karte in SoundFuchs standen bisher vier Einwände
@@ -26,8 +32,9 @@ Geografie, sondern der Name, das Bild und im Zweifel das NFC-Etikett.
 
 Damit ist der Maßstabs-Einwand weg. Die anderen drei sind es auch:
 
-- **GPS trägt drinnen nicht.** Wird nicht gebraucht — der Kunde wird über die
-  Postleitzahl verortet, nicht gemessen.
+- **GPS trägt drinnen nicht immer.** Es ist deshalb nur der schnelle Weg vor
+  Ort. Die Postleitzahl bleibt die robuste, vollständig offline verfügbare
+  Alternative.
 - **Es gibt kein Wegeproblem.** Zwischen Kunden gibt es eins. Genau dafür ist
   TourFuchs da, und genau da entsteht die Verbindung.
 - **Kosten.** Siehe §5. Sie sind bezifferbar und kleiner als befürchtet.
@@ -42,14 +49,14 @@ Begriff legt dieses Dokument an.
 Bewusst schmal. TourFuchs führt Umsatz, Kanal, Bezirk, Zuständigkeit — das ist
 Vertriebswissen und gehört nicht hierher. Ein Kunde in SoundFuchs ist:
 
-| Feld         | Pflicht | Herkunft                          |
-| ------------ | ------- | --------------------------------- |
-| `id`         | ja      | vergeben                          |
-| `name`       | ja      | eingegeben                        |
-| `plz`        | ja      | eingegeben                        |
-| `ort`        | nein    | **füllt sich aus der PLZ selbst** |
-| `lat`, `lng` | nein    | aus der PLZ berechnet             |
-| `geo`        | ja      | `plz` \| `none`                   |
+| Feld         | Pflicht           | Herkunft                          |
+| ------------ | ----------------- | --------------------------------- |
+| `id`         | ja                | vergeben                          |
+| `name`       | ja                | eingegeben                        |
+| `plz`        | alternativ zu GPS | eingegeben                        |
+| `ort`        | nein              | **füllt sich aus der PLZ selbst** |
+| `lat`, `lng` | nein              | aus der PLZ oder vom Gerät        |
+| `geo`        | ja                | `plz` \| `gps` \| `none`          |
 
 Mehr nicht. Straße, Ansprechpartner, Telefon: erst, wenn jemand danach fragt.
 
@@ -61,7 +68,8 @@ ist — der Bestand funktioniert weiter ohne einen einzigen Kunden.
 TourFuchs löst die Verortung ohne Schlüssel, ohne Konto und ohne Netz
 (`src/services/geocode.js`). Genau das wird übernommen:
 
-1. **PLZ eingeben.** Der Ort füllt sich selbst aus `plz-places.json`
+1. **GPS oder PLZ wählen.** GPS wird nur nach einem ausdrücklichen Tipp
+   abgefragt. Ohne GPS füllt sich der Ort aus `plz-places.json`
    (PLZ → Ortsname). Wer will, überschreibt ihn.
 2. **Koordinaten** kommen aus `plz-centroids.json` (PLZ → Mittelpunkt).
 3. **Deterministischer Versatz.** Mehrere Kunden derselben PLZ lägen sonst

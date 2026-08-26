@@ -509,13 +509,27 @@
           darunter, und dieser Kasten bietet den Schritt an, der sie füllt.
         -->
         <div class="map-empty" id="map-empty" style="display: none">
-          <p class="map-empty-title" data-i18n="map.emptyTitle">Noch kein Standort auf der Karte</p>
-          <p class="map-empty-text" data-i18n="map.emptyText">
-            Standorte entstehen beim Anlegen einer Maschine — oder hier, zum Ausprobieren.
+          <p class="map-empty-title" data-i18n="map.emptyTitle">
+            Starte mit deiner ersten Maschine
           </p>
-          <button type="button" class="action-btn" id="map-empty-demo-btn">
-            <span data-i18n="map.emptyButton">Beispieldaten laden</span>
-          </button>
+          <p class="map-empty-text" data-i18n="map.emptyText">
+            Lege die Maschine an und erfasse ihren Standort direkt mit.
+          </p>
+          <div class="map-empty-actions">
+            <button
+              type="button"
+              class="action-btn map-empty-primary"
+              id="map-empty-new-machine-btn"
+            >
+              <span data-i18n="map.emptyMachineButton">Erste Maschine anlegen</span>
+            </button>
+            <button type="button" class="action-btn secondary-btn" id="map-empty-new-site-btn">
+              <span data-i18n="map.emptySiteButton">Nur Standort anlegen</span>
+            </button>
+            <button type="button" class="action-btn map-empty-demo" id="map-empty-demo-btn">
+              <span data-i18n="map.emptyButton">Beispieldaten laden</span>
+            </button>
+          </div>
         </div>
       </main>
 
@@ -1116,12 +1130,26 @@
                             data-i18n-placeholder="customers.namePlaceholder"
                           />
                         </div>
+                        <button
+                          type="button"
+                          class="action-btn secondary-btn customer-gps-btn"
+                          id="customer-use-gps-btn"
+                        >
+                          <span data-i18n="customers.gpsButton">Aktuellen Standort verwenden</span>
+                        </button>
+                        <span
+                          class="input-hint customer-gps-status"
+                          id="customer-gps-status"
+                          role="status"
+                        ></span>
+                        <div class="customer-location-divider">
+                          <span data-i18n="customers.orPostcode">oder per PLZ</span>
+                        </div>
                         <div class="customer-place-row">
-                          <div class="input-group input-group-required">
-                            <label for="customer-plz-input">
-                              <span data-i18n="customers.plzLabel">PLZ</span
-                              ><span class="required-star">*</span>
-                            </label>
+                          <div class="input-group">
+                            <label for="customer-plz-input" data-i18n="customers.plzLabel"
+                              >PLZ</label
+                            >
                             <input
                               type="text"
                               id="customer-plz-input"
@@ -1148,8 +1176,7 @@
                         </div>
                         <span class="input-hint" id="customer-plz-hint" role="status"></span>
                         <span class="input-hint" data-i18n="customers.hint"
-                          >Aus der Postleitzahl kommen Ort und Kartenpunkt — mehr wird nicht
-                          gebraucht.</span
+                          >GPS oder PLZ genügen für den Kartenpunkt.</span
                         >
                       </div>
                     </div>
@@ -4801,6 +4828,108 @@
           </button>
           <button class="modal-btn btn-text" id="no-match-cancel-btn" data-i18n="buttons.cancel">
             Abbrechen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ein Standort kann vor der ersten Maschine vorbereitet werden. -->
+    <div
+      id="site-create-modal"
+      class="modal"
+      style="display: none"
+      role="dialog"
+      aria-labelledby="site-create-title"
+      aria-modal="true"
+    >
+      <div class="modal-content site-create-content">
+        <div class="modal-header">
+          <h3 id="site-create-title" data-i18n="customers.createTitle">Standort anlegen</h3>
+          <button
+            type="button"
+            class="close-modal-btn"
+            id="site-create-close"
+            data-i18n-aria="modals.closeDialog"
+            aria-label="Dialog schließen"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-description" data-i18n="customers.createDescription">
+            Bereite einen Standort vor. Eine Maschine kannst du direkt danach hinzufügen.
+          </p>
+          <div class="input-group input-group-required">
+            <label for="site-create-name">
+              <span data-i18n="customers.nameLabel">Name</span><span class="required-star">*</span>
+            </label>
+            <input
+              type="text"
+              id="site-create-name"
+              class="machine-input"
+              maxlength="80"
+              autocomplete="organization"
+              placeholder="z.B. Müller Guss GmbH oder Zuhause"
+              data-i18n-placeholder="customers.namePlaceholder"
+            />
+          </div>
+          <button type="button" class="action-btn secondary-btn" id="site-create-gps">
+            <span data-i18n="customers.gpsButton">Aktuellen Standort verwenden</span>
+          </button>
+          <p
+            class="input-hint site-create-gps-status"
+            id="site-create-gps-status"
+            role="status"
+          ></p>
+          <p class="input-hint site-create-privacy" data-i18n="customers.gpsPrivacy">
+            SoundFuchs speichert die Koordinaten nur auf diesem Gerät.
+          </p>
+          <div class="customer-location-divider">
+            <span data-i18n="customers.orPostcode">oder per PLZ</span>
+          </div>
+          <div class="customer-place-row">
+            <div class="input-group">
+              <label for="site-create-plz" data-i18n="customers.plzLabel">PLZ</label>
+              <input
+                type="text"
+                id="site-create-plz"
+                class="machine-input"
+                inputmode="numeric"
+                maxlength="5"
+                autocomplete="postal-code"
+                placeholder="45127"
+                data-i18n-placeholder="customers.plzPlaceholder"
+              />
+            </div>
+            <div class="input-group">
+              <label for="site-create-ort" data-i18n="customers.ortLabel">Ort</label>
+              <input
+                type="text"
+                id="site-create-ort"
+                class="machine-input"
+                maxlength="80"
+                autocomplete="address-level2"
+              />
+            </div>
+          </div>
+          <p class="input-error site-create-error" id="site-create-error" role="alert"></p>
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="modal-btn btn-secondary"
+            id="site-create-cancel"
+            data-i18n="buttons.cancel"
+          >
+            Abbrechen
+          </button>
+          <button
+            type="button"
+            class="modal-btn btn-primary"
+            id="site-create-save"
+            data-i18n="customers.createButton"
+          >
+            Standort speichern
           </button>
         </div>
       </div>

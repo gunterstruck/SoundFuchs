@@ -136,7 +136,9 @@ export class CustomerMap {
   /** Ist mindestens ein Kunde verortet? */
   public static async hatKunden(): Promise<boolean> {
     try {
-      return (await getAllCustomers()).some((k) => k.geo === 'plz');
+      return (await getAllCustomers()).some(
+        (k) => k.geo !== 'none' && k.lat != null && k.lng != null
+      );
     } catch {
       return false;
     }
@@ -577,7 +579,7 @@ export class CustomerMap {
     const sichtbar = uebersicht.filter((e) => passt(e));
     const kunden = sichtbar.map((e) => e.kunde);
     const verortet = sichtbar.filter(
-      (e) => e.kunde.geo === 'plz' && e.kunde.lat != null && e.kunde.lng != null
+      (e) => e.kunde.geo !== 'none' && e.kunde.lat != null && e.kunde.lng != null
     );
 
     // ── WARUM GESTAPELT WIRD ─────────────────────────────────────────────
@@ -675,8 +677,11 @@ export class CustomerMap {
    * zumauern.
    *
    * Jetzt zeigt die Karte in diesem Fall Deutschland mit seinen
-   * Postleitzahlgebieten (die stehen ohnehin) und darüber einen Satz mit dem
-   * Knopf, der Beispieldaten holt. Aus der Sackgasse wird der Eingang.
+   * Postleitzahlgebieten (die stehen ohnehin) und darüber drei geordnete
+   * Schritte: die erste Maschine anlegen, zunächst nur einen Standort
+   * vorbereiten oder Beispieldaten laden. Der eigene Bestand ist die
+   * Hauptsache, die Vorführung die Alternative. Aus der Sackgasse wird der
+   * Eingang.
    */
   private zeigeLeerzustand(leer: boolean): void {
     const kasten = document.getElementById('map-empty');
@@ -684,6 +689,9 @@ export class CustomerMap {
     kasten.style.display = leer ? '' : 'none';
     if (!leer) return;
 
+    // Die Maschinenanlage verdrahtet die Schale in main.ts, weil nur sie das
+    // Scharnier zur Bestandsebene öffnen kann. Hier gehört allein die Aktion,
+    // die die Karte selbst füllt: Beispieldaten laden und neu zeichnen.
     const knopf = document.getElementById('map-empty-demo-btn');
     if (!knopf || knopf.dataset.verdrahtet === '1') return;
     knopf.dataset.verdrahtet = '1';
@@ -778,10 +786,10 @@ export class CustomerMap {
 
     // ── Adresse, mit der Angabe, wie genau sie ist ─────────────────────────
     const ort = [kunde.plz, kunde.ort].filter(Boolean).join(' ');
-    if (ort) {
+    if (ort || kunde.geo === 'gps') {
       const zeile = document.createElement('p');
       zeile.className = 'popup-addr';
-      zeile.textContent = ort;
+      zeile.textContent = ort || t('map.accuracyGps');
       if (kunde.geo === 'plz') {
         // Aus dem Stamm, wörtlich in der Sache: Ein Punkt, der die Ortsmitte
         // meint, darf nicht wie eine Hausnummer aussehen.
@@ -789,6 +797,8 @@ export class CustomerMap {
         ungefaehr.className = 'muted small';
         ungefaehr.textContent = ` · 📍 ${t('map.accuracyPlz')}`;
         zeile.appendChild(ungefaehr);
+      } else if (ort && kunde.geo === 'gps') {
+        zeile.append(` · 📍 ${t('map.accuracyGps')}`);
       }
       wurzel.appendChild(zeile);
     }

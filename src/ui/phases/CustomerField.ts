@@ -16,8 +16,10 @@
  * Ort und Koordinaten; eine Adresse wären vier Felder und eine Netzabfrage.
  */
 
-import { saveCustomer, getAllCustomers } from '@data/db.js';
-import { ortZurPlz, verorteUeberPlz } from '../../services/plzGeocode.js';
+import { getAllCustomers } from '@data/db.js';
+import { ortZurPlz } from '../../services/plzGeocode.js';
+import { aktuellePosition, Standortfehler, type GpsPunkt } from '../../services/deviceLocation.js';
+import { STANDORT_GESPEICHERT, speichereStandort } from '../../services/standortCreate.js';
 import { logger } from '@utils/logger.js';
 import { t } from '../../i18n/index.js';
 import type { Customer } from '@data/types.js';
@@ -44,6 +46,9 @@ export class CustomerField {
   private plzFeld: HTMLInputElement | null = null;
   private ortFeld: HTMLInputElement | null = null;
   private hinweis: HTMLElement | null = null;
+  private gpsKnopf: HTMLButtonElement | null = null;
+  private gpsHinweis: HTMLElement | null = null;
+  private gpsPunkt: GpsPunkt | null = null;
 
   /**
    * Ob der Ort vom Menschen stammt. Nur ein leeres oder selbst gefülltes Feld
@@ -59,6 +64,8 @@ export class CustomerField {
     this.plzFeld = document.getElementById('customer-plz-input') as HTMLInputElement | null;
     this.ortFeld = document.getElementById('customer-ort-input') as HTMLInputElement | null;
     this.hinweis = document.getElementById('customer-plz-hint');
+    this.gpsKnopf = document.getElementById('customer-use-gps-btn') as HTMLButtonElement | null;
+    this.gpsHinweis = document.getElementById('customer-gps-status');
 
     if (!this.auswahl) return;
 
@@ -67,6 +74,15 @@ export class CustomerField {
     this.plzFeld?.addEventListener('input', () => {
       void this.ortNachtragen();
     });
+
+    this.gpsKnopf?.addEventListener('click', () => void this.gpsHolen());
+
+    // Ein Standort kann inzwischen außerhalb dieses Formulars vorbereitet
+    // werden. Ohne dieses Nachladen sähe das direkt danach geöffnete
+    // Maschinenformular noch die alte Auswahlliste und verlöre die bekannte
+    // Zuordnung. `neueMaschineAmStandort` wartet bereits auf genau dieses
+    // asynchrone Nachziehen.
+    document.addEventListener(STANDORT_GESPEICHERT, () => void this.lade());
 
     // Wer den Ort anfasst, behält ihn.
     this.ortFeld?.addEventListener('input', () => {
@@ -139,6 +155,35 @@ export class CustomerField {
     }
   }
 
+  /** GPS nur nach einem ausdrücklichen Tipp anfragen. */
+  private async gpsHolen(): Promise<void> {
+    if (!this.gpsKnopf) return;
+    this.gpsKnopf.disabled = true;
+    if (this.gpsHinweis) this.gpsHinweis.textContent = t('customers.gpsLocating');
+    try {
+      this.gpsPunkt = await aktuellePosition();
+      if (this.gpsHinweis) {
+        this.gpsHinweis.textContent = t('customers.gpsReady', {
+          accuracy: String(Math.max(1, Math.round(this.gpsPunkt.genauigkeit))),
+        });
+      }
+      const text = this.gpsKnopf.querySelector('span');
+      if (text) text.textContent = t('customers.gpsUpdate');
+    } catch (fehler) {
+      this.gpsPunkt = null;
+      if (this.gpsHinweis) {
+        this.gpsHinweis.textContent =
+          fehler instanceof Standortfehler && fehler.art === 'verweigert'
+            ? t('customers.gpsErrorPermission')
+            : fehler instanceof Standortfehler && fehler.art === 'zeit'
+              ? t('customers.gpsErrorTimeout')
+              : t('customers.gpsErrorUnavailable');
+      }
+    } finally {
+      this.gpsKnopf.disabled = false;
+    }
+  }
+
   /**
    * Auswerten, was im Formular steht — und bei Bedarf den Kunden anlegen.
    *
@@ -158,34 +203,24 @@ export class CustomerField {
       this.nameFeld?.focus();
       return { fehler: t('customers.nameRequired') };
     }
-    if (!/^\d{5}$/.test(plz)) {
+    if ((!this.gpsPunkt && !/^\d{5}$/.test(plz)) || (plz && !/^\d{5}$/.test(plz))) {
       this.plzFeld?.focus();
-      return { fehler: t('customers.plzInvalid') };
+      return { fehler: t('customers.plzOrGpsRequired') };
     }
 
-    const id =
-      `K-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase();
-    const ort = this.ortFeld?.value.trim() || (await ortZurPlz(plz)) || undefined;
-    const punkt = await verorteUeberPlz(plz, id);
-
-    // Eine unbekannte Postleitzahl hält niemanden auf: Der Kunde wird
-    // angelegt, er hat nur keinen Punkt auf der Karte. `geo: 'none'` hält das
-    // fest, statt eine Stelle zu erfinden.
-    const kunde: Customer = {
-      id,
+    // Derselbe Speicherweg wie im eigenständigen Standortdialog. Damit kann
+    // ein Standort wahlweise aus einer PLZ-Ortsmitte oder aus der bewusst
+    // abgefragten Geräteposition entstehen, ohne zwei Datenformate zu bauen.
+    const kunde = await speichereStandort({
       name,
       plz,
-      ort,
-      lat: punkt?.lat,
-      lng: punkt?.lng,
-      geo: punkt ? 'plz' : 'none',
-      createdAt: Date.now(),
-    };
-    await saveCustomer(kunde);
+      ort: this.ortFeld?.value,
+      gps: this.gpsPunkt,
+    });
     await this.lade();
-    this.auswahl.value = id;
+    this.auswahl.value = kunde.id;
     this.zeigeNeuenBlock();
-    return { kundeId: id };
+    return { kundeId: kunde.id };
   }
 
   /** Nach dem Anlegen einer Maschine aufräumen. */
@@ -195,6 +230,10 @@ export class CustomerField {
     if (this.plzFeld) this.plzFeld.value = '';
     if (this.ortFeld) this.ortFeld.value = '';
     if (this.hinweis) this.hinweis.textContent = '';
+    if (this.gpsHinweis) this.gpsHinweis.textContent = '';
+    this.gpsPunkt = null;
+    const gpsText = this.gpsKnopf?.querySelector('span');
+    if (gpsText) gpsText.textContent = t('customers.gpsButton');
     this.ortSelbstGefuellt = true;
     this.zeigeNeuenBlock();
   }

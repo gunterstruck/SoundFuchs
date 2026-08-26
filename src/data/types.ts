@@ -27,9 +27,9 @@ import type { FeatureLayout } from '@core/dsp/filterBank.js';
 export interface Customer {
   /** Eindeutige Kennung. Geht auch in den Versatz der Kartenposition ein. */
   id: string;
-  /** Anzeigename, das Einzige neben der Postleitzahl, was eingegeben wird. */
+  /** Anzeigename, das einzige immer nötige Eingabefeld. */
   name: string;
-  /** Fünfstellige deutsche Postleitzahl — die Grundlage der Verortung. */
+  /** Fünfstellige deutsche Postleitzahl — leer, wenn der Punkt vom GPS kommt. */
   plz: string;
   /** Ortsname. Füllt sich aus der Postleitzahl, ist aber überschreibbar. */
   ort?: string;
@@ -38,11 +38,11 @@ export interface Customer {
   /** Längengrad, aus der Postleitzahl berechnet. */
   lng?: number;
   /**
-   * Wie genau die Position ist. `plz` heißt Ortsmitte, nicht Hausnummer;
-   * `none` heißt, die Postleitzahl war unbekannt. Wird mitgeführt, damit die
-   * Karte keine Schärfe vortäuscht, die die Daten nicht haben.
+   * Wie genau die Position ist. `plz` heißt Ortsmitte, `gps` die ausdrücklich
+   * am Gerät bestimmte Position; `none` heißt, dass kein Punkt bekannt ist.
+   * Wird mitgeführt, damit die Karte keine Schärfe vortäuscht.
    */
-  geo: 'plz' | 'none';
+  geo: 'plz' | 'gps' | 'none';
   createdAt: number;
   /**
    * Erfundener Vorführ-Kunde, keine echten Daten (docs/beispieldaten.md).
