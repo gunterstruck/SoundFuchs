@@ -2942,7 +2942,7 @@
           </button>
         </div>
         <div class="modal-body legal-modal-body">
-          <p><strong>Angaben gemäß § 5 TMG</strong></p>
+          <p><strong>Anbieterkennzeichnung</strong></p>
           <p>
             Günter Struck<br />
             Lönsberg 8<br />
@@ -2952,7 +2952,7 @@
           <p><strong>Kontakt</strong></p>
           <p>E-Mail: <a href="mailto:soundfuchs@online.de">soundfuchs@online.de</a><br /></p>
 
-          <p><strong>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</strong></p>
+          <p><strong>Inhaltlich verantwortlich</strong></p>
           <p>
             Günter Struck<br />
             Lönsberg 8<br />
@@ -2979,9 +2979,10 @@
 
           <p>
             <strong>Datenschutz</strong><br />
-            Diese App arbeitet nach dem "Privacy-by-Design"-Prinzip. Alle Analysedaten werden
-            ausschließlich lokal in deinem Browser (IndexedDB) gespeichert. Es erfolgt kein Upload
-            auf externe Server.
+            Audio, Referenzprofile, Standortdatensätze und Ergebnisse werden lokal in deinem Browser
+            verarbeitet und gespeichert. SoundFuchs lädt sie nicht zu einem Analyse-Dienst hoch.
+            Hosting, Updates, Karten und bewusst geöffnete Links können die in der
+            Datenschutzerklärung genannten technischen Verbindungen auslösen.
           </p>
         </div>
         <div class="modal-actions">
@@ -3027,12 +3028,13 @@
         <div class="modal-body legal-modal-body">
           <h4>1. Das Wichtigste in Kürze</h4>
           <p>
-            <strong>Dein Gerät ist der Server.</strong><br />
-            SoundFuchs ist eine "Offline-First" Progressive Web App. Audio, Referenzprofile,
-            Vergleiche und Datenbank-Einträge werden <strong>lokal</strong> in deinem Browser
-            verarbeitet und gespeichert. SoundFuchs sendet dein Audio nicht an den Betreiber oder an
-            Analyse-Dienste. Für Hosting, externe Karten und den erstmaligen optionalen
-            YAMNet-Download entstehen jedoch die unten beschriebenen Netzverbindungen.
+            <strong>Die Analyse läuft auf deinem Gerät.</strong><br />
+            SoundFuchs ist eine lokal arbeitende Progressive Web App. Audio, Referenzprofile,
+            Standortdatensätze, Vergleiche und Datenbank-Einträge werden <strong>lokal</strong> in
+            deinem Browser verarbeitet und gespeichert. Neue Normalzustände nutzen ausschließlich
+            GMIA und benötigen keinen KI-Modell-Download. SoundFuchs sendet dein Audio nicht an den
+            Betreiber oder an Analyse-Dienste. Für Hosting, Updates, externe Karten und bewusst
+            geöffnete Links entstehen jedoch die unten beschriebenen Netzverbindungen.
           </p>
 
           <h4>2. Verantwortlicher</h4>
@@ -3051,11 +3053,16 @@
             auf.
           </p>
           <p>
-            Dabei können technische Daten (sog. Server-Logfiles) verarbeitet werden, z. B. deine
-            IP-Adresse, Browser-Version und Zeit des Zugriffs. Dies dient der Sicherheit und
-            Stabilität des Betriebs (Art. 6 Abs. 1 lit. f DSGVO). SoundFuchs setzt kein eigenes
-            Besucher-Tracking ein und führt diese Verbindungsdaten nicht mit den lokal gespeicherten
-            Messdaten zusammen. Weitere Angaben enthält die Datenschutzerklärung von Vercel.
+            Dabei können technische Daten (sogenannte Server-Logdaten) verarbeitet werden, zum
+            Beispiel IP-Adresse, Browser-Angaben und Zeitpunkt des Zugriffs. SoundFuchs setzt kein
+            eigenes Besucher-Tracking ein und führt diese Verbindungsdaten nicht mit den lokal
+            gespeicherten Messdaten zusammen. Weitere Angaben enthält die
+            <a
+              href="https://vercel.com/legal/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Datenschutzerklärung von Vercel</a
+            >.
           </p>
 
           <h4>4. Lokale Datenverarbeitung in der App</h4>
@@ -3066,20 +3073,24 @@
             deines Geräts verarbeitet (via Web Audio API / AudioWorklets).
           </p>
 
-          <h5>Optionale Karten und YAMNet</h5>
+          <h5>Optionale Karten, Links und technische Legacy-Kompatibilität</h5>
           <p>
             Beim Öffnen der Karte lädt der Browser je nach gewähltem Kartenstil Kacheln von
             OpenStreetMap, CARTO oder Esri. Dabei sieht der jeweilige Anbieter technisch bedingt
-            insbesondere die IP-Adresse und die angefragten Kartenausschnitte. Beim ersten Einsatz
-            der optionalen YAMNet-Methode wird das vortrainierte Modell von Google TF Hub
-            beziehungsweise dessen Auslieferungsendpunkten geladen und anschließend lokal in
-            IndexedDB gespeichert. Dabei wird <strong>kein Audio</strong> an Google übertragen. Ohne
-            Karte beziehungsweise YAMNet finden die jeweiligen Abrufe nicht statt; die Verbindung
-            zum Hosting-Anbieter entsteht bereits beim Aufruf der PWA.
+            insbesondere die IP-Adresse und die angefragten Kartenausschnitte. Öffnest du einen
+            selbst hinterlegten oder über NFC bereitgestellten Referenz-Link, verbindet sich dein
+            Browser mit dessen Anbieter. Ältere oder importierte YAMNet-Referenzmodelle bleiben
+            technisch nutzbar; nur in diesem Legacy-Sonderfall kann das vortrainierte Modell von
+            Google TF Hub geladen und lokal gespeichert werden. Dabei wird
+            <strong>kein Audio</strong>
+            an Google übertragen. Ohne Karte, externen Link oder ein solches Altmodell finden die
+            jeweiligen Abrufe nicht statt; die Verbindung zum Hosting-Anbieter entsteht bereits beim
+            Aufruf der PWA.
           </p>
           <ul>
             <li>
-              <strong>Kein Upload:</strong> Es werden keine Audio-Streams ins Internet gesendet.
+              <strong>Kein Analyse-Upload:</strong> SoundFuchs sendet keine Audio-Streams an einen
+              Analyse-Dienst.
             </li>
             <li>
               <strong>Speicherung:</strong> Referenzaufnahmen werden in der lokalen Datenbank
@@ -3090,22 +3101,29 @@
           <h5>Kamera (QR-Code &amp; Position)</h5>
           <p>
             Der Kamerazugriff ist optional. Er dient ausschließlich dazu, QR-Codes von Maschinen zu
-            scannen oder (auf Wunsch) ein Foto der Mikrofonposition lokal zu speichern. Auch diese
-            Bilddaten verlassen dein Gerät nicht.
+            scannen oder (auf Wunsch) ein Foto der Mikrofonposition lokal zu speichern. SoundFuchs
+            lädt diese Bilddaten nicht automatisch hoch; sie können Bestandteil eines von dir
+            ausgelösten Exports sein.
+          </p>
+
+          <h5>Bewusste Weitergabe</h5>
+          <p>
+            Exportdateien und Geräusch-Briefings bleiben zunächst auf deinem Gerät. Erst wenn du sie
+            selbst teilst, hochlädst oder einen externen KI-Dienst öffnest, gehen die ausgewählten
+            Inhalte an den von dir gewählten Empfänger. Dann gelten dessen Datenschutzbedingungen.
           </p>
 
           <h4>5. Cookies &amp; Tracking</h4>
           <p>
             <strong>Wir verwenden keine Tracking-Cookies.</strong><br />
             Es gibt keine Google Analytics, kein Facebook Pixel und keine Werbetracker in dieser
-            App. Die einzigen "Daten", die wir speichern, sind deine technischen Einstellungen (z.
-            B. gewähltes Theme "Steve Jobs" oder "Neon"), damit die App beim nächsten Start so
-            aussieht, wie du sie verlassen hast. Diese werden im <code>localStorage</code> deines
-            Browsers notiert.
+            App. Technische Einstellungen wie Sprache und Ansichtstiefe werden im
+            <code>localStorage</code> deines Browsers gespeichert; Maschinen-, Standort- und
+            Messdaten liegen in der lokalen IndexedDB.
           </p>
 
           <h4>6. Deine Rechte &amp; Datenlöschung</h4>
-          <p>Da alle Daten lokal bei dir liegen, hast du die volle Kontrolle:</p>
+          <p>Da deine App-Daten lokal bei dir liegen, kannst du sie direkt verwalten:</p>
           <ul>
             <li>
               <strong>Daten löschen:</strong> Du kannst jederzeit in den Einstellungen unter
@@ -3117,8 +3135,8 @@
               im Browser löschst, werden auch IndexedDB, Einstellungen und Offline-Cache entfernt.
             </li>
             <li>
-              <strong>Export:</strong> Du hast das Recht, deine Daten jederzeit über die
-              "Export"-Funktion als JSON-Datei herunterzuladen (Recht auf Datenübertragbarkeit).
+              <strong>Export:</strong> Du kannst deine lokal gespeicherten Daten über die
+              "Export"-Funktion als JSON-Datei herunterladen.
             </li>
           </ul>
 
@@ -3524,16 +3542,16 @@
             <!-- Divider (Expert) -->
             <div class="settings-divider" data-view-level="expert"></div>
 
-            <!-- Analysis Method Selection (Expert only) -->
+            <!-- Local analysis method (Expert only) -->
             <div class="setting-category" data-thema="pruefen" data-view-level="expert">
               <h4 class="setting-category-title" data-i18n="settingsUI.analysisMethod">
-                Analysemethode
+                Lokale Vergleichsanalyse
               </h4>
               <p class="setting-category-description" data-i18n="settingsUI.analysisMethodDesc">
-                Wählen Sie die passende Analysemethode für Ihre Maschine.
+                Neue Normalzustände werden ausschließlich lokal mit GMIA ausgewertet.
               </p>
 
-              <!-- Engine method description (updates with the selected engine below) -->
+              <!-- One clear product method; no remote model and no model download. -->
               <p
                 id="engine-method-desc"
                 class="setting-category-description"
@@ -3546,17 +3564,18 @@
                 "
                 data-i18n="settingsUI.gmaiMethodDesc"
               >
-                GMIA (Generalized Mutual Interdependence Analysis) extrahiert den gemeinsamen,
-                stabilen Anteil mehrerer Zeitfenster und unterdrückt gerätespezifische Effekte.
-                Ideal für strukturierte, zeitlich stabile Maschinengeräusche.
+                <strong>GMIA:</strong> SoundFuchs bildet den stabilen Anteil mehrerer Zeitfenster
+                und vergleicht ihn mathematisch mit späteren Aufnahmen. Das geschieht im Browser –
+                ohne Analyse-Cloud und ohne Download eines KI-Modells.
               </p>
 
-              <!-- Evaluation engine selector -->
-              <div class="setting-item">
+              <!-- Legacy controls stay in the source for old/imported models, but are not a
+                   product choice for new normal states. -->
+              <div id="legacy-engine-controls" class="setting-item" hidden aria-hidden="true">
                 <label for="evaluation-engine-select" data-i18n="settingsUI.evaluationEngineLabel"
                   >Auswertungs-Engine</label
                 >
-                <select id="evaluation-engine-select">
+                <select id="evaluation-engine-select" disabled>
                   <option value="gmia" selected data-i18n="settingsUI.evaluationEngineGmia">
                     GMIA (Standard)
                   </option>
@@ -3578,7 +3597,13 @@
               </div>
 
               <!-- Mess-Labor (Engine-Benchmark) — desktop/expert only, shown by JS -->
-              <div class="setting-item" id="mess-labor-entry" style="display: none">
+              <div
+                class="setting-item"
+                id="mess-labor-entry"
+                style="display: none"
+                hidden
+                aria-hidden="true"
+              >
                 <button id="mess-labor-open-btn" type="button" class="settings-action-btn">
                   🔬 Mess-Labor öffnen (Engine-Benchmark)
                 </button>
@@ -4323,15 +4348,15 @@
             <strong>SoundFuchs 2.0</strong> ist eine datenschutzfreundliche Progressive Web App
             (PWA) für die vergleichende Analyse von Maschinenakustik. Sie ermöglicht es Nutzern,
             Maschinengeräusche lokal aufzuzeichnen und zu vergleichen, ohne eine SoundFuchs-
-            Analyse-Cloud oder ein Konto zu benötigen. Optional kann ein vortrainiertes YAMNet-
-            Modell lokal als Merkmalsextraktor verwendet werden.
+            Analyse-Cloud oder ein Konto zu benötigen. Neue Normalzustände werden ausschließlich mit
+            der lokalen GMIA-Vergleichsmethode erstellt und benötigen keinen KI-Modell-Download.
           </p>
 
           <h4>Kernfunktionen</h4>
           <ul>
             <li>
-              <strong>Offline-First:</strong> Alle Aufnahmen und Verarbeitungen erfolgen lokal im
-              Browser.
+              <strong>Lokale Kernanalyse:</strong> Neue Normalzustände und Vergleiche werden mit
+              GMIA im Browser berechnet. Hosting, Updates und externe Karten können Netz benötigen.
             </li>
             <li>
               <strong>Ähnlichkeits-Score (0–100%):</strong> SoundFuchs berechnet eine
@@ -4356,10 +4381,10 @@
             SoundFuchs wurde unabhängig als privates, nicht-kommerzielles Open-Source-Projekt unter
             der
             <strong>MIT-Lizenz</strong> entwickelt. Die Funktionalität basiert auf offen
-            beschriebenen mathematischen Verfahren (z.B. GMIA-ähnlicher Kosinus-Vergleich) und nutzt
-            daneben optional das vortrainierte offene YAMNet für Audio-Embeddings. Referenzprofile
-            und Vergleiche entstehen lokal; SoundFuchs trainiert kein eigenes neuronales Netz und
-            betreibt keine Cloud-Befundung.
+            beschriebenen mathematischen Verfahren (z. B. Frequenzanalyse, GMIA und
+            Kosinus-Vergleiche). Neue Referenzprofile und Vergleiche entstehen lokal; SoundFuchs
+            trainiert kein neuronales Netz und betreibt keine Cloud-Befundung. Ältere oder
+            importierte Modelltypen bleiben aus Gründen der Datenkompatibilität technisch lesbar.
           </p>
 
           <h5>Relevante IP und technische Abgrenzung</h5>
@@ -4444,8 +4469,8 @@
                     ML-basierte Remote-Befundung mit trainierten Modellen und Sensoren
                   </td>
                   <td style="padding: 0.75rem; border: 1px solid var(--border-color)">
-                    SoundFuchs vergleicht lokal; optional erzeugt ein vortrainiertes YAMNet
-                    Audio-Embeddings. Es gibt keine Remote-Befundung
+                    Neue SoundFuchs-Referenzen nutzen lokale GMIA-Vergleiche ohne Remote-Befundung
+                    oder Analyse-Cloud
                   </td>
                 </tr>
                 <tr style="border-bottom: 1px solid var(--border-color)">
@@ -4501,9 +4526,10 @@
             SoundFuchs ist <strong>kein Befundungswerkzeug</strong> und nimmt keine automatisierten
             Schadensursachen fest. Es berechnet automatisiert Ähnlichkeitswerte und markiert
             Abweichungen anhand der vom Nutzer gewählten Schwellen. Audio, Referenzprofile und
-            Scores bleiben lokal. Netzverbindungen entstehen für Vercel-Hosting, externe
-            Kartenkacheln und den ersten optionalen YAMNet-Download; Audio wird dabei nicht
-            übertragen.
+            Standortdatensätze und Scores bleiben lokal. Netzverbindungen entstehen für
+            Vercel-Hosting und Updates, externe Karten, bewusst geöffnete Links und im
+            dokumentierten Legacy-Sonderfall für ein altes/importiertes YAMNet-Modell; Audio wird
+            dabei nicht übertragen.
           </p>
           <p>
             Diese Transparenz spiegelt ein starkes Engagement für verantwortungsvolle

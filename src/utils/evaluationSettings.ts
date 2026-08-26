@@ -1,10 +1,10 @@
 /**
  * Evaluation-engine selection.
  *
- * Decides which engine trains NEW reference recordings. Default is 'gmia'
- * (unchanged behavior). Diagnosis of EXISTING models always dispatches by the
- * model's own engineId (see engine/registry.ts), so switching this setting
- * never breaks already-trained machines.
+ * Product decision: NEW reference recordings are always trained with GMIA.
+ * Diagnosis of EXISTING/imported models still dispatches by the model's own
+ * engineId (see engine/registry.ts), so older experimental models remain
+ * readable without exposing them as choices for new data.
  *
  * Mirrors the shape of recordingSettings.ts (localStorage + change event).
  */
@@ -15,32 +15,26 @@ export const EVALUATION_ENGINE_EVENT = 'zanobot:evaluation-engine-change';
 
 const STORAGE_KEY = 'zanobot.evaluation.engine';
 
-const VALID_ENGINES: readonly EngineId[] = ['gmia', 'spectral-cosine', 'yamnet', 'temporal'];
-
 const DEFAULT_ENGINE: EngineId = 'gmia';
 
-const validateEngine = (value: string | null | undefined): EngineId => {
-  if (value && (VALID_ENGINES as readonly string[]).includes(value)) {
-    return value as EngineId;
+export const getEvaluationEngine = (): EngineId => {
+  try {
+    // Normalise a stale experimental selection from an older release. The
+    // value is kept only as a migration key; it no longer controls new models.
+    if (localStorage.getItem(STORAGE_KEY) !== DEFAULT_ENGINE) {
+      localStorage.setItem(STORAGE_KEY, DEFAULT_ENGINE);
+    }
+  } catch {
+    // Private browsing can make localStorage unavailable. GMIA still works.
   }
   return DEFAULT_ENGINE;
 };
 
-export const getEvaluationEngine = (): EngineId => {
-  try {
-    return validateEngine(localStorage.getItem(STORAGE_KEY));
-  } catch {
-    return DEFAULT_ENGINE;
-  }
-};
-
-export const setEvaluationEngine = (id: EngineId): EngineId => {
-  const next = validateEngine(id);
+export const setEvaluationEngine = (_id: EngineId): EngineId => {
+  const next = DEFAULT_ENGINE;
   try {
     localStorage.setItem(STORAGE_KEY, next);
-    window.dispatchEvent(
-      new CustomEvent<EngineId>(EVALUATION_ENGINE_EVENT, { detail: next })
-    );
+    window.dispatchEvent(new CustomEvent<EngineId>(EVALUATION_ENGINE_EVENT, { detail: next }));
   } catch (error) {
     throw new Error(
       `Failed to save evaluation engine: ${error instanceof Error ? error.message : 'localStorage not available'}`

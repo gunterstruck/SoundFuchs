@@ -167,8 +167,9 @@ describe('Keine Zusicherungen in den Projekttexten', () => {
     /**
      * „Kein Audio-Upload" ist eine überprüfbare Eigenschaft der Anwendung.
      * „Keine Datenübertragung" wäre dagegen falsch: Schon der Seitenaufruf
-     * erreicht Vercel, Kartenkacheln kommen von Drittanbietern und YAMNet wird
-     * beim ersten Einsatz von Google geladen. Der obere Teil der README hatte
+     * erreicht Vercel und Kartenkacheln kommen von Drittanbietern. Nur für die
+     * Kompatibilität mit alten/importierten YAMNet-Modellen bleibt dessen
+     * Modellabruf dokumentiert. Der obere Teil der README hatte
      * diese pauschale Zusage noch, während der untere Teil sie bereits
      * einschränkte. Dieser Wächter verhindert den nächsten Widerspruch.
      */
@@ -180,11 +181,29 @@ describe('Keine Zusicherungen in den Projekttexten', () => {
     expect(readme).toContain('Vercel');
     expect(readme).toContain('OpenStreetMap, CARTO oder Esri');
     expect(readme).toContain('Google TensorFlow Hub');
+    expect(readme).toContain('Legacy-Kompatibilität');
+    expect(readme).not.toMatch(/optionale[s mn]* YAMNet|YAMNet muss ausdrücklich gewählt/i);
     expect(readme).toContain('kein eigenes Tracking');
 
     const datenschutz = lies('index.html');
-    expect(datenschutz).toMatch(/Verbindung\s+zum Hosting-Anbieter entsteht bereits beim Aufruf/);
-    expect(datenschutz).toContain('SoundFuchs setzt kein eigenes');
-    expect(datenschutz).toContain('Besucher-Tracking ein');
+    expect(datenschutz).toMatch(
+      /Verbindung\s+zum\s+Hosting-Anbieter\s+entsteht\s+bereits\s+beim\s+Aufruf/i
+    );
+    expect(datenschutz).toMatch(/SoundFuchs\s+setzt\s+kein\s+eigenes/);
+    expect(datenschutz).toMatch(/Besucher-Tracking\s+ein/);
+  });
+
+  it('macht GMIA zum einzigen sichtbaren Weg für neue Normalzustände', () => {
+    const oberflaeche = lies('index.html');
+    const referenz = lies('src/ui/phases/2-Reference.ts');
+    const registry = lies('src/core/ml/engine/registry.ts');
+
+    expect(oberflaeche).toMatch(/id="legacy-engine-controls"[^>]*hidden/);
+    expect(oberflaeche).toMatch(/id="evaluation-engine-select" disabled/);
+    expect(oberflaeche).toMatch(/id="mess-labor-entry"[\s\S]{0,160}\bhidden\b/);
+    expect(referenz).toContain("const evaluationEngineId = 'gmia' as const");
+    expect(referenz).not.toContain('getEvaluationEngine()');
+    // Nicht gelöscht: ältere/importierte Modelle bleiben auswertbar.
+    expect(registry).toContain('yamnet: () => new YamnetEngine()');
   });
 });

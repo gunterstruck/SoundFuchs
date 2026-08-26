@@ -370,7 +370,9 @@ export class SettingsPhase {
   private initMessLaborEntry(): void {
     const entry = document.getElementById('mess-labor-entry');
     const btn = document.getElementById('mess-labor-open-btn');
-    if (!entry || !btn) return;
+    // The benchmark remains in the source tree for development and legacy
+    // compatibility, but is intentionally not part of the product UI.
+    if (!entry || !btn || entry.hidden) return;
 
     void import('@lab/index.js')
       .then(({ isMessLaborSupported, launchMessLabor }) => {

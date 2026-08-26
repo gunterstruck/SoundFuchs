@@ -37,10 +37,13 @@ export const fr: TranslationDict = {
       "Un paquet avec les deux enregistrements, les aides à l'écoute et un ordre de travail, créé entièrement dans votre navigateur. SoundFuchs n'envoie rien.",
     tabDetails: 'Détails',
     detailsKurve: 'Écart de fréquence',
-    detailsKurveErklaerung: 'La courbe mesurée par-dessus celle de l’état normal. Les deux pics les plus forts portent leur fréquence.',
+    detailsKurveErklaerung:
+      'La courbe mesurée par-dessus celle de l’état normal. Les deux pics les plus forts portent leur fréquence.',
     detailsKurveOhneReferenz: 'La courbe mesurée. Sans état normal, elle n’a rien à recouvrir.',
-    detailsBrauchtMessung: 'Pas encore de mesure. Après un contrôle, la courbe et les points de fonctionnement s’affichent ici.',
-    detailsBrauchtNormalzustand: 'Aucun point de fonctionnement appris. Le classement a besoin d’au moins un état normal.',
+    detailsBrauchtMessung:
+      'Pas encore de mesure. Après un contrôle, la courbe et les points de fonctionnement s’affichent ici.',
+    detailsBrauchtNormalzustand:
+      'Aucun point de fonctionnement appris. Le classement a besoin d’au moins un état normal.',
     detailsRatenPassenNicht:
       'Cet enregistrement est à {{messung}} kHz, l’état normal à {{modell}} kHz. Les bandes de fréquence ne signifient alors plus la même chose — SoundFuchs ne les compare donc pas.',
   },
@@ -106,7 +109,7 @@ export const fr: TranslationDict = {
     pruefungLaeuft: "Comparaison de l'extrait avec l'état normal …",
     pruefungOhneNormalzustand: "Sans état normal, rien à comparer. Créez-en un d'abord.",
     pruefungZuKurz:
-      "Un contrôle demande au moins {{mindest}} secondes ; cet extrait en a {{dauer}}.",
+      'Un contrôle demande au moins {{mindest}} secondes ; cet extrait en a {{dauer}}.',
     pruefungGingNicht: "L'extrait n'a pas pu être évalué.",
     normalNochKeiner:
       "Cette machine n'a pas encore d'état normal. Si cet extrait le devient, SoundFuchs comparera chaque contrôle ultérieur avec lui.",
@@ -556,8 +559,7 @@ export const fr: TranslationDict = {
     gpsReady: 'Position enregistrée · précision d’environ {{accuracy}} m.',
     gpsErrorPermission: 'L’accès à la position n’a pas été autorisé. Utilisez le code postal.',
     gpsErrorUnavailable: 'La position est indisponible. Utilisez le code postal.',
-    gpsErrorTimeout:
-      'La localisation a pris trop de temps. Réessayez ou utilisez le code postal.',
+    gpsErrorTimeout: 'La localisation a pris trop de temps. Réessayez ou utilisez le code postal.',
     gpsPrivacy: 'SoundFuchs enregistre les coordonnées uniquement sur cet appareil.',
     orPostcode: 'ou par code postal',
     plzOrGpsRequired: 'Utilisez le GPS ou saisissez un code postal valide à cinq chiffres.',
@@ -1237,10 +1239,10 @@ export const fr: TranslationDict = {
     disableAudioTriggerLabel: 'Désactiver le déclencheur audio',
     disableAudioTriggerDesc:
       'Démarre la mesure immédiatement, même avec des signaux très faibles, sans attendre un niveau minimum. Pour les machines ou environnements extrêmement silencieux.',
-    analysisMethod: "Méthode d'analyse",
-    analysisMethodDesc: "Sélectionnez la méthode d'analyse appropriée pour votre machine.",
+    analysisMethod: 'Analyse comparative locale',
+    analysisMethodDesc: 'Les nouveaux états normaux sont évalués localement avec GMIA uniquement.',
     gmaiMethodDesc:
-      "GMIA (Generalized Mutual Interdependence Analysis) extrait les composants communs et stables de plusieurs fenêtres temporelles tout en supprimant les effets spécifiques à l'appareil. Idéal pour les sons de machines structurés et stables dans le temps. Fonctionne entièrement hors ligne.",
+      "GMIA : SoundFuchs dégage la part stable de plusieurs fenêtres temporelles et la compare mathématiquement aux enregistrements ultérieurs. Tout se déroule dans le navigateur, sans cloud d'analyse ni téléchargement d'un modèle d'IA.",
     engineDescSpectral:
       'Compare le spectre sonore à une référence moyennée, indépendamment du volume. Idéal pour des machines uniques et régulières. Fonctionne entièrement hors ligne.',
     engineDescYamnet:
@@ -1704,7 +1706,7 @@ export const fr: TranslationDict = {
     coreFeaturesTitle: 'Fonctionnalités principales',
     coreFeatures: {
       offlineFirst:
-        "<strong>Hors ligne d'abord :</strong> Les enregistrements et calculs acoustiques sont effectués localement dans le navigateur. L'hébergement, les cartes et le premier téléchargement optionnel de YAMNet nécessitent le réseau.",
+        "<strong>Analyse centrale locale :</strong> Les nouveaux états normaux et les comparaisons sont calculés avec GMIA dans le navigateur. L'hébergement, les mises à jour et les cartes externes peuvent nécessiter le réseau.",
       similarityScore:
         '<strong>Score de similarité (0–100%) :</strong> SoundFuchs calcule une similarité mathématique (similarité cosinus) entre enregistrement de référence et de comparaison.',
       userThreshold:
@@ -1716,7 +1718,7 @@ export const fr: TranslationDict = {
     },
     legalTitle: 'Délimitation technique',
     legalIntro:
-      "SoundFuchs a été développé de manière indépendante en tant que <strong>projet privé open-source non commercial</strong> sous <strong>licence MIT</strong>. Il utilise des <strong>procédures mathématiques décrites ouvertement</strong> et, en option, le modèle ouvert préentraîné <strong>YAMNet</strong> pour les embeddings audio. Les profils, comparaisons et seuils sont calculés localement ; SoundFuchs n'entraîne pas son propre réseau neuronal et ne réalise aucun diagnostic dans le cloud.",
+      "SoundFuchs a été développé de manière indépendante en tant que <strong>projet privé open-source non commercial</strong> sous <strong>licence MIT</strong>. Les nouvelles références utilisent exclusivement la méthode comparative GMIA locale et ne nécessitent aucun téléchargement de modèle d'IA. Les anciens modèles ou les modèles importés d'autres types restent techniquement lisibles pour assurer la compatibilité des données.",
     ipTableTitle: 'Propriété intellectuelle pertinente et différenciation technique',
     ipTable: {
       headers: {
@@ -1742,7 +1744,7 @@ export const fr: TranslationDict = {
           protectedScope:
             'Diagnostic à distance basé sur le ML avec des modèles entraînés et des capteurs',
           soundfuchsDiff:
-            "SoundFuchs compare localement ; un YAMNet préentraîné optionnel produit des embeddings. Il n'y a ni diagnostic à distance ni cloud d'analyse propre",
+            "Les nouvelles références SoundFuchs utilisent des comparaisons GMIA locales, sans diagnostic à distance ni cloud d'analyse propre",
         },
         '2': {
           reference:
@@ -1774,7 +1776,7 @@ export const fr: TranslationDict = {
           protectedScope:
             'Capteurs mobiles pour diagnostic ad-hoc avec intégration cloud et service',
           soundfuchsDiff:
-            'SoundFuchs évite toute évaluation, les flux de travail de service et la connectivité cloud, en se concentrant sur la comparaison locale',
+            "SoundFuchs n'intègre ni diagnostic, ni flux de service, ni cloud d'analyse et se concentre sur la comparaison locale",
         },
       },
     },
@@ -1832,7 +1834,7 @@ export const fr: TranslationDict = {
     transparencyText1:
       "SoundFuchs <strong>n'est pas un outil de diagnostic</strong> et ne détermine aucune cause de panne. Il calcule automatiquement des <strong>similarités</strong> et signale des écarts selon les seuils choisis par l'utilisateur ; l'évaluation professionnelle reste à l'utilisateur.",
     transparencyText2:
-      "<strong>L'audio, les profils de référence et les scores sont traités et stockés localement.</strong> Des connexions réseau ont lieu pour l'hébergement Vercel, les tuiles cartographiques externes et la première utilisation du modèle YAMNet optionnel (TF Hub). Ces fournisseurs reçoivent des données techniques de connexion ; SoundFuchs ne leur transmet aucun audio.",
+      "<strong>L'audio, les profils de référence, les données de localisation et les scores sont traités et stockés localement ; SoundFuchs ne les téléverse pas vers un service d'analyse.</strong> Des connexions ont lieu pour l'hébergement et les mises à jour Vercel, les cartes externes et les liens de référence ouverts volontairement. Seul un ancien modèle YAMNet ou un modèle importé peut déclencher un téléchargement unique depuis TF Hub, sans transmission audio.",
     transparencyText3:
       'Cette transparence exprime une approche consciente de la responsabilité, de la protection des données et des droits des tiers.',
     transparencyList: {

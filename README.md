@@ -12,7 +12,7 @@
 
 ## Überblick
 
-**SoundFuchs 2.0** ist ein datenschutzfreundlicher **Geräusch-Assistent** als Progressive Web App (PWA). Er vergleicht Maschinenakustik, markiert auffällige Hörstellen und bereitet daraus ein kompaktes **Geräusch-Briefing** für Fachpersonen oder eine frei gewählte externe KI auf. Audio, Referenzprofile und Auswertung bleiben im Browser – **ohne Analyse-Backend und ohne Konto**. Die öffentliche PWA wird über Vercel ausgeliefert; Kartenkacheln und das optionale YAMNet-Modell werden bei Nutzung von externen Anbietern geladen. Als Sensor genügt das integrierte Mikrofon des Endgeräts.
+**SoundFuchs 2.0** ist ein datenschutzfreundlicher **Geräusch-Assistent** als Progressive Web App (PWA). Er vergleicht Maschinenakustik, markiert auffällige Hörstellen und bereitet daraus ein kompaktes **Geräusch-Briefing** für Fachpersonen oder eine frei gewählte externe KI auf. Audio, Referenzprofile und Auswertung bleiben im Browser – **ohne Analyse-Backend und ohne Konto**. Neue Normalzustände werden ausschließlich mit der lokalen GMIA-Vergleichsmethode erzeugt; dafür ist kein KI-Modell-Download nötig. Als Sensor genügt das integrierte Mikrofon des Endgeräts.
 
 SoundFuchs versteht sich bewusst **nicht als Diagnosewerkzeug**. SoundFuchs bereitet auf und übergibt; die fachliche Prüfung und Einordnung erfolgen beim Empfänger.
 
@@ -26,7 +26,7 @@ SoundFuchs versteht sich bewusst **nicht als Diagnosewerkzeug**. SoundFuchs bere
 - **Geräusch-Briefing**: Original, markierte Hörstelle, Kontext, Aufnahmequalität und Arbeitsauftrag kompakt zur Weitergabe aufbereitet.
 - **Auch ohne Referenz**: Eine Einzelaufnahme wird als ehrlicher Verdachtsfall gebrieft; zwei unbekannte Aufnahmen bleiben ein neutraler A/B-Kontrast.
 - **Nutzerdefinierte Schwelle**: Nutzer legen selbst fest, ab welchem Score ein Zustand als „unauffällig" oder „abweichend" gilt.
-- **Local First & Privacy by Design**: Kein Audio-Upload; Aufnahmen, Referenzprofile und Scores bleiben lokal. Technische Netzverbindungen für Hosting, Karten und optional YAMNet sind unten transparent aufgeführt.
+- **Local First & Privacy by Design**: Kein Audio-Upload zu einem Analyse-Dienst; Aufnahmen, Referenzprofile, Standortdaten und Scores bleiben lokal. Technische Netzverbindungen für Hosting, Updates, Karten und bewusst geöffnete Links sind unten transparent aufgeführt.
 - **Sensorik-Minimalismus**: Keine externen Sensoren, keine IoT-Hardware, keine Zusatzgeräte.
 - **PWA-Workflow**: Läuft im Browser auf Smartphone oder Desktop, installierbar als PWA – kein App Store erforderlich.
 - **NFC-Sofortzugang**: NFC-Tags an Maschinen ermöglichen direkten App-Start und optionalen Kontextbezug.
@@ -57,15 +57,16 @@ SoundFuchs setzt für Audio und Auswertung auf eine **lokale Architektur** als S
 4. **Kosinus-Ähnlichkeit** für den mathematischen Mustervergleich
 5. **Visuelles Feedback** über Spektrogramm, Ähnlichkeits-Score und Ampelanzeige
 
-Es gibt **kein Analyse-Backend, kein SoundFuchs-Konto und keine zentrale Messdatenbank**. Alle Audioaufnahmen und Scores werden in der **lokalen IndexedDB** des Geräts gespeichert. Die Webdateien selbst kommen vom Hosting-Anbieter; die optionale Karte und YAMNet benötigen die unten beschriebenen Fremdabrufe.
+Es gibt **kein Analyse-Backend, kein SoundFuchs-Konto und keine zentrale Messdatenbank**. Audioaufnahmen, Referenzprofile, Standortdatensätze und Scores werden in der **lokalen IndexedDB** des Geräts gespeichert. Die Webdateien selbst kommen vom Hosting-Anbieter; Karten und bewusst geöffnete Referenz-Links können die unten beschriebenen Fremdabrufe auslösen.
 
 ### Netzwerktransparenz
 
-| Anlass                      | Empfänger                                                           | Übertragener Inhalt                                                      |
-| --------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Aufruf der öffentlichen PWA | Vercel                                                              | Technische Verbindungsdaten wie IP-Adresse, Zeitpunkt und Browserangaben |
-| Öffnen der Karte            | OpenStreetMap, CARTO oder Esri                                      | Technische Verbindungsdaten und angefragter Kartenausschnitt             |
-| Erster Einsatz von YAMNet   | Google TensorFlow Hub beziehungsweise dessen Auslieferungsendpunkte | Modellanfrage; kein Audio, Referenzprofil oder Score                     |
+| Anlass                                                                 | Empfänger                                                           | Übertragener Inhalt                                                      |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Aufruf der öffentlichen PWA                                            | Vercel                                                              | Technische Verbindungsdaten wie IP-Adresse, Zeitpunkt und Browserangaben |
+| Öffnen der Karte                                                       | OpenStreetMap, CARTO oder Esri                                      | Technische Verbindungsdaten und angefragter Kartenausschnitt             |
+| Öffnen eines hinterlegten Referenz-Links                               | Vom Nutzer beziehungsweise NFC-Tag vorgegebener Anbieter            | Technische Verbindungsdaten und angeforderter Inhalt                     |
+| Legacy-Kompatibilität: Nutzung eines alten/importierten YAMNet-Modells | Google TensorFlow Hub beziehungsweise dessen Auslieferungsendpunkte | Einmalige Modellanfrage; kein Audio, Referenzprofil oder Score           |
 
 SoundFuchs enthält kein eigenes Tracking und lädt keine Messdaten zu diesen Diensten hoch. Ein exportiertes Geräusch-Briefing wird erst dann an Dritte übertragen, wenn der Nutzer es selbst weitergibt.
 
@@ -132,7 +133,7 @@ npm run dev
 
 ## Architektur und technische Abgrenzung
 
-SoundFuchs wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Projekt** unter der **MIT-Lizenz** entwickelt. Die Auswertung basiert auf **offen beschriebenen mathematischen Verfahren** (Frequenzanalyse, Kosinus-Vergleiche) und optional dem vortrainierten offenen **YAMNet** als lokalem Merkmalsextraktor. SoundFuchs bildet lokale Referenzprofile und markiert Abweichungen anhand einstellbarer Schwellen; es trainiert kein eigenes neuronales Netz und leitet keine Schadensursache ab.
+SoundFuchs wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Projekt** unter der **MIT-Lizenz** entwickelt. Neue Referenzen basieren ausschließlich auf **offen beschriebenen mathematischen Verfahren** (Frequenzanalyse, GMIA und Kosinus-Vergleiche). SoundFuchs bildet lokale Referenzprofile und markiert Abweichungen anhand einstellbarer Schwellen; es trainiert kein neuronales Netz und leitet keine Schadensursache ab.
 
 **Was SoundFuchs baulich nicht enthält:**
 
@@ -141,46 +142,42 @@ SoundFuchs wurde unabhängig als **privates, nicht-kommerzielles Open-Source-Pro
 - **Kein automatisiertes Diagnosesystem** – keine Klassifikation in Schadensbilder, keine Handlungsempfehlungen
 - **Kein Analyse-Backend und kein Konto** – Messdaten werden nicht an einen SoundFuchs-Auswertungsserver übertragen
 
-**Die Voreinstellung rechnet ohne gelerntes Modell.** GMIA vergleicht Spektren
-mathematisch; nichts davon ist trainiert, alles läuft offline.
+### Produktweg: lokale GMIA-Vergleichsanalyse
 
-**Eine der vier wählbaren Methoden ist ausdrücklich eine KI-Methode.** In den
-Einstellungen (Profi) lässt sich als Auswertungsmethode **YAMNet** wählen. Sie
-benutzt ein **vortrainiertes, öffentlich verfügbares Modell von TensorFlow Hub**
-als Merkmalsextraktor. Was das für die Aussagen oben bedeutet, gehört genannt:
+Neue Normalzustände werden ausschließlich mit GMIA angelegt. GMIA vergleicht
+lokal berechnete Spektralmerkmale mathematisch; dafür wird weder ein gelerntes
+KI-Modell geladen noch ein Ton an einen Analyse-Dienst übertragen.
 
-|                                      |                                                                                                                                                                                                                                                                     |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Voreingestellt?**                  | Nein. Voreingestellt ist GMIA; YAMNet muss ausdrücklich gewählt werden.                                                                                                                                                                                             |
-| **Netzzugriff**                      | Einmalig beim ersten Gebrauch: Das Modell wird von `tfhub.dev` geladen und danach in IndexedDB gespeichert. Spätere Starts laden es von dort; schlägt die lokale Speicherung fehl, weist das Protokoll darauf hin und für den nächsten Start ist erneut Netz nötig. |
-| **Was übertragen wird**              | Nur die Anfrage nach dem Modell. **Kein Ton, keine Aufnahme, kein Messwert** — die Auswertung selbst läuft weiterhin ausschließlich auf dem Gerät.                                                                                                                  |
-| **Was auf dem Gerät „gelernt" wird** | Kein Modelltraining. Aus der eigenen Aufnahme entsteht eine Sammlung von Merkmalsvektoren, gegen die per Kosinus-Ähnlichkeit (k-NN) verglichen wird. Es werden keine Gewichte angepasst.                                                                            |
-| **Klassifikation**                   | Auch hier keine. Das Ergebnis ist ein Ähnlichkeitswert zum eigenen Normalzustand, kein Schadensbild.                                                                                                                                                                |
+### Legacy-Kompatibilität
 
-Wer ohne ein fremdes Modell auswerten will, bleibt bei der Voreinstellung. Nach
-dem Laden der PWA kann GMIA ohne den YAMNet-Modellabruf arbeiten; Hosting- und
-gegebenenfalls Kartenabrufe sind davon getrennt zu betrachten.
+Der Quellcode kann ältere oder importierte Referenzmodelle anderer Engine-Typen
+weiterhin lesen, damit bestehende Daten nicht unbrauchbar werden. Diese Engines
+sind keine Auswahl mehr für neue Normalzustände. Nur wenn ein altes/importiertes
+YAMNet-Modell tatsächlich verwendet wird, lädt der Browser das vortrainierte
+Modell einmalig von **Google TensorFlow Hub** und speichert es nach Möglichkeit
+lokal. Dabei werden **kein Audio, kein Referenzprofil und kein Score** an Google
+übertragen.
 
 **Zusammenfassung der Architektur:**
 
 - Handelsübliche Mikrofone (keine Spezialhardware)
-- Lokale Analyse (Spektrogramm, Ähnlichkeit) – in der Voreinstellung rein mathematisch-statistisch (Level 1)
-- Verarbeitung der Messdaten auf dem Gerät; Netzverbindungen entstehen für Hosting, beim Öffnen externer Karten und beim ersten Modellabruf der optionalen YAMNet-Methode
+- Lokale Analyse (Spektrogramm, GMIA, Ähnlichkeit) – für neue Referenzen rein mathematisch-statistisch
+- Verarbeitung der Messdaten auf dem Gerät; Netzverbindungen entstehen für Hosting/Updates, beim Öffnen externer Karten oder Links und im dokumentierten Legacy-Sonderfall
 
 ### Relevante IP und technische Abgrenzung
 
-| Referenz / Technik              | Quelle                                   | Geschützter Bereich                                                          | Abgrenzung zu SoundFuchs                                                                                                                                                                                                                 |
-| ------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Siemens AG** (PAPDEOTT005125) | Defensive Veröffentlichung, 2016         | Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren | SoundFuchs verarbeitet Messdaten lokal, ohne Analyse-Backend, zentrale Messdatenbank oder Diagnose                                                                                                                                       |
-| **Siemens AG** (EP3701708B1)    | Europäisches Patent, 2022                | ML-basierte Remote-Diagnose mit trainierten Modellen und Sensorik            | SoundFuchs kennt keine Remote-Diagnose und keine Analyse-Cloud. Die optionale YAMNet-Methode nutzt ein vortrainiertes, öffentliches Modell allein als Merkmalsextraktor auf dem Gerät — sie trainiert nichts und sendet keine Messdaten. |
-| **Siemens Corp.** (US9263041B2) | US-Patent, 2016                          | Anwendung von GMIA für Sprach- und Hörsysteme                                | SoundFuchs nutzt GMIA-ähnliche Mathematik ausschließlich für Nicht-Sprache und lokale Vergleiche                                                                                                                                         |
-| **Siemens** (US9443201B2)       | US-Patent, 2016                          | Klassifikation und Modelltraining von Sensorsignaturen                       | SoundFuchs erstellt lokale Referenzprofile und Ähnlichkeitswerte, trainiert aber kein eigenes neuronales Netz und leitet keine Schadensursache ab                                                                                        |
-| **Schlumberger** (US9602781B2)  | US-Patent, 2017                          | Trennung seismischer Signale mittels GMIA                                    | Unterschiedliche Domäne und Signalart, nicht verwandt                                                                                                                                                                                    |
-| **ABB**                         | Öffentliche Industrie-Präsentation, 2015 | Mobile Sensorik zur ad-hoc Diagnose mit Cloud- und Service-Integration       | SoundFuchs vermeidet Diagnose, Service-Workflows und Cloud-Anbindung                                                                                                                                                                     |
-| **Prophecy Sensors**            | Industrie                                | Audio-Upload zur Diagnose                                                    | SoundFuchs speichert keine Daten extern                                                                                                                                                                                                  |
-| **Fisher-Rosemount**            | Industrie                                | Externe Prozessdaten                                                         | SoundFuchs nutzt ausschließlich das Mikrofon                                                                                                                                                                                             |
-| **FPT Software / SoundAI**      | Industrie                                | Trainierte Encoder-Decoder-Modelle mit Server-Training                       | SoundFuchs nutzt ausschließlich mathematisch-statistische Verfahren (Level 1) ohne Modelltraining                                                                                                                                        |
-| **GMIA Verfahren**              | Mathematisch                             | Patentierte Cloud-Workflows und Sensor-Fusion-Setups                         | SoundFuchs nutzt den GMIA-Algorithmus als reine, lokale mathematische Implementierung in TypeScript (Open Source)                                                                                                                        |
+| Referenz / Technik              | Quelle                                   | Geschützter Bereich                                                          | Abgrenzung zu SoundFuchs                                                                                                                          |
+| ------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Siemens AG** (PAPDEOTT005125) | Defensive Veröffentlichung, 2016         | Cloudbasiertes Diagnosesystem mit zentralen Datenbanken und mobilen Sensoren | SoundFuchs verarbeitet Messdaten lokal, ohne Analyse-Backend, zentrale Messdatenbank oder Diagnose                                                |
+| **Siemens AG** (EP3701708B1)    | Europäisches Patent, 2022                | ML-basierte Remote-Diagnose mit trainierten Modellen und Sensorik            | Neue SoundFuchs-Referenzen nutzen lokale GMIA-Vergleiche ohne Remote-Diagnose oder Analyse-Cloud.                                                 |
+| **Siemens Corp.** (US9263041B2) | US-Patent, 2016                          | Anwendung von GMIA für Sprach- und Hörsysteme                                | SoundFuchs nutzt GMIA-ähnliche Mathematik ausschließlich für Nicht-Sprache und lokale Vergleiche                                                  |
+| **Siemens** (US9443201B2)       | US-Patent, 2016                          | Klassifikation und Modelltraining von Sensorsignaturen                       | SoundFuchs erstellt lokale Referenzprofile und Ähnlichkeitswerte, trainiert aber kein eigenes neuronales Netz und leitet keine Schadensursache ab |
+| **Schlumberger** (US9602781B2)  | US-Patent, 2017                          | Trennung seismischer Signale mittels GMIA                                    | Unterschiedliche Domäne und Signalart, nicht verwandt                                                                                             |
+| **ABB**                         | Öffentliche Industrie-Präsentation, 2015 | Mobile Sensorik zur ad-hoc Diagnose mit Cloud- und Service-Integration       | SoundFuchs enthält weder Diagnose noch integrierten Service-Workflow oder Analyse-Cloud                                                           |
+| **Prophecy Sensors**            | Industrie                                | Audio-Upload zur Diagnose                                                    | SoundFuchs speichert keine Daten extern                                                                                                           |
+| **Fisher-Rosemount**            | Industrie                                | Externe Prozessdaten                                                         | SoundFuchs nutzt ausschließlich das Mikrofon                                                                                                      |
+| **FPT Software / SoundAI**      | Industrie                                | Trainierte Encoder-Decoder-Modelle mit Server-Training                       | SoundFuchs nutzt ausschließlich mathematisch-statistische Verfahren (Level 1) ohne Modelltraining                                                 |
+| **GMIA Verfahren**              | Mathematisch                             | Patentierte Cloud-Workflows und Sensor-Fusion-Setups                         | SoundFuchs nutzt den GMIA-Algorithmus als reine, lokale mathematische Implementierung in TypeScript (Open Source)                                 |
 
 Die Tabelle beschreibt, wie sich SoundFuchs technisch von den genannten Verfahren unterscheidet. Sie ist eine Darstellung der eigenen Bauweise und **keine schutzrechtliche Bewertung** – eine solche kann und will dieses Projekt nicht abgeben.
 
@@ -200,7 +197,7 @@ SoundFuchs ist **kein medizinisches Gerät** und **kein technisches Diagnosesyst
 
 Die Ergebnisse dienen ausschließlich der **musterbasierten Visualisierung** von Ähnlichkeiten und Abweichungen. Die **Interpretationshoheit** liegt stets beim Nutzer.
 
-Alle Verarbeitungen der Messdaten erfolgen **auf dem Gerät**. SoundFuchs lädt kein Audio, Referenzprofil oder Ergebnis zu einem eigenen Dienst hoch. Beim Seitenaufruf, beim Öffnen externer Karten und beim ersten Einsatz von YAMNet fallen jedoch technische Verbindungsdaten bei den jeweiligen Anbietern an. Gibt der Nutzer ein erzeugtes Briefing selbst weiter, gelten zusätzlich die Datenschutzbedingungen des gewählten Empfängers.
+Audio, Referenzprofile, Standortdatensätze und Ergebnisse werden **auf dem Gerät** verarbeitet und gespeichert. SoundFuchs lädt sie nicht zu einem Analyse-Dienst hoch. Beim Seitenaufruf, bei Updates, beim Öffnen externer Karten oder Referenz-Links sowie im dokumentierten YAMNet-Legacy-Sonderfall fallen technische Verbindungsdaten bei den jeweiligen Anbietern an. Gibt der Nutzer ein erzeugtes Briefing selbst weiter, gelten zusätzlich die Datenschutzbedingungen des gewählten Empfängers.
 
 ---
 

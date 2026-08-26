@@ -1408,10 +1408,10 @@ export const de: TranslationDict = {
     disableAudioTriggerLabel: 'Audio-Trigger deaktivieren',
     disableAudioTriggerDesc:
       'Startet die Messung sofort, auch bei sehr leisen Signalen, ohne auf einen Mindestpegel zu warten. Für extrem leise Maschinen oder Umgebungen.',
-    analysisMethod: 'Analysemethode',
-    analysisMethodDesc: 'Wählen Sie die passende Analysemethode für Ihre Maschine.',
+    analysisMethod: 'Lokale Vergleichsanalyse',
+    analysisMethodDesc: 'Neue Normalzustände werden ausschließlich lokal mit GMIA ausgewertet.',
     gmaiMethodDesc:
-      'GMIA (Generalized Mutual Interdependence Analysis) extrahiert den gemeinsamen, stabilen Anteil mehrerer Zeitfenster und unterdrückt gerätespezifische Effekte. Ideal für strukturierte, zeitlich stabile Maschinengeräusche. Läuft komplett offline.',
+      'GMIA: SoundFuchs bildet den stabilen Anteil mehrerer Zeitfenster und vergleicht ihn mathematisch mit späteren Aufnahmen. Das geschieht im Browser – ohne Analyse-Cloud und ohne Download eines KI-Modells.',
     engineDescSpectral:
       'Vergleicht das Klangspektrum mit einer gemittelten Referenz, unabhängig von der Lautstärke. Ideal für einzelne, gleichmäßige Maschinen. Läuft komplett offline.',
     engineDescYamnet:
@@ -2035,7 +2035,7 @@ export const de: TranslationDict = {
     coreFeaturesTitle: 'Kernfunktionen',
     coreFeatures: {
       offlineFirst:
-        '<strong>Offline-First:</strong> Audioaufnahmen und akustische Berechnungen erfolgen lokal im Browser. Hosting, Karten und der erstmalige optionale YAMNet-Download benötigen Netz.',
+        '<strong>Lokale Kernanalyse:</strong> Neue Normalzustände und Vergleiche werden mit GMIA im Browser berechnet. Hosting, Updates und externe Karten können Netz benötigen.',
       similarityScore:
         '<strong>Ähnlichkeits-Score (0–100%):</strong> SoundFuchs berechnet eine mathematische Ähnlichkeit (Kosinus-Ähnlichkeit) zwischen Referenz- und Vergleichsaufnahme.',
       userThreshold:
@@ -2049,7 +2049,7 @@ export const de: TranslationDict = {
     // Technische Abgrenzung
     legalTitle: 'Technische Abgrenzung',
     legalIntro:
-      'SoundFuchs wurde unabhängig als <strong>privates, nicht-kommerzielles Open-Source-Projekt</strong> unter der <strong>MIT-Lizenz</strong> entwickelt. Es nutzt <strong>offen beschriebene mathematische Verfahren</strong> (u. a. Frequenzanalyse und Kosinus-Vergleiche) sowie optional das vortrainierte offene <strong>YAMNet</strong> für Audio-Embeddings. Referenzprofile, Vergleiche und Schwellenbewertungen entstehen lokal; SoundFuchs trainiert kein eigenes neuronales Netz und betreibt keine Cloud-Befundung.',
+      'SoundFuchs wurde unabhängig als <strong>privates, nicht-kommerzielles Open-Source-Projekt</strong> unter der <strong>MIT-Lizenz</strong> entwickelt. Neue Referenzen nutzen ausschließlich die lokale GMIA-Vergleichsmethode und benötigen keinen Download eines KI-Modells. Ältere oder importierte Modelle anderer Typen bleiben aus Gründen der Datenkompatibilität technisch lesbar.',
 
     // IP Table
     ipTableTitle: 'Relevante IP und technische Abgrenzung',
@@ -2075,7 +2075,7 @@ export const de: TranslationDict = {
           source: 'Europäisches Patent, Siemens AG, 2022',
           protectedScope: 'ML-basierte Remote-Diagnose mit trainierten Modellen und Sensorik',
           soundfuchsDiff:
-            'SoundFuchs vergleicht lokal; optional erzeugt ein vortrainiertes YAMNet Audio-Embeddings. Es gibt keine Remote-Befundung und keine SoundFuchs-Analyse-Cloud',
+            'Neue SoundFuchs-Referenzen nutzen lokale GMIA-Vergleiche ohne Remote-Befundung oder SoundFuchs-Analyse-Cloud',
         },
         '2': {
           reference:
@@ -2103,7 +2103,7 @@ export const de: TranslationDict = {
           source: 'Öffentliche Industrie-Präsentation, ABB, 2015',
           protectedScope: 'Mobile Sensorik zur ad-hoc Diagnose mit Cloud- und Service-Integration',
           soundfuchsDiff:
-            'SoundFuchs vermeidet Befundung, Service-Workflows und Cloud-Anbindung und fokussiert sich auf lokalen Vergleich',
+            'SoundFuchs enthält weder Befundung noch integrierten Service-Workflow oder Analyse-Cloud und fokussiert sich auf lokalen Vergleich',
         },
       },
     },
@@ -2175,7 +2175,7 @@ export const de: TranslationDict = {
     transparencyText1:
       'SoundFuchs ist <strong>kein Befundungswerkzeug</strong> und bestimmt keine Schadensursache. Es berechnet automatisiert <strong>Ähnlichkeitswerte</strong> und markiert Abweichungen anhand der vom Nutzer gewählten Schwellen. Die fachliche Bewertung bleibt beim Nutzer.',
     transparencyText2:
-      '<strong>Audio, Referenzprofile und Scores werden lokal verarbeitet und gespeichert.</strong> Netzverbindungen entstehen beim Aufruf über Vercel, beim Öffnen externer Kartenkacheln und beim ersten Einsatz des optionalen YAMNet-Modells (TF Hub). Dabei fallen bei den jeweiligen Anbietern technische Verbindungsdaten an; SoundFuchs überträgt kein Audio an diese Dienste.',
+      '<strong>Audio, Referenzprofile, Standortdatensätze und Scores werden lokal verarbeitet und gespeichert; SoundFuchs lädt sie nicht zu einem Analyse-Dienst hoch.</strong> Netzverbindungen entstehen für Vercel-Hosting und Updates, externe Karten sowie bewusst geöffnete Referenz-Links. Nur bei einem älteren oder importierten YAMNet-Modell kann einmalig das Modell von TF Hub geladen werden – ohne Audioübertragung.',
     transparencyText3:
       'Diese Transparenz ist Ausdruck eines bewussten Umgangs mit Verantwortung, Datenschutz und Rechten Dritter.',
     transparencyList: {

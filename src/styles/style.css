@@ -990,7 +990,7 @@ body {
 .machine-optional-summary::after {
   content: '›';
   flex: 0 0 auto;
-  color: var(--primary);
+  color: var(--primary-color);
   font-size: 1.5rem;
   line-height: 1;
   transform: rotate(90deg);

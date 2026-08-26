@@ -1157,10 +1157,10 @@ export const zh: TranslationDict = {
     disableAudioTriggerLabel: '禁用音频触发',
     disableAudioTriggerDesc:
       '即使信号非常微弱，也立即开始测量，无需等待最小电平。适用于极其安静的机器或环境。',
-    analysisMethod: '分析方法',
-    analysisMethodDesc: '为您的机器选择合适的分析方法。',
+    analysisMethod: '本地对比分析',
+    analysisMethodDesc: '新的正常状态仅使用 GMIA 在本地评估。',
     gmaiMethodDesc:
-      'GMIA（广义互依赖分析）从多个时间窗口中提取共同的稳定成分，同时抑制设备特定效应。适用于结构化、时间稳定的机器声音。完全离线运行。',
+      'GMIA：SoundFuchs 从多个时间窗口提取稳定部分，并与后续录音进行数学比较。此过程在浏览器中完成，无需分析云，也无需下载 AI 模型。',
     engineDescSpectral:
       '将声音频谱与平均参考进行比较，与音量无关。适用于单一、稳定的机器。完全离线运行。',
     engineDescYamnet:
@@ -1595,7 +1595,7 @@ export const zh: TranslationDict = {
     coreFeaturesTitle: '核心功能',
     coreFeatures: {
       offlineFirst:
-        '<strong>离线优先：</strong>录音和声学计算在浏览器本地进行。网站托管、地图以及首次可选的 YAMNet 下载需要网络。',
+        '<strong>本地核心分析：</strong>新的正常状态和比较由浏览器中的 GMIA 计算。托管、更新和外部地图可能需要网络。',
       similarityScore:
         '<strong>相似度评分（0-100%）：</strong>SoundFuchs 计算参考录音和比较录音之间的数学相似度（余弦相似度）。',
       userThreshold:
@@ -1606,7 +1606,7 @@ export const zh: TranslationDict = {
     },
     legalTitle: '技术界定',
     legalIntro:
-      'SoundFuchs 作为<strong>私人非商业开源项目</strong>独立开发，采用 <strong>MIT 许可证</strong>。它使用<strong>公开描述的数学方法</strong>，并可选使用预训练的开放 <strong>YAMNet</strong> 生成音频嵌入。参考特征、比较和阈值标记均在本地产生；SoundFuchs 不训练自有神经网络，也不进行云端诊断。',
+      'SoundFuchs 作为<strong>私人非商业开源项目</strong>独立开发，采用 <strong>MIT 许可证</strong>。新参考仅使用本地 GMIA 对比方法，无需下载 AI 模型。为保持数据兼容，旧版或导入的其他类型模型仍可在技术上读取。',
     ipTableTitle: '相关知识产权和技术差异',
     ipTable: {
       headers: {
@@ -1627,7 +1627,7 @@ export const zh: TranslationDict = {
           source: '欧洲专利，西门子公司，2022',
           protectedScope: '基于机器学习的远程诊断，带有训练模型和传感器',
           soundfuchsDiff:
-            'SoundFuchs 在本地比较；可选的预训练 YAMNet 生成音频嵌入。无远程诊断，也无自有分析云',
+            '新的 SoundFuchs 参考使用本地 GMIA 比较，不进行远程诊断，也不使用 SoundFuchs 分析云',
         },
         '2': {
           reference: '<strong>US9263041B2</strong><br><em>使用 GMIA 进行噪声中的信道检测</em>',
@@ -1652,7 +1652,7 @@ export const zh: TranslationDict = {
           reference: '<strong>ABB – Integration of Mobile Measurement</strong>',
           source: '公开工业演示，ABB，2015',
           protectedScope: '用于临时诊断的移动传感器，带有云和服务集成',
-          soundfuchsDiff: 'SoundFuchs 避免检查、服务工作流程和云连接，专注于本地比较',
+          soundfuchsDiff: 'SoundFuchs 不包含诊断、集成服务流程或分析云，专注于本地比较',
         },
       },
     },
@@ -1704,7 +1704,7 @@ export const zh: TranslationDict = {
     transparencyText1:
       'SoundFuchs <strong>不是诊断工具</strong>，也不判定故障原因。它会自动计算<strong>相似度</strong>，并按用户设定的阈值标记偏差；专业判断仍由用户负责。',
     transparencyText2:
-      '<strong>音频、参考特征和评分在本地处理并存储。</strong>访问 Vercel 托管、外部地图图块以及首次使用可选 YAMNet 模型（TF Hub）时会产生网络请求。相应提供商会收到技术连接数据；SoundFuchs 不会向它们发送音频。',
+      '<strong>音频、参考特征、位置数据和评分均在本地处理和存储；SoundFuchs 不会将其上传到分析服务。</strong>Vercel 托管和更新、外部地图及用户主动打开的参考链接会产生网络请求。仅旧版或导入的 YAMNet 模型可能从 TF Hub 一次性下载模型，且不会传输音频。',
     transparencyText3: '这种透明度表达了对责任、数据保护和第三方权利的自觉态度。',
     transparencyList: {
       noClassification: '无状态分类',

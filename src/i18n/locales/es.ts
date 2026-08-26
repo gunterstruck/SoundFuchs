@@ -37,10 +37,14 @@ export const es: TranslationDict = {
       'Un paquete con ambas grabaciones, las ayudas de escucha y una orden de trabajo, creado íntegramente en su navegador. SoundFuchs no sube nada.',
     tabDetails: 'Detalles',
     detailsKurve: 'Desviación de frecuencia',
-    detailsKurveErklaerung: 'La curva medida sobre la del estado normal. Los dos picos más fuertes llevan su frecuencia.',
-    detailsKurveOhneReferenz: 'La curva medida. Sin estado normal no hay nada sobre lo que superponerla.',
-    detailsBrauchtMessung: 'Aún sin medición. Tras una comprobación aparecen aquí la curva y los puntos de trabajo.',
-    detailsBrauchtNormalzustand: 'Aún sin punto de trabajo aprendido. La clasificación necesita al menos un estado normal.',
+    detailsKurveErklaerung:
+      'La curva medida sobre la del estado normal. Los dos picos más fuertes llevan su frecuencia.',
+    detailsKurveOhneReferenz:
+      'La curva medida. Sin estado normal no hay nada sobre lo que superponerla.',
+    detailsBrauchtMessung:
+      'Aún sin medición. Tras una comprobación aparecen aquí la curva y los puntos de trabajo.',
+    detailsBrauchtNormalzustand:
+      'Aún sin punto de trabajo aprendido. La clasificación necesita al menos un estado normal.',
     detailsRatenPassenNicht:
       'Esta grabación está a {{messung}} kHz y el estado normal a {{modell}} kHz. Las bandas de frecuencia ya no significan lo mismo, por eso SoundFuchs no las compara.',
   },
@@ -552,8 +556,7 @@ export const es: TranslationDict = {
     gpsReady: 'Posición guardada · precisión aproximada de {{accuracy}} m.',
     gpsErrorPermission: 'No se permitió el acceso a la ubicación. Usa el código postal.',
     gpsErrorUnavailable: 'La posición no está disponible. Usa el código postal.',
-    gpsErrorTimeout:
-      'La ubicación tardó demasiado. Inténtalo de nuevo o usa el código postal.',
+    gpsErrorTimeout: 'La ubicación tardó demasiado. Inténtalo de nuevo o usa el código postal.',
     gpsPrivacy: 'SoundFuchs guarda las coordenadas únicamente en este dispositivo.',
     orPostcode: 'o mediante código postal',
     plzOrGpsRequired: 'Usa el GPS o introduce un código postal válido de cinco dígitos.',
@@ -1228,10 +1231,10 @@ export const es: TranslationDict = {
     disableAudioTriggerLabel: 'Desactivar disparador de audio',
     disableAudioTriggerDesc:
       'Inicia la medición inmediatamente, incluso con señales muy débiles, sin esperar un nivel mínimo. Para máquinas o entornos extremadamente silenciosos.',
-    analysisMethod: 'Método de análisis',
-    analysisMethodDesc: 'Seleccione el método de análisis apropiado para su máquina.',
+    analysisMethod: 'Análisis comparativo local',
+    analysisMethodDesc: 'Los nuevos estados normales se evalúan localmente solo con GMIA.',
     gmaiMethodDesc:
-      'GMIA (Generalized Mutual Interdependence Analysis) extrae los componentes comunes y estables de múltiples ventanas de tiempo mientras suprime efectos específicos del dispositivo. Ideal para sonidos de máquinas estructurados y estables en el tiempo. Funciona totalmente sin conexión.',
+      'GMIA: SoundFuchs obtiene la parte estable de varias ventanas temporales y la compara matemáticamente con grabaciones posteriores. Todo ocurre en el navegador, sin nube de análisis ni descarga de un modelo de IA.',
     engineDescSpectral:
       'Compara el espectro sonoro con una referencia promediada, independientemente del volumen. Ideal para máquinas individuales y uniformes. Funciona totalmente sin conexión.',
     engineDescYamnet:
@@ -1692,7 +1695,7 @@ export const es: TranslationDict = {
     coreFeaturesTitle: 'Características principales',
     coreFeatures: {
       offlineFirst:
-        '<strong>Offline-First:</strong> Las grabaciones y los cálculos acústicos se realizan localmente en el navegador. El alojamiento, los mapas y la primera descarga opcional de YAMNet requieren conexión.',
+        '<strong>Análisis central local:</strong> Los nuevos estados normales y las comparaciones se calculan con GMIA en el navegador. El alojamiento, las actualizaciones y los mapas externos pueden requerir conexión.',
       similarityScore:
         '<strong>Puntuación de similitud (0–100%):</strong> SoundFuchs calcula una similitud matemática (similitud del coseno) entre grabación de referencia y de comparación.',
       userThreshold:
@@ -1704,7 +1707,7 @@ export const es: TranslationDict = {
     },
     legalTitle: 'Delimitación técnica',
     legalIntro:
-      'SoundFuchs fue desarrollado independientemente como un <strong>proyecto privado de código abierto no comercial</strong> bajo la <strong>licencia MIT</strong>. Utiliza <strong>procedimientos matemáticos descritos abiertamente</strong> y, opcionalmente, el modelo abierto preentrenado <strong>YAMNet</strong> para embeddings de audio. Los perfiles, comparaciones y umbrales se calculan localmente; SoundFuchs no entrena una red neuronal propia ni realiza diagnósticos en la nube.',
+      'SoundFuchs fue desarrollado independientemente como un <strong>proyecto privado de código abierto no comercial</strong> bajo la <strong>licencia MIT</strong>. Las nuevas referencias usan exclusivamente el método comparativo GMIA local y no requieren descargar un modelo de IA. Los modelos antiguos o importados de otros tipos siguen siendo técnicamente legibles por compatibilidad de datos.',
     ipTableTitle: 'Propiedad intelectual relevante y diferenciación técnica',
     ipTable: {
       headers: {
@@ -1729,7 +1732,7 @@ export const es: TranslationDict = {
           source: 'Patente europea, Siemens AG, 2022',
           protectedScope: 'Diagnóstico remoto basado en ML con modelos entrenados y sensores',
           soundfuchsDiff:
-            'SoundFuchs compara localmente; un YAMNet preentrenado opcional genera embeddings. No hay diagnóstico remoto ni nube de análisis propia',
+            'Las nuevas referencias de SoundFuchs usan comparaciones GMIA locales, sin diagnóstico remoto ni nube de análisis propia',
         },
         '2': {
           reference:
@@ -1759,7 +1762,7 @@ export const es: TranslationDict = {
           protectedScope:
             'Sensores móviles para diagnóstico ad-hoc con integración de nube y servicio',
           soundfuchsDiff:
-            'SoundFuchs evita diagnósticos, flujos de trabajo de servicio y conectividad a la nube, enfocándose en la comparación local',
+            'SoundFuchs no incluye diagnóstico, flujo de servicio integrado ni nube de análisis y se centra en la comparación local',
         },
       },
     },
@@ -1817,7 +1820,7 @@ export const es: TranslationDict = {
     transparencyText1:
       'SoundFuchs <strong>no es una herramienta de diagnóstico</strong> y no determina causas de avería. Calcula automáticamente <strong>similitudes</strong> y marca desviaciones según los umbrales elegidos por el usuario; la valoración profesional sigue correspondiendo al usuario.',
     transparencyText2:
-      '<strong>El audio, los perfiles de referencia y las puntuaciones se procesan y almacenan localmente.</strong> Hay conexiones de red para el alojamiento en Vercel, las teselas de mapas externas y el primer uso del modelo YAMNet opcional (TF Hub). Esos proveedores reciben datos técnicos de conexión; SoundFuchs no les envía audio.',
+      '<strong>El audio, los perfiles de referencia, los datos de ubicación y las puntuaciones se procesan y almacenan localmente; SoundFuchs no los sube a un servicio de análisis.</strong> Hay conexiones para el alojamiento y las actualizaciones de Vercel, mapas externos y enlaces de referencia abiertos deliberadamente. Solo un modelo YAMNet antiguo o importado puede descargar una vez el modelo desde TF Hub, sin transmitir audio.',
     transparencyText3:
       'Esta transparencia expresa un enfoque consciente hacia la responsabilidad, la protección de datos y los derechos de terceros.',
     transparencyList: {

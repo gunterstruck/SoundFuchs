@@ -11,9 +11,6 @@
 
 import { extractFeatures, DEFAULT_DSP_CONFIG } from '@core/dsp/features.js';
 import { getEngine } from '@core/ml/engine/registry.js';
-import { getEvaluationEngine, setEvaluationEngine } from '@utils/evaluationSettings.js';
-import { assessNonStationarity } from '@core/ml/engine/engineRecommendation.js';
-import { frameRmsSeries } from '@core/ml/engine/temporalCycle.js';
 import { assessRecordingQuality } from '@core/ml/qualityCheck.js';
 import { AudioVisualizer } from '@ui/components/AudioVisualizer.js';
 import { getRawAudioStream, getSmartStartStatusMessage } from '@core/audio/audioHelper.js';
@@ -2091,17 +2088,15 @@ export class ReferencePhase {
         existingModels: this.machine.referenceModels?.length || 0,
       });
 
-      // Train the reference model using the selected evaluation engine.
-      // GMIA stays the default; for GMIA this calls trainGMIA() plus the same
-      // baseline self-test as before (unchanged behavior). Diagnosis later
-      // dispatches by the model's own engineId, so existing machines that were
-      // trained with a different engine are unaffected by this setting.
-      const evaluationEngineId = getEvaluationEngine();
+      // New normal states deliberately use one transparent, local product
+      // path: GMIA. Diagnosis still dispatches existing/imported models by
+      // their stored engineId, preserving backwards compatibility.
+      const evaluationEngineId = 'gmia' as const;
       const engine = getEngine(evaluationEngineId);
       logger.info(`🧠 Training reference model with engine "${evaluationEngineId}"...`);
 
-      // Raw reference audio (for embedding engines like YAMNet). Sync engines
-      // (GMIA, spectral-cosine) ignore it; `await` resolves immediately for them.
+      // Keep raw reference audio available to the common engine interface.
+      // GMIA itself uses the locally extracted feature vectors.
       // IMPORTANT: the raw samples come straight from the AudioBuffer, so the
       // sample rate that matters for resampling is the buffer's OWN sampleRate
       // (the actual hardware rate), not config.sampleRate (the requested/target
@@ -2271,13 +2266,6 @@ export class ReferencePhase {
         duration: 5000,
       });
 
-      // T2-a3 (§7 Auto-Empfehlung): Referenz mit Mittelwert-Engine trainiert,
-      // aber die Aufnahme klingt nicht-stationär (Pegel bewegt sich, klarer
-      // Takt oder stabile Periodizität)? Dann Hinweis auf die Zeitmuster-
-      // Engine — EIN Tap schaltet die Engine für NEUE Referenzen um.
-      // Erkennen, nicht übernehmen: der Nutzer entscheidet.
-      this.maybeRecommendTemporalEngine(evaluationEngineId, rawBuffer, rawSampleRate);
-
       // ZERO-FRICTION: Show simple success toast with edit option for auto-created machines
       if (this.wasAutoCreated) {
         this.showZeroFrictionSuccess(updatedMachine);
@@ -2312,58 +2300,6 @@ export class ReferencePhase {
     }
 
     return true;
-  }
-
-  /**
-   * T2-a3 (Konzept §7): Auto-Empfehlung stationär/instationär.
-   *
-   * Nach erfolgreichem Anlernen mit einer Mittelwert-Engine wird die
-   * Aufnahme auf Nicht-Stationarität geprüft (CV der Frame-Energien,
-   * Onset-Dichte, Periodizität). Trifft eines zu, erscheint ein Hinweis-
-   * Toast mit Ein-Tap-Umschaltung der Engine für NEUE Referenzen.
-   * Bewusst fehler-tolerant: eine Ausnahme hier darf das Speichern der
-   * Referenz nie beeinträchtigen.
-   */
-  private maybeRecommendTemporalEngine(
-    engineId: string,
-    rawBuffer: Float32Array | undefined,
-    rawSampleRate: number
-  ): void {
-    try {
-      if (engineId === 'temporal' || !this.currentTrainingData) return;
-
-      const config = this.currentTrainingData.config;
-      const frameRms = rawBuffer
-        ? frameRmsSeries(rawBuffer, config.windowSize, config.hopSize, rawSampleRate)
-        : undefined;
-      const assessment = assessNonStationarity(
-        this.currentTrainingData.featureVectors,
-        frameRms,
-        config.hopSize
-      );
-      if (!assessment.recommendTemporal) return;
-
-      logger.info(
-        `💡 Nicht-stationäre Referenz erkannt (CV=${assessment.energyCv.toFixed(2)}, ` +
-          `Ereignisse=${assessment.eventRatePerMin.toFixed(0)}/min, ` +
-          `Zyklus=${assessment.cyclePeriodSec?.toFixed(2) ?? '–'}s) — empfehle Zeitmuster-Engine`
-      );
-      notify.info(t('temporalEvents.recommendBody'), {
-        title: t('temporalEvents.recommendTitle'),
-        duration: 15000,
-        actions: [
-          {
-            label: t('temporalEvents.recommendAction'),
-            onClick: () => {
-              setEvaluationEngine('temporal');
-              notify.success(t('temporalEvents.recommendSwitched'));
-            },
-          },
-        ],
-      });
-    } catch (error) {
-      logger.warn('Engine-Empfehlung übersprungen:', error);
-    }
   }
 
   /**

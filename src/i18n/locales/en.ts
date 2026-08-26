@@ -37,10 +37,14 @@ export const en: TranslationDict = {
       'A package with both recordings, the listening aids and a work order — built entirely here in your browser. SoundFuchs uploads nothing.',
     tabDetails: 'Details',
     detailsKurve: 'Frequency deviation',
-    detailsKurveErklaerung: 'The measured curve over the baseline. The two strongest peaks carry their frequency.',
-    detailsKurveOhneReferenz: 'The measured curve. Without a baseline there is nothing for it to lie over.',
-    detailsBrauchtMessung: 'No measurement yet. After a check, the curve and the work points appear here.',
-    detailsBrauchtNormalzustand: 'No work point trained yet. The ranking needs at least a baseline.',
+    detailsKurveErklaerung:
+      'The measured curve over the baseline. The two strongest peaks carry their frequency.',
+    detailsKurveOhneReferenz:
+      'The measured curve. Without a baseline there is nothing for it to lie over.',
+    detailsBrauchtMessung:
+      'No measurement yet. After a check, the curve and the work points appear here.',
+    detailsBrauchtNormalzustand:
+      'No work point trained yet. The ranking needs at least a baseline.',
     detailsRatenPassenNicht:
       'This recording is at {{messung}} kHz, the baseline at {{modell}} kHz. The frequency bins then do not mean the same thing — so SoundFuchs does not compare them.',
   },
@@ -104,9 +108,9 @@ export const en: TranslationDict = {
     pruefungErklaerung:
       'This machine has a normal state. SoundFuchs can compare the section against it and score it.',
     pruefungLaeuft: 'Comparing the section against the normal state …',
-    pruefungOhneNormalzustand: 'Without a normal state there is nothing to compare. Create one first.',
-    pruefungZuKurz:
-      'A check needs at least {{mindest}} seconds; this section has {{dauer}} s.',
+    pruefungOhneNormalzustand:
+      'Without a normal state there is nothing to compare. Create one first.',
+    pruefungZuKurz: 'A check needs at least {{mindest}} seconds; this section has {{dauer}} s.',
     pruefungGingNicht: 'The section could not be scored.',
     normalNochKeiner:
       'This machine has no normal state yet. If this section becomes one, SoundFuchs compares every later check against it.',
@@ -1346,10 +1350,10 @@ export const en: TranslationDict = {
     disableAudioTriggerLabel: 'Disable Audio Trigger',
     disableAudioTriggerDesc:
       'Starts the measurement immediately, even with very quiet signals, without waiting for a minimum level. For extremely quiet machines or environments.',
-    analysisMethod: 'Analysis Method',
-    analysisMethodDesc: 'Select the appropriate analysis method for your machine.',
+    analysisMethod: 'Local comparison analysis',
+    analysisMethodDesc: 'New normal states are evaluated locally with GMIA only.',
     gmaiMethodDesc:
-      'GMIA (Generalized Mutual Interdependence Analysis) extracts the common, stable components from multiple time windows while suppressing device-specific effects. Ideal for structured, time-stable machine sounds. Runs fully offline.',
+      'GMIA: SoundFuchs derives the stable component of several time windows and compares it mathematically with later recordings. This runs in the browser, without an analysis cloud or AI-model download.',
     engineDescSpectral:
       'Compares the sound spectrum against an averaged reference, independent of loudness. Ideal for single, steady machines. Runs fully offline.',
     engineDescYamnet:
@@ -1936,7 +1940,7 @@ export const en: TranslationDict = {
     coreFeaturesTitle: 'Core Features',
     coreFeatures: {
       offlineFirst:
-        '<strong>Offline-First:</strong> Audio recordings and acoustic calculations stay in the browser. Hosting, maps and the optional first YAMNet download require a network.',
+        '<strong>Local core analysis:</strong> New normal states and comparisons are computed with GMIA in the browser. Hosting, updates and external maps may require a network.',
       similarityScore:
         '<strong>Similarity Score (0–100%):</strong> SoundFuchs computes a mathematical similarity (cosine similarity) between reference and comparison recording.',
       userThreshold:
@@ -1950,7 +1954,7 @@ export const en: TranslationDict = {
     // Technische Abgrenzung
     legalTitle: 'Technical Delimitation',
     legalIntro:
-      'SoundFuchs was independently developed as a <strong>private, non-commercial open-source project</strong> under the <strong>MIT license</strong>. It uses <strong>openly described mathematical procedures</strong> (including frequency analysis and cosine comparisons) and optionally the pretrained open <strong>YAMNet</strong> for audio embeddings. Reference profiles, comparisons and threshold labels are created locally; SoundFuchs does not train its own neural network or run cloud diagnostics.',
+      'SoundFuchs was independently developed as a <strong>private, non-commercial open-source project</strong> under the <strong>MIT license</strong>. New references exclusively use the local GMIA comparison method and require no AI-model download. Older or imported models of other types remain technically readable for data compatibility.',
 
     // IP Table
     ipTableTitle: 'Relevant IP and Technical Differentiation',
@@ -1969,14 +1973,14 @@ export const en: TranslationDict = {
           protectedScope:
             'Cloud-based diagnostic system using central databases and mobile sensors',
           soundfuchsDiff:
-            'SoundFuchs operates fully locally, without cloud, without central database, without diagnostics',
+            'SoundFuchs processes measurement data locally, without an analysis backend, central measurement database or diagnostics',
         },
         '1': {
           reference: '<strong>EP3701708B1</strong><br><em>Remote machine condition analysis</em>',
           source: 'European Patent, Siemens AG, 2022',
           protectedScope: 'ML-based remote diagnostics with trained models and sensors',
           soundfuchsDiff:
-            'SoundFuchs compares locally; an optional pretrained YAMNet produces audio embeddings. There is no remote diagnosis or SoundFuchs analysis cloud',
+            'New SoundFuchs references use local GMIA comparisons without remote diagnosis or a SoundFuchs analysis cloud',
         },
         '2': {
           reference:
@@ -2005,7 +2009,7 @@ export const en: TranslationDict = {
           protectedScope:
             'Mobile sensors for ad-hoc diagnostics with cloud and service integration',
           soundfuchsDiff:
-            'SoundFuchs avoids diagnostics, service workflows, and cloud connectivity, focusing on local comparison',
+            'SoundFuchs includes no diagnostics, integrated service workflow or analysis cloud and focuses on local comparison',
         },
       },
     },
@@ -2077,7 +2081,7 @@ export const en: TranslationDict = {
     transparencyText1:
       'SoundFuchs is <strong>not a diagnostic tool</strong> and does not determine damage causes. It automatically calculates <strong>similarity scores</strong> and marks deviations using thresholds selected by the user; professional assessment remains with the user.',
     transparencyText2:
-      '<strong>Audio, reference profiles and scores are processed and stored locally.</strong> Network requests occur for Vercel hosting, external map tiles and the first use of the optional YAMNet model (TF Hub). Those providers receive technical connection data; SoundFuchs sends no audio to them.',
+      '<strong>Audio, reference profiles, location records and scores are processed and stored locally; SoundFuchs does not upload them to an analysis service.</strong> Network requests occur for Vercel hosting and updates, external maps and deliberately opened reference links. An older or imported YAMNet model alone may trigger a one-time model download from TF Hub, without transmitting audio.',
     transparencyText3:
       'This transparency expresses a conscious approach to responsibility, data protection, and third-party rights.',
     transparencyList: {

@@ -38,7 +38,7 @@ export class AboutModalController {
           <circle cx="12" cy="12" r="3"/>
           <path d="M12 1v6m0 6v10M1 12h6m6 0h10"/>
         </svg>
-        <h4>ZANOBO 2.0</h4>
+        <h4>SOUNDFUCHS 2.0</h4>
         <p class="about-subtitle">${t('about.subtitle')}</p>
       </div>
 
