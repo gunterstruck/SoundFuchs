@@ -1095,6 +1095,10 @@ try {
     let eigeneMaschineDa = false;
     let eigenerStandortDa = false;
     let standortDialogDa = false;
+    let standortDialogPasst = false;
+    let standortFormOhneScroll = false;
+    let standortFelderInZeile = false;
+    let standortTouchzieleGross = false;
     let markerNachEinstieg = 0;
 
     if (karteImMenue) {
@@ -1122,6 +1126,42 @@ try {
             .locator('#site-create-modal')
             .isVisible()
             .catch(() => false);
+          if (standortDialogDa) {
+            const modalMasse = await page.evaluate(() => {
+              const inhalt = document.querySelector('#site-create-modal .site-create-content');
+              const formular = document.querySelector('#site-create-modal .modal-body');
+              const plz = document.querySelector('#site-create-plz');
+              const ort = document.querySelector('#site-create-ort');
+              const abbrechen = document.querySelector('#site-create-cancel');
+              const speichern = document.querySelector('#site-create-save');
+              const inhaltRechteck = inhalt?.getBoundingClientRect();
+              const plzRechteck = plz?.getBoundingClientRect();
+              const ortRechteck = ort?.getBoundingClientRect();
+              const abbrechenRechteck = abbrechen?.getBoundingClientRect();
+              const speichernRechteck = speichern?.getBoundingClientRect();
+
+              return {
+                passt:
+                  Boolean(inhaltRechteck && abbrechenRechteck && speichernRechteck) &&
+                  inhaltRechteck.top >= -1 &&
+                  inhaltRechteck.height <= window.innerHeight + 1 &&
+                  abbrechenRechteck.bottom <= inhaltRechteck.bottom &&
+                  speichernRechteck.bottom <= inhaltRechteck.bottom,
+                ohneScroll: Boolean(formular) && formular.scrollHeight <= formular.clientHeight + 1,
+                felderInZeile:
+                  Boolean(plzRechteck && ortRechteck) &&
+                  Math.abs(plzRechteck.top - ortRechteck.top) <= 1,
+                touchzieleGross:
+                  Boolean(abbrechenRechteck && speichernRechteck) &&
+                  abbrechenRechteck.height >= 44 &&
+                  speichernRechteck.height >= 44,
+              };
+            });
+            standortDialogPasst = modalMasse.passt;
+            standortFormOhneScroll = modalMasse.ohneScroll;
+            standortFelderInZeile = modalMasse.felderInZeile;
+            standortTouchzieleGross = modalMasse.touchzieleGross;
+          }
           await page.locator('#site-create-cancel').click();
         }
         await page.locator('#map-empty-demo-btn').click();
@@ -1139,6 +1179,10 @@ try {
     console.log(`Eigene Maschine anlegen   ${eigeneMaschineDa ? 'sichtbar' : 'NICHT sichtbar'}`);
     console.log(`Eigenen Standort anlegen  ${eigenerStandortDa ? 'sichtbar' : 'NICHT sichtbar'}`);
     console.log(`Standortdialog öffnet     ${standortDialogDa ? 'ja' : 'NEIN'}`);
+    console.log(`Dialog passt ins Handy    ${standortDialogPasst ? 'ja' : 'NEIN'}`);
+    console.log(`Formular ohne Scrollen    ${standortFormOhneScroll ? 'ja' : 'NEIN'}`);
+    console.log(`PLZ und Ort in einer Zeile ${standortFelderInZeile ? 'ja' : 'NEIN'}`);
+    console.log(`Aktionen mindestens 44 px ${standortTouchzieleGross ? 'ja' : 'NEIN'}`);
     console.log(`Marker nach dem Einstieg  ${markerNachEinstieg}`);
 
     pruefe(
@@ -1161,6 +1205,22 @@ try {
     pruefe(
       eigenerStandortDa && standortDialogDa,
       'Weg hinein: ein eigener Standort lässt sich nicht unabhängig von einer Maschine vorbereiten'
+    );
+    pruefe(
+      standortDialogPasst,
+      'Standortdialog: Sheet oder Aktionen sind größer als das typische Handyformat 390×844'
+    );
+    pruefe(
+      standortFormOhneScroll,
+      'Standortdialog: das Grundformular passt auf 390×844 nicht vollständig ins sichtbare Sheet'
+    );
+    pruefe(
+      standortFelderInZeile,
+      'Standortdialog: PLZ und Ort stehen auf dem Handy nicht in einer Zeile'
+    );
+    pruefe(
+      standortTouchzieleGross,
+      'Standortdialog: Abbrechen oder Speichern ist auf dem Handy kleiner als 44 px'
     );
     pruefe(
       markerNachEinstieg > 0,
