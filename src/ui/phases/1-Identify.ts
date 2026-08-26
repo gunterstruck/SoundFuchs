@@ -1806,6 +1806,14 @@ export class IdentifyPhase {
     // scrolling to an inline form id that no longer exists.
     const createSection = document.getElementById('create-section');
     const nameInput = document.getElementById('machine-name-input') as HTMLInputElement | null;
+    const optionalDetails = document.getElementById(
+      'machine-optional-details'
+    ) as HTMLDetailsElement | null;
+
+    // Der häufigste Fall braucht zunächst nur den Namen. Jede neue, allgemeine
+    // Anlage beginnt deshalb kompakt; wer Standort oder Zuordnung braucht,
+    // klappt sie mit einer klaren Entscheidung auf.
+    if (optionalDetails) optionalDetails.open = false;
 
     // Zuerst die Karte „Maschine auswählen" aufklappen. `create-section` liegt
     // in ihrem eingeklappten Inhalt; wer den Abschnitt nur auf sichtbar setzt,

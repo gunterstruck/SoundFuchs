@@ -588,6 +588,8 @@ export const es: TranslationDict = {
     machineName: 'Nombre de la máquina',
     machineId: 'ID de la máquina (opcional)',
     machineNameHint: 'Unique name, e.g. Pump 3 – West Hall',
+    optionalTitle: 'Datos opcionales',
+    optionalHint: 'Ubicación y asignación',
     machineNameRequired: 'Please enter a machine name.',
     machineNamePlaceholder: 'e.g. Pump 3 – West Hall',
     machineIdHint: 'Optional: Internal ID (e.g. SAP number). Not used for analysis.',

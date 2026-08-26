@@ -1091,7 +1091,15 @@
                         >Bitte gib einen Maschinennamen ein.</span
                       >
                     </div>
-                    <!--
+                    <details class="machine-optional-details" id="machine-optional-details">
+                      <summary class="machine-optional-summary">
+                        <span class="machine-optional-summary-copy">
+                          <strong data-i18n="identify.optionalTitle">Optionale Angaben</strong>
+                          <small data-i18n="identify.optionalHint">Standort und Zuordnung</small>
+                        </span>
+                      </summary>
+                      <div class="machine-optional-body">
+                        <!--
                     Standort — der Ort, an dem die Maschine steht. Kundenname,
                     Postleitzahl, Stadt; der Name darf auch „Zuhause" sein.
                     Steht bewusst vor der Maschinen-ID: Wo eine Maschine steht,
@@ -1099,131 +1107,140 @@
                     nach. Voreinstellung ist "kein Standort", das Feld kostet also
                     niemanden etwas. Siehe docs/kunden-und-karte.md.
                   -->
-                    <div class="input-group" id="machine-customer-form">
-                      <label for="machine-customer-select" data-i18n="customers.label"
-                        >Standort (optional)</label
-                      >
-                      <select id="machine-customer-select" class="machine-input">
-                        <!-- Die beiden festen Einträge stehen hier und nicht im
+                        <div class="input-group" id="machine-customer-form">
+                          <label for="machine-customer-select" data-i18n="customers.label"
+                            >Standort (optional)</label
+                          >
+                          <select id="machine-customer-select" class="machine-input">
+                            <!-- Die beiden festen Einträge stehen hier und nicht im
                            Quelltext, damit sie beim Sprachwechsel mitziehen.
                            Die Standorte selbst werden dazwischen eingefügt. -->
-                        <option value="" data-i18n="customers.none">— kein Standort —</option>
-                        <option value="__neu__" data-i18n="customers.new">+ Neuer Standort</option>
-                      </select>
-                      <div
-                        id="new-customer-fields"
-                        class="new-customer-fields"
-                        style="display: none"
-                      >
-                        <div class="input-group input-group-required">
-                          <label for="customer-name-input">
-                            <span data-i18n="customers.nameLabel">Name</span
-                            ><span class="required-star">*</span>
-                          </label>
+                            <option value="" data-i18n="customers.none">— kein Standort —</option>
+                            <option value="__neu__" data-i18n="customers.new">
+                              + Neuer Standort
+                            </option>
+                          </select>
+                          <div
+                            id="new-customer-fields"
+                            class="new-customer-fields"
+                            style="display: none"
+                          >
+                            <div class="input-group input-group-required">
+                              <label for="customer-name-input">
+                                <span data-i18n="customers.nameLabel">Name</span
+                                ><span class="required-star">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                id="customer-name-input"
+                                class="machine-input"
+                                maxlength="80"
+                                autocomplete="off"
+                                placeholder="z.B. Müller Guss GmbH oder Zuhause"
+                                data-i18n-placeholder="customers.namePlaceholder"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              class="action-btn secondary-btn customer-gps-btn"
+                              id="customer-use-gps-btn"
+                            >
+                              <span data-i18n="customers.gpsButton"
+                                >Aktuellen Standort verwenden</span
+                              >
+                            </button>
+                            <span
+                              class="input-hint customer-gps-status"
+                              id="customer-gps-status"
+                              role="status"
+                            ></span>
+                            <div class="customer-location-divider">
+                              <span data-i18n="customers.orPostcode">oder per PLZ</span>
+                            </div>
+                            <div class="customer-place-row">
+                              <div class="input-group">
+                                <label for="customer-plz-input" data-i18n="customers.plzLabel"
+                                  >PLZ</label
+                                >
+                                <input
+                                  type="text"
+                                  id="customer-plz-input"
+                                  class="machine-input"
+                                  inputmode="numeric"
+                                  maxlength="5"
+                                  autocomplete="postal-code"
+                                  placeholder="45127"
+                                  data-i18n-placeholder="customers.plzPlaceholder"
+                                />
+                              </div>
+                              <div class="input-group">
+                                <label for="customer-ort-input" data-i18n="customers.ortLabel"
+                                  >Ort</label
+                                >
+                                <input
+                                  type="text"
+                                  id="customer-ort-input"
+                                  class="machine-input"
+                                  maxlength="80"
+                                  autocomplete="address-level2"
+                                />
+                              </div>
+                            </div>
+                            <span class="input-hint" id="customer-plz-hint" role="status"></span>
+                            <span class="input-hint" data-i18n="customers.hint"
+                              >GPS oder PLZ genügen für den Kartenpunkt.</span
+                            >
+                          </div>
+                        </div>
+
+                        <div class="input-group" data-view-level="advanced">
+                          <label for="machine-id-input" data-i18n="identify.machineId"
+                            >Maschinen-ID (optional)</label
+                          >
                           <input
                             type="text"
-                            id="customer-name-input"
+                            id="machine-id-input"
                             class="machine-input"
-                            maxlength="80"
-                            autocomplete="off"
-                            placeholder="z.B. Müller Guss GmbH oder Zuhause"
-                            data-i18n-placeholder="customers.namePlaceholder"
+                            placeholder="z.B. 1GB4-636A0-Ba1"
+                            data-i18n-placeholder="identify.machineId"
                           />
+                          <span class="input-hint" data-i18n="identify.machineIdHint"
+                            >Optional: Interne Kennung (z.B. SAP-Nr.). Wird nicht für die Analyse
+                            verwendet.</span
+                          >
                         </div>
-                        <button
-                          type="button"
-                          class="action-btn secondary-btn customer-gps-btn"
-                          id="customer-use-gps-btn"
-                        >
-                          <span data-i18n="customers.gpsButton">Aktuellen Standort verwenden</span>
-                        </button>
-                        <span
-                          class="input-hint customer-gps-status"
-                          id="customer-gps-status"
-                          role="status"
-                        ></span>
-                        <div class="customer-location-divider">
-                          <span data-i18n="customers.orPostcode">oder per PLZ</span>
+
+                        <!-- Sprint 4 UX: Fleet group input with autocomplete -->
+                        <div class="input-group" id="fleet-group-form">
+                          <label
+                            for="machine-fleet-group"
+                            class="form-label"
+                            id="fleet-group-label"
+                            data-i18n="fleet.group.label"
+                            >Flottengruppe (optional)</label
+                          >
+                          <input
+                            type="text"
+                            id="machine-fleet-group"
+                            class="machine-input"
+                            list="fleet-group-suggestions"
+                            maxlength="50"
+                            autocomplete="off"
+                            data-i18n-placeholder="fleet.group.hint"
+                          />
+                          <datalist id="fleet-group-suggestions">
+                            <!-- Populated dynamically from existing fleetGroup values -->
+                          </datalist>
+                          <span
+                            class="input-hint"
+                            id="fleet-group-hint"
+                            data-i18n="fleet.group.hint"
+                            >z.B. „Fernwärme Ost" – Maschinen mit gleicher Gruppe werden
+                            verglichen</span
+                          >
                         </div>
-                        <div class="customer-place-row">
-                          <div class="input-group">
-                            <label for="customer-plz-input" data-i18n="customers.plzLabel"
-                              >PLZ</label
-                            >
-                            <input
-                              type="text"
-                              id="customer-plz-input"
-                              class="machine-input"
-                              inputmode="numeric"
-                              maxlength="5"
-                              autocomplete="postal-code"
-                              placeholder="45127"
-                              data-i18n-placeholder="customers.plzPlaceholder"
-                            />
-                          </div>
-                          <div class="input-group">
-                            <label for="customer-ort-input" data-i18n="customers.ortLabel"
-                              >Ort</label
-                            >
-                            <input
-                              type="text"
-                              id="customer-ort-input"
-                              class="machine-input"
-                              maxlength="80"
-                              autocomplete="address-level2"
-                            />
-                          </div>
-                        </div>
-                        <span class="input-hint" id="customer-plz-hint" role="status"></span>
-                        <span class="input-hint" data-i18n="customers.hint"
-                          >GPS oder PLZ genügen für den Kartenpunkt.</span
-                        >
                       </div>
-                    </div>
-
-                    <div class="input-group" data-view-level="advanced">
-                      <label for="machine-id-input" data-i18n="identify.machineId"
-                        >Maschinen-ID (optional)</label
-                      >
-                      <input
-                        type="text"
-                        id="machine-id-input"
-                        class="machine-input"
-                        placeholder="z.B. 1GB4-636A0-Ba1"
-                        data-i18n-placeholder="identify.machineId"
-                      />
-                      <span class="input-hint" data-i18n="identify.machineIdHint"
-                        >Optional: Interne Kennung (z.B. SAP-Nr.). Wird nicht für die Analyse
-                        verwendet.</span
-                      >
-                    </div>
-
-                    <!-- Sprint 4 UX: Fleet group input with autocomplete -->
-                    <div class="input-group" id="fleet-group-form">
-                      <label
-                        for="machine-fleet-group"
-                        class="form-label"
-                        id="fleet-group-label"
-                        data-i18n="fleet.group.label"
-                        >Flottengruppe (optional)</label
-                      >
-                      <input
-                        type="text"
-                        id="machine-fleet-group"
-                        class="machine-input"
-                        list="fleet-group-suggestions"
-                        maxlength="50"
-                        autocomplete="off"
-                        data-i18n-placeholder="fleet.group.hint"
-                      />
-                      <datalist id="fleet-group-suggestions">
-                        <!-- Populated dynamically from existing fleetGroup values -->
-                      </datalist>
-                      <span class="input-hint" id="fleet-group-hint" data-i18n="fleet.group.hint"
-                        >z.B. „Fernwärme Ost" – Maschinen mit gleicher Gruppe werden
-                        verglichen</span
-                      >
-                    </div>
+                    </details>
 
                     <button class="action-btn" id="create-machine-btn">
                       <svg

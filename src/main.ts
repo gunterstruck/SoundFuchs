@@ -907,6 +907,13 @@ class ZanobotApp {
       const feld = document.getElementById('machine-customer-select') as HTMLSelectElement | null;
       const treffer = feld && [...feld.options].some((o) => o.value === standortId);
       if (treffer && feld) {
+        // In diesem Weg ist der Standort keine beiläufige Option, sondern die
+        // bereits getroffene Auswahl. Deshalb zeigen wir die Vorbelegung auch
+        // sichtbar, obwohl die Zusatzangaben sonst kompakt geschlossen sind.
+        const optionen = document.getElementById(
+          'machine-optional-details'
+        ) as HTMLDetailsElement | null;
+        if (optionen) optionen.open = true;
         feld.value = standortId;
         feld.dispatchEvent(new Event('change', { bubbles: true }));
         return;

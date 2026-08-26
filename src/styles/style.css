@@ -960,6 +960,79 @@ body {
   margin-bottom: var(--spacing-xs);
 }
 
+/* Zusätzliche Maschinendaten bleiben erreichbar, nehmen dem primären Weg
+   „Name → Speichern" aber nicht den sichtbaren Zusammenhang. */
+.machine-optional-details {
+  margin: 0 0 var(--spacing-md);
+  overflow: hidden;
+  border: 1px solid rgba(var(--primary-rgb), 0.24);
+  border-radius: var(--radius-md);
+  background: rgba(var(--primary-rgb), 0.035);
+}
+
+.machine-optional-summary {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.machine-optional-summary::-webkit-details-marker {
+  display: none;
+}
+
+.machine-optional-summary::after {
+  content: '›';
+  flex: 0 0 auto;
+  color: var(--primary);
+  font-size: 1.5rem;
+  line-height: 1;
+  transform: rotate(90deg);
+  transition: transform 160ms ease;
+}
+
+.machine-optional-details[open] .machine-optional-summary::after {
+  transform: rotate(-90deg);
+}
+
+.machine-optional-summary:focus-visible {
+  outline: 3px solid rgba(var(--primary-rgb), 0.35);
+  outline-offset: -3px;
+}
+
+.machine-optional-summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.machine-optional-summary-copy strong {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.machine-optional-summary-copy small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.machine-optional-body {
+  padding: var(--spacing-md);
+  border-top: 1px solid rgba(var(--primary-rgb), 0.16);
+  background: var(--bg-secondary);
+}
+
+.machine-optional-body > .input-group:last-child {
+  margin-bottom: 0;
+}
+
 /* ────────────────────────────────────────────────────────────────────────────
    KUNDE ANLEGEN — die Felder, die hinter "+ Neuer Kunde" aufklappen
 

@@ -588,6 +588,9 @@ try {
     const knopf = page.locator('#empty-state-cta');
     const knopfDa = await knopf.isVisible().catch(() => false);
     let feldDa = false;
+    let optionenOffen = true;
+    let speichernImBild = false;
+    let abstandZumSpeichern = Number.POSITIVE_INFINITY;
     if (knopfDa) {
       await knopf.click();
       await page.waitForTimeout(1200);
@@ -595,16 +598,38 @@ try {
         .locator('#machine-name-input')
         .isVisible()
         .catch(() => false);
+      const lage = await page.evaluate(() => {
+        const name = document.getElementById('machine-name-input')?.getBoundingClientRect();
+        const save = document.getElementById('create-machine-btn')?.getBoundingClientRect();
+        const details = document.getElementById('machine-optional-details');
+        return {
+          optionenOffen: details?.open ?? true,
+          speichernImBild: Boolean(save && save.top >= 0 && save.bottom <= window.innerHeight),
+          abstand: name && save ? Math.round(save.top - name.bottom) : Number.POSITIVE_INFINITY,
+        };
+      });
+      optionenOffen = lage.optionenOffen;
+      speichernImBild = lage.speichernImBild;
+      abstandZumSpeichern = lage.abstand;
     }
 
     console.log('\n=== erster Start (leerer Bestand) ===');
     console.log(`„Erste Maschine anlegen"  ${knopfDa ? 'sichtbar' : 'FEHLT'}`);
     console.log(`Namensfeld danach         ${feldDa ? 'sichtbar' : 'NICHT sichtbar'}`);
+    console.log(`Optionen zunächst         ${optionenOffen ? 'OFFEN' : 'geschlossen'}`);
+    console.log(
+      `Speichern ohne Scrollen   ${speichernImBild ? `sichtbar (${abstandZumSpeichern}px nach Name)` : 'NICHT sichtbar'}`
+    );
 
     pruefe(knopfDa, 'erster Start: „Erste Maschine anlegen" ist im Leerzustand nicht sichtbar');
     pruefe(
       feldDa,
       'erster Start: „Erste Maschine anlegen" führt nicht zum Namensfeld — der Knopf tut nichts'
+    );
+    pruefe(!optionenOffen, 'erster Start: optionale Maschinenangaben sind zunächst aufgeklappt');
+    pruefe(
+      speichernImBild && abstandZumSpeichern <= 260,
+      `erster Start: Speichern ist nicht nah am Maschinennamen (${abstandZumSpeichern}px Abstand)`
     );
 
     await ctx.close();
@@ -646,6 +671,9 @@ try {
       await cta.click();
       await page.waitForTimeout(1000);
     }
+
+    await page.locator('#machine-optional-details > summary').click();
+    await page.waitForTimeout(250);
 
     const auswahl = page.locator('#machine-customer-select');
     const auswahlDa = await auswahl.isVisible().catch(() => false);

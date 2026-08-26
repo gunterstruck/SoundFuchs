@@ -560,6 +560,8 @@ export const zh: TranslationDict = {
     machineName: '机器名称',
     machineId: '机器ID（可选）',
     machineNameHint: 'Unique name, e.g. Pump 3 – West Hall',
+    optionalTitle: '可选信息',
+    optionalHint: '地点与分组',
     machineNameRequired: 'Please enter a machine name.',
     machineNamePlaceholder: 'e.g. Pump 3 – West Hall',
     machineIdHint: 'Optional: Internal ID (e.g. SAP number). Not used for analysis.',

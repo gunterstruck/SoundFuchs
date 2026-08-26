@@ -630,6 +630,8 @@ export const de: TranslationDict = {
     machineName: 'Maschinenname',
     machineId: 'Maschinen-ID (optional)',
     machineNameHint: 'Eindeutiger Name, z.B. Pumpe 3 – Westhalle',
+    optionalTitle: 'Optionale Angaben',
+    optionalHint: 'Standort und Zuordnung',
     machineNameRequired: 'Bitte gib einen Maschinennamen ein.',
     machineNamePlaceholder: 'z.B. Pumpe 3 – Westhalle',
     machineIdHint:

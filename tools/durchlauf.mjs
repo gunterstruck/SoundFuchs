@@ -233,7 +233,7 @@ try {
   );
 
   await page.locator('#machine-name-input').fill('Pumpe 17');
-  await page.locator('#create-section button.action-btn').first().click();
+  await page.locator('#create-machine-btn').click();
   await page.waitForTimeout(2500);
   const namen = await page.locator('.machine-name').allTextContents();
   pruefe(
