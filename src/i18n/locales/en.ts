@@ -553,6 +553,9 @@ export const en: TranslationDict = {
     plzLabel: 'Postcode',
     plzPlaceholder: '45127',
     ortLabel: 'Town',
+    streetLabel: 'Street and number (optional)',
+    streetPlaceholder: 'e.g. Industrial Road 12',
+    streetHint: 'Stored locally; the map point still uses GPS or the postcode.',
     hint: 'GPS or a postcode is enough for the map point.',
     createTitle: 'Create site',
     createDescription: 'Prepare a site now. You can add its first machine immediately afterwards.',
@@ -584,7 +587,7 @@ export const en: TranslationDict = {
     demoError: 'Sample data could not be processed.',
     importTitle: 'Import a site list',
     importDescription:
-      'CSV file with the columns Name, Postcode, optionally Town and Machine. Town and map position come from the postcode.',
+      'CSV file with the columns Name, Postcode, optionally Town, Street and Machine. Town and map position come from the postcode.',
     importButton: 'Choose CSV',
     importSummary:
       '{{angelegt}} sites created, {{maschinen}} machines, {{uebersprungen}} skipped, {{fehler}} invalid rows',

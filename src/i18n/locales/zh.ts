@@ -512,6 +512,9 @@ export const zh: TranslationDict = {
     plzLabel: '邮政编码',
     plzPlaceholder: '45127',
     ortLabel: '城市',
+    streetLabel: '街道和门牌号（可选）',
+    streetPlaceholder: '例如 工业路 12 号',
+    streetHint: '本机保存；地图位置仍基于 GPS 或邮编。',
     hint: 'GPS 或邮编即可确定地图位置。',
     createTitle: '创建地点',
     createDescription: '先准备一个地点，随后即可添加第一台机器。',
@@ -543,7 +546,7 @@ export const zh: TranslationDict = {
     demoError: '无法处理示例数据。',
     importTitle: '导入地点列表',
     importDescription:
-      'CSV 文件包含列：名称、邮政编码，可选城市和机器。城市和地图位置由邮政编码得出。',
+      'CSV 文件包含列：名称、邮政编码，可选城市、街道和机器。城市和地图位置由邮政编码得出。',
     importButton: '选择 CSV',
     importSummary:
       '已创建 {{angelegt}} 个地点，{{maschinen}} 台机器，跳过 {{uebersprungen}} 个，{{fehler}} 行无效',

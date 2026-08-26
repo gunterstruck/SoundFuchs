@@ -537,6 +537,9 @@ export const es: TranslationDict = {
     plzLabel: 'Código postal',
     plzPlaceholder: '45127',
     ortLabel: 'Localidad',
+    streetLabel: 'Calle y número (opcional)',
+    streetPlaceholder: 'p. ej. Calle Industrial 12',
+    streetHint: 'Guardado localmente; el mapa sigue usando GPS o el código postal.',
     hint: 'El GPS o el código postal bastan para situar el punto en el mapa.',
     createTitle: 'Crear ubicación',
     createDescription: 'Prepara una ubicación. Podrás añadir la primera máquina justo después.',
@@ -570,7 +573,7 @@ export const es: TranslationDict = {
     demoError: 'No se pudieron procesar los datos de ejemplo.',
     importTitle: 'Importar lista de ubicaciones',
     importDescription:
-      'Archivo CSV con las columnas Nombre, Código postal, opcionalmente Localidad y Máquina. La localidad y la posición en el mapa se obtienen del código postal.',
+      'Archivo CSV con las columnas Nombre, Código postal, opcionalmente Localidad, Calle y Máquina. La localidad y la posición en el mapa se obtienen del código postal.',
     importButton: 'Elegir CSV',
     importSummary:
       '{{angelegt}} ubicaciones creadas, {{maschinen}} máquinas, {{uebersprungen}} omitidas, {{fehler}} filas inválidas',

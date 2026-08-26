@@ -258,12 +258,13 @@ async function zeichne(stand: StandortStand): Promise<void> {
   kopf.appendChild(titel);
 
   const ort = [kunde.plz, kunde.ort].filter(Boolean).join(' ');
-  if (ort || kunde.geo === 'gps') {
+  const anschrift = [kunde.strasse, ort].filter(Boolean).join(' · ');
+  if (anschrift || kunde.geo === 'gps') {
     const adresse = document.createElement('p');
     adresse.className = 'muted small standort-adresse';
-    adresse.textContent = ort || t('map.accuracyGps');
+    adresse.textContent = anschrift || t('map.accuracyGps');
     if (kunde.geo === 'plz') adresse.append(` · 📍 ${t('map.accuracyPlz')}`);
-    if (ort && kunde.geo === 'gps') adresse.append(` · 📍 ${t('map.accuracyGps')}`);
+    if (anschrift && kunde.geo === 'gps') adresse.append(` · 📍 ${t('map.accuracyGps')}`);
     kopf.appendChild(adresse);
   }
 

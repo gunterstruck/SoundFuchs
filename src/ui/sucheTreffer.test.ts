@@ -13,11 +13,12 @@ import { describe, it, expect } from 'vitest';
 import { sucheTreffer } from './sucheTreffer.js';
 import type { Customer, Machine } from '@data/types.js';
 
-const kunde = (name: string, plz: string, ort: string): Customer => ({
+const kunde = (name: string, plz: string, ort: string, strasse?: string): Customer => ({
   id: `k-${name}`,
   name,
   plz,
   ort,
+  strasse,
   geo: 'plz',
   createdAt: 0,
 });
@@ -26,7 +27,7 @@ const maschine = (id: string, name: string, location?: string): Machine =>
   ({ id, name, createdAt: 0, referenceModels: [], location }) as Machine;
 
 const KUNDEN = [
-  kunde('SoundFuchs Demo · Brauerei 0005', '28195', 'Bremen'),
+  kunde('SoundFuchs Demo · Brauerei 0005', '28195', 'Bremen', 'Am Hafen 12'),
   kunde('SoundFuchs Demo · Gießerei 0001', '25729', 'Windbergen'),
 ];
 const MASCHINEN = [
@@ -52,6 +53,12 @@ describe('sucheTreffer', () => {
     const t = sucheTreffer('28195', KUNDEN, MASCHINEN);
     expect(t).toHaveLength(1);
     expect(t[0].zusatz).toContain('28195');
+  });
+
+  it('findet und beschreibt den Standort über seine Straßenadresse', () => {
+    const t = sucheTreffer('hafen', KUNDEN, MASCHINEN);
+    expect(t).toHaveLength(1);
+    expect(t[0].zusatz).toBe('Am Hafen 12 · 28195 Bremen');
   });
 
   it('findet Maschinen über ihren Namen', () => {

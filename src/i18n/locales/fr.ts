@@ -541,6 +541,9 @@ export const fr: TranslationDict = {
     plzLabel: 'Code postal',
     plzPlaceholder: '45127',
     ortLabel: 'Ville',
+    streetLabel: 'Rue et numéro (facultatif)',
+    streetPlaceholder: 'p. ex. rue de l’Industrie 12',
+    streetHint: 'Enregistré en local ; le point reste basé sur le GPS ou le code postal.',
     hint: 'Le GPS ou le code postal suffit pour placer le point sur la carte.',
     createTitle: 'Créer un site',
     createDescription: 'Préparez un site. Vous pourrez ajouter sa première machine juste après.',
@@ -573,7 +576,7 @@ export const fr: TranslationDict = {
     demoError: "Les données d'exemple n'ont pas pu être traitées.",
     importTitle: 'Importer une liste de sites',
     importDescription:
-      'Fichier CSV avec les colonnes Nom, Code postal, éventuellement Ville et Machine. La ville et la position sur la carte proviennent du code postal.',
+      'Fichier CSV avec les colonnes Nom, Code postal, éventuellement Ville, Rue et Machine. La ville et la position sur la carte proviennent du code postal.',
     importButton: 'Choisir un CSV',
     importSummary:
       '{{angelegt}} sites créés, {{maschinen}} machines, {{uebersprungen}} ignorés, {{fehler}} lignes invalides',

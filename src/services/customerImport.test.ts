@@ -55,6 +55,14 @@ describe('Kundenliste einlesen', () => {
     expect(ergebnis.angelegt).toBe(1);
   });
 
+  it('übernimmt eine optionale Straßenadresse ohne sie zu geokodieren', async () => {
+    const csv = 'Name,PLZ,Straße\nMüller Guss GmbH,45127,Industriestraße 12\n';
+    await importiereKundenliste(csv);
+    const [kunde] = await getAllCustomers();
+    expect(kunde.strasse).toBe('Industriestraße 12');
+    expect(kunde.geo).toBe('plz');
+  });
+
   it('trägt den Ort aus der PLZ nach, wenn die Datei keinen mitbringt', async () => {
     const csv = 'Name,PLZ\nMüller Guss GmbH,45127\n';
     await importiereKundenliste(csv);

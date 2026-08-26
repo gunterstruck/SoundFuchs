@@ -1,10 +1,10 @@
 /**
  * Der eigenständige Standortweg.
  *
- * Er ist bewusst klein: Name plus entweder GPS oder Postleitzahl. Eine
- * Straßenadresse würde eine Online-Geokodierung und damit einen Datenabfluss
- * einführen, obwohl die vorhandene Karte für diesen Zweck mit PLZ-Mittelpunkten
- * arbeitet. GPS ist die schnelle Vor-Ort-Option, PLZ die robuste Alternative.
+ * Er ist bewusst klein: Name plus entweder GPS oder Postleitzahl. Straße und
+ * Hausnummer können zur Orientierung lokal ergänzt werden, lösen aber keine
+ * Online-Geokodierung aus. GPS ist die schnelle Vor-Ort-Option, PLZ die
+ * robuste Alternative für den Kartenpunkt.
  */
 
 import type { Customer } from '@data/types.js';
@@ -70,12 +70,14 @@ function zuruecksetzen(): void {
   const name = element<HTMLInputElement>('site-create-name');
   const plz = element<HTMLInputElement>('site-create-plz');
   const ort = element<HTMLInputElement>('site-create-ort');
+  const strasse = element<HTMLInputElement>('site-create-street');
   if (name) name.value = '';
   if (plz) plz.value = '';
   if (ort) {
     ort.value = '';
     delete ort.dataset.selbst;
   }
+  if (strasse) strasse.value = '';
   const gpsKnopf = element<HTMLButtonElement>('site-create-gps');
   const gpsText = gpsKnopf?.querySelector('span');
   if (gpsText) gpsText.textContent = t('customers.gpsButton');
@@ -105,6 +107,7 @@ async function speichern(): Promise<void> {
   const nameFeld = element<HTMLInputElement>('site-create-name');
   const plzFeld = element<HTMLInputElement>('site-create-plz');
   const ortFeld = element<HTMLInputElement>('site-create-ort');
+  const strasseFeld = element<HTMLInputElement>('site-create-street');
   const fehler = element<HTMLElement>('site-create-error');
   const speichernKnopf = element<HTMLButtonElement>('site-create-save');
   const name = nameFeld?.value.trim() ?? '';
@@ -128,6 +131,7 @@ async function speichern(): Promise<void> {
       name,
       plz,
       ort: ortFeld?.value,
+      strasse: strasseFeld?.value,
       gps,
     });
     standortAnlegenSchliessen();

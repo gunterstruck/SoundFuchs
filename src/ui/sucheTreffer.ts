@@ -80,7 +80,10 @@ export function sucheTreffer(
   const standorte: Treffer[] = kunden
     .filter(
       (k) =>
-        normal(k.name).includes(w) || normal(k.plz).includes(w) || normal(k.ort).includes(w)
+        normal(k.name).includes(w) ||
+        normal(k.plz).includes(w) ||
+        normal(k.ort).includes(w) ||
+        normal(k.strasse).includes(w)
     )
     .map((kunde) => ({
       art: 'standort' as const,
@@ -88,7 +91,9 @@ export function sucheTreffer(
       titel: kunde.name,
       // Was den Standort ausmacht, wenn der Name allein nicht reicht: zwei
       // Brauereien in zwei Städten sind sonst nicht zu unterscheiden.
-      zusatz: [kunde.plz, kunde.ort].filter(Boolean).join(' '),
+      zusatz: [kunde.strasse, [kunde.plz, kunde.ort].filter(Boolean).join(' ')]
+        .filter(Boolean)
+        .join(' · '),
     }));
 
   const geraete: Treffer[] = maschinen

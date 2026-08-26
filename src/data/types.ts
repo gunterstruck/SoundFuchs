@@ -33,6 +33,8 @@ export interface Customer {
   plz: string;
   /** Ortsname. Füllt sich aus der Postleitzahl, ist aber überschreibbar. */
   ort?: string;
+  /** Optionale Zustelladresse am Standort; verändert den Kartenpunkt nicht. */
+  strasse?: string;
   /** Breitengrad, aus der Postleitzahl berechnet. */
   lat?: number;
   /** Längengrad, aus der Postleitzahl berechnet. */

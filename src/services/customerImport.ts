@@ -10,16 +10,17 @@
  * auch — eine Adresse, vielleicht ein Maschinenname, vielleicht eine
  * Position. Keine Umsatzspalte, weil SoundFuchs keinen Umsatz kennt.
  *
- * Deshalb reicht hier eine schlichte CSV-Datei mit vier möglichen Spalten
+ * Deshalb reicht hier eine schlichte CSV-Datei mit fünf möglichen Spalten
  * statt eines mehrstufigen Zuordnungs-Assistenten: Name, PLZ, Ort (optional),
- * Maschine (optional). Wer mehr mitbringt — weitere Spalten —, die werden
- * schlicht ignoriert, nicht abgelehnt.
+ * Straße (optional), Maschine (optional). Wer mehr mitbringt — weitere Spalten
+ * —, die werden schlicht ignoriert, nicht abgelehnt.
  *
  * ── SPALTEN ──────────────────────────────────────────────────────────────
  *
  *   Name       Pflicht.  Firmenname.
  *   PLZ        Pflicht.  Fünf Ziffern. Bestimmt Ort und Kartenposition.
  *   Ort        Optional. Wird sonst aus der PLZ nachgetragen.
+ *   Straße     Optional. Wird lokal angezeigt, nicht geokodiert.
  *   Maschine   Optional. Legt eine Maschine ohne Referenz beim Kunden an.
  *
  * Spaltennamen werden über Aliase erkannt (deutsch/englisch, Groß-/
@@ -45,10 +46,11 @@ export interface ImportErgebnis {
 }
 
 /** Spaltennamen, unter denen ein Feld erkannt wird — klein geschrieben. */
-const SPALTEN_ALIASE: Record<'name' | 'plz' | 'ort' | 'maschine', string[]> = {
+const SPALTEN_ALIASE: Record<'name' | 'plz' | 'ort' | 'strasse' | 'maschine', string[]> = {
   name: ['name', 'firma', 'firmenname', 'kunde', 'company', 'customer'],
   plz: ['plz', 'postleitzahl', 'zip', 'postcode', 'zipcode'],
   ort: ['ort', 'stadt', 'city', 'town'],
+  strasse: ['straße', 'strasse', 'straße und hausnummer', 'adresse', 'street', 'address'],
   maschine: ['maschine', 'machine', 'maschinenname', 'anlage', 'equipment'],
 };
 
@@ -97,8 +99,8 @@ function erkenneTrenner(kopfzeile: string): string {
 /** Zu jeder erkannten Spalte den Index in der Kopfzeile finden. */
 function ordneSpalten(
   kopf: string[]
-): Partial<Record<'name' | 'plz' | 'ort' | 'maschine', number>> {
-  const ergebnis: Partial<Record<'name' | 'plz' | 'ort' | 'maschine', number>> = {};
+): Partial<Record<'name' | 'plz' | 'ort' | 'strasse' | 'maschine', number>> {
+  const ergebnis: Partial<Record<'name' | 'plz' | 'ort' | 'strasse' | 'maschine', number>> = {};
   const klein = kopf.map((s) => s.toLowerCase().trim());
   for (const feld of Object.keys(SPALTEN_ALIASE) as Array<keyof typeof SPALTEN_ALIASE>) {
     const index = klein.findIndex((spalte) => SPALTEN_ALIASE[feld].includes(spalte));
@@ -155,6 +157,7 @@ export async function importiereKundenliste(text: string): Promise<ImportErgebni
     const name = felder[spalten.name]?.trim();
     const plz = felder[spalten.plz]?.trim();
     const ortSpalte = spalten.ort !== undefined ? felder[spalten.ort]?.trim() : undefined;
+    const strasse = spalten.strasse !== undefined ? felder[spalten.strasse]?.trim() : undefined;
     const maschinenName =
       spalten.maschine !== undefined ? felder[spalten.maschine]?.trim() : undefined;
 
@@ -179,6 +182,7 @@ export async function importiereKundenliste(text: string): Promise<ImportErgebni
       name,
       plz: plz as string,
       ort: ortSpalte || bekannteOrt || undefined,
+      strasse: strasse || undefined,
       lat: verortung?.lat,
       lng: verortung?.lng,
       geo: verortung ? 'plz' : 'none',

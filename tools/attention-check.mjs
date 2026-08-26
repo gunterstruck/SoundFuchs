@@ -693,6 +693,7 @@ try {
       if (felderDa) {
         await page.locator('#customer-name-input').fill('Müller Guss GmbH');
         await page.locator('#customer-plz-input').fill('45127');
+        await page.locator('#customer-street-input').fill('Industriestraße 12');
         // Die Ortsdatei kommt erst jetzt aus dem Netz.
         await page.waitForTimeout(1500);
         ort = await page.locator('#customer-ort-input').inputValue();
@@ -993,6 +994,10 @@ try {
     pruefe(
       Boolean(standort?.adresse),
       'Standortansicht: die Adresse fehlt — sie gehört laut Vorgabe dazu'
+    );
+    pruefe(
+      standort?.adresse?.includes('Industriestraße 12'),
+      'Standortansicht: die optionale Straße wurde nicht gespeichert oder nicht angezeigt'
     );
     pruefe(
       (standort?.maschinen ?? 0) > 0,

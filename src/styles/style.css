@@ -1019,7 +1019,7 @@ body {
 }
 
 .machine-optional-summary-copy small {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.75rem;
 }
 
@@ -1031,6 +1031,25 @@ body {
 
 .machine-optional-body > .input-group:last-child {
   margin-bottom: 0;
+}
+
+/* Kleine Formulartexte müssen auch auf dem leicht getönten Untergrund klar
+   lesbar bleiben. `text-muted` lag dort für 12-px-Schrift knapp unter dem
+   sinnvollen Kontrast; die eigentlichen Eingaben bleiben noch dunkler. */
+.machine-optional-body .input-hint,
+.site-create-content .input-hint {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.machine-optional-body .machine-input::placeholder,
+.site-create-content .machine-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.customer-address-field .input-hint {
+  font-style: normal;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────

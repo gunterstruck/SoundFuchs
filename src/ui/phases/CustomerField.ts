@@ -10,10 +10,10 @@
  * dort stehen lässt, merkt vom ganzen Vorgang nichts. Der Bestand funktioniert
  * ohne einen einzigen Kunden weiter (docs/kunden-und-karte.md §2).
  *
- * Wer einen anlegt, tippt zwei Dinge: Namen und Postleitzahl. Der Ort füllt
- * sich selbst — das ist von TourFuchs abgeschaut und der Grund, warum hier
- * eine Postleitzahl steht und keine Adresse. Fünf Ziffern, und die App weiß
- * Ort und Koordinaten; eine Adresse wären vier Felder und eine Netzabfrage.
+ * Wer einen anlegt, braucht nur Namen und Postleitzahl. Der Ort füllt sich
+ * selbst — das ist von TourFuchs abgeschaut. Eine Straße kann zur Orientierung
+ * ergänzt werden, bleibt aber reine lokale Anzeige: Fünf Ziffern genügen
+ * weiterhin für Ort und Koordinaten, ohne Adressabfrage im Netz.
  */
 
 import { getAllCustomers } from '@data/db.js';
@@ -45,6 +45,7 @@ export class CustomerField {
   private nameFeld: HTMLInputElement | null = null;
   private plzFeld: HTMLInputElement | null = null;
   private ortFeld: HTMLInputElement | null = null;
+  private strasseFeld: HTMLInputElement | null = null;
   private hinweis: HTMLElement | null = null;
   private gpsKnopf: HTMLButtonElement | null = null;
   private gpsHinweis: HTMLElement | null = null;
@@ -63,6 +64,7 @@ export class CustomerField {
     this.nameFeld = document.getElementById('customer-name-input') as HTMLInputElement | null;
     this.plzFeld = document.getElementById('customer-plz-input') as HTMLInputElement | null;
     this.ortFeld = document.getElementById('customer-ort-input') as HTMLInputElement | null;
+    this.strasseFeld = document.getElementById('customer-street-input') as HTMLInputElement | null;
     this.hinweis = document.getElementById('customer-plz-hint');
     this.gpsKnopf = document.getElementById('customer-use-gps-btn') as HTMLButtonElement | null;
     this.gpsHinweis = document.getElementById('customer-gps-status');
@@ -215,6 +217,7 @@ export class CustomerField {
       name,
       plz,
       ort: this.ortFeld?.value,
+      strasse: this.strasseFeld?.value,
       gps: this.gpsPunkt,
     });
     await this.lade();
@@ -229,6 +232,7 @@ export class CustomerField {
     if (this.nameFeld) this.nameFeld.value = '';
     if (this.plzFeld) this.plzFeld.value = '';
     if (this.ortFeld) this.ortFeld.value = '';
+    if (this.strasseFeld) this.strasseFeld.value = '';
     if (this.hinweis) this.hinweis.textContent = '';
     if (this.gpsHinweis) this.gpsHinweis.textContent = '';
     this.gpsPunkt = null;

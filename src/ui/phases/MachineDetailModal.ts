@@ -171,10 +171,9 @@ export class MachineDetailModal {
   /**
    * Den Kunden zeigen, bei dem die Maschine steht.
    *
-   * Eine Zeile: Name, darunter Postleitzahl und Ort. Mehr führt der Kunde
-   * hier nicht (docs/kunden-und-karte.md §2). Hängt keiner an der Maschine,
-   * bleibt die Zeile weg — eine leere Zeile „Kunde: —" wäre eine Angabe über
-   * nichts.
+   * Eine Zeile: Name, darunter die vorhandenen Teile der lokalen Anschrift.
+   * Hängt keiner an der Maschine, bleibt die Zeile weg — eine leere Zeile
+   * „Kunde: —" wäre eine Angabe über nichts.
    */
   private async renderCustomer(machine: Machine): Promise<void> {
     const zeile = document.getElementById('machine-detail-customer');
@@ -193,8 +192,10 @@ export class MachineDetailModal {
       return;
     }
 
-    const ort = [kunde.plz, kunde.ort].filter(Boolean).join(' ');
-    zeile.textContent = ort ? `${kunde.name} · ${ort}` : kunde.name;
+    const adresse = [kunde.strasse, [kunde.plz, kunde.ort].filter(Boolean).join(' ')]
+      .filter(Boolean)
+      .join(' · ');
+    zeile.textContent = adresse ? `${kunde.name} · ${adresse}` : kunde.name;
     zeile.style.display = '';
   }
 

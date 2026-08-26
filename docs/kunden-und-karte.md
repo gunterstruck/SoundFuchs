@@ -55,10 +55,13 @@ Vertriebswissen und gehört nicht hierher. Ein Kunde in SoundFuchs ist:
 | `name`       | ja                | eingegeben                        |
 | `plz`        | alternativ zu GPS | eingegeben                        |
 | `ort`        | nein              | **füllt sich aus der PLZ selbst** |
+| `strasse`    | nein              | eingegeben, nur lokal angezeigt   |
 | `lat`, `lng` | nein              | aus der PLZ oder vom Gerät        |
 | `geo`        | ja                | `plz` \| `gps` \| `none`          |
 
-Mehr nicht. Straße, Ansprechpartner, Telefon: erst, wenn jemand danach fragt.
+Mehr nicht. Die Straße kam als ausdrücklich gewünschte, optionale Orientierung
+dazu; sie wird weder an einen Geokodierungsdienst geschickt noch zur
+Kartenposition umgedeutet. Ansprechpartner und Telefon bleiben draußen.
 
 Die Maschine bekommt ein Feld `customerId`. Ohne Kunde bleibt sie, wie sie
 ist — der Bestand funktioniert weiter ohne einen einzigen Kunden.
@@ -247,8 +250,8 @@ Postleitzahl-Verortung an anderer Stelle bewusst vermeidet (sie sagt
 „Ortsmitte", statt eine Hausnummer-Genauigkeit zu behaupten, die sie nicht
 hat). Ein erfundenes Klangbild wäre dasselbe, nur im Ton statt auf der Karte.
 
-**Schnitt 4 — eine Kundenliste einlesen.** Eine CSV-Datei mit bis zu vier
-Spalten: Name und PLZ Pflicht, Ort und Maschine optional. Von TourFuchs
+**Schnitt 4 — eine Kundenliste einlesen.** Eine CSV-Datei mit bis zu fünf
+Spalten: Name und PLZ Pflicht, Ort, Straße und Maschine optional. Von TourFuchs
 abgeschaut ist die Idee des Imports, nicht das Format — dort wird eine ganze
 Kundenverwaltung mit Umsatz, Vertriebsbezirk und Kanal eingelesen
 (`src/services/excel.js` + `src/ui/importWizard.js`, zusammen rund 1700

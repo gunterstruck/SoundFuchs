@@ -39,9 +39,14 @@ describe('Standort anlegen', () => {
   });
 
   it('behält den bisherigen Offline-Weg über die Postleitzahl', async () => {
-    const kunde = await speichereStandort({ name: 'Werk Süd', plz: '45127' });
+    const kunde = await speichereStandort({
+      name: 'Werk Süd',
+      plz: '45127',
+      strasse: '  Industriestraße 12  ',
+    });
 
     expect(kunde.ort).toBe('Essen');
+    expect(kunde.strasse).toBe('Industriestraße 12');
     expect(kunde.geo).toBe('plz');
     expect(kunde.lat).toBeTypeOf('number');
     expect(kunde.lng).toBeTypeOf('number');

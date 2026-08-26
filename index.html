@@ -1187,6 +1187,24 @@
                               </div>
                             </div>
                             <span class="input-hint" id="customer-plz-hint" role="status"></span>
+                            <div class="input-group customer-address-field">
+                              <label for="customer-street-input" data-i18n="customers.streetLabel"
+                                >Straße und Hausnummer (optional)</label
+                              >
+                              <input
+                                type="text"
+                                id="customer-street-input"
+                                class="machine-input"
+                                maxlength="120"
+                                autocomplete="street-address"
+                                placeholder="z.B. Industriestraße 12"
+                                data-i18n-placeholder="customers.streetPlaceholder"
+                              />
+                              <span class="input-hint" data-i18n="customers.streetHint"
+                                >Nur lokal gespeichert; der Kartenpunkt bleibt GPS- oder
+                                PLZ-basiert.</span
+                              >
+                            </div>
                             <span class="input-hint" data-i18n="customers.hint"
                               >GPS oder PLZ genügen für den Kartenpunkt.</span
                             >
@@ -4928,6 +4946,23 @@
                 autocomplete="address-level2"
               />
             </div>
+          </div>
+          <div class="input-group customer-address-field">
+            <label for="site-create-street" data-i18n="customers.streetLabel"
+              >Straße und Hausnummer (optional)</label
+            >
+            <input
+              type="text"
+              id="site-create-street"
+              class="machine-input"
+              maxlength="120"
+              autocomplete="street-address"
+              placeholder="z.B. Industriestraße 12"
+              data-i18n-placeholder="customers.streetPlaceholder"
+            />
+            <span class="input-hint" data-i18n="customers.streetHint"
+              >Nur lokal gespeichert; der Kartenpunkt bleibt GPS- oder PLZ-basiert.</span
+            >
           </div>
           <p class="input-error site-create-error" id="site-create-error" role="alert"></p>
         </div>

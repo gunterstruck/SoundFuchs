@@ -12,6 +12,7 @@ export interface StandortEingabe {
   name: string;
   plz?: string;
   ort?: string;
+  strasse?: string;
   gps?: GpsPunkt | null;
 }
 
@@ -33,6 +34,7 @@ export async function speichereStandort(eingabe: StandortEingabe): Promise<Custo
     name,
     plz,
     ort,
+    strasse: eingabe.strasse?.trim() || undefined,
     lat: punkt?.lat,
     lng: punkt?.lng,
     geo: eingabe.gps ? 'gps' : plzPunkt ? 'plz' : 'none',

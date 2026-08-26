@@ -576,6 +576,9 @@ export const de: TranslationDict = {
     plzLabel: 'PLZ',
     plzPlaceholder: '45127',
     ortLabel: 'Ort',
+    streetLabel: 'Straße und Hausnummer (optional)',
+    streetPlaceholder: 'z.B. Industriestraße 12',
+    streetHint: 'Lokal gespeichert; der Kartenpunkt bleibt bei GPS oder PLZ.',
     hint: 'GPS oder PLZ genügen für den Kartenpunkt.',
     createTitle: 'Standort anlegen',
     createDescription:
@@ -610,7 +613,7 @@ export const de: TranslationDict = {
     demoError: 'Beispieldaten konnten nicht bearbeitet werden.',
     importTitle: 'Standortliste einlesen',
     importDescription:
-      'CSV-Datei mit den Spalten Name, PLZ, optional Ort und Maschine. Ort und Kartenposition kommen aus der Postleitzahl.',
+      'CSV-Datei mit den Spalten Name, PLZ, optional Ort, Straße und Maschine. Ort und Kartenposition kommen aus der Postleitzahl.',
     importButton: 'CSV auswählen',
     importSummary:
       '{{angelegt}} Standorte angelegt, {{maschinen}} Maschinen, {{uebersprungen}} übersprungen, {{fehler}} fehlerhafte Zeilen',

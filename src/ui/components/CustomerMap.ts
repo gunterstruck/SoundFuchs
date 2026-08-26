@@ -786,10 +786,11 @@ export class CustomerMap {
 
     // ── Adresse, mit der Angabe, wie genau sie ist ─────────────────────────
     const ort = [kunde.plz, kunde.ort].filter(Boolean).join(' ');
-    if (ort || kunde.geo === 'gps') {
+    const anschrift = [kunde.strasse, ort].filter(Boolean).join(' · ');
+    if (anschrift || kunde.geo === 'gps') {
       const zeile = document.createElement('p');
       zeile.className = 'popup-addr';
-      zeile.textContent = ort || t('map.accuracyGps');
+      zeile.textContent = anschrift || t('map.accuracyGps');
       if (kunde.geo === 'plz') {
         // Aus dem Stamm, wörtlich in der Sache: Ein Punkt, der die Ortsmitte
         // meint, darf nicht wie eine Hausnummer aussehen.
@@ -797,7 +798,7 @@ export class CustomerMap {
         ungefaehr.className = 'muted small';
         ungefaehr.textContent = ` · 📍 ${t('map.accuracyPlz')}`;
         zeile.appendChild(ungefaehr);
-      } else if (ort && kunde.geo === 'gps') {
+      } else if (anschrift && kunde.geo === 'gps') {
         zeile.append(` · 📍 ${t('map.accuracyGps')}`);
       }
       wurzel.appendChild(zeile);
