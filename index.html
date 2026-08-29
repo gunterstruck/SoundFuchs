@@ -463,10 +463,23 @@
         ></section>
       </aside>
 
-      <!-- Knopfzeile über der Karte. Hier liegen die zwei Wege für ein
-           Geräusch, das noch keiner geöffneten Maschine zugeordnet ist:
-           live erkennen oder eine vorhandene Datei prüfen. -->
+      <!-- Knopfgruppe über der Karte. Oben steht – nur bei vorhandenem
+           Bestand – der seltenere Verwaltungsweg „Standort". Darunter liegen
+           die beiden gleichrangigen Geräuschwege: live erkennen oder eine
+           vorhandene Datei prüfen. Auf dem Handy ergibt das ein kleines,
+           bewusst hierarchisches Dreieck statt drei konkurrierender Knöpfe. -->
       <div id="map-fab-row" class="map-fab-row">
+        <button
+          id="btn-new-site"
+          class="map-fab map-fab-site"
+          type="button"
+          aria-label="Neuen Standort anlegen"
+          data-i18n-aria="customers.createTitle"
+          hidden
+        >
+          <span class="mns-icon" aria-hidden="true">＋</span>
+          <span class="mns-label" data-i18n="map.newSiteButton">Standort</span>
+        </button>
         <button
           id="btn-sound-detect"
           class="map-fab"

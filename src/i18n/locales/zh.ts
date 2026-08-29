@@ -563,6 +563,7 @@ export const zh: TranslationDict = {
     emptyText: '创建机器时可同时记录其所在地点。',
     emptyMachineButton: '创建第一台机器',
     emptySiteButton: '仅创建地点',
+    newSiteButton: '地点',
     emptyButton: '加载示例数据',
     emptyLoading: '加载中 …',
   },

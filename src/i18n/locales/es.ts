@@ -614,6 +614,7 @@ export const es: TranslationDict = {
     emptyText: 'Crea la máquina y registra su ubicación al mismo tiempo.',
     emptyMachineButton: 'Crear primera máquina',
     emptySiteButton: 'Crear solo ubicación',
+    newSiteButton: 'Ubicación',
     emptyButton: 'Cargar datos de ejemplo',
     emptyLoading: 'Cargando …',
   },

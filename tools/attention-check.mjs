@@ -62,10 +62,12 @@ import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { writeFileSync, mkdtempSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const FREI = process.argv.includes('--frei');
 
@@ -306,7 +308,9 @@ async function freierPort() {
 }
 
 async function starteVorschau(port) {
-  const kind = spawn('npx', ['vite', 'preview', '--port', String(port), '--strictPort'], {
+  const vite = resolve(ROOT, 'node_modules/vite/bin/vite.js');
+  const kind = spawn(process.execPath, [vite, 'preview', '--port', String(port), '--strictPort'], {
+    cwd: ROOT,
     stdio: 'ignore',
     detached: false,
   });
@@ -1100,6 +1104,10 @@ try {
     let standortFelderInZeile = false;
     let standortTouchzieleGross = false;
     let markerNachEinstieg = 0;
+    let standortPilleImLeerzustand = false;
+    let standortPilleMitBestand = false;
+    let standortDreieckPasst = false;
+    let standortPillenDialogDa = false;
 
     if (karteImMenue) {
       await page.locator('.info-sheet-row[data-karte]').click();
@@ -1116,6 +1124,10 @@ try {
         .catch(() => false);
       eigenerStandortDa = await page
         .locator('#map-empty-new-site-btn')
+        .isVisible()
+        .catch(() => false);
+      standortPilleImLeerzustand = await page
+        .locator('#btn-new-site')
         .isVisible()
         .catch(() => false);
 
@@ -1167,6 +1179,34 @@ try {
         await page.locator('#map-empty-demo-btn').click();
         await page.waitForTimeout(9000);
         markerNachEinstieg = await page.locator('#map .leaflet-marker-icon').count();
+        standortPilleMitBestand = await page
+          .locator('#btn-new-site')
+          .isVisible()
+          .catch(() => false);
+        if (standortPilleMitBestand) {
+          standortDreieckPasst = await page.evaluate(() => {
+            const standort = document.getElementById('btn-new-site')?.getBoundingClientRect();
+            const erkennen = document.getElementById('btn-sound-detect')?.getBoundingClientRect();
+            const importieren = document
+              .getElementById('btn-schnellcheck')
+              ?.getBoundingClientRect();
+            if (!standort || !erkennen || !importieren) return false;
+            const mitteOben = standort.left + standort.width / 2;
+            const mitteUnten = (erkennen.left + importieren.right) / 2;
+            return (
+              standort.bottom <= Math.min(erkennen.top, importieren.top) + 1 &&
+              Math.abs(mitteOben - mitteUnten) <= 4 &&
+              standort.left >= 0 &&
+              importieren.right <= window.innerWidth
+            );
+          });
+          await page.locator('#btn-new-site').click();
+          standortPillenDialogDa = await page
+            .locator('#site-create-modal')
+            .isVisible()
+            .catch(() => false);
+          if (standortPillenDialogDa) await page.locator('#site-create-cancel').click();
+        }
       }
     }
 
@@ -1184,6 +1224,14 @@ try {
     console.log(`PLZ und Ort in einer Zeile ${standortFelderInZeile ? 'ja' : 'NEIN'}`);
     console.log(`Aktionen mindestens 44 px ${standortTouchzieleGross ? 'ja' : 'NEIN'}`);
     console.log(`Marker nach dem Einstieg  ${markerNachEinstieg}`);
+    console.log(
+      `Standort-Pille bei leerem Bestand ${standortPilleImLeerzustand ? 'FALSCH sichtbar' : 'verborgen'}`
+    );
+    console.log(
+      `Standort-Pille mit Bestand ${standortPilleMitBestand ? 'sichtbar' : 'NICHT sichtbar'}`
+    );
+    console.log(`Pillen als Dreieck        ${standortDreieckPasst ? 'ja' : 'NEIN'}`);
+    console.log(`Pille öffnet Standortdialog ${standortPillenDialogDa ? 'ja' : 'NEIN'}`);
 
     pruefe(
       karteImMenue,
@@ -1225,6 +1273,18 @@ try {
     pruefe(
       markerNachEinstieg > 0,
       'Weg hinein: der Knopf in der leeren Karte bringt keine Standorte auf die Karte'
+    );
+    pruefe(
+      !standortPilleImLeerzustand,
+      'Standort-Pille: im Leerzustand doppelt sie den bereits vorhandenen Standort-Knopf'
+    );
+    pruefe(
+      standortPilleMitBestand && standortDreieckPasst,
+      'Standort-Pille: mit Bestand fehlt sie oder steht nicht mittig über Erkennen und Import'
+    );
+    pruefe(
+      standortPillenDialogDa,
+      'Standort-Pille: der vorhandene Standortdialog öffnet sich nicht'
     );
 
     await ctx.close();

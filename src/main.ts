@@ -1374,11 +1374,14 @@ class ZanobotApp {
       });
     }
 
-    // Kein Umweg durch das Maschinenformular: Dieser Knopf bereitet nur den
-    // Ort vor. Die Maschine folgt anschließend aus der Standortansicht.
-    document
-      .getElementById('map-empty-new-site-btn')
-      ?.addEventListener('click', standortAnlegenOeffnen);
+    // Kein Umweg durch das Maschinenformular: Beide Knöpfe bereiten nur den
+    // Ort vor. Der erste gehört zum Leerzustand, der zweite erscheint über
+    // den Geräusch-Pillen, sobald bereits ein Bestand vorhanden ist. Nach dem
+    // Speichern führt derselbe STANDORT_GESPEICHERT-Weg in den neuen Standort;
+    // dort kann unmittelbar die erste Maschine angelegt werden.
+    for (const id of ['map-empty-new-site-btn', 'btn-new-site']) {
+      document.getElementById(id)?.addEventListener('click', standortAnlegenOeffnen);
+    }
   }
 
   /**

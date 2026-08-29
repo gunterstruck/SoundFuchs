@@ -2276,10 +2276,11 @@ dialog footer { margin-top: 14px; display: flex; justify-content: flex-end; gap:
 }
 
 /* ---------------------------------------------------------------------------
-   Karten-Knopfzeile: „Kunden in meiner Nähe" und „Lasso ziehen"
+   Karten-Knopfgruppe: „Standort", „Erkennen" und „Import"
 
-   Zwei gleichrangige Angebote, also zwei gleich aussehende Pillen nebeneinander
-   in einer Zeile. Die Zeile positioniert, die Knöpfe selbst sind schlicht.
+   Zwei gleichrangige Geräusch-Angebote stehen nebeneinander. Der seltenere
+   Weg „Standort" sitzt mittig darüber. Ein zweispaltiges Raster bildet diese
+   Hierarchie ohne feste Positionen oder Breiten-Tricks ab.
 --------------------------------------------------------------------------- */
 .map-fab-row {
     position: fixed;
@@ -2292,14 +2293,10 @@ dialog footer { margin-top: 14px; display: flex; justify-content: flex-end; gap:
     left: var(--sidebar-width, 0px);
     right: 0;
     bottom: 20px;
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
     align-items: center;
     justify-content: center;
-    /* Umbrechen statt aus dem Bild laufen: Zwei Pillen passen auf jedes
-       Telefon, drei nicht. Regulär schließen sich Fuchs und Routen-Umschalter
-       gegenseitig aus – falls doch einmal drei zusammenkommen, wächst die
-       Zeile nach oben, statt links aus dem Schirm zu ragen. */
-    flex-wrap: wrap;
     gap: 8px;
     padding: 0 10px;
     pointer-events: none;
@@ -2330,6 +2327,12 @@ dialog footer { margin-top: 14px; display: flex; justify-content: flex-end; gap:
 }
 
 .map-fab[hidden] { display: none; }
+.map-fab-site {
+    grid-column: 1 / -1;
+    justify-self: center;
+    padding-block: 8px;
+    font-weight: 650;
+}
 .map-fab:hover { box-shadow: 0 8px 24px rgba(15, 23, 42, 0.24); }
 .map-fab:active { transform: translateY(1px) scale(0.98); }
 .map-fab .mns-icon { font-size: 1.1rem; }
@@ -2531,9 +2534,9 @@ body.lasso-active .mobile-next-step { display: none; }
    ihre vollständige Beschriftung zeigen. */
 @media (max-width: 359px) {
     .map-fab-row {
-        flex-direction: column;
-        align-items: center;
+        grid-template-columns: max-content;
     }
+    .map-fab-site { grid-column: 1; }
     .map-fab {
         max-width: calc(100vw - 24px);
     }

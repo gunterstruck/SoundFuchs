@@ -663,7 +663,11 @@ export class CustomerMap {
       });
     }
 
-    this.zeigeLeerzustand(verortet.length === 0);
+    // Der Filter oder eine fehlende Kartenposition macht einen vorhandenen
+    // Standort nicht wieder zum Erststart. Entscheidend ist der gesamte
+    // Bestand: Nur ohne jeden Standort erscheint der Einstiegskasten; danach
+    // übernimmt die kleine „＋ Standort"-Pille den dauerhaften Zugang.
+    this.zeigeLeerzustand(uebersicht.length === 0);
   }
 
   /**
@@ -685,9 +689,11 @@ export class CustomerMap {
    */
   private zeigeLeerzustand(leer: boolean): void {
     const kasten = document.getElementById('map-empty');
-    if (!kasten) return;
-    kasten.style.display = leer ? '' : 'none';
+    const standortPille = document.getElementById('btn-new-site') as HTMLButtonElement | null;
+    if (kasten) kasten.style.display = leer ? '' : 'none';
+    if (standortPille) standortPille.hidden = leer;
     if (!leer) return;
+    if (!kasten) return;
 
     // Die Maschinenanlage verdrahtet die Schale in main.ts, weil nur sie das
     // Scharnier zur Bestandsebene öffnen kann. Hier gehört allein die Aktion,

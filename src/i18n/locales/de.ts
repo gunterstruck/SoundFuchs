@@ -652,6 +652,7 @@ export const de: TranslationDict = {
     emptyText: 'Lege die Maschine an und erfasse ihren Standort direkt mit.',
     emptyMachineButton: 'Erste Maschine anlegen',
     emptySiteButton: 'Nur Standort anlegen',
+    newSiteButton: 'Standort',
     emptyButton: 'Beispieldaten laden',
     emptyLoading: 'Wird geladen …',
   },

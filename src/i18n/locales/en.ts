@@ -628,6 +628,7 @@ export const en: TranslationDict = {
     emptyText: 'Create the machine and add its site at the same time.',
     emptyMachineButton: 'Create first machine',
     emptySiteButton: 'Create site only',
+    newSiteButton: 'Site',
     emptyButton: 'Load sample data',
     emptyLoading: 'Loading …',
   },
