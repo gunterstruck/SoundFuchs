@@ -31,7 +31,12 @@
     "mitbringen": "node tools/mitbringen-lauf.mjs",
     "schnellcheck": "node tools/schnellcheck-lauf.mjs",
     "update-weg": "node tools/update-lauf.mjs",
-    "stammvergleich": "node tools/stammvergleich.mjs"
+    "stammvergleich": "node tools/stammvergleich.mjs",
+    "docs:screenshots": "node tools/docs-screenshots.mjs",
+    "docs:previews": "node tools/docs-previews.mjs",
+    "docs:pdf": "node tools/build-knowledge-pdf.mjs",
+    "docs:guided-upload": "node tools/prepare-guided-agent-upload.mjs",
+    "docs:check": "node tools/docs-assets-check.mjs"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
