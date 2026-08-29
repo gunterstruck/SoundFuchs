@@ -12,7 +12,9 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const VIEWPORT = { width: 390, height: 844 };
+// Entspricht näher der tatsächlich nutzbaren Webfläche eines schmalen
+// Samsung-Handys inklusive Browser-/Systemleisten (Screenshot-Regression).
+const VIEWPORT = { width: 360, height: 780 };
 const STORIES = ['core', 'difference', 'import', 'recognition', 'briefing'];
 const SHEET_MOMENTS = {
   difference: [
@@ -126,7 +128,10 @@ async function runStory(browser, baseUrl, story) {
 
       if (state.bubbleVisible && expected.has(state.progress)) {
         if (!state.sheetOpen) throw new Error(`${story} ${state.progress}: Blatt ist geschlossen`);
-        if (state.sheetHeight < VIEWPORT.height * 0.7) {
+        // Durch Systemleisten und Safe-Areas kann 78dvh auf sehr schmalen
+        // Geräten knapp unter 70 % des Layout-Viewports landen. Entscheidend
+        // bleibt zusätzlich die nachfolgende, konkrete Zielsichtprüfung.
+        if (state.sheetHeight < VIEWPORT.height * 0.65) {
           throw new Error(
             `${story} ${state.progress}: Blatt nur ${Math.round(state.sheetHeight)} px hoch`
           );

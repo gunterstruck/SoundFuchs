@@ -323,16 +323,15 @@ async function waitFor(selector: string, timeout = 5000): Promise<HTMLElement> {
     const element = document.querySelector<HTMLElement>(selector);
     if (element) {
       await revealSheetTarget(element);
+      /*
+       * Hier nur prüfen, ob das Ziel tatsächlich gerendert wird. Es muss noch
+       * nicht im Viewport liegen: `moveTo()` scrollt es unmittelbar danach
+       * ins Bild. Die frühere Viewport-Bedingung brach den Film auf realen
+       * Handys ab, wenn der Ergebnissatz zunächst unterhalb des Ausschnitts
+       * lag – obwohl er vorhanden und erreichbar war.
+       */
       const rect = element.getBoundingClientRect();
-      if (
-        element.getClientRects().length > 0 &&
-        rect.width > 0 &&
-        rect.height > 0 &&
-        rect.bottom > 0 &&
-        rect.top < window.innerHeight
-      ) {
-        return element;
-      }
+      if (element.getClientRects().length > 0 && rect.width > 0 && rect.height > 0) return element;
     }
     await sleep(70);
   }
