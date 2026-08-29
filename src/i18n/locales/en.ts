@@ -11,6 +11,8 @@ export const en: TranslationDict = {
   },
 
   sheet: {
+    groupLearn: 'Discover',
+    miniTraining: 'Mini lessons · 5 live demos',
     groupCheck: 'Checking',
     groupMachines: 'Machines',
     groupApp: 'App',
@@ -24,6 +26,88 @@ export const en: TranslationDict = {
     map: 'Site map',
     customerData: 'Sites: samples & import',
     tool: 'Analysis tool',
+  },
+  showcase: {
+    heading: 'SoundFuchs in five short lessons',
+    intro: 'The fox guides you through the real app. Choose the workflow you want to see.',
+    safeHint: 'Synthetic sounds · your data stays untouched',
+    close: 'Close',
+    stop: 'Stop',
+    recommended: 'Recommended',
+    aboutSeconds: 'about {{seconds}} sec.',
+    completed: 'Mini lesson completed',
+    interrupted: 'Mini lesson interrupted',
+    failure: 'The demo could not be completed. Your previous state has been restored.',
+    next: 'Up next',
+    overview: 'Overview',
+    startNext: 'Start next',
+    retry: 'Try again',
+    cancelled: 'Demo stopped',
+    missingTarget: 'The next step was not available: {{target}}',
+    unknownAction: 'Unknown demo step: {{action}}',
+    demo: { site: 'SoundFuchs lesson · Workshop', city: 'Demo mode', machine: 'Demo pump 1' },
+    core: {
+      title: 'Normal today, compare later',
+      blurb: 'Reference state, countercheck and history in one flow.',
+      intro:
+        'SoundFuchs first needs a yardstick: this exact machine while you know it is operating normally.',
+      reference:
+        'In everyday use, hold the phone at the same position for ten seconds. This lesson speeds up the recording.',
+      fingerprint:
+        'The reference state becomes this machine’s acoustic fingerprint – locally on this device.',
+      countercheck:
+        'On the next visit, one countercheck is enough: same position and a comparable operating state.',
+      result:
+        'The recording sounds different from the reference state. SoundFuchs does not name a cause; it documents the change.',
+      history: 'Every check stays in the history, turning one sound into a traceable development.',
+    },
+    difference: {
+      title: 'See and hear the difference',
+      blurb: 'Understand the sound image, listening lens and 3D comparison.',
+      intro: 'A percentage is only the start. What matters is where and how the sound changed.',
+      sources:
+        'Switch between reference state, measurement, difference and the shared fingerprint here.',
+      listen:
+        'The listening lens highlights the contrast so you can hear what is easily masked in the original.',
+      threeD:
+        'The 3D landscape shows the same comparison across frequency, time and strength – not a second assessment.',
+      limit:
+        'SoundFuchs makes a deviation visible and audible. A person still decides whether it is technically relevant.',
+    },
+    import: {
+      title: 'Bring a phone video',
+      blurb: 'Extract its audio, inspect it and continue honestly.',
+      intro:
+        'Already have a video on your phone? Import takes its audio track without asking for a setup form first.',
+      preview:
+        'The selected section appears in the real sound image. Video and audio are processed locally.',
+      noReference:
+        'Without an earlier reference state there is no honest comparison, so there is no deviation percentage.',
+      honest:
+        'You can still inspect, listen to and brief the recording as a neutral observation – without an invented diagnosis.',
+    },
+    recognition: {
+      title: 'Does SoundFuchs know this machine?',
+      blurb: 'Find it among local references – or honestly say no.',
+      intro:
+        'Recognition does not search for damage. It only asks whether the sound matches a machine already known on this device.',
+      match:
+        'The sound clearly matches the demo pump. Only then can the correct machine be opened.',
+      boundary:
+        'If the match is unclear, SoundFuchs shows candidates or says “unknown” instead of inventing a machine.',
+    },
+    briefing: {
+      title: 'Hand over an observation clearly',
+      blurb: 'Prepare the sound package and work order locally.',
+      intro:
+        'After the comparison, the briefing bundles the relevant recordings and marked listening point.',
+      context:
+        'Add only the context a specialist needs: situation, position on the object and your observation.',
+      local:
+        'The package is created entirely in the browser. SoundFuchs has uploaded nothing at this point.',
+      handoff:
+        'Only your deliberate click creates the ZIP and work order. You decide where to send them.',
+    },
   },
   blatt: {
     tabStandort: 'History',

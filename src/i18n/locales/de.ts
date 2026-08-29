@@ -13,6 +13,8 @@ export const de: TranslationDict = {
   },
 
   sheet: {
+    groupLearn: 'Entdecken',
+    miniTraining: 'Mini-Schulungen · 5 Live-Demos',
     groupCheck: 'Prüfen',
     groupMachines: 'Maschinen',
     groupApp: 'App',
@@ -26,6 +28,96 @@ export const de: TranslationDict = {
     map: 'Standortkarte',
     customerData: 'Standorte: Beispiele & Import',
     tool: 'Auswertungswerkzeug',
+  },
+  showcase: {
+    heading: 'SoundFuchs in fünf kurzen Schulungen',
+    intro:
+      'Der Fuchs führt dich direkt durch die echte App. Wähle den Ablauf, den du sehen möchtest.',
+    safeHint: 'Synthetische Töne · deine Daten bleiben unberührt',
+    close: 'Schließen',
+    stop: 'Beenden',
+    recommended: 'Empfohlen',
+    aboutSeconds: 'ca. {{seconds}} Sek.',
+    completed: 'Mini-Schulung abgeschlossen',
+    interrupted: 'Mini-Schulung unterbrochen',
+    failure:
+      'Die Vorführung konnte nicht vollständig beendet werden. Dein vorheriger Zustand wurde wiederhergestellt.',
+    next: 'Als Nächstes',
+    overview: 'Zur Auswahl',
+    startNext: 'Nächste starten',
+    retry: 'Erneut versuchen',
+    cancelled: 'Vorführung beendet',
+    missingTarget: 'Der nächste Schritt war nicht erreichbar: {{target}}',
+    unknownAction: 'Unbekannter Vorführschritt: {{action}}',
+    demo: {
+      site: 'SoundFuchs Schulung · Werkhalle',
+      city: 'Vorführmodus',
+      machine: 'Demonstrationspumpe 1',
+    },
+    core: {
+      title: 'Heute normal, später vergleichen',
+      blurb: 'Normalzustand, Gegenprobe und Verlauf in einem Ablauf.',
+      intro:
+        'SoundFuchs braucht zuerst einen Maßstab: diese eine Maschine, während sie nach deinem Wissen normal läuft.',
+      reference:
+        'Im Alltag hältst du das Smartphone zehn Sekunden an dieselbe Stelle. Die Schulung beschleunigt diese Aufnahme.',
+      fingerprint:
+        'Aus dem Normalzustand entsteht der akustische Fingerabdruck – lokal auf diesem Gerät.',
+      countercheck:
+        'Beim nächsten Besuch genügt eine Gegenprobe. Gleiche Stelle, vergleichbarer Betriebszustand.',
+      result:
+        'Die Messung klingt anders als der Normalzustand. SoundFuchs nennt keine Ursache – es belegt die Veränderung.',
+      history:
+        'Jede Prüfung bleibt im Verlauf. So wird aus einem einzelnen Geräusch eine nachvollziehbare Entwicklung.',
+    },
+    difference: {
+      title: 'Den Unterschied sehen und hören',
+      blurb: 'Klangbild, Hör-Lupe und 3D-Vergleich verstehen.',
+      intro:
+        'Eine Prozentzahl ist nur der Einstieg. Entscheidend ist, wo und wie sich der Klang verändert hat.',
+      sources:
+        'Hier wechselst du zwischen Normalzustand, Messung, Unterschied und dem gemeinsamen Fingerabdruck.',
+      listen:
+        'Die Hör-Lupe hebt den Kontrast hervor. Du hörst gezielter, was im Original leicht untergeht.',
+      threeD:
+        'Das 3D-Gebirge zeigt denselben Vergleich über Frequenz, Zeit und Stärke – keine zweite Bewertung.',
+      limit:
+        'SoundFuchs macht eine Abweichung sichtbar und hörbar. Ob sie technisch relevant ist, beurteilt weiterhin ein Mensch.',
+    },
+    import: {
+      title: 'Einen Handyfilm mitbringen',
+      blurb: 'Tonspur übernehmen, ansehen und ehrlich weiterverwenden.',
+      intro:
+        'Der Film liegt schon auf dem Handy? Über Import übernimmt SoundFuchs seine Tonspur – ohne vorheriges Formular.',
+      preview:
+        'Der gewählte Ausschnitt landet im echten Klangbild. Film und Ton werden dabei lokal verarbeitet.',
+      noReference:
+        'Ohne früheren Normalzustand gibt es keinen ehrlichen Vergleich und deshalb auch keine Abweichungs-Prozentzahl.',
+      honest:
+        'Trotzdem kannst du die Aufnahme ansehen, anhören und als neutralen Verdachtsfall briefen – ohne erfundene Diagnose.',
+    },
+    recognition: {
+      title: 'Kennt SoundFuchs diese Maschine?',
+      blurb: 'Unter lokalen Referenzen wiederfinden – oder ehrlich passen.',
+      intro:
+        'Erkennen sucht nicht nach Schäden. Es fragt nur: Passt dieses Geräusch zu einer Maschine, die auf diesem Gerät bereits bekannt ist?',
+      match:
+        'Der Klang passt eindeutig zur Demonstrationspumpe. Erst danach kann die richtige Maschine geöffnet werden.',
+      boundary:
+        'Ist das Ergebnis nicht eindeutig, zeigt SoundFuchs Kandidaten oder meldet „unbekannt“ – statt eine Maschine zu erfinden.',
+    },
+    briefing: {
+      title: 'Eine Beobachtung sauber übergeben',
+      blurb: 'Geräuschpaket und Arbeitsauftrag lokal vorbereiten.',
+      intro:
+        'Nach dem Vergleich bündelt das Briefing genau die Aufnahmen und die markierte Hörstelle, um die es geht.',
+      context:
+        'Du ergänzt nur den Kontext, den die Fachperson braucht: Situation, Ort am Objekt und deine Beobachtung.',
+      local:
+        'Das Paket entsteht vollständig im Browser. SoundFuchs hat bis hierhin nichts hochgeladen.',
+      handoff:
+        'Erst dein bewusster Klick erzeugt ZIP und Arbeitsauftrag. Wohin du beides weitergibst, entscheidest du selbst.',
+    },
   },
   blatt: {
     tabStandort: 'Verlauf',

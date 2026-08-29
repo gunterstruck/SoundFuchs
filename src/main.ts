@@ -15,6 +15,7 @@ import './styles/pipeline-status.css';
 import './styles/drift-panel.css';
 import './styles/event-timeline.css';
 import './styles/spectrogram-3d.css';
+import './styles/showcase.css';
 
 // Der Stamm. Datei für Datei unverändert aus TourFuchs übernommen — nicht
 // abgeschrieben, kopiert (siehe docs/nutzerreise-wie-tourfuchs.md §0h).
@@ -48,6 +49,7 @@ import { logger } from '@utils/logger.js';
 import { ersteLaufNachfuehren } from '@utils/ersteLauf.js';
 import { GlobalSearch } from '@ui/GlobalSearch.js';
 import { InfoBottomSheet } from '@ui/components/InfoBottomSheet.js';
+import { initShowcase, openShowcase } from '@ui/showcase.js';
 import { CustomerMap } from '@ui/components/CustomerMap.js';
 import { schaleAufbauen, zeigeKarte } from './stamm/ui/schale.js';
 import { releaseInheritedOrientationLock } from './stamm/core/viewport.js';
@@ -791,6 +793,15 @@ class ZanobotApp {
       },
     });
 
+    initShowcase({
+      currentMachine: () => this.offeneMaschine,
+      useMachine: (machine) => {
+        this.offeneMaschine = machine;
+      },
+      openMachine: (machine) => this.oeffneMaschine(machine),
+      refreshMap: () => this.kundenkarte.zeigeImGrund(),
+    });
+
     /**
      * Beim Zurückkommen die Karte auffrischen.
      *
@@ -1114,10 +1125,15 @@ class ZanobotApp {
     type Zeile =
       | { art: 'thema'; thema: string; icon: string; key: string }
       | { art: 'knopf'; id: string; icon: string; key: string }
+      | { art: 'showcase'; icon: string; key: string }
       | { art: 'karte'; icon: string; key: string }
       | { art: 'bald'; icon: string; key: string };
 
     const gruppen: Array<{ titel: string; zeilen: Zeile[] }> = [
+      {
+        titel: t('sheet.groupLearn'),
+        zeilen: [{ art: 'showcase', icon: '🎬', key: 'sheet.miniTraining' }],
+      },
       {
         titel: t('sheet.groupCheck'),
         zeilen: [
@@ -1160,9 +1176,11 @@ class ZanobotApp {
       const ziel =
         z.art === 'thema'
           ? `data-thema="${z.thema}" data-label="${escapeHtml(t(z.key))}"`
-          : z.art === 'karte'
-            ? 'data-karte="1"'
-            : `data-target="${escapeHtml(z.id)}"`;
+          : z.art === 'showcase'
+            ? 'data-showcase="1"'
+            : z.art === 'karte'
+              ? 'data-karte="1"'
+              : `data-target="${escapeHtml(z.id)}"`;
       return `<button type="button" class="info-sheet-row" ${ziel}>${kopf}<span class="info-sheet-arrow">›</span></button>`;
     };
 
@@ -1191,6 +1209,13 @@ class ZanobotApp {
           ziel?.click();
         });
       });
+
+      document
+        .querySelector<HTMLElement>('.info-sheet-row[data-showcase]')
+        ?.addEventListener('click', () => {
+          InfoBottomSheet.close();
+          openShowcase();
+        });
 
       // Der Weg auf die Karte.
       document.querySelectorAll<HTMLElement>('.info-sheet-row[data-karte]').forEach((zeile) => {

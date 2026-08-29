@@ -11,6 +11,8 @@ export const es: TranslationDict = {
   },
 
   sheet: {
+    groupLearn: 'Descubrir',
+    miniTraining: 'Mini lecciones · 5 demos en vivo',
     groupCheck: 'Comprobación',
     groupMachines: 'Máquinas',
     groupApp: 'Aplicación',
@@ -24,6 +26,90 @@ export const es: TranslationDict = {
     map: 'Mapa de ubicaciones',
     customerData: 'Ubicaciones: ejemplos e importación',
     tool: 'Herramienta de análisis',
+  },
+  showcase: {
+    heading: 'SoundFuchs en cinco lecciones breves',
+    intro: 'El zorro le guía por la aplicación real. Elija el proceso que desea ver.',
+    safeHint: 'Sonidos sintéticos · sus datos no se modifican',
+    close: 'Cerrar',
+    stop: 'Finalizar',
+    recommended: 'Recomendado',
+    aboutSeconds: 'aprox. {{seconds}} s',
+    completed: 'Mini lección finalizada',
+    interrupted: 'Mini lección interrumpida',
+    failure: 'La demostración no pudo completarse. Se ha restaurado el estado anterior.',
+    next: 'A continuación',
+    overview: 'Selección',
+    startNext: 'Iniciar siguiente',
+    retry: 'Reintentar',
+    cancelled: 'Demostración finalizada',
+    missingTarget: 'El siguiente paso no estaba disponible: {{target}}',
+    unknownAction: 'Paso de demostración desconocido: {{action}}',
+    demo: {
+      site: 'Lección SoundFuchs · Taller',
+      city: 'Modo de demostración',
+      machine: 'Bomba de demostración 1',
+    },
+    core: {
+      title: 'Normal hoy, comparar después',
+      blurb: 'Estado normal, contraprueba e historial en un solo proceso.',
+      intro:
+        'SoundFuchs necesita primero una referencia: esta máquina concreta cuando funciona normalmente según su criterio.',
+      reference:
+        'En el uso real, mantenga el teléfono diez segundos en la misma posición. La lección acelera la grabación.',
+      fingerprint:
+        'El estado normal se convierte en la huella acústica de esta máquina, localmente en este dispositivo.',
+      countercheck:
+        'En la próxima visita basta una contraprueba: misma posición y un estado de funcionamiento comparable.',
+      result:
+        'La medición suena diferente del estado normal. SoundFuchs no nombra una causa; documenta el cambio.',
+      history:
+        'Cada comprobación queda en el historial y convierte un sonido aislado en una evolución trazable.',
+    },
+    difference: {
+      title: 'Ver y oír la diferencia',
+      blurb: 'Comprender la imagen sonora, la lupa auditiva y la comparación 3D.',
+      intro: 'Un porcentaje es solo el comienzo. Importa dónde y cómo ha cambiado el sonido.',
+      sources: 'Cambie aquí entre estado normal, medición, diferencia y huella compartida.',
+      listen:
+        'La lupa auditiva resalta el contraste para oír lo que puede quedar oculto en el original.',
+      threeD:
+        'El relieve 3D muestra la misma comparación por frecuencia, tiempo e intensidad; no es otra evaluación.',
+      limit:
+        'SoundFuchs hace visible y audible una desviación. Una persona decide si es técnicamente relevante.',
+    },
+    import: {
+      title: 'Importar un vídeo del móvil',
+      blurb: 'Extraer el audio, examinarlo y continuar con honestidad.',
+      intro:
+        '¿El vídeo ya está en el móvil? Importar toma la pista de audio sin exigir antes un formulario.',
+      preview:
+        'El fragmento elegido aparece en la imagen sonora real. Vídeo y audio se procesan localmente.',
+      noReference:
+        'Sin un estado normal anterior no hay comparación honesta ni porcentaje de desviación.',
+      honest:
+        'Aun así puede examinar, escuchar y preparar la grabación como observación neutral, sin diagnóstico inventado.',
+    },
+    recognition: {
+      title: '¿Conoce SoundFuchs esta máquina?',
+      blurb: 'Buscarla entre referencias locales o admitir que no.',
+      intro:
+        'El reconocimiento no busca averías. Solo pregunta si el sonido coincide con una máquina ya conocida en este dispositivo.',
+      match:
+        'El sonido coincide claramente con la bomba de demostración. Solo entonces se abre la máquina correcta.',
+      boundary:
+        'Si no es concluyente, SoundFuchs muestra candidatos o indica «desconocida», sin inventar una máquina.',
+    },
+    briefing: {
+      title: 'Entregar bien una observación',
+      blurb: 'Preparar localmente el paquete acústico y la orden de trabajo.',
+      intro: 'Tras comparar, el informe reúne las grabaciones y el punto auditivo marcado.',
+      context:
+        'Añada solo el contexto necesario: situación, posición en el objeto y su observación.',
+      local: 'El paquete se crea íntegramente en el navegador. SoundFuchs no ha subido nada.',
+      handoff:
+        'Solo su clic consciente crea el ZIP y la orden de trabajo. Usted decide dónde enviarlos.',
+    },
   },
   blatt: {
     tabStandort: 'Historial',
