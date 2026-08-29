@@ -39,7 +39,7 @@ import {
   tiefeIstOffen,
   type Tiefenebene,
 } from '../stamm/ui/scharnier.js';
-import { zeigeKarte } from '../stamm/ui/schale.js';
+import { blattAufziehen, blattIstOffen, zeigeKarte } from '../stamm/ui/schale.js';
 import { InfoBottomSheet } from './components/InfoBottomSheet.js';
 import { logger } from '@utils/logger.js';
 
@@ -53,6 +53,7 @@ interface ViewSnapshot {
   depthOpen: boolean;
   siteId: string | null;
   level: Tiefenebene;
+  sheetOpen: boolean;
 }
 
 export interface ShowcaseDeps {
@@ -83,7 +84,14 @@ let shield: HTMLElement | null = null;
 let toolbar: HTMLElement | null = null;
 
 function sleep(ms: number): Promise<void> {
-  const speed = document.documentElement.dataset.showcaseSpeed === 'fast' ? 0.03 : 1;
+  const setting = document.documentElement.dataset.showcaseSpeed;
+  const numericSpeed = Number(setting);
+  const speed =
+    setting === 'fast'
+      ? 0.03
+      : Number.isFinite(numericSpeed) && numericSpeed > 0
+        ? Math.min(1, numericSpeed)
+        : 1;
   const duration = Math.max(12, ms * speed);
   return new Promise((resolve) => {
     const started = performance.now();
@@ -288,7 +296,24 @@ function snapshotView(): ViewSnapshot {
     depthOpen: tiefeIstOffen(),
     siteId: offenerStandortId(),
     level: offeneEbene(),
+    sheetOpen: blattIstOffen(),
   };
+}
+
+/**
+ * Ziele im mobilen Analyseblatt müssen vor dem Zeigen wirklich ins Bild.
+ *
+ * `getClientRects()` allein reicht nicht: Ein Element im nach unten
+ * verschobenen Blatt besitzt weiterhin ein Rechteck, obwohl der Nutzer nur
+ * Griff und Reiter sieht. Darum öffnet die Vorführung das Blatt, sobald ihr
+ * nächstes Ziel darin liegt. Die Höhe selbst wird ausschließlich per
+ * `showcase-running`-CSS vorübergehend vergrößert; die Nutzereinstellung bleibt
+ * unangetastet.
+ */
+async function revealSheetTarget(element: HTMLElement): Promise<void> {
+  if (!element.closest('#sidebar') || blattIstOffen()) return;
+  blattAufziehen();
+  await sleep(320);
 }
 
 async function waitFor(selector: string, timeout = 5000): Promise<HTMLElement> {
@@ -296,7 +321,19 @@ async function waitFor(selector: string, timeout = 5000): Promise<HTMLElement> {
   while (Date.now() < deadline) {
     assertRunning();
     const element = document.querySelector<HTMLElement>(selector);
-    if (element && element.getClientRects().length > 0) return element;
+    if (element) {
+      await revealSheetTarget(element);
+      const rect = element.getBoundingClientRect();
+      if (
+        element.getClientRects().length > 0 &&
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom > 0 &&
+        rect.top < window.innerHeight
+      ) {
+        return element;
+      }
+    }
     await sleep(70);
   }
   throw new Error(t('showcase.missingTarget', { target: selector }));
@@ -560,8 +597,9 @@ async function restore(): Promise<void> {
   if (previous?.depthOpen) oeffneTiefe(previous.siteId, previous.level);
   else {
     schliesseTiefe();
-    zeigeKarte();
   }
+  if (previous?.sheetOpen) blattAufziehen();
+  else zeigeKarte();
 }
 
 async function runStory(story: ShowcaseStory): Promise<void> {

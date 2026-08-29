@@ -36,7 +36,8 @@
     "docs:previews": "node tools/docs-previews.mjs",
     "docs:pdf": "node tools/build-knowledge-pdf.mjs",
     "docs:guided-upload": "node tools/prepare-guided-agent-upload.mjs",
-    "docs:check": "node tools/docs-assets-check.mjs"
+    "docs:check": "node tools/docs-assets-check.mjs",
+    "showcase-check": "node tools/showcase-lauf.mjs"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",

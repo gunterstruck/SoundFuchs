@@ -100,6 +100,9 @@ jobs:
       - run: npx playwright install --with-deps chromium
       # Die Wächter laufen gegen `dist/`, nicht gegen den Entwicklungsserver.
       - run: npm run build
+      # Alle fünf Mini-Schulungen auf kleinstem Handyblatt: Inhalt muss
+      # sichtbar sein und jede Vorführung ihre Abschlusskarte erreichen.
+      - run: npm run showcase-check
       - run: npm run a11y
       - run: npm run sprachen-check
       - run: npm run offline-check
