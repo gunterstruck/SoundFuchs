@@ -1067,6 +1067,9 @@ class ZanobotApp {
        */
       (kunde) => {
         oeffneTiefe(kunde.id, 'standort');
+      },
+      (vorgabe) => {
+        standortAnlegenOeffnen(vorgabe);
       }
     );
     if (!suche.istVerfuegbar) return;
@@ -1374,14 +1377,12 @@ class ZanobotApp {
       });
     }
 
-    // Kein Umweg durch das Maschinenformular: Beide Knöpfe bereiten nur den
-    // Ort vor. Der erste gehört zum Leerzustand, der zweite erscheint über
-    // den Geräusch-Pillen, sobald bereits ein Bestand vorhanden ist. Nach dem
-    // Speichern führt derselbe STANDORT_GESPEICHERT-Weg in den neuen Standort;
-    // dort kann unmittelbar die erste Maschine angelegt werden.
-    for (const id of ['map-empty-new-site-btn', 'btn-new-site']) {
-      document.getElementById(id)?.addEventListener('click', standortAnlegenOeffnen);
-    }
+    // Ohne Bestand bleibt der ausdrückliche Einstieg auf der Karte. Im
+    // laufenden Betrieb liegt derselbe Dialog als Abschlusszeile der Suche —
+    // nicht als dritte dauerhafte Pille über der Karte.
+    document
+      .getElementById('map-empty-new-site-btn')
+      ?.addEventListener('click', () => standortAnlegenOeffnen());
   }
 
   /**

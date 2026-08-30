@@ -94,13 +94,23 @@ export function standortAnlegenSchliessen(): void {
   vorherigerFokus = null;
 }
 
-export function standortAnlegenOeffnen(): void {
+export function standortAnlegenOeffnen(vorgabe: { name?: string; plz?: string } = {}): void {
   const dialog = element<HTMLElement>('site-create-modal');
   if (!dialog) return;
   vorherigerFokus = document.activeElement as HTMLElement | null;
   zuruecksetzen();
+  const name = element<HTMLInputElement>('site-create-name');
+  const plz = element<HTMLInputElement>('site-create-plz');
+  if (name && vorgabe.name) name.value = vorgabe.name;
+  if (plz && vorgabe.plz) {
+    plz.value = vorgabe.plz.slice(0, 5);
+    if (plz.value.length === 5) void ortNachtragen();
+  }
   dialog.style.display = 'flex';
-  window.setTimeout(() => element<HTMLInputElement>('site-create-name')?.focus(), 50);
+  // Der Name bleibt das erste Pflichtfeld. Auch bei einer aus der Suche
+  // übernommenen PLZ landet der Nutzer deshalb hier und nicht mitten im
+  // Formular; ein übernommener Name lässt sich sofort korrigieren.
+  window.setTimeout(() => name?.focus(), 50);
 }
 
 async function speichern(): Promise<void> {

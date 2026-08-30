@@ -520,6 +520,9 @@ export const es: TranslationDict = {
     artMaschine: 'Máquina',
     placeholder: 'Buscar ubicación, máquina, código postal…',
     noHits: 'No se encontró nada.',
+    createSite: 'Crear nueva ubicación',
+    createSiteNamed: 'Crear «{{name}}» como nueva ubicación',
+    createSitePostcode: 'Crear ubicación con código postal {{postcode}}',
     sheetTitle: 'Ajustes y más',
   },
   buttons: {

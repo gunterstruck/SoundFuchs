@@ -526,6 +526,9 @@ export const fr: TranslationDict = {
     artMaschine: 'Machine',
     placeholder: 'Rechercher site, machine, code postal…',
     noHits: 'Aucun résultat.',
+    createSite: 'Créer un nouveau site',
+    createSiteNamed: 'Créer « {{name}} » comme nouveau site',
+    createSitePostcode: 'Créer un site avec le code postal {{postcode}}',
     sheetTitle: 'Réglages et plus',
   },
   buttons: {

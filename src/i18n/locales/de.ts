@@ -540,6 +540,9 @@ export const de: TranslationDict = {
     artMaschine: 'Maschine',
     placeholder: 'Standort, Maschine, PLZ suchen…',
     noHits: 'Nichts gefunden.',
+    createSite: 'Neuen Standort anlegen',
+    createSiteNamed: '„{{name}}“ als neuen Standort anlegen',
+    createSitePostcode: 'Neuen Standort mit PLZ {{postcode}} anlegen',
     sheetTitle: 'Einstellungen & mehr',
   }, // ============================================================================
   // BUTTONS

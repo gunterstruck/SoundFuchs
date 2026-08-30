@@ -11796,6 +11796,58 @@ html[data-view-level='basic'] .diagnosis-dashboard-grid.no-camera {
   font-size: var(--font-sm);
 }
 
+/* Der seltene Verwaltungsweg steht dort, wo Standorte ohnehin gesucht
+   werden. Als eigene Abschlusszeile bleibt er von Treffern unterscheidbar und
+   ist auch bei leerem Suchfeld ein vollständiges 44-px-Fingerziel. */
+.search-create-site {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 13px;
+  border: 0;
+  border-top: 1px solid var(--border-color);
+  border-radius: 0;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-create-site:hover,
+.search-create-site:focus-visible {
+  background: var(--bg-secondary);
+}
+
+.search-create-site-icon {
+  display: inline-grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary-color);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.search-create-site-label {
+  min-width: 0;
+  white-space: normal;
+}
+
+/* Die einmalige Fünf-Sekunden-Vorschau zeigt nur, wo der neue Weg liegt. Sie
+   darf weder Basis/Profi noch die Karte abfangen. Mit Fokus auf die Suche wird
+   die Klasse entfernt und dieselbe Zeile ist normal anklickbar. */
+.search-results.search-results-intro {
+  pointer-events: none;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    GRIFF AM UNTEREN RAND
 

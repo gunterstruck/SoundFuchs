@@ -689,9 +689,7 @@ export class CustomerMap {
    */
   private zeigeLeerzustand(leer: boolean): void {
     const kasten = document.getElementById('map-empty');
-    const standortPille = document.getElementById('btn-new-site') as HTMLButtonElement | null;
     if (kasten) kasten.style.display = leer ? '' : 'none';
-    if (standortPille) standortPille.hidden = leer;
     if (!leer) return;
     if (!kasten) return;
 

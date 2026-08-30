@@ -22,17 +22,30 @@ import { MAX_TREFFER, MINDESTLAENGE, sucheTreffer, type Treffer } from './sucheT
 import { logger } from '@utils/logger.js';
 import { escapeHtml } from '@utils/sanitize.js';
 import { t } from '../i18n/index.js';
+import {
+  STANDORT_SUCHHINWEIS_MS,
+  standortSuchhinweisNeu,
+  standortVorgabeAusSuche,
+  type StandortVorgabe,
+} from './standortSuche.js';
 
 export class GlobalSearch {
   private readonly feld: HTMLInputElement;
   private readonly liste: HTMLElement;
   private readonly beiAuswahl: (machine: Machine) => void;
   private readonly beiStandort: ((kunde: Customer) => void) | null;
+  private readonly beiNeuemStandort: ((vorgabe: StandortVorgabe) => void) | null;
   private treffer: Treffer[] = [];
+  private hinweisTimer: number | null = null;
 
-  constructor(beiAuswahl: (machine: Machine) => void, beiStandort?: (kunde: Customer) => void) {
+  constructor(
+    beiAuswahl: (machine: Machine) => void,
+    beiStandort?: (kunde: Customer) => void,
+    beiNeuemStandort?: (vorgabe: StandortVorgabe) => void
+  ) {
     this.beiAuswahl = beiAuswahl;
     this.beiStandort = beiStandort ?? null;
+    this.beiNeuemStandort = beiNeuemStandort ?? null;
     this.feld = document.getElementById('global-search') as HTMLInputElement;
     this.liste = document.getElementById('search-results') as HTMLElement;
   }
@@ -45,8 +58,15 @@ export class GlobalSearch {
   public init(): void {
     if (!this.istVerfuegbar) return;
 
-    this.feld.addEventListener('input', () => void this.suchen());
-    this.feld.addEventListener('focus', () => void this.suchen());
+    this.feld.setAttribute('aria-expanded', 'false');
+    this.feld.addEventListener('input', () => {
+      this.hinweisTimerBeenden();
+      void this.suchen();
+    });
+    this.feld.addEventListener('focus', () => {
+      this.hinweisTimerBeenden();
+      void this.suchen();
+    });
 
     // Escape schließt die Liste, ohne das Feld zu leeren: Wer sich vertippt
     // hat, will meist korrigieren, nicht von vorn anfangen.
@@ -61,12 +81,19 @@ export class GlobalSearch {
       if (this.feld.contains(e.target) || this.liste.contains(e.target)) return;
       this.schliessen();
     });
+
+    this.erstenStandorthinweisAnzeigen();
   }
 
   private async suchen(): Promise<void> {
-    const wort = this.feld.value.trim().toLowerCase();
+    const eingabe = this.feld.value.trim();
+    const wort = eingabe.toLowerCase();
     if (wort.length < MINDESTLAENGE) {
-      this.schliessen();
+      this.treffer = [];
+      // Auch ein leeres fokussiertes Feld bietet den seltenen Verwaltungsweg
+      // an. So muss niemand wissen, welches Wort die Tür sichtbar macht.
+      if (this.beiNeuemStandort) this.zeichnen(wort, eingabe);
+      else this.schliessen();
       return;
     }
 
@@ -93,19 +120,17 @@ export class GlobalSearch {
 
     this.treffer = sucheTreffer(wort, customers, machines, MAX_TREFFER);
 
-    this.zeichnen(wort);
+    this.zeichnen(wort, eingabe);
   }
 
-  private zeichnen(wort: string): void {
+  private zeichnen(wort: string, eingabe: string): void {
     this.liste.innerHTML = '';
 
-    if (this.treffer.length === 0) {
+    if (this.treffer.length === 0 && wort.length >= MINDESTLAENGE) {
       const leer = document.createElement('div');
       leer.className = 'search-empty';
       leer.textContent = t('search.noHits');
       this.liste.appendChild(leer);
-      this.liste.hidden = false;
-      return;
     }
 
     for (const treffer of this.treffer) {
@@ -125,9 +150,7 @@ export class GlobalSearch {
        */
       const art = document.createElement('span');
       art.className = 'search-hit-art';
-      art.textContent = t(
-        treffer.art === 'standort' ? 'search.artStandort' : 'search.artMaschine'
-      );
+      art.textContent = t(treffer.art === 'standort' ? 'search.artStandort' : 'search.artMaschine');
 
       const name = document.createElement('span');
       name.className = 'search-hit-name';
@@ -150,7 +173,68 @@ export class GlobalSearch {
       this.liste.appendChild(knopf);
     }
 
+    if (this.beiNeuemStandort) {
+      const vorgabe = standortVorgabeAusSuche(eingabe);
+      const knopf = document.createElement('button');
+      knopf.type = 'button';
+      knopf.className = 'search-create-site';
+
+      const plus = document.createElement('span');
+      plus.className = 'search-create-site-icon';
+      plus.setAttribute('aria-hidden', 'true');
+      plus.textContent = '＋';
+
+      const beschriftung = document.createElement('span');
+      beschriftung.className = 'search-create-site-label';
+      if (vorgabe.plz) {
+        beschriftung.textContent = t('search.createSitePostcode', { postcode: vorgabe.plz });
+      } else if (vorgabe.name) {
+        beschriftung.textContent = t('search.createSiteNamed', { name: vorgabe.name });
+      } else {
+        beschriftung.textContent = t('search.createSite');
+      }
+
+      knopf.append(plus, beschriftung);
+      knopf.addEventListener('click', () => {
+        this.hinweisTimerBeenden();
+        this.schliessen();
+        this.feld.value = '';
+        this.beiNeuemStandort?.(vorgabe);
+      });
+      this.liste.appendChild(knopf);
+    }
+
     this.liste.hidden = false;
+    this.feld.setAttribute('aria-expanded', 'true');
+  }
+
+  /**
+   * Einmal pro Gerät zeigt sich die neue Tür fünf Sekunden lang von selbst.
+   * Das Feld bekommt bewusst keinen Fokus: Auf dem Handy bleibt die Tastatur
+   * zu und die Karte kann sofort benutzt werden.
+   */
+  private erstenStandorthinweisAnzeigen(): void {
+    if (!this.beiNeuemStandort) return;
+    const speicher = typeof localStorage === 'undefined' ? null : localStorage;
+    if (!standortSuchhinweisNeu(speicher)) return;
+
+    this.treffer = [];
+    // Die automatische Vorschau darf keine darunterliegende Bedienung
+    // abfangen. Erst ein bewusster Fokus auf die Suche macht dieselbe Zeile
+    // interaktiv.
+    this.liste.classList.add('search-results-intro');
+    this.zeichnen('', '');
+    this.hinweisTimer = window.setTimeout(() => {
+      this.hinweisTimer = null;
+      if (document.activeElement !== this.feld && this.feld.value.trim() === '') this.schliessen();
+    }, STANDORT_SUCHHINWEIS_MS);
+  }
+
+  private hinweisTimerBeenden(): void {
+    this.liste.classList.remove('search-results-intro');
+    if (this.hinweisTimer === null) return;
+    window.clearTimeout(this.hinweisTimer);
+    this.hinweisTimer = null;
   }
 
   /**
@@ -172,7 +256,9 @@ export class GlobalSearch {
   }
 
   private schliessen(): void {
+    this.liste.classList.remove('search-results-intro');
     this.liste.hidden = true;
     this.liste.innerHTML = '';
+    this.feld.setAttribute('aria-expanded', 'false');
   }
 }

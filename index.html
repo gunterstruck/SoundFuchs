@@ -164,8 +164,10 @@
             data-i18n-placeholder="search.placeholder"
             placeholder="Standort, Maschine, PLZ suchen…"
             aria-label="Standort oder Maschine suchen"
+            aria-controls="search-results"
+            aria-expanded="false"
           />
-          <div id="search-results" class="search-results"></div>
+          <div id="search-results" class="search-results" hidden></div>
         </div>
         <button
           id="btn-info"
@@ -463,23 +465,11 @@
         ></section>
       </aside>
 
-      <!-- Knopfgruppe über der Karte. Oben steht – nur bei vorhandenem
-           Bestand – der seltenere Verwaltungsweg „Standort". Darunter liegen
-           die beiden gleichrangigen Geräuschwege: live erkennen oder eine
-           vorhandene Datei prüfen. Auf dem Handy ergibt das ein kleines,
-           bewusst hierarchisches Dreieck statt drei konkurrierender Knöpfe. -->
+      <!-- Knopfgruppe über der Karte: die zwei täglichen Geräuschwege, live
+           erkennen oder eine vorhandene Datei prüfen. Der seltenere Weg
+           „Standort anlegen" gehört in die Suche und belegt deshalb keine
+           dauerhafte Kartenfläche. -->
       <div id="map-fab-row" class="map-fab-row">
-        <button
-          id="btn-new-site"
-          class="map-fab map-fab-site"
-          type="button"
-          aria-label="Neuen Standort anlegen"
-          data-i18n-aria="customers.createTitle"
-          hidden
-        >
-          <span class="mns-icon" aria-hidden="true">＋</span>
-          <span class="mns-label" data-i18n="map.newSiteButton">Standort</span>
-        </button>
         <button
           id="btn-sound-detect"
           class="map-fab"

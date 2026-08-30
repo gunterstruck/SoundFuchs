@@ -428,7 +428,6 @@ try {
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
     await inDieTiefe(page);
     await page.waitForTimeout(2000);
-
     console.log(`\n=== ${format.name} (${format.viewport.width}×${format.viewport.height}) ===`);
 
     const erstbild = await page.evaluate(ERSTBILD_PROBE);
@@ -1076,13 +1075,20 @@ try {
     const page = await ctx.newPage();
     await ohneBeispieldaten(page);
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
+    const standortSuchhinweisBeimStart = await page
+      .locator('.search-create-site')
+      .isVisible()
+      .catch(() => false);
     await inDieTiefe(page);
     await page.waitForTimeout(2000);
+    const standortSuchhinweisGeschlossen = !(await page
+      .locator('.search-create-site')
+      .isVisible()
+      .catch(() => false));
 
     const stufe = await page.evaluate(() =>
       document.documentElement.getAttribute('data-view-level')
     );
-
     await page.locator('#btn-info').click();
     await page.waitForTimeout(800);
     const karteImMenue = await page
@@ -1104,10 +1110,10 @@ try {
     let standortFelderInZeile = false;
     let standortTouchzieleGross = false;
     let markerNachEinstieg = 0;
-    let standortPilleImLeerzustand = false;
-    let standortPilleMitBestand = false;
-    let standortDreieckPasst = false;
-    let standortPillenDialogDa = false;
+    let dauerhafteStandortPille = false;
+    let standortSuchaktionDa = false;
+    let standortSuchDialogDa = false;
+    let standortNameUebernommen = false;
 
     if (karteImMenue) {
       await page.locator('.info-sheet-row[data-karte]').click();
@@ -1126,10 +1132,7 @@ try {
         .locator('#map-empty-new-site-btn')
         .isVisible()
         .catch(() => false);
-      standortPilleImLeerzustand = await page
-        .locator('#btn-new-site')
-        .isVisible()
-        .catch(() => false);
+      dauerhafteStandortPille = (await page.locator('#btn-new-site').count()) > 0;
 
       if (einstiegDa) {
         if (eigenerStandortDa) {
@@ -1179,33 +1182,29 @@ try {
         await page.locator('#map-empty-demo-btn').click();
         await page.waitForTimeout(9000);
         markerNachEinstieg = await page.locator('#map .leaflet-marker-icon').count();
-        standortPilleMitBestand = await page
-          .locator('#btn-new-site')
+        dauerhafteStandortPille ||= (await page.locator('#btn-new-site').count()) > 0;
+
+        await page.locator('#global-search').fill('Werk Neu');
+        await page
+          .locator('.search-create-site')
+          .waitFor({ state: 'visible', timeout: 5000 })
+          .catch(() => undefined);
+        standortSuchaktionDa = await page
+          .locator('.search-create-site')
           .isVisible()
           .catch(() => false);
-        if (standortPilleMitBestand) {
-          standortDreieckPasst = await page.evaluate(() => {
-            const standort = document.getElementById('btn-new-site')?.getBoundingClientRect();
-            const erkennen = document.getElementById('btn-sound-detect')?.getBoundingClientRect();
-            const importieren = document
-              .getElementById('btn-schnellcheck')
-              ?.getBoundingClientRect();
-            if (!standort || !erkennen || !importieren) return false;
-            const mitteOben = standort.left + standort.width / 2;
-            const mitteUnten = (erkennen.left + importieren.right) / 2;
-            return (
-              standort.bottom <= Math.min(erkennen.top, importieren.top) + 1 &&
-              Math.abs(mitteOben - mitteUnten) <= 4 &&
-              standort.left >= 0 &&
-              importieren.right <= window.innerWidth
-            );
-          });
-          await page.locator('#btn-new-site').click();
-          standortPillenDialogDa = await page
+        if (standortSuchaktionDa) {
+          await page.locator('.search-create-site').click();
+          standortSuchDialogDa = await page
             .locator('#site-create-modal')
             .isVisible()
             .catch(() => false);
-          if (standortPillenDialogDa) await page.locator('#site-create-cancel').click();
+          standortNameUebernommen =
+            (await page
+              .locator('#site-create-name')
+              .inputValue()
+              .catch(() => '')) === 'Werk Neu';
+          if (standortSuchDialogDa) await page.locator('#site-create-cancel').click();
         }
       }
     }
@@ -1225,13 +1224,19 @@ try {
     console.log(`Aktionen mindestens 44 px ${standortTouchzieleGross ? 'ja' : 'NEIN'}`);
     console.log(`Marker nach dem Einstieg  ${markerNachEinstieg}`);
     console.log(
-      `Standort-Pille bei leerem Bestand ${standortPilleImLeerzustand ? 'FALSCH sichtbar' : 'verborgen'}`
+      `Standort-Hinweis beim Start ${standortSuchhinweisBeimStart ? 'sichtbar' : 'NICHT sichtbar'}`
     );
     console.log(
-      `Standort-Pille mit Bestand ${standortPilleMitBestand ? 'sichtbar' : 'NICHT sichtbar'}`
+      `Hinweis nach fünf Sekunden ${standortSuchhinweisGeschlossen ? 'geschlossen' : 'NOCH sichtbar'}`
     );
-    console.log(`Pillen als Dreieck        ${standortDreieckPasst ? 'ja' : 'NEIN'}`);
-    console.log(`Pille öffnet Standortdialog ${standortPillenDialogDa ? 'ja' : 'NEIN'}`);
+    console.log(
+      `Dauerhafte Standort-Pille ${dauerhafteStandortPille ? 'FALSCH vorhanden' : 'entfernt'}`
+    );
+    console.log(
+      `Standort-Zeile in Suche   ${standortSuchaktionDa ? 'sichtbar' : 'NICHT sichtbar'}`
+    );
+    console.log(`Suchzeile öffnet Dialog   ${standortSuchDialogDa ? 'ja' : 'NEIN'}`);
+    console.log(`Suchname übernommen       ${standortNameUebernommen ? 'ja' : 'NEIN'}`);
 
     pruefe(
       karteImMenue,
@@ -1275,16 +1280,16 @@ try {
       'Weg hinein: der Knopf in der leeren Karte bringt keine Standorte auf die Karte'
     );
     pruefe(
-      !standortPilleImLeerzustand,
-      'Standort-Pille: im Leerzustand doppelt sie den bereits vorhandenen Standort-Knopf'
+      standortSuchhinweisBeimStart && standortSuchhinweisGeschlossen,
+      'Standort-Suche: der einmalige Hinweis erscheint nicht oder schließt nach fünf Sekunden nicht'
     );
     pruefe(
-      standortPilleMitBestand && standortDreieckPasst,
-      'Standort-Pille: mit Bestand fehlt sie oder steht nicht mittig über Erkennen und Import'
+      !dauerhafteStandortPille,
+      'Standort-Suche: die alte dritte Pille belegt weiterhin dauerhaft Kartenfläche'
     );
     pruefe(
-      standortPillenDialogDa,
-      'Standort-Pille: der vorhandene Standortdialog öffnet sich nicht'
+      standortSuchaktionDa && standortSuchDialogDa && standortNameUebernommen,
+      'Standort-Suche: die Abschlusszeile fehlt, öffnet den Dialog nicht oder übernimmt den Suchnamen nicht'
     );
 
     await ctx.close();

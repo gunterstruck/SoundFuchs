@@ -519,6 +519,9 @@ export const en: TranslationDict = {
     artMaschine: 'Machine',
     placeholder: 'Search site, machine, postcode…',
     noHits: 'Nothing found.',
+    createSite: 'Create new site',
+    createSiteNamed: 'Create “{{name}}” as a new site',
+    createSitePostcode: 'Create new site with postcode {{postcode}}',
     sheetTitle: 'Settings & more',
   }, // ============================================================================
   // BUTTONS

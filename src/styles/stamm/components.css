@@ -2276,11 +2276,11 @@ dialog footer { margin-top: 14px; display: flex; justify-content: flex-end; gap:
 }
 
 /* ---------------------------------------------------------------------------
-   Karten-Knopfgruppe: „Standort", „Erkennen" und „Import"
+   Karten-Knopfgruppe: „Erkennen" und „Import"
 
    Zwei gleichrangige Geräusch-Angebote stehen nebeneinander. Der seltenere
-   Weg „Standort" sitzt mittig darüber. Ein zweispaltiges Raster bildet diese
-   Hierarchie ohne feste Positionen oder Breiten-Tricks ab.
+   Weg „Standort anlegen" ist in die Suche gezogen und konkurriert hier nicht
+   mehr dauerhaft um Kartenfläche.
 --------------------------------------------------------------------------- */
 .map-fab-row {
     position: fixed;
@@ -2327,12 +2327,6 @@ dialog footer { margin-top: 14px; display: flex; justify-content: flex-end; gap:
 }
 
 .map-fab[hidden] { display: none; }
-.map-fab-site {
-    grid-column: 1 / -1;
-    justify-self: center;
-    padding-block: 8px;
-    font-weight: 650;
-}
 .map-fab:hover { box-shadow: 0 8px 24px rgba(15, 23, 42, 0.24); }
 .map-fab:active { transform: translateY(1px) scale(0.98); }
 .map-fab .mns-icon { font-size: 1.1rem; }
@@ -2536,7 +2530,6 @@ body.lasso-active .mobile-next-step { display: none; }
     .map-fab-row {
         grid-template-columns: max-content;
     }
-    .map-fab-site { grid-column: 1; }
     .map-fab {
         max-width: calc(100vw - 24px);
     }

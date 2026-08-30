@@ -469,6 +469,9 @@ export const zh: TranslationDict = {
     artMaschine: '机器',
     placeholder: '搜索地点、机器、邮编…',
     noHits: '未找到结果。',
+    createSite: '新建地点',
+    createSiteNamed: '将“{{name}}”新建为地点',
+    createSitePostcode: '新建邮编为 {{postcode}} 的地点',
     sheetTitle: '设置及更多',
   },
   buttons: {
