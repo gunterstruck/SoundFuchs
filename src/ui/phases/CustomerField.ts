@@ -21,7 +21,7 @@ import { ortZurPlz } from '../../services/plzGeocode.js';
 import { aktuellePosition, Standortfehler, type GpsPunkt } from '../../services/deviceLocation.js';
 import { STANDORT_GESPEICHERT, speichereStandort } from '../../services/standortCreate.js';
 import { logger } from '@utils/logger.js';
-import { t } from '../../i18n/index.js';
+import { LANGUAGE_CHANGE_EVENT, t } from '../../i18n/index.js';
 import type { Customer } from '@data/types.js';
 
 /** Sonderwert der Auswahlliste: „einen neuen Kunden anlegen". */
@@ -39,6 +39,16 @@ export interface Kundenwahl {
   fehler?: string;
 }
 
+/** Reine Textentscheidung, damit die kompakte Zusammenfassung ohne DOM prüfbar bleibt. */
+export function optionenZusammenfassung(
+  wert: string,
+  optionstext: string | null | undefined,
+  standard: string
+): string {
+  if (!wert) return standard;
+  return optionstext?.trim() || standard;
+}
+
 export class CustomerField {
   private auswahl: HTMLSelectElement | null = null;
   private neuerBlock: HTMLElement | null = null;
@@ -50,6 +60,7 @@ export class CustomerField {
   private gpsKnopf: HTMLButtonElement | null = null;
   private gpsHinweis: HTMLElement | null = null;
   private gpsPunkt: GpsPunkt | null = null;
+  private optionenHinweis: HTMLElement | null = null;
 
   /**
    * Ob der Ort vom Menschen stammt. Nur ein leeres oder selbst gefülltes Feld
@@ -68,10 +79,17 @@ export class CustomerField {
     this.hinweis = document.getElementById('customer-plz-hint');
     this.gpsKnopf = document.getElementById('customer-use-gps-btn') as HTMLButtonElement | null;
     this.gpsHinweis = document.getElementById('customer-gps-status');
+    this.optionenHinweis = document.querySelector('.machine-optional-summary-copy small');
 
     if (!this.auswahl) return;
 
     this.auswahl.addEventListener('change', () => this.zeigeNeuenBlock());
+
+    // Der Hinweis ist dynamisch, sobald ein Standort gewählt wurde. Nach
+    // einem Sprachwechsel sind auch die beiden festen Optionen übersetzt;
+    // deshalb die Zusammenfassung anschließend aus der sichtbaren Option neu
+    // ableiten statt einen zweiten Satz von Übersetzungen zu pflegen.
+    window.addEventListener(LANGUAGE_CHANGE_EVENT, () => this.aktualisiereOptionenHinweis());
 
     this.plzFeld?.addEventListener('input', () => {
       void this.ortNachtragen();
@@ -134,7 +152,34 @@ export class CustomerField {
     if (!this.neuerBlock) return;
     const neu = this.auswahl?.value === NEU;
     this.neuerBlock.style.display = neu ? '' : 'none';
+    this.aktualisiereOptionenHinweis();
     if (neu) this.nameFeld?.focus();
+  }
+
+  /**
+   * Der geschlossene Zusatzbereich sagt, welcher Standort bereits gewählt
+   * ist. So muss er beim Einstieg aus einem Standort nicht aufklappen und der
+   * Speichern-Knopf bleibt direkt beim Maschinennamen.
+   */
+  private aktualisiereOptionenHinweis(): void {
+    if (!this.optionenHinweis) return;
+    const wert = this.auswahl?.value ?? '';
+    const standard = t('identify.optionalHint');
+    if (!wert) {
+      this.optionenHinweis.dataset.i18n = 'identify.optionalHint';
+      this.optionenHinweis.textContent = standard;
+      return;
+    }
+
+    // Der Optionstext ist bereits übersetzt und enthält bei bestehenden
+    // Standorten zusätzlich den Ort. Er ist damit die knappste und zugleich
+    // eindeutigste Zusammenfassung der getroffenen Wahl.
+    delete this.optionenHinweis.dataset.i18n;
+    this.optionenHinweis.textContent = optionenZusammenfassung(
+      wert,
+      this.auswahl?.selectedOptions[0]?.textContent,
+      standard
+    );
   }
 
   /**

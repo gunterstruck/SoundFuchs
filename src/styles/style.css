@@ -1048,6 +1048,55 @@ body {
   color: var(--text-secondary);
 }
 
+/*
+ * FORMULARE IM DUNKELMODUS
+ *
+ * Die Karten-Schale bringt ihre eigenen, hellen TourFuchs-Token mit und wird
+ * nach diesem Stylesheet geladen. Ihre globale `input[type="text"]`-Regel ist
+ * spezifischer als `.machine-input`: Im dunklen Dialog entstand deshalb ein
+ * helles Feld, dessen Platzhalter weiterhin aus der dunklen SoundFuchs-
+ * Palette kam — hell auf hell und je nach Android-WebView nahezu unsichtbar.
+ *
+ * Die beiden Anlagewege bilden eine klare Grenze. Innerhalb dieser Grenze
+ * gelten für Textfeld, Auswahl, native Optionsliste und Autofill ausdrücklich
+ * dieselben dunklen Flächen und hellen Texte. Der Stamm außerhalb der Dialoge
+ * bleibt davon unberührt.
+ */
+@media (prefers-color-scheme: dark) {
+  .zanobo-tiefe,
+  #site-create-modal {
+    color-scheme: dark;
+  }
+
+  .zanobo-tiefe .machine-input,
+  #site-create-modal .machine-input {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    -webkit-text-fill-color: var(--text-primary);
+    caret-color: var(--primary-color);
+  }
+
+  .zanobo-tiefe .machine-input::placeholder,
+  #site-create-modal .machine-input::placeholder {
+    color: var(--text-muted);
+    -webkit-text-fill-color: var(--text-muted);
+    opacity: 1;
+  }
+
+  .zanobo-tiefe select.machine-input option,
+  #site-create-modal select.machine-input option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+
+  .zanobo-tiefe .machine-input:-webkit-autofill,
+  #site-create-modal .machine-input:-webkit-autofill {
+    box-shadow: 0 0 0 1000px var(--bg-secondary) inset;
+    -webkit-text-fill-color: var(--text-primary);
+  }
+}
+
 .customer-address-field .input-hint {
   font-style: normal;
 }
