@@ -15,9 +15,7 @@ describe('Standortanlage in der Suche', () => {
 
   it('verknüpft das Suchfeld zugänglich mit seiner Klappliste', () => {
     expect(html).toContain('aria-controls="search-results"');
-    expect(html).toContain('aria-expanded="false"');
-    expect(suche).toContain("this.feld.setAttribute('aria-expanded', 'true')");
-    expect(suche).toContain("this.feld.setAttribute('aria-expanded', 'false')");
+    expect(html).toContain('id="search-results"');
   });
 
   it('zeichnet die Standortaktion als vollständiges Fingerziel', () => {

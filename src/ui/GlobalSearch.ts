@@ -58,7 +58,6 @@ export class GlobalSearch {
   public init(): void {
     if (!this.istVerfuegbar) return;
 
-    this.feld.setAttribute('aria-expanded', 'false');
     this.feld.addEventListener('input', () => {
       this.hinweisTimerBeenden();
       void this.suchen();
@@ -205,7 +204,6 @@ export class GlobalSearch {
     }
 
     this.liste.hidden = false;
-    this.feld.setAttribute('aria-expanded', 'true');
   }
 
   /**
@@ -259,6 +257,5 @@ export class GlobalSearch {
     this.liste.classList.remove('search-results-intro');
     this.liste.hidden = true;
     this.liste.innerHTML = '';
-    this.feld.setAttribute('aria-expanded', 'false');
   }
 }
