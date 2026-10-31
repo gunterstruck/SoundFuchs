@@ -21,6 +21,8 @@ import {
   wavSampleRate,
   calibrationThreshold,
   calibratedFlag,
+  fileNumber,
+  numberSpan,
 } from './phoneProtocolPlan.js';
 import { shuffledIndices } from './rng.js';
 
@@ -271,5 +273,88 @@ describe('calibrationThreshold / calibratedFlag', () => {
     expect(calibratedFlag(0.51, 0.5)).toBe(true);
     expect(calibratedFlag(0.5, 0.5)).toBe(false);
     expect(calibratedFlag(0.2, NaN)).toBeNull();
+  });
+});
+
+describe('Referenz-Lage', () => {
+  it('fileNumber / numberSpan lesen die letzte Ziffernfolge im Dateinamen', () => {
+    expect(fileNumber('pump/id_06/normal/00000123.wav')).toBe(123);
+    expect(fileNumber('pump/id_06/normal/clip_7_v2.wav')).toBe(2);
+    expect(Number.isNaN(fileNumber('pump/id_06/normal/x.wav'))).toBe(true);
+    expect(numberSpan(['a/00000010.wav', 'a/00000013.wav', 'a/00000011.wav'])).toBe(3);
+    expect(Number.isNaN(numberSpan(['a/x.wav']))).toBe(true);
+  });
+
+  it('„verteilt“ ist bitgleich zum bisherigen Plan (ohne Angabe = verteilt)', () => {
+    const opts = { runs: 8, seed: 21, maxTestPerClass: 10, refClips: 3, calibClips: 4 };
+    const before = planPhoneProtocol(section(60, 9), opts);
+    const spread = planPhoneProtocol(section(60, 9), { ...opts, refLayout: 'spread' });
+    expect(spread).toEqual(before);
+    // Bisherige Auswahl explizit nachgerechnet: Gruppen aus der Permutation des Pools.
+    const pool = before.normals.filter((p) => !new Set(before.runs[0].testNormal).has(p));
+    const order = shuffledIndices(pool.length, 21);
+    spread.runs.forEach((run, r) => {
+      const group = Array.from({ length: 7 }, (_, j) => pool[order[(r * 7 + j) % pool.length]]);
+      expect(run.refPaths).toEqual(group.slice(0, 3));
+      expect(run.calibPaths).toEqual(group.slice(3));
+    });
+  });
+
+  it('„am Stück“: k aufeinanderfolgende freie Nummern, ohne Überschneidung, per Seed reproduzierbar', () => {
+    for (const maxTestPerClass of [0, 10]) {
+      const opts = {
+        runs: 12,
+        seed: 33,
+        maxTestPerClass,
+        refClips: 3,
+        calibClips: 5,
+        refLayout: 'block' as const,
+      };
+      const plan = planPhoneProtocol(section(60, 9), opts);
+      const again = planPhoneProtocol(section(60, 9), opts);
+      expect(again).toEqual(plan);
+      expect(plan.runs).toHaveLength(12);
+      const testSet = new Set(plan.runs[0].testNormal);
+      const free = plan.normals.filter((p) => !(maxTestPerClass > 0 && testSet.has(p)));
+      for (const run of plan.runs) {
+        expect(run.refPaths).toHaveLength(3);
+        expect(run.calibPaths).toHaveLength(5);
+        // aufeinanderfolgend in der Liste der freien Clips (nach Nummer)
+        const pos = run.refPaths.map((p) => free.indexOf(p));
+        expect(pos[1]).toBe(pos[0] + 1);
+        expect(pos[2]).toBe(pos[0] + 2);
+        expect(run.refSpan).toBe(fileNumber(run.refPaths[2]) - fileNumber(run.refPaths[0]));
+        const ref = new Set(run.refPaths);
+        for (const p of run.calibPaths) expect(ref.has(p)).toBe(false);
+        for (const p of run.testNormal) {
+          expect(ref.has(p)).toBe(false);
+          expect(run.calibPaths).not.toContain(p);
+        }
+      }
+      if (maxTestPerClass === 0) {
+        // ohne Kappung sind alle Clips frei → Nummern direkt hintereinander
+        for (const run of plan.runs) expect(run.refSpan).toBe(2);
+      }
+    }
+    const other = planPhoneProtocol(section(60, 9), {
+      runs: 12,
+      seed: 34,
+      refClips: 3,
+      refLayout: 'block',
+    });
+    const base = planPhoneProtocol(section(60, 9), {
+      runs: 12,
+      seed: 33,
+      refClips: 3,
+      refLayout: 'block',
+    });
+    expect(other.runs.map((r) => r.refPaths)).not.toEqual(base.runs.map((r) => r.refPaths));
+  });
+
+  it('bei k = 1 sind beide Lagen gleich', () => {
+    const opts = { runs: 6, seed: 5, maxTestPerClass: 8, refClips: 1, calibClips: 3 };
+    expect(planPhoneProtocol(section(30, 4), { ...opts, refLayout: 'block' })).toEqual(
+      planPhoneProtocol(section(30, 4), { ...opts, refLayout: 'spread' })
+    );
   });
 });

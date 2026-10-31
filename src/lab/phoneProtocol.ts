@@ -72,6 +72,7 @@ import {
   CALIB_MEAN_Z_MIN,
   type CalibParams,
   type CalibRule,
+  type RefLayout,
 } from './phoneProtocolPlan.js';
 import {
   type ClipSource,
@@ -141,6 +142,8 @@ export interface PhoneProtocolOptions {
   calibClips?: number;
   /** Referenz aus k Clips (1–5, Standard 1). */
   refClips?: number;
+  /** Lage der k Referenz-Clips: 'spread' (Standard, verteilt) oder 'block' (am Stück). */
+  refLayout?: RefLayout;
   /** Schwellenregel bei m > 0 (Standard 'max-factor'). */
   calibRule?: CalibRule;
   /** Faktor für 'max-factor' (Standard 1,25). */
@@ -190,6 +193,8 @@ export interface PhoneRunResult {
   refPaths: string[];
   /** Die m Kalibrier-Clips dieses Durchlaufs. */
   calibPaths: string[];
+  /** Referenz-Spanne: größte minus kleinste Dateinummer der Referenz-Clips. */
+  refSpan: number;
   /** GMIA: verwendetes λ (sonst NaN). */
   lambda: number;
   /** GMIA: Konditionszahl von XᵀX + λI (sonst NaN). */
@@ -284,6 +289,8 @@ export interface PhoneProtocolResult {
   calibClips: number;
   /** Referenz aus k Clips. */
   refClips: number;
+  /** Lage der Referenz-Clips. */
+  refLayout: RefLayout;
   /** Schwellenregel, Faktor und z (wirksam nur bei m > 0). */
   calibRule: CalibRule;
   calibFactor: number;
@@ -435,6 +442,7 @@ export function runMetrics(
   | 'refPath'
   | 'refPaths'
   | 'calibPaths'
+  | 'refSpan'
   | 'refQuality'
   | 'lambda'
   | 'conditionNumber'
@@ -589,6 +597,7 @@ export async function runPhoneProtocol(
     REF_CLIPS_MAX,
     Math.max(1, Math.floor(options.refClips ?? PHONE_PROTOCOL_DEFAULTS.refClips))
   );
+  const refLayout: RefLayout = options.refLayout ?? PHONE_PROTOCOL_DEFAULTS.refLayout;
   const calib: CalibParams = {
     rule: options.calibRule ?? PHONE_PROTOCOL_DEFAULTS.calibRule,
     factor: options.calibFactor ?? PHONE_PROTOCOL_DEFAULTS.calibFactor,
@@ -669,7 +678,14 @@ export async function runPhoneProtocol(
 
   // Planung + Fortschritts-Gesamtzahl (Referenzen + eindeutige Testclips).
   const plans: PhoneSectionPlan[] = dataset.sections.map((s) =>
-    planPhoneProtocol(s, { runs: runsRequested, seed, maxTestPerClass, calibClips, refClips })
+    planPhoneProtocol(s, {
+      runs: runsRequested,
+      seed,
+      maxTestPerClass,
+      calibClips,
+      refClips,
+      refLayout,
+    })
   );
   let filesTotal = 0;
   for (const p of plans) {
@@ -920,6 +936,7 @@ export async function runPhoneProtocol(
             refPath: run.refPath,
             refPaths: run.refPaths,
             calibPaths: run.calibPaths,
+            refSpan: run.refSpan,
             refQuality: refQuality.get(run.index) ?? null,
             calibRaw: cal,
             threshold,
@@ -1058,6 +1075,7 @@ export async function runPhoneProtocol(
     maxTestPerClass,
     calibClips,
     refClips,
+    refLayout,
     calibRule: calib.rule,
     calibFactor: calib.factor,
     calibZ: calib.z,

@@ -11,7 +11,7 @@
 
 import type { EngineId } from '@data/types.js';
 import type { PhoneProtocolResult } from './phoneProtocol.js';
-import type { SpreadSummary } from './phoneProtocolPlan.js';
+import { summarize, type SpreadSummary } from './phoneProtocolPlan.js';
 import { ENGINE_LABEL } from './exportResult.js';
 
 function csvCell(v: string): string {
@@ -46,11 +46,30 @@ export function calibRuleLabel(result: PhoneProtocolResult): string {
     : `größte Abweichung × ${result.calibFactor}`;
 }
 
+/** Klartext der Referenz-Lage. */
+export function refLayoutLabel(result: PhoneProtocolResult): string {
+  return result.refLayout === 'block'
+    ? 'am Stück (eine lange Aufnahme)'
+    : 'verteilt (mehrere Aufnahmen)';
+}
+
+/** Referenz-Spanne je Bereich + Durchlauf (für den Detail-Export). */
+function spanIndex(result: PhoneProtocolResult): Map<string, number> {
+  const idx = new Map<string, number>();
+  for (const sec of result.sections) {
+    for (const r of Object.values(sec.perEngine)) {
+      for (const run of r?.runs ?? []) idx.set(`${sec.key}|${run.run}`, run.refSpan);
+    }
+  }
+  return idx;
+}
+
 function header(result: PhoneProtocolResult): string {
   return (
     `# Zanobot Mess-Labor · Handy-Protokoll · ` +
     `${result.runs} Durchläufe/Bereich · Seed ${result.seed} · ` +
-    `Referenz aus k=${result.refClips} Clip(s) · Kalibrier-Clips m=${result.calibClips} · ` +
+    `Referenz aus k=${result.refClips} Clip(s), Lage ${refLayoutLabel(result)} · ` +
+    `Kalibrier-Clips m=${result.calibClips} · ` +
     `Schwellenregel ${calibRuleLabel(result)} · ` +
     (result.gmiaStages.some((st) => st !== 'standard')
       ? `GMIA-λ-Stufen ${result.gmiaStages.map((st) => (st === 'standard' ? 'Standard 1e9' : `α=${st}`)).join('/')} · `
@@ -107,6 +126,8 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
       'Zwischenbereich gesamt',
       ...PARAM_HEADS,
       'Kalibrier-Dateien',
+      'Referenz-Lage',
+      'Referenz-Spanne (Nummern)',
       'GMIA λ',
       'GMIA Konditionszahl',
       'Schwelle (Rohwert)',
@@ -140,6 +161,8 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
             fmt(run.uncertainRate),
             ...paramCols(result),
             csvCell(run.calibPaths.join(' + ')),
+            result.refLayout,
+            Number.isFinite(run.refSpan) ? String(run.refSpan) : '',
             fmtExp(run.lambda),
             fmtExp(run.conditionNumber),
             fmt(run.threshold, 5),
@@ -183,6 +206,8 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
       'Erkennungsquote kalibriert Min',
       'Erkennungsquote kalibriert Max',
       'Testmenge fest',
+      'Referenz-Lage',
+      'Referenz-Spanne Median',
       'GMIA λ Median',
       'GMIA Konditionszahl Max',
       'beste Referenz',
@@ -226,6 +251,8 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
           fmt(s.calibDetectionRate.min),
           fmt(s.calibDetectionRate.max),
           sec.testSetFixed ? 'ja' : 'nein',
+          result.refLayout,
+          fmt(summarize(r.runs.map((x) => x.refSpan)).median, 0),
           lambdas.length ? fmtExp(lambdas[Math.floor((lambdas.length - 1) / 2)]) : '',
           conds.length ? fmtExp(Math.max(...conds)) : '',
           csvCell(s.bestRef ? s.bestRef.path : ''),
@@ -240,6 +267,7 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
 
 /** Detail-CSV: eine Zeile je geprüftem Clip (Referenz × Testclip × Engine). */
 export function toCsvPhoneDetail(result: PhoneProtocolResult): string {
+  const spans = spanIndex(result);
   const lines = [
     header(result),
     [
@@ -255,6 +283,7 @@ export function toCsvPhoneDetail(result: PhoneProtocolResult): string {
       'Urteil',
       'Schwelle',
       'kalibriertes Urteil',
+      'Referenz-Spanne (Nummern)',
     ].join(','),
   ];
   for (const d of result.details) {
@@ -272,6 +301,7 @@ export function toCsvPhoneDetail(result: PhoneProtocolResult): string {
         d.status,
         fmt(d.threshold, 5),
         d.calibFlag === null ? '' : d.calibFlag ? 'auffällig' : 'unauffällig',
+        fmt(spans.get(`${d.sectionKey}|${d.run}`) ?? NaN, 0),
       ].join(',')
     );
   }
@@ -293,6 +323,7 @@ export function toJsonPhone(result: PhoneProtocolResult, includeDetails = false)
         'calibClips > 0 zusätzlich eine Schwelle aus den Rohwerten der Kalibrier-Clips ' +
         '(calibRule); kalibriert auffällig = Rohwert > Schwelle. Strikt lesend.',
       calibRuleText: calibRuleLabel(result),
+      refLayoutText: refLayoutLabel(result),
       ...rest,
       startedAt: new Date(result.startedAt).toISOString(),
       finishedAt: new Date(result.finishedAt).toISOString(),

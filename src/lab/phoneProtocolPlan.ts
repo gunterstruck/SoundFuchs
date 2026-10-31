@@ -15,7 +15,7 @@
  *  - wavSampleRate(): Abtastrate aus dem RIFF-Kopf (für den 16-kHz-Vermerk).
  */
 
-import { shuffledIndices } from './rng.js';
+import { shuffledIndices, mulberry32 } from './rng.js';
 import type { ParsedSection } from './parseFolder.js';
 
 /** Standardwerte des Protokolls (auch in der UI vorbelegt). */
@@ -34,9 +34,20 @@ export const PHONE_PROTOCOL_DEFAULTS = {
   calibRule: 'max-factor' as CalibRule,
   /** Faktor für „größte Abweichung × Faktor“. */
   calibFactor: 1.25,
+  /** Lage der k Referenz-Clips (Standard: verteilt = bisheriges Verhalten). */
+  refLayout: 'spread' as RefLayout,
   /** z für „Mittel + z · Standardabweichung“. */
   calibZ: 3,
 };
+
+/**
+ * Lage der k Referenz-Clips:
+ *  - 'spread': zufällig über die ganze Aufnahme verteilt — am Handy mehrere
+ *              Aufnahmen zu verschiedenen Zeiten (bisheriges Verhalten).
+ *  - 'block' : k direkt aufeinanderfolgende freie Clips nach Dateinummer — am
+ *              Handy EINE lange Aufnahme. Annahme: Dateinummer = Aufnahmereihenfolge.
+ */
+export type RefLayout = 'spread' | 'block';
 
 /** Grenzen der neuen Optionen. */
 export const CALIB_CLIPS_MAX = 10;
@@ -54,6 +65,8 @@ export interface PhoneRunPlan {
   refPaths: string[];
   /** Die m Kalibrier-Clips (Normal, nicht im Test, nicht in der Referenz). */
   calibPaths: string[];
+  /** Größte minus kleinste Dateinummer der Referenz-Clips (NaN ohne Nummer). */
+  refSpan: number;
   /** Geprüfte Normal-Clips. */
   testNormal: string[];
   /** Geprüfte Abnormal-Clips (in allen Durchläufen gleich). */
@@ -92,6 +105,41 @@ export interface PhonePlanOptions {
   calibClips?: number;
   /** Referenz aus k Clips (1–5). */
   refClips?: number;
+  /** Lage der Referenz-Clips (Standard 'spread'). */
+  refLayout?: RefLayout;
+}
+
+/**
+ * Dateinummer eines Clips: die letzte Ziffernfolge im Dateinamen, z. B.
+ * „pump/id_06/normal/00000123.wav“ → 123. NaN, wenn der Name keine Zahl hat.
+ */
+export function fileNumber(path: string): number {
+  const name = path.split('/').pop() ?? path;
+  const m = name.match(/(\d+)(?!.*\d)/);
+  return m ? parseInt(m[1], 10) : NaN;
+}
+
+/** Größte minus kleinste Dateinummer (NaN, wenn eine Nummer fehlt). */
+export function numberSpan(paths: string[]): number {
+  const nums = paths.map(fileNumber);
+  if (nums.length === 0 || nums.some((n) => !Number.isFinite(n))) return NaN;
+  return Math.max(...nums) - Math.min(...nums);
+}
+
+/** Nach Dateinummer sortieren (ohne Nummer: hinten, dann nach Pfad). */
+function byFileNumber(paths: string[]): string[] {
+  return [...paths].sort((a, b) => {
+    const na = fileNumber(a);
+    const nb = fileNumber(b);
+    if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) return na - nb;
+    if (Number.isFinite(na) !== Number.isFinite(nb)) return Number.isFinite(na) ? -1 : 1;
+    return a.localeCompare(b);
+  });
+}
+
+/** Reproduzierbarer Teil-Seed je Durchlauf (für die Kalibrier-Ziehung „am Stück“). */
+function runSeed(seed: number, run: number): number {
+  return Math.floor(mulberry32((seed ^ Math.imul(run + 1, 0x9e3779b1)) >>> 0)() * 2 ** 32);
 }
 
 /** Alle Normal-Clips eines Bereichs, egal ob mit oder ohne train/test-Ordner. */
@@ -173,6 +221,38 @@ export function planPhoneProtocol(
   const testSetFixed = rest.length >= g;
   const pool = testSetFixed ? rest : normals;
 
+  const layout: RefLayout = options.refLayout ?? PHONE_PROTOCOL_DEFAULTS.refLayout;
+  if (layout === 'block' && k > 1) {
+    // „am Stück“: freie Clips nach Dateinummer, je Durchlauf ein Startpunkt aus
+    // dem Seed, die nächsten k freien Clips sind die Referenz. Kalibrierung wie
+    // bisher zufällig aus dem Rest.
+    const sorted = byFileNumber(pool);
+    const nStarts = sorted.length - k + 1;
+    const starts = shuffledIndices(nStarts, seed);
+    const nRunsBlock = Math.min(runsRequested, nStarts);
+    const runsBlock: PhoneRunPlan[] = [];
+    for (let r = 0; r < nRunsBlock; r++) {
+      const start = starts[r];
+      const refPaths = sorted.slice(start, start + k);
+      const refSet = new Set(refPaths);
+      const rest = sorted.filter((p) => !refSet.has(p));
+      const calibOrder = shuffledIndices(rest.length, runSeed(seed, r));
+      const calibPaths = calibOrder.slice(0, m).map((i) => rest[i]);
+      const drawn = new Set([...refPaths, ...calibPaths]);
+      runsBlock.push({
+        index: r,
+        refPath: refPaths[0],
+        refPaths,
+        calibPaths,
+        refSpan: numberSpan(refPaths),
+        testNormal: testSetFixed ? fixedTest : fixedTest.filter((p) => !drawn.has(p)),
+        testAbnormal,
+      });
+    }
+    return { ...base, runs: runsBlock, testSetFixed };
+  }
+
+  // „verteilt“ (Standard, bisheriges Verhalten; bei k = 1 auch für „am Stück“).
   const order = shuffledIndices(pool.length, seed);
   const nRuns = Math.min(runsRequested, pool.length);
   const runs: PhoneRunPlan[] = [];
@@ -187,6 +267,7 @@ export function planPhoneProtocol(
       refPath: refPaths[0],
       refPaths,
       calibPaths,
+      refSpan: numberSpan(refPaths),
       testNormal: testSetFixed ? fixedTest : fixedTest.filter((p) => !drawn.has(p)),
       testAbnormal,
     });

@@ -277,6 +277,33 @@ describe('runPhoneProtocol (Rauchtest, synthetisch)', () => {
     expect(sec.perEngine['gmia']!.runs[0].conditionNumber).toBeLessThan(10);
   }, 120_000);
 
+  it('Referenz-Lage „am Stück“: Spanne je Durchlauf in Bericht und Exporten', async () => {
+    const { paths, files } = dataset();
+    const resolve = (p: string): ClipSource => ({ read: async () => files.get(p)!.slice(0) });
+    const result = await runPhoneProtocol(parseFolder(paths), resolve, {
+      engines: ['spectral-cosine'],
+      runs: 2,
+      seed: 3,
+      refClips: 3,
+      refLayout: 'block',
+      decode: decodePcm,
+    });
+    expect(result.refLayout).toBe('block');
+    const runs = result.sections[0].perEngine['spectral-cosine']!.runs;
+    for (const run of runs) {
+      expect(run.refPaths).toHaveLength(3);
+      expect(run.refSpan).toBe(2); // ohne Kappung: drei direkt aufeinanderfolgende Nummern
+    }
+    const csv = toCsvPhone(result);
+    expect(csv).toContain('am Stück (eine lange Aufnahme)');
+    expect(csv).toContain('Referenz-Spanne (Nummern)');
+    const detail = toCsvPhoneDetail(result).split('\n');
+    expect(detail[1]).toContain('Referenz-Spanne (Nummern)');
+    expect(detail[2].endsWith(',2')).toBe(true);
+    const json = JSON.parse(toJsonPhone(result)) as { refLayout: string };
+    expect(json.refLayout).toBe('block');
+  }, 120_000);
+
   it('bricht über das AbortSignal ab', async () => {
     const { paths, files } = dataset();
     const ctrl = new AbortController();
