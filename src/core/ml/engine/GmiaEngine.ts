@@ -10,7 +10,7 @@
 import type { DiagnosisEngine, FrameInput, TrainInput } from './types.js';
 import type { GMIAModel, ReferenceModel, FeatureVector } from '@data/types.js';
 import type { WorkPointScore } from '../scoring.js';
-import { trainGMIA } from '../gmia.js';
+import { trainGMIA, type GmiaTrainOptions } from '../gmia.js';
 import { classifyDiagnosticState, getAllModelScores } from '../scoring.js';
 import { computeBaselineSpread } from '../baselineSpread.js';
 import { CURRENT_FEATURE_LAYOUT } from '@core/dsp/filterBank.js';
@@ -22,8 +22,14 @@ const BASELINE_SELFTEST_SAMPLES = 20;
 export class GmiaEngine implements DiagnosisEngine {
   readonly id = 'gmia' as const;
 
+  /**
+   * @param trainOptions Nur für das Mess-Labor (λ-Stufen). Die App erzeugt die
+   *        Engine ohne Optionen → exakt das bisherige Training (λ = 10^9).
+   */
+  constructor(private readonly trainOptions?: GmiaTrainOptions) {}
+
   train(input: TrainInput, machineId: string): ReferenceModel {
-    const model = trainGMIA(input.trainingData, machineId);
+    const model = trainGMIA(input.trainingData, machineId, this.trainOptions);
     model.engineId = 'gmia';
     // Bandaufteilung festhalten: derselbe 512er-Vektor bedeutet unter einem
     // anderen Layout andere Frequenzen (siehe core/ml/modelCompatibility.ts).

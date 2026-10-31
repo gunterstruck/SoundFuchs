@@ -38,7 +38,8 @@
 import { getEngine } from '@core/ml/engine/registry.js';
 import { isAsyncEngine } from '@core/ml/engine/types.js';
 import type { AnyDiagnosisEngine } from '@core/ml/engine/types.js';
-import type { EngineId, FeatureVector, QualityResult } from '@data/types.js';
+import type { EngineId, FeatureVector, GMIAModel, QualityResult } from '@data/types.js';
+import { GmiaEngine } from '@core/ml/engine/GmiaEngine.js';
 import { getRecordingSettings } from '@utils/recordingSettings.js';
 import { getCherryPickSettings } from '@core/dsp/cherryPicking.js';
 import { getRoomCompSettings } from '@core/dsp/roomCompensation.js';
@@ -88,8 +89,46 @@ import type { BenchmarkProgress, ScoreBasis } from './types.js';
 
 // ── Optionen & Ergebnis-Typen ────────────────────────────────────────────────
 
+/** GMIA-λ-Stufe: 'standard' = λ = 10^9 (App), Zahl = α für λ = α · Spur(XᵀX) / N. */
+export type GmiaLambdaStage = 'standard' | number;
+
+/** Vorschlag der Stufen in der Oberfläche. */
+export const GMIA_LAMBDA_STAGES: GmiaLambdaStage[] = ['standard', 1, 0.1, 0.01, 0.001];
+
+/** Ab dieser Konditionszahl von XᵀX + λI gilt eine Stufe als „eingeschränkt“. */
+export const GMIA_CONDITION_LIMIT = 1e10;
+
+/**
+ * Eine Zeile im Bericht: eine Engine — oder bei GMIA eine λ-Stufe. Der
+ * Schlüssel der Standard-Stufe ist 'gmia' (wie bisher), sonst z. B. 'gmia-a0.1'.
+ */
+export interface PhoneUnit {
+  key: string;
+  engineId: EngineId;
+  label: string;
+  /** Nur bei GMIA gesetzt. */
+  gmiaStage?: GmiaLambdaStage;
+}
+
+/** Schlüssel + Anzeigename einer GMIA-λ-Stufe. */
+export function gmiaStageUnit(stage: GmiaLambdaStage): PhoneUnit {
+  if (stage === 'standard')
+    return { key: 'gmia', engineId: 'gmia', label: 'GMIA', gmiaStage: stage };
+  return {
+    key: `gmia-a${stage}`,
+    engineId: 'gmia',
+    label: `GMIA α=${String(stage).replace('.', ',')}`,
+    gmiaStage: stage,
+  };
+}
+
 export interface PhoneProtocolOptions {
   engines: EngineId[];
+  /**
+   * GMIA-λ-Stufen (nur wirksam, wenn 'gmia' in engines). Standard: nur
+   * 'standard' → genau eine Zeile „GMIA“ wie bisher.
+   */
+  gmiaStages?: GmiaLambdaStage[];
   /** Referenz-Durchläufe je Bereich (Standard 20). */
   runs?: number;
   /** Seed der Referenz-Ziehung (reproduzierbar). */
@@ -122,6 +161,8 @@ export interface PhoneProtocolOptions {
 export interface PhoneClipRecord {
   sectionKey: string;
   engine: EngineId;
+  /** Berichtszeile (Engine bzw. GMIA-λ-Stufe), siehe PhoneUnit.key. */
+  unit: string;
   run: number;
   refPath: string;
   testPath: string;
@@ -149,6 +190,10 @@ export interface PhoneRunResult {
   refPaths: string[];
   /** Die m Kalibrier-Clips dieses Durchlaufs. */
   calibPaths: string[];
+  /** GMIA: verwendetes λ (sonst NaN). */
+  lambda: number;
+  /** GMIA: Konditionszahl von XᵀX + λI (sonst NaN). */
+  conditionNumber: number;
   /** Qualität der Referenzaufnahme, bewertet wie am Handy (schlechteste der k Clips). */
   refQuality: QualityResult['rating'] | null;
   /** Roh-Anomalien der Kalibrier-Clips (Basis der Schwelle). */
@@ -219,13 +264,18 @@ export interface PhoneSectionResult {
   /** Testclips je Durchlauf (nach Kappung). */
   nTestNormal: number;
   nTestAbnormal: number;
-  perEngine: Partial<Record<EngineId, PhoneEngineResult>>;
+  /** Je Berichtszeile (PhoneUnit.key): Engine bzw. GMIA-λ-Stufe. */
+  perEngine: Partial<Record<string, PhoneEngineResult>>;
   /** Bereichsweite Hinweise (z. B. fehlende Abnormal-Clips). */
   notes: string[];
 }
 
 export interface PhoneProtocolResult {
   engines: EngineId[];
+  /** Berichtszeilen in Reihenfolge (Engines, GMIA ggf. je λ-Stufe). */
+  units: PhoneUnit[];
+  /** Gewählte GMIA-λ-Stufen. */
+  gmiaStages: GmiaLambdaStage[];
   clipAgg: ClipAggMode;
   runs: number;
   seed: number;
@@ -386,6 +436,8 @@ export function runMetrics(
   | 'refPaths'
   | 'calibPaths'
   | 'refQuality'
+  | 'lambda'
+  | 'conditionNumber'
   | 'calibRaw'
   | 'threshold'
   | 'calibFalseAlarmRate'
@@ -574,8 +626,34 @@ export async function runPhoneProtocol(
     return decodeClip(ctx, sniffing(path));
   };
 
-  const engines = new Map<EngineId, AnyDiagnosisEngine>();
-  for (const id of options.engines) engines.set(id, getEngine(id));
+  // Berichtszeilen: jede Engine einmal, GMIA je gewählter λ-Stufe. Die
+  // Standard-Stufe trainiert exakt wie die App (λ = 10^9); alle GMIA-Zeilen
+  // schreiben zusätzlich die Konditionszahl mit (ändert das Modell nicht).
+  const gmiaStages: GmiaLambdaStage[] =
+    options.gmiaStages && options.gmiaStages.length > 0 ? options.gmiaStages : ['standard'];
+  const units: PhoneUnit[] = [];
+  const engines = new Map<string, AnyDiagnosisEngine>();
+  for (const id of options.engines) {
+    if (id === 'gmia') {
+      for (const stage of gmiaStages) {
+        const unit = gmiaStageUnit(stage);
+        if (engines.has(unit.key)) continue;
+        units.push(unit);
+        engines.set(
+          unit.key,
+          new GmiaEngine(
+            stage === 'standard'
+              ? { computeCondition: true }
+              : { relativeAlpha: stage, computeCondition: true }
+          )
+        );
+      }
+    } else {
+      units.push({ key: id, engineId: id, label: ENGINE_NAME[id] });
+      engines.set(id, getEngine(id));
+    }
+  }
+  const unitEngineId = new Map(units.map((u) => [u.key, u.engineId]));
   for (const engine of engines.values()) {
     if (isAsyncEngine(engine)) {
       options.onProgress?.({
@@ -635,7 +713,7 @@ export async function runPhoneProtocol(
       // ── 1+2: Jede Referenz einzeln anlernen, wie am Handy ──────────────────
       const trained = new Map<string, TrainedRef | { error: string }>(); // `${run}|${engine}`
       const refQuality = new Map<number, QualityResult['rating'] | null>();
-      const engineIssues = new Map<EngineId, Set<string>>();
+      const engineIssues = new Map<string, Set<string>>();
       for (const id of engines.keys()) engineIssues.set(id, new Set());
 
       for (const run of plan.runs) {
@@ -723,7 +801,7 @@ export async function runPhoneProtocol(
           calibRaw.set(`${run.index}|${id}`, []);
           detailIdx.set(`${run.index}|${id}`, []);
         }
-      const gateStats = new Map<EngineId, { rejected: number; fallbacks: number }>();
+      const gateStats = new Map<string, { rejected: number; fallbacks: number }>();
       let decodeFailures = 0;
 
       const testPaths = [...runsOfClip.keys()].sort();
@@ -782,7 +860,8 @@ export async function runPhoneProtocol(
                 detailIdx.get(`${runIdx}|${id}`)?.push(details.length);
                 details.push({
                   sectionKey: plan.key,
-                  engine: id,
+                  engine: unitEngineId.get(id) ?? 'gmia',
+                  unit: id,
                   run: runIdx,
                   refPath: plan.runs[runIdx].refPaths.join(' + '),
                   testPath: path,
@@ -820,6 +899,7 @@ export async function runPhoneProtocol(
         let scoringErrors = 0;
         let cappedRuns = 0;
         let calibFailed = 0;
+        const illConditioned: number[] = [];
         for (const run of plan.runs) {
           const key = `${run.index}|${id}`;
           const ref = trained.get(key);
@@ -827,7 +907,15 @@ export async function runPhoneProtocol(
           scoringErrors += bucket.scoringErrors;
           const cal = calibRaw.get(key) ?? [];
           const threshold = calibClips > 0 ? calibrationThreshold(cal, calib) : NaN;
+          const gm =
+            ref && !('error' in ref) && unitEngineId.get(id) === 'gmia'
+              ? (ref.fp.model as GMIAModel)
+              : null;
+          const conditionNumber = gm?.metadata?.conditionNumber ?? NaN;
+          if (conditionNumber > GMIA_CONDITION_LIMIT) illConditioned.push(conditionNumber);
           const ident = {
+            lambda: gm ? gm.regularization : NaN,
+            conditionNumber,
             run: run.index,
             refPath: run.refPath,
             refPaths: run.refPaths,
@@ -865,6 +953,13 @@ export async function runPhoneProtocol(
           if (m.scoreBasis === 'capped-score') cappedRuns++;
           runs.push({ ...m, ...rates, ...ident });
         }
+        if (illConditioned.length > 0) {
+          issues.add(
+            `Konditionszahl von XᵀX + λI in ${illConditioned.length} Durchlauf/Durchläufen über ` +
+              `${GMIA_CONDITION_LIMIT.toExponential(0)} (bis ${Math.max(...illConditioned).toExponential(1)}) ` +
+              '— Lösung numerisch unsicher, Ergebnis mit Vorsicht lesen'
+          );
+        }
         if (calibFailed > 0) {
           issues.add(
             calib.rule === 'mean-z' && calibClips < CALIB_MEAN_Z_MIN
@@ -886,7 +981,7 @@ export async function runPhoneProtocol(
             `${g.fallbacks}× alle Frames vom Cherry-Picking verworfen — ohne Gate bewertet`
           );
         }
-        if (id === 'temporal' && g && g.rejected > 0) {
+        if (unitEngineId.get(id) === 'temporal' && g && g.rejected > 0) {
           issues.add(
             `Cherry-Picking hat ${g.rejected} Frames aus den Prüfungen entfernt — die Zeitmuster-Sequenz ist dort lückenhaft`
           );
@@ -939,6 +1034,13 @@ export async function runPhoneProtocol(
         `(bei 16 kHz: 8 kHz); darüber liegen leere Bänder.`
     );
   }
+  if (options.engines.includes('gmia') && gmiaStages.some((st) => st !== 'standard')) {
+    notes.push(
+      'GMIA-λ-Stufen: „GMIA“ = Standard der App (λ = 10^9, praktisch Mittelwert-Vergleich); ' +
+        '„GMIA α=…“ = relatives λ = α · Spur(XᵀX) / N je Training. Anlernen sonst wie die App ' +
+        '(Selbsttest, Baseline, Skalierung).'
+    );
+  }
   if (engines.has('temporal')) {
     notes.push(
       'Zeitmuster: in der Handy-Simulation bisher nicht angeboten. Hier über classify() je ' +
@@ -948,6 +1050,8 @@ export async function runPhoneProtocol(
 
   return {
     engines: options.engines,
+    units,
+    gmiaStages,
     clipAgg,
     runs: runsRequested,
     seed,

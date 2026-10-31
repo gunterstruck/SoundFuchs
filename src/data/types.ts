@@ -228,6 +228,8 @@ export interface GMIAModel {
     meanCosineSimilarity: number; // μ for C calculation
     targetScore: number; // Target score (e.g., 0.9)
     weightMagnitude?: number; // L2 norm of weight vector (for signal quality validation)
+    /** Konditionszahl von XᵀX + λI — nur im Mess-Labor gesetzt (computeCondition). */
+    conditionNumber?: number;
   };
 }
 

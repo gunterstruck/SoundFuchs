@@ -97,6 +97,57 @@ Testclips/Klasse“ > 0 ist die Testmenge jetzt fest, und die Referenzen kommen 
 den übrigen Normal-Clips. Bisher wurde die Referenz aus allen Normal-Clips
 gezogen und der Test je Durchlauf neu gekappt.
 
+## GMIA-λ-Stufen
+
+GMIA lernt den Gewichtsvektor w = X (XᵀX + λI)⁻¹ · 1. Die Regularisierung λ
+entscheidet, was GMIA eigentlich vergleicht:
+
+- **Großes λ:** (XᵀX + λI)⁻¹ ≈ I/λ. Dann ist w praktisch das mittlere
+  Spektrum der Referenz, und GMIA ist ein Mittelwert-Vergleich (wie
+  Spektral-Kosinus, deshalb liefern beide oft sehr ähnliche Werte).
+- **Kleines λ:** w nähert sich der MIA-Lösung. Das ist die Richtung, die in allen
+  Frames gleich stark vorkommt; Anteile, die von Frame zu Frame schwanken,
+  zählen weniger.
+
+**Warum relativ:** λ wirkt nur im Verhältnis zur Größe von XᵀX. Die Merkmale
+sind je Frame auf Summe 1 normiert, die Einträge von XᵀX sind deshalb klein.
+Gegen sie ist der Standard der App, λ = 10^9, riesig. Er bedeutet hier
+Mittelwert-Vergleich. Ein festes λ hätte je nach Aufnahme eine andere Wirkung.
+Das Labor rechnet die Stufen deshalb **relativ**:
+
+> λ = α · Spur(XᵀX) / N  (N = Zahl der Frames der Referenz, je Training neu)
+
+Spur(XᵀX) / N ist die mittlere quadrierte Frame-Norm. α = 1 heißt also: λ in
+der Größe der typischen Diagonale von XᵀX.
+
+**Bedienung:** Im Handy-Protokoll unter „GMIA-λ-Stufen“ eine oder mehrere
+Stufen anhaken: Standard 1e9, α = 1, 0,1, 0,01, 0,001. Die Stufen wirken nur,
+wenn GMIA als Engine angehakt ist. Jede Stufe erscheint im Bericht und in den
+Exporten als eigene Zeile, z. B. „GMIA α=0,1“, mit AUC, Quoten und, bei m > 0,
+kalibrierten Quoten. Das Anlernen ist sonst genau wie in der App: Selbsttest,
+Baseline und Skalierung. Die Zeile „GMIA“ ist der unveränderte Standard.
+
+**Konditionszahl:** Je Training wird die Konditionszahl von XᵀX + λI
+mitgeschrieben (CSV-Spalten „GMIA λ“, „GMIA Konditionszahl“). Liegt sie über
+10^10, ist die Lösung numerisch unsicher. Die Stufe steht dann im Bericht als
+**eingeschränkt** mit Hinweis. Bei sehr kleinem λ kann die Inversion ganz
+scheitern; der Durchlauf zählt dann als fehlgeschlagen und wird ebenfalls
+gemeldet.
+
+**Vergleichen:** Gleiche Pumpe, gleicher Seed, gleiche Testmenge. Die Stufen
+laufen im selben Messlauf gegen dieselben Referenzen und Testclips; die
+Unterschiede kommen also nur von λ. Zu vergleichen sind:
+
+- AUC-Median und Min–Max: Trennt ein kleineres α besser, und hängt es weniger
+  an der Referenz?
+- Fehlalarm und Erkennung mit kalibrierter Schwelle.
+- Ob die Konditionszahl unter 10^10 bleibt.
+
+Ein Vorteil zählt nur, wenn er über mehrere Pumpen hinweg auftritt.
+
+Die App selbst ändert sich dadurch nicht: Ohne Angabe trainiert GMIA weiter mit
+λ = 10^9, bitgleich wie bisher.
+
 ### Engines
 
 Zur Auswahl stehen alle vier Engines wie im AUC-Modus: GMIA, Spektral-Kosinus,

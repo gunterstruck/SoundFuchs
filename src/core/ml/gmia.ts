@@ -8,7 +8,7 @@
  *
  * Where:
  * - X_p: Feature matrix (512 x N) - features as rows, samples as columns
- * - λ: Regularization parameter = 10^9 (from Report p.25)
+ * - λ: Regularization parameter, default 10^9 (from Report p.25) — see LAMBDA
  * - 1: Ones vector
  * - w_p: Weight vector (learned model)
  */
@@ -30,14 +30,76 @@ import type { GMIAModel, FeatureVector, TrainingData } from '@data/types.js';
 import { logger } from '@utils/logger.js';
 
 /**
- * Regularization parameter for GMIA
- * "regularization factor lambda was set of 10^9"
+ * Regularisierung λ für GMIA — Standard der App: 10^9 (Report S. 25).
  *
- * ⚠️ DO NOT CHANGE: Scientific constant (Equation 2)
- * Regularization parameter MUST be exactly 10^9 for GMIA algorithm correctness.
- * Any modification will break the mathematical foundation of the system.
+ * λ ist SKALENABHÄNGIG: Es wirkt nur relativ zur Größenordnung von XᵀX. Die
+ * Merkmale sind je Frame auf Summe 1 normiert, die Einträge von XᵀX liegen
+ * daher weit unter 1. Gegen sie ist 10^9 riesig: (XᵀX + λI)⁻¹ ≈ I/λ, und der
+ * Gewichtsvektor w = X(XᵀX + λI)⁻¹·1 ist praktisch das (skalierte) mittlere
+ * Spektrum. GMIA arbeitet mit diesem Standard also als Mittelwert-Vergleich.
+ * Kleinere λ gehen Richtung MIA (gemeinsame, frameübergreifend gleich starke
+ * Anteile). Ob das besser erkennt, misst das Mess-Labor (relatives λ, siehe
+ * relativeLambda); der Standard der App bleibt 10^9.
  */
-const LAMBDA = 1e9;
+export const LAMBDA = 1e9;
+
+/** Optionale Trainingsparameter — ohne Angabe exakt das bisherige Verhalten. */
+export interface GmiaTrainOptions {
+  /** Absolutes λ. Vorrang vor relativeAlpha. Standard: LAMBDA (10^9). */
+  lambda?: number;
+  /** Relatives λ: λ = α · Spur(XᵀX) / N (siehe relativeLambda). */
+  relativeAlpha?: number;
+  /**
+   * Konditionszahl von XᵀX + λI mitschreiben (metadata.conditionNumber).
+   * Nur fürs Labor; kostet zusätzliche Rechenzeit, ändert das Modell nicht.
+   */
+  computeCondition?: boolean;
+}
+
+/**
+ * Relatives λ: α · Spur(XᵀX) / N = α · mittlere quadrierte Frame-Norm.
+ * Damit hat α unabhängig von der Merkmals-Skalierung dieselbe Bedeutung:
+ * α = 1 entspricht der typischen Diagonale von XᵀX.
+ */
+export function relativeLambda(features: Float64Array[], alpha: number): number {
+  if (features.length === 0) throw new Error('relativeLambda: keine Merkmale');
+  let trace = 0;
+  for (const f of features) {
+    for (let i = 0; i < f.length; i++) trace += f[i] * f[i];
+  }
+  return (alpha * trace) / features.length;
+}
+
+/** Größter Eigenwert einer symmetrischen, positiv semidefiniten Matrix (Potenzmethode). */
+function largestEigenvalue(A: Float64Array[], maxIter = 500, tol = 1e-12): number {
+  const n = A.length;
+  // Deterministischer, „unregelmäßiger“ Startvektor: ein konstanter Vektor
+  // wäre zum Eigenvektor des kleinsten Eigenwerts oft fast orthogonal.
+  let v: Float64Array = new Float64Array(n);
+  for (let i = 0; i < n; i++) v[i] = 1 + Math.sin(12.9898 * (i + 1)) * 0.5;
+  const v0 = vectorMagnitude(v);
+  for (let i = 0; i < n; i++) v[i] /= v0;
+  let lambda = 0;
+  for (let it = 0; it < maxIter; it++) {
+    const w = matrixVectorMultiply(A, v);
+    const norm = vectorMagnitude(w);
+    if (!(norm > 0) || !Number.isFinite(norm)) return norm;
+    for (let i = 0; i < n; i++) w[i] /= norm;
+    v = w;
+    if (Math.abs(norm - lambda) <= tol * norm) return norm;
+    lambda = norm;
+  }
+  return lambda;
+}
+
+/**
+ * Konditionszahl κ = λmax(R) · λmax(R⁻¹) einer symmetrisch positiv definiten
+ * Matrix R und ihrer (bereits berechneten) Inversen. Schätzung über die
+ * Potenzmethode — genau genug, um κ > 10^10 sicher zu erkennen.
+ */
+export function conditionNumberSpd(R: Float64Array[], Rinv: Float64Array[]): number {
+  return largestEigenvalue(R) * largestEigenvalue(Rinv);
+}
 
 /**
  * Train GMIA model from reference audio
@@ -48,7 +110,11 @@ const LAMBDA = 1e9;
  * @param machineId - Machine identifier
  * @returns Trained GMIA model
  */
-export function trainGMIA(trainingData: TrainingData, machineId: string): GMIAModel {
+export function trainGMIA(
+  trainingData: TrainingData,
+  machineId: string,
+  options: GmiaTrainOptions = {}
+): GMIAModel {
   logger.info(`🧠 Training GMIA model for machine ${machineId}...`);
 
   const features = trainingData.featureVectors;
@@ -89,13 +155,21 @@ export function trainGMIA(trainingData: TrainingData, machineId: string): GMIAMo
 
   logger.debug(`   Gram matrix: ${gramMatrix.length}x${gramMatrix[0].length}`);
 
-  // Step 4: Add regularization: X_p^T * X_p + λI
-  const regularized = addRegularization(gramMatrix, LAMBDA);
+  // Step 4: Add regularization: X_p^T * X_p + λI (Standard: LAMBDA = 10^9)
+  const lambda =
+    options.lambda ??
+    (options.relativeAlpha !== undefined
+      ? relativeLambda(features, options.relativeAlpha)
+      : LAMBDA);
+  const regularized = addRegularization(gramMatrix, lambda);
 
-  logger.debug(`   Regularization: λ = ${LAMBDA}`);
+  logger.debug(`   Regularization: λ = ${lambda}`);
 
   // Step 5: Invert: (X_p^T * X_p + λI)^(-1)
   const inverted = matrixInverse(regularized);
+  const conditionNumber = options.computeCondition
+    ? conditionNumberSpd(regularized, inverted)
+    : undefined;
 
   // Step 6: Create ones vector
   const ones = onesVector(numSamples);
@@ -151,7 +225,7 @@ export function trainGMIA(trainingData: TrainingData, machineId: string): GMIAMo
     label: '', // Will be set by caller (Phase 2: "Baseline" for first, user-provided for others)
     type: 'healthy', // Default type, will be set by caller based on user selection
     weightVector,
-    regularization: LAMBDA,
+    regularization: lambda,
     scalingConstant,
     featureDimension: featureDim,
     trainingDate: Date.now(),
@@ -161,6 +235,7 @@ export function trainGMIA(trainingData: TrainingData, machineId: string): GMIAMo
       meanCosineSimilarity: meanCosine,
       targetScore: 0.9, // Target 90% health score for reference data
       weightMagnitude, // Store magnitude for later validation
+      ...(conditionNumber !== undefined ? { conditionNumber } : {}),
     },
   };
 }
