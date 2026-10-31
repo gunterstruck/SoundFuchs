@@ -80,7 +80,19 @@ GMIA und Spektral-Kosinus dürfen sehr ähnliche Werte liefern; das ist bekannt.
    Record 3384388. Danach entpacken; die Ordnerstruktur ist
    `pump/id_00/normal/*.wav` und `pump/id_00/abnormal/*.wav` (dazu `id_02`,
    `id_04`, `id_06`).
-2. SoundFuchs am Desktop-Browser öffnen und das **Mess-Labor** starten.
+2. Das **Mess-Labor** öffnen. In der normalen Oberfläche gibt es dafür
+   absichtlich keinen Knopf. Stattdessen SoundFuchs am Desktop-Browser mit dem
+   Parameter `?labor` aufrufen, zum Beispiel:
+   - Vercel-Vorschau oder Produktion: `https://<adresse>/?labor`
+   - lokal mit `npm run dev`: `http://localhost:5173/?labor`
+
+   Der Parameter steht vor einem eventuellen `#…`, also `/?labor#/…` und nicht
+   `/#/…?labor`. Das Labor öffnet sich nach dem Laden direkt als Vollbild-Fenster.
+   Es funktioniert nur in einem Desktop-Browser mit mindestens 900 px Breite und
+   Ordnerauswahl (z. B. Chrome, Edge oder Firefox). Auf dem Handy oder in einem schmalen Fenster
+   erscheint nur ein kurzer Hinweis. `?labor=0` schaltet den Einstieg wieder ab.
+   Nach dem Schließen (✕) die Seite mit `?labor` neu laden, um das Labor erneut
+   zu öffnen.
 3. Den Modus **„Handy-Protokoll (1 Referenz)“** wählen.
 4. Über **📂 Ordner wählen…** den Ordner `pump` (oder nur `pump/id_00`) wählen.
 5. Die Optionen einstellen:
@@ -99,10 +111,22 @@ GMIA und Spektral-Kosinus dürfen sehr ähnliche Werte liefern; das ist bekannt.
      Referenzdatei, Testdatei, Label, Rohwert, angezeigtem Score und Urteil.
      Damit lassen sich einzelne Paarungen nachprüfen.
 
-Ein Hinweis zur Laufzeit: `pump/id_00` hat rund 1000 Normal- und 140
-Abnormal-Clips. 20 Durchläufe mit allen Engines bedeuten über 20 000 Prüfungen
-je Engine. Für einen ersten Blick hilft „Max. Testclips/Klasse“ = 100. YAMNet
-ist die langsamste Engine.
+**Laufzeit:** Das Einlesen kostet je 10-s-Clip spürbar Zeit. Jeder Clip wird
+dekodiert, auf 48 kHz umgerechnet und in Frames zerlegt, und jede Prüfung
+läuft für jede gewählte Engine und jede Referenz, in der der Clip im Test
+steht. `pump/id_00` hat rund 1000 Normal- und 140 Abnormal-Clips. Mit
+20 Durchläufen und allen Clips sind das über 20 000 Prüfungen je Engine.
+
+**Für den ersten Lauf daher:**
+
+- „Max. Testclips/Klasse“ = **100**: so werden je Durchlauf 100 Normal- und
+  100 Abnormal-Clips geprüft. Die Referenzen werden trotzdem aus allen
+  Normal-Clips gezogen.
+- **YAMNet aus.** YAMNet ist die mit Abstand langsamste Engine, weil sie jedes
+  ≈1-s-Fenster durch ein neuronales Netz schickt. Sie lädt außerdem beim ersten
+  Mal ihr Modell.
+- Erst wenn das Ergebnis plausibel aussieht, mit allen Clips oder mit YAMNet
+  nachmessen.
 
 Das Protokoll schreibt nichts in IndexedDB und berührt keine echten Referenzen.
 Die Pipeline-Stufen und Schwellen kommen live aus den Einstellungen.
