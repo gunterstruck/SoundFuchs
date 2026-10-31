@@ -275,6 +275,153 @@ export function planPhoneProtocol(
   return { ...base, runs, testSetFixed };
 }
 
+// ── Mikrofon-Szenario (Kanalwahl) ────────────────────────────────────────────
+
+/**
+ * Welche Kanäle einer Mehrkanal-Datei (MIMII: 8 Mikrofone im Ring) verwendet
+ * werden. Die Clip-Planung ist in allen Szenarien gleich; nur die Kanäle
+ * unterscheiden sich.
+ *  - 'mean' (A): Mittel aller Kanäle — bisheriges Verhalten.
+ *  - 'same' (B): 1 Mikrofon, Prüfung an derselben Stelle — alles aus Kanal 1.
+ *  - 'other'(C): 1 Mikrofon, Prüfung an anderer Stelle — Referenz aus Kanal 1,
+ *                Kalibrier-/Testclips aus dem Prüf-Pool.
+ *  - 'spread'(D): Referenz an k Stellen — die k Referenz-Clips aus k über den
+ *                Ring verteilten Kanälen, Kalibrier-/Testclips aus dem Prüf-Pool.
+ *                Braucht k ≥ 2.
+ * Kanäle sind hier 0-basiert (Kanal 1 = Index 0); Anzeige 1-basiert.
+ */
+export type MicScenario = 'mean' | 'same' | 'other' | 'spread';
+
+/** Kanal-Auswahl: Index (0-basiert) oder 'mean' (Mittel aller Kanäle). */
+export type ChannelChoice = number | 'mean';
+
+/** k gleichmäßig über den Ring verteilte Kanäle, z. B. k = 3, 8 Kanäle → 0, 3, 5. */
+export function spreadRefChannels(k: number, channelCount: number): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < k; i++) out.push(Math.round((i * channelCount) / k) % channelCount);
+  return out;
+}
+
+/**
+ * Prüf-Pool: die Kanäle, die in Szenario D nicht Referenz sind. Gilt für C und
+ * D gleich (bei k = 1 also alle außer Kanal 1). Bleibt nichts übrig (zu wenige
+ * Kanäle), werden alle Kanäle genommen.
+ */
+export function probeChannelPool(k: number, channelCount: number): number[] {
+  const ref = new Set(spreadRefChannels(Math.max(1, k), channelCount));
+  const pool: number[] = [];
+  for (let c = 0; c < channelCount; c++) if (!ref.has(c)) pool.push(c);
+  return pool.length > 0 ? pool : Array.from({ length: channelCount }, (_, c) => c);
+}
+
+/** Einfacher, stabiler 32-bit-Hash eines Pfads (FNV-1a). */
+function hashPath(path: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < path.length; i++) {
+    h ^= path.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+/**
+ * Fester Prüf-Kanal eines Clips: per Seed und Pfad aus dem Prüf-Pool — derselbe
+ * in C und D und in allen Durchläufen (jeder Testclip wird nur einmal in
+ * Merkmale umgerechnet).
+ */
+export function probeChannelOf(path: string, seed: number, pool: number[]): number {
+  const r = mulberry32((seed ^ hashPath(path)) >>> 0)();
+  return pool[Math.floor(r * pool.length) % pool.length];
+}
+
+/** Kanalplan eines Bereichs für ein Szenario. */
+export interface ChannelPlan {
+  scenario: MicScenario;
+  channelCount: number;
+  /** Kanal des j-ten Referenz-Clips (j = 0 … k−1). */
+  refChannel(j: number): ChannelChoice;
+  /** Kanal eines Test- oder Kalibrier-Clips. */
+  probeChannel(path: string): ChannelChoice;
+  /** Prüf-Pool (nur C/D, sonst leer). */
+  pool: number[];
+  /** Hinweis, falls auf weniger Kanäle zurückgefallen wurde. */
+  note?: string;
+}
+
+/**
+ * Kanalplan für Szenario, k, Kanalzahl und Seed. Dateien mit nur einem Kanal:
+ * alle Szenarien nutzen diesen Kanal (Hinweis).
+ */
+export function planChannels(
+  scenario: MicScenario,
+  k: number,
+  channelCount: number,
+  seed: number
+): ChannelPlan {
+  if (scenario === 'mean') {
+    return {
+      scenario,
+      channelCount,
+      refChannel: () => 'mean',
+      probeChannel: () => 'mean',
+      pool: [],
+    };
+  }
+  if (channelCount <= 1) {
+    return {
+      scenario,
+      channelCount,
+      refChannel: () => 0,
+      probeChannel: () => 0,
+      pool: [],
+      note: 'Dateien haben nur einen Kanal — alle Szenarien nutzen diesen Kanal',
+    };
+  }
+  if (scenario === 'same') {
+    return { scenario, channelCount, refChannel: () => 0, probeChannel: () => 0, pool: [] };
+  }
+  const pool = probeChannelPool(k, channelCount);
+  const refs = scenario === 'spread' ? spreadRefChannels(k, channelCount) : [];
+  const tooFew = channelCount < Math.max(2, k) + 1;
+  return {
+    scenario,
+    channelCount,
+    refChannel: (j) => (scenario === 'spread' ? refs[j % refs.length] : 0),
+    probeChannel: (path) => probeChannelOf(path, seed, pool),
+    pool,
+    note: tooFew
+      ? `nur ${channelCount} Kanäle — Prüf-Pool kann Referenz-Kanäle enthalten`
+      : undefined,
+  };
+}
+
+/** Anzeige eines Kanals: 1-basiert, „Mittel“ für 'mean'. */
+export function channelLabel(c: ChannelChoice): string {
+  return c === 'mean' ? 'Mittel' : String(c + 1);
+}
+
+/** Kanalzahl aus dem RIFF/WAVE-Kopf (fmt-Chunk), NaN wenn kein WAV. */
+export function wavChannelCount(bytes: ArrayBuffer): number {
+  if (bytes.byteLength < 12) return NaN;
+  const view = new DataView(bytes);
+  const tag = (off: number): string =>
+    String.fromCharCode(
+      view.getUint8(off),
+      view.getUint8(off + 1),
+      view.getUint8(off + 2),
+      view.getUint8(off + 3)
+    );
+  if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return NaN;
+  let off = 12;
+  while (off + 8 <= bytes.byteLength) {
+    const id = tag(off);
+    const size = view.getUint32(off + 4, true);
+    if (id === 'fmt ') return off + 12 <= bytes.byteLength ? view.getUint16(off + 10, true) : NaN;
+    off += 8 + size + (size % 2);
+  }
+  return NaN;
+}
+
 // ── Kalibrierte Schwelle ─────────────────────────────────────────────────────
 
 /** Schwellenregel aus den Rohwerten der Kalibrier-Clips. */

@@ -53,6 +53,20 @@ export function refLayoutLabel(result: PhoneProtocolResult): string {
     : 'verteilt (mehrere Aufnahmen)';
 }
 
+/** Klartext des Mikrofon-Szenarios. */
+export function micScenarioLabel(result: PhoneProtocolResult): string {
+  switch (result.micScenario) {
+    case 'same':
+      return 'B: 1 Mikrofon, Prüfung an derselben Stelle';
+    case 'other':
+      return 'C: 1 Mikrofon, Prüfung an anderer Stelle';
+    case 'spread':
+      return 'D: Referenz an k Stellen, Prüfung an anderer Stelle';
+    default:
+      return 'A: Mittel aller Kanäle';
+  }
+}
+
 /** Referenz-Spanne je Bereich + Durchlauf (für den Detail-Export). */
 function spanIndex(result: PhoneProtocolResult): Map<string, number> {
   const idx = new Map<string, number>();
@@ -70,6 +84,7 @@ function header(result: PhoneProtocolResult): string {
     `${result.runs} Durchläufe/Bereich · Seed ${result.seed} · ` +
     `Referenz aus k=${result.refClips} Clip(s), Lage ${refLayoutLabel(result)} · ` +
     `Kalibrier-Clips m=${result.calibClips} · ` +
+    `Mikrofon-Szenario ${micScenarioLabel(result)} · ` +
     `Schwellenregel ${calibRuleLabel(result)} · ` +
     (result.gmiaStages.some((st) => st !== 'standard')
       ? `GMIA-λ-Stufen ${result.gmiaStages.map((st) => (st === 'standard' ? 'Standard 1e9' : `α=${st}`)).join('/')} · `
@@ -128,6 +143,8 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
       'Kalibrier-Dateien',
       'Referenz-Lage',
       'Referenz-Spanne (Nummern)',
+      'Mikrofon-Szenario',
+      'Referenz-Kanäle',
       'GMIA λ',
       'GMIA Konditionszahl',
       'Schwelle (Rohwert)',
@@ -163,6 +180,8 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
             csvCell(run.calibPaths.join(' + ')),
             result.refLayout,
             Number.isFinite(run.refSpan) ? String(run.refSpan) : '',
+            result.micScenario,
+            csvCell(run.refChannels.join(' + ')),
             fmtExp(run.lambda),
             fmtExp(run.conditionNumber),
             fmt(run.threshold, 5),
@@ -268,6 +287,13 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
 /** Detail-CSV: eine Zeile je geprüftem Clip (Referenz × Testclip × Engine). */
 export function toCsvPhoneDetail(result: PhoneProtocolResult): string {
   const spans = spanIndex(result);
+  const refChans = new Map<string, string>();
+  for (const sec of result.sections) {
+    for (const r of Object.values(sec.perEngine)) {
+      for (const run of r?.runs ?? [])
+        refChans.set(`${sec.key}|${run.run}`, run.refChannels.join(' + '));
+    }
+  }
   const lines = [
     header(result),
     [
@@ -284,6 +310,8 @@ export function toCsvPhoneDetail(result: PhoneProtocolResult): string {
       'Schwelle',
       'kalibriertes Urteil',
       'Referenz-Spanne (Nummern)',
+      'Kanal',
+      'Referenz-Kanäle',
     ].join(','),
   ];
   for (const d of result.details) {
@@ -302,6 +330,8 @@ export function toCsvPhoneDetail(result: PhoneProtocolResult): string {
         fmt(d.threshold, 5),
         d.calibFlag === null ? '' : d.calibFlag ? 'auffällig' : 'unauffällig',
         fmt(spans.get(`${d.sectionKey}|${d.run}`) ?? NaN, 0),
+        d.channel,
+        csvCell(refChans.get(`${d.sectionKey}|${d.run}`) ?? ''),
       ].join(',')
     );
   }
@@ -324,6 +354,7 @@ export function toJsonPhone(result: PhoneProtocolResult, includeDetails = false)
         '(calibRule); kalibriert auffällig = Rohwert > Schwelle. Strikt lesend.',
       calibRuleText: calibRuleLabel(result),
       refLayoutText: refLayoutLabel(result),
+      micScenarioText: micScenarioLabel(result),
       ...rest,
       startedAt: new Date(result.startedAt).toISOString(),
       finishedAt: new Date(result.finishedAt).toISOString(),

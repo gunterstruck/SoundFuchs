@@ -69,12 +69,42 @@ export function toMono(buffer: AudioBuffer): Float32Array {
 }
 
 /** Decode one WAV clip and run the production feature pipeline over it. */
-export async function decodeClip(ctx: AudioContext, src: ClipSource): Promise<DecodedClip> {
+export async function decodeClip(
+  ctx: AudioContext,
+  src: ClipSource,
+  channel?: number
+): Promise<DecodedClip> {
   const bytes = await src.read();
   const buffer = await ctx.decodeAudioData(bytes);
   const config = { ...DEFAULT_DSP_CONFIG, sampleRate: buffer.sampleRate };
-  const features = extractFeatures(buffer, config);
-  return { features, raw: toMono(buffer), sampleRate: buffer.sampleRate };
+  if (channel === undefined) {
+    // Bisheriger Weg: Mittel aller Kanäle (Merkmale und Rohsignal).
+    const features = extractFeatures(buffer, config);
+    return { features, raw: toMono(buffer), sampleRate: buffer.sampleRate };
+  }
+  const view = channelView(buffer, channel);
+  return {
+    features: extractFeatures(view, config),
+    raw: view.getChannelData(0).slice(),
+    sampleRate: buffer.sampleRate,
+  };
+}
+
+/**
+ * Einkanalige Sicht auf EINEN Kanal eines Puffers — damit läuft dieselbe
+ * Produktions-Pipeline (extractFeatures) wie für das Kanal-Mittel. Kanal außer
+ * Reichweite → letzter vorhandener Kanal (der Läufer meldet das).
+ */
+export function channelView(buffer: AudioBuffer, channel: number): AudioBuffer {
+  const ch = Math.min(Math.max(0, channel), buffer.numberOfChannels - 1);
+  const data = buffer.getChannelData(ch);
+  return {
+    sampleRate: buffer.sampleRate,
+    length: buffer.length,
+    duration: buffer.duration,
+    numberOfChannels: 1,
+    getChannelData: () => data,
+  } as unknown as AudioBuffer;
 }
 
 /** Create the shared AudioContext for a run (48 kHz product config). */

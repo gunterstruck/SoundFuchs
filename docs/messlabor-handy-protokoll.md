@@ -120,6 +120,54 @@ Testclips/Klasse“ > 0 ist die Testmenge jetzt fest, und die Referenzen kommen 
 den übrigen Normal-Clips. Bisher wurde die Referenz aus allen Normal-Clips
 gezogen und der Test je Durchlauf neu gekappt.
 
+## Mikrofon-Szenario
+
+MIMII-2019-Dateien haben 8 Kanäle. Aufgenommen wurde mit einem Ringmikrofon
+(TAMAGO-03); die Mikrofone liegen wenige Zentimeter auseinander, der Abstand zur
+Maschine ist fest 50 cm. Bisher mittelt das Labor alle Kanäle zu einem. Ein Handy
+liefert aber ein einziges Mikrofon-Signal, und seine Lage ändert sich von
+Aufnahme zu Aufnahme. Die einzelnen Kanäle bilden das nach: gleiche Zeit, andere
+Stelle und Richtung.
+
+Aus der Praxis: Eine Referenz, bei der das Handy etwas bewegt wurde, ist
+robuster. Das soll das Labor messen.
+
+Auswahl „Mikrofon-Szenario“ (Kanäle 1-basiert, Kanal 1 = erster Kanal der
+Datei):
+
+| Szenario | Referenz | Kalibrierung und Test |
+| --- | --- | --- |
+| **A: Mittel aller Kanäle** (Standard) | Mittel | Mittel |
+| **B: 1 Mikrofon, Prüfung an derselben Stelle** | Kanal 1 | Kanal 1 |
+| **C: 1 Mikrofon, Prüfung an anderer Stelle** | alle k Clips aus Kanal 1 | Prüf-Pool |
+| **D: Referenz an k Stellen, Prüfung an anderer Stelle** | k Clips aus k über den Ring verteilten Kanälen (k = 3: 1, 4, 6) | Prüf-Pool |
+
+- **A** ist das bisherige Verhalten, bitgleich.
+- **D** braucht k ≥ 2.
+- **Prüf-Pool:** die Kanäle, die in D nicht Referenz sind. Bei k = 3 und 8
+  Kanälen sind das 2, 3, 5, 7 und 8. Jeder Test- und Kalibrier-Clip bekommt per
+  Seed einen festen Kanal aus diesem Pool. Er ist in C und D derselbe und bleibt
+  über alle Durchläufe gleich. C und D unterscheiden sich also nur in der
+  Referenz.
+- **Clip-Planung:** In allen Szenarien gleich. A bis D unterscheiden sich nur in
+  der Kanalwahl.
+- **Ein Kanal:** Haben die Dateien nur einen Kanal, nutzen alle Szenarien
+  diesen; der Bericht weist darauf hin. Die Kanalzahl der gelesenen Dateien
+  steht immer im Bericht.
+- **Bericht und Exporte:** Das Szenario steht in der Kopfzeile und im JSON. Je
+  Durchlauf stehen die Referenz-Kanäle dabei, im Detail-Export je Clip der
+  verwendete Kanal.
+
+**Vergleichen:** Gleiche Pumpe, gleicher Seed, gleiches k. Zu vergleichen sind:
+
+- B gegen C: Was kostet es, an einer anderen Stelle zu prüfen?
+- C gegen D: Hilft eine Referenz, die an mehreren Stellen aufgenommen wurde?
+
+**Grenzen:** Die Mikrofone liegen nur wenige Zentimeter auseinander, und der
+Abstand zur Maschine ist fest. Am Handy schwankt die Lage deutlich stärker:
+Abstand, Winkel, Hand und Hülle ändern sich. Die Messung zeigt daher eher die
+**Untergrenze** des Effekts.
+
 ## GMIA-λ-Stufen
 
 GMIA lernt den Gewichtsvektor w = X (XᵀX + λI)⁻¹ · 1. Die Regularisierung λ
@@ -258,6 +306,8 @@ GMIA und Spektral-Kosinus dürfen sehr ähnliche Werte liefern; das ist bekannt.
    - **Referenz aus k Clips:** Standard 1, wie am Handy.
    - **Referenz-Lage:** „verteilt“ (Standard) oder „am Stück“. Wirkt nur bei
      k > 1.
+   - **Mikrofon-Szenario:** A „Mittel aller Kanäle“ (Standard) bis D. D braucht
+     k ≥ 2.
    - **Kalibrier-Clips m:** Standard 0. Für die kalibrierte Schwelle z. B. 5.
    - **Schwellenregel, Faktor, z:** wirken nur bei m > 0.
    - **Aggregation** wählen.

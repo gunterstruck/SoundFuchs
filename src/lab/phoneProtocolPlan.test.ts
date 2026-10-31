@@ -23,6 +23,11 @@ import {
   calibratedFlag,
   fileNumber,
   numberSpan,
+  spreadRefChannels,
+  probeChannelPool,
+  planChannels,
+  channelLabel,
+  wavChannelCount,
 } from './phoneProtocolPlan.js';
 import { shuffledIndices } from './rng.js';
 
@@ -356,5 +361,82 @@ describe('Referenz-Lage', () => {
     expect(planPhoneProtocol(section(30, 4), { ...opts, refLayout: 'block' })).toEqual(
       planPhoneProtocol(section(30, 4), { ...opts, refLayout: 'spread' })
     );
+  });
+});
+
+describe('Mikrofon-Szenario (Kanalplan)', () => {
+  const paths = Array.from(
+    { length: 40 },
+    (_, i) => `pump/id_00/normal/${String(i).padStart(8, '0')}.wav`
+  );
+
+  it('verteilt k Referenz-Kanäle über den Ring; Prüf-Pool = Rest', () => {
+    expect(spreadRefChannels(3, 8).map((c) => c + 1)).toEqual([1, 4, 6]);
+    expect(spreadRefChannels(2, 8).map((c) => c + 1)).toEqual([1, 5]);
+    expect(probeChannelPool(3, 8).map((c) => c + 1)).toEqual([2, 3, 5, 7, 8]);
+    expect(probeChannelPool(1, 8).map((c) => c + 1)).toEqual([2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('A = Mittel, B = alles Kanal 1', () => {
+    const a = planChannels('mean', 3, 8, 1);
+    expect(a.refChannel(0)).toBe('mean');
+    expect(a.probeChannel(paths[0])).toBe('mean');
+    const b = planChannels('same', 3, 8, 1);
+    for (let j = 0; j < 3; j++) expect(b.refChannel(j)).toBe(0);
+    for (const p of paths) expect(b.probeChannel(p)).toBe(0);
+    expect(channelLabel('mean')).toBe('Mittel');
+    expect(channelLabel(0)).toBe('1');
+  });
+
+  it('C: Referenz Kanal 1, Prüfung aus dem Pool; D: Referenz 1/4/6, nie Überschneidung', () => {
+    const c = planChannels('other', 3, 8, 7);
+    const d = planChannels('spread', 3, 8, 7);
+    for (let j = 0; j < 3; j++) expect(c.refChannel(j)).toBe(0);
+    expect([0, 1, 2].map((j) => d.refChannel(j))).toEqual([0, 3, 5]);
+    const dRefs = new Set([0, 3, 5]);
+    const used = new Set<number>();
+    for (const p of paths) {
+      const pc = c.probeChannel(p) as number;
+      const pd = d.probeChannel(p) as number;
+      // C und D: derselbe Kanal je Clip
+      expect(pd).toBe(pc);
+      expect(dRefs.has(pd)).toBe(false);
+      used.add(pd);
+    }
+    // über viele Clips werden mehrere Kanäle des Pools genutzt
+    expect(used.size).toBeGreaterThan(2);
+  });
+
+  it('reproduzierbar per Seed, anderer Seed andere Zuordnung', () => {
+    const a = planChannels('other', 2, 8, 11);
+    const b = planChannels('other', 2, 8, 11);
+    const c = planChannels('other', 2, 8, 12);
+    expect(paths.map((p) => a.probeChannel(p))).toEqual(paths.map((p) => b.probeChannel(p)));
+    expect(paths.map((p) => a.probeChannel(p))).not.toEqual(paths.map((p) => c.probeChannel(p)));
+  });
+
+  it('nur ein Kanal: alle Szenarien auf Kanal 1, mit Hinweis', () => {
+    for (const sc of ['same', 'other', 'spread'] as const) {
+      const pl = planChannels(sc, 3, 1, 1);
+      expect(pl.refChannel(2)).toBe(0);
+      expect(pl.probeChannel(paths[3])).toBe(0);
+      expect(pl.note).toMatch(/nur einen Kanal/);
+    }
+  });
+
+  it('wavChannelCount liest die Kanalzahl aus dem fmt-Chunk', () => {
+    const buf = new ArrayBuffer(44);
+    const v = new DataView(buf);
+    const put = (off: number, t: string) =>
+      [...t].forEach((ch, i) => v.setUint8(off + i, ch.charCodeAt(0)));
+    put(0, 'RIFF');
+    put(8, 'WAVE');
+    put(12, 'fmt ');
+    v.setUint32(16, 16, true);
+    v.setUint16(22, 8, true);
+    v.setUint32(24, 16000, true);
+    put(36, 'data');
+    expect(wavChannelCount(buf)).toBe(8);
+    expect(Number.isNaN(wavChannelCount(new ArrayBuffer(4)))).toBe(true);
   });
 });

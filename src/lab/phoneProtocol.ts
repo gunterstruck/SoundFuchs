@@ -73,6 +73,11 @@ import {
   type CalibParams,
   type CalibRule,
   type RefLayout,
+  type MicScenario,
+  type ChannelChoice,
+  planChannels,
+  channelLabel,
+  wavChannelCount,
 } from './phoneProtocolPlan.js';
 import {
   type ClipSource,
@@ -144,6 +149,8 @@ export interface PhoneProtocolOptions {
   refClips?: number;
   /** Lage der k Referenz-Clips: 'spread' (Standard, verteilt) oder 'block' (am Stück). */
   refLayout?: RefLayout;
+  /** Mikrofon-Szenario A–D (Standard 'mean' = Mittel aller Kanäle, bisheriges Verhalten). */
+  micScenario?: MicScenario;
   /** Schwellenregel bei m > 0 (Standard 'max-factor'). */
   calibRule?: CalibRule;
   /** Faktor für 'max-factor' (Standard 1,25). */
@@ -157,7 +164,7 @@ export interface PhoneProtocolOptions {
    * das leer — dann wird wie im AUC-Modus über einen 48-kHz-AudioContext
    * dekodiert (16-kHz-Dateien werden dabei umgerechnet).
    */
-  decode?: (src: ClipSource) => Promise<DecodedClip>;
+  decode?: (src: ClipSource, channel?: number) => Promise<DecodedClip>;
 }
 
 /** Eine geprüfte Clip-Paarung (Referenz × Testclip) — für den Detail-Export. */
@@ -179,6 +186,8 @@ export interface PhoneClipRecord {
   displayScore: number;
   /** Urteil mit den Schwellen aus den Einstellungen. */
   status: PredClass;
+  /** Verwendeter Kanal des Testclips (1-basiert, „Mittel“ = alle Kanäle gemittelt). */
+  channel: string;
   /** Kalibrierte Schwelle dieses Durchlaufs (NaN ohne Kalibrierung). */
   threshold: number;
   /** Kalibriertes Urteil: true = auffällig, false = unauffällig, null = keine Schwelle. */
@@ -195,6 +204,8 @@ export interface PhoneRunResult {
   calibPaths: string[];
   /** Referenz-Spanne: größte minus kleinste Dateinummer der Referenz-Clips. */
   refSpan: number;
+  /** Kanäle der k Referenz-Clips (1-basiert bzw. „Mittel“). */
+  refChannels: string[];
   /** GMIA: verwendetes λ (sonst NaN). */
   lambda: number;
   /** GMIA: Konditionszahl von XᵀX + λI (sonst NaN). */
@@ -291,6 +302,10 @@ export interface PhoneProtocolResult {
   refClips: number;
   /** Lage der Referenz-Clips. */
   refLayout: RefLayout;
+  /** Mikrofon-Szenario. */
+  micScenario: MicScenario;
+  /** Kanalzahl der gelesenen WAVs: Kanäle → Anzahl Dateien. */
+  sourceChannelCounts: Record<string, number>;
   /** Schwellenregel, Faktor und z (wirksam nur bei m > 0). */
   calibRule: CalibRule;
   calibFactor: number;
@@ -443,6 +458,7 @@ export function runMetrics(
   | 'refPaths'
   | 'calibPaths'
   | 'refSpan'
+  | 'refChannels'
   | 'refQuality'
   | 'lambda'
   | 'conditionNumber'
@@ -598,6 +614,10 @@ export async function runPhoneProtocol(
     Math.max(1, Math.floor(options.refClips ?? PHONE_PROTOCOL_DEFAULTS.refClips))
   );
   const refLayout: RefLayout = options.refLayout ?? PHONE_PROTOCOL_DEFAULTS.refLayout;
+  const micScenario: MicScenario = options.micScenario ?? 'mean';
+  if (micScenario === 'spread' && refClips < 2) {
+    throw new Error('Mikrofon-Szenario D (Referenz an k Stellen) braucht k ≥ 2 Referenz-Clips.');
+  }
   const calib: CalibParams = {
     rule: options.calibRule ?? PHONE_PROTOCOL_DEFAULTS.calibRule,
     factor: options.calibFactor ?? PHONE_PROTOCOL_DEFAULTS.calibFactor,
@@ -611,6 +631,8 @@ export async function runPhoneProtocol(
   // Originale Abtastrate aus dem WAV-Kopf mitschreiben, BEVOR dekodiert wird
   // (decodeAudioData rechnet auf die Kontextrate um).
   const rateCounts = new Map<number, number>();
+  const channelCounts = new Map<number, number>();
+  const channelsOfPath = new Map<string, number>();
   const seenRate = new Set<string>();
   const sniffing = (path: string): ClipSource => {
     const src = resolve(path);
@@ -622,6 +644,10 @@ export async function runPhoneProtocol(
           const rate = wavSampleRate(bytes);
           const k = Number.isFinite(rate) ? rate : 0;
           rateCounts.set(k, (rateCounts.get(k) ?? 0) + 1);
+          const chans = wavChannelCount(bytes);
+          const c = Number.isFinite(chans) ? chans : 0;
+          channelCounts.set(c, (channelCounts.get(c) ?? 0) + 1);
+          channelsOfPath.set(path, c);
         }
         return bytes;
       },
@@ -629,10 +655,23 @@ export async function runPhoneProtocol(
   };
 
   let ctx: AudioContext | null = null;
-  const decode = async (path: string): Promise<DecodedClip> => {
-    if (options.decode) return options.decode(sniffing(path));
-    ctx ??= await makeAudioContext();
-    return decodeClip(ctx, sniffing(path));
+  // channel 'mean' (Szenario A) = exakt der bisherige Aufruf ohne Kanal.
+  let channelFallbacks = 0;
+  const decode = async (path: string, channel: ChannelChoice = 'mean'): Promise<DecodedClip> => {
+    const ch = channel === 'mean' ? undefined : channel;
+    let clip: DecodedClip;
+    if (options.decode) {
+      clip =
+        ch === undefined
+          ? await options.decode(sniffing(path))
+          : await options.decode(sniffing(path), ch);
+    } else {
+      ctx ??= await makeAudioContext();
+      clip = await decodeClip(ctx, sniffing(path), ch);
+    }
+    const have = channelsOfPath.get(path) ?? 0;
+    if (ch !== undefined && have > 0 && ch >= have) channelFallbacks++;
+    return clip;
   };
 
   // Berichtszeilen: jede Engine einmal, GMIA je gewählter λ-Stufe. Die
@@ -726,6 +765,19 @@ export async function runPhoneProtocol(
         );
       }
 
+      // Kanalplan des Bereichs: Kanalzahl aus dem WAV-Kopf des ersten Normal-Clips.
+      let channelCount = 1;
+      if (micScenario !== 'mean') {
+        try {
+          const n = wavChannelCount(await resolve(plan.normals[0]).read());
+          channelCount = Number.isFinite(n) && n > 0 ? n : 1;
+        } catch {
+          channelCount = 1;
+        }
+      }
+      const chPlan = planChannels(micScenario, refClips, channelCount, seed);
+      if (chPlan.note) sectionNotes.push(chPlan.note);
+
       // ── 1+2: Jede Referenz einzeln anlernen, wie am Handy ──────────────────
       const trained = new Map<string, TrainedRef | { error: string }>(); // `${run}|${engine}`
       const refQuality = new Map<number, QualityResult['rating'] | null>();
@@ -746,9 +798,9 @@ export async function runPhoneProtocol(
         // Bei k = 1 ist das exakt das bisherige Anlernen.
         const parts: DecodedClip[] = [];
         let decodeError = '';
-        for (const refPath of run.refPaths) {
+        for (const [j, refPath] of run.refPaths.entries()) {
           try {
-            parts.push(await decode(refPath));
+            parts.push(await decode(refPath, chPlan.refChannel(j)));
           } catch (err) {
             decodeError = `Referenz nicht lesbar (${refPath}): ${err instanceof Error ? err.message : String(err)}`;
             logger.warn(`Mess-Labor (Handy-Protokoll): Referenz übersprungen (${refPath}):`, err);
@@ -831,8 +883,9 @@ export async function runPhoneProtocol(
           message: `Prüfen ${plan.key}`,
         });
         let clip: DecodedClip | null = null;
+        const probeCh = chPlan.probeChannel(path);
         try {
-          clip = await decode(path);
+          clip = await decode(path, probeCh);
         } catch (err) {
           decodeFailures++;
           logger.warn(`Mess-Labor (Handy-Protokoll): Prüf-Clip übersprungen (${path}):`, err);
@@ -878,6 +931,7 @@ export async function runPhoneProtocol(
                   sectionKey: plan.key,
                   engine: unitEngineId.get(id) ?? 'gmia',
                   unit: id,
+                  channel: channelLabel(probeCh),
                   run: runIdx,
                   refPath: plan.runs[runIdx].refPaths.join(' + '),
                   testPath: path,
@@ -937,6 +991,7 @@ export async function runPhoneProtocol(
             refPaths: run.refPaths,
             calibPaths: run.calibPaths,
             refSpan: run.refSpan,
+            refChannels: run.refPaths.map((_, j) => channelLabel(chPlan.refChannel(j))),
             refQuality: refQuality.get(run.index) ?? null,
             calibRaw: cal,
             threshold,
@@ -1037,11 +1092,26 @@ export async function runPhoneProtocol(
     }
   }
 
+  const sourceChannelCounts: Record<string, number> = {};
+  for (const [c, n] of [...channelCounts.entries()].sort((a, b) => a[0] - b[0])) {
+    sourceChannelCounts[c > 0 ? String(c) : 'unbekannt'] = n;
+  }
   const sourceSampleRates: Record<string, number> = {};
   for (const [rate, n] of [...rateCounts.entries()].sort((a, b) => a[0] - b[0])) {
     sourceSampleRates[rate > 0 ? String(rate) : 'unbekannt'] = n;
   }
   const notes: string[] = [];
+  {
+    const desc = Object.entries(sourceChannelCounts)
+      .map(([c, n]) => `${c} Kanal/Kanäle: ${n} Datei(en)`)
+      .join(', ');
+    if (desc) notes.push(`Kanalzahl der gelesenen Dateien — ${desc}.`);
+  }
+  if (micScenario !== 'mean' && channelFallbacks > 0) {
+    notes.push(
+      `${channelFallbacks}× war der gewünschte Kanal in der Datei nicht vorhanden — letzter vorhandener Kanal verwendet`
+    );
+  }
   const low = [...rateCounts.entries()].filter(([r]) => r > 0 && r < 48000);
   if (low.length > 0) {
     const desc = low.map(([r, n]) => `${n}× ${(r / 1000).toLocaleString('de-DE')} kHz`).join(', ');
@@ -1076,6 +1146,8 @@ export async function runPhoneProtocol(
     calibClips,
     refClips,
     refLayout,
+    micScenario,
+    sourceChannelCounts,
     calibRule: calib.rule,
     calibFactor: calib.factor,
     calibZ: calib.z,
