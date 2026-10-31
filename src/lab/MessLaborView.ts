@@ -30,6 +30,9 @@ import {
   type NoiseBenchmarkResult,
 } from './noiseBenchmark.js';
 import { InteractiveSession, type TrainSelection } from './interactive.js';
+import { runPhoneProtocol, type PhoneProtocolResult } from './phoneProtocol.js';
+import { toCsvPhone, toCsvPhoneDetail, toJsonPhone } from './phoneProtocolExport.js';
+import { PHONE_PROTOCOL_DEFAULTS, type SpreadSummary } from './phoneProtocolPlan.js';
 import { pipelineSummary } from './phonePipeline.js';
 import type { BenchmarkResult, ClassifyResult } from './types.js';
 import type { ClipAggMode } from './clipAggregate.js';
@@ -48,7 +51,7 @@ import {
 } from './exportResult.js';
 
 /** Which benchmark the lab is set to run. */
-type LabMode = 'auc' | 'classify' | 'noise' | 'interactive';
+type LabMode = 'auc' | 'classify' | 'noise' | 'interactive' | 'phone';
 
 // ── Minimal File System Access typings (independent of the TS lib version) ──
 interface FsFileHandleLike {
@@ -83,6 +86,7 @@ export class MessLaborView {
   private lastAuc: BenchmarkResult | null = null;
   private lastClassify: ClassifyResult | null = null;
   private lastNoise: NoiseBenchmarkResult | null = null;
+  private lastPhone: PhoneProtocolResult | null = null;
   private noiseFile: File | null = null;
 
   /** Interactive (phone-simulation) session state. */
@@ -117,6 +121,7 @@ export class MessLaborView {
     this.lastAuc = null;
     this.lastClassify = null;
     this.lastNoise = null;
+    this.lastPhone = null;
     this.noiseFile = null;
   }
 
@@ -131,6 +136,7 @@ export class MessLaborView {
     this.$('#ml-cancel')?.addEventListener('click', () => this.abort?.abort());
     this.$('#ml-csv')?.addEventListener('click', () => this.download('csv'));
     this.$('#ml-json')?.addEventListener('click', () => this.download('json'));
+    this.$('#ml-detail')?.addEventListener('click', () => this.downloadPhoneDetail());
 
     const fallback = this.$('#ml-fallback-input') as HTMLInputElement | null;
     fallback?.addEventListener('change', () => {
@@ -141,6 +147,7 @@ export class MessLaborView {
     this.$('#ml-mode-classify')?.addEventListener('click', () => this.setMode('classify'));
     this.$('#ml-mode-noise')?.addEventListener('click', () => this.setMode('noise'));
     this.$('#ml-mode-interactive')?.addEventListener('click', () => this.setMode('interactive'));
+    this.$('#ml-mode-phone')?.addEventListener('click', () => this.setMode('phone'));
 
     // Lärm-Benchmark: separate Lärm-WAV wählen
     this.$('#ml-noise-pick')?.addEventListener('click', () =>
@@ -169,6 +176,7 @@ export class MessLaborView {
     this.$('#ml-mode-classify')?.classList.toggle('ml-mode-active', mode === 'classify');
     this.$('#ml-mode-noise')?.classList.toggle('ml-mode-active', mode === 'noise');
     this.$('#ml-mode-interactive')?.classList.toggle('ml-mode-active', mode === 'interactive');
+    this.$('#ml-mode-phone')?.classList.toggle('ml-mode-active', mode === 'phone');
     const show = (sel: string, on: boolean): void => {
       const el = this.$(sel) as HTMLElement | null;
       if (el) el.style.display = on ? '' : 'none';
@@ -176,7 +184,8 @@ export class MessLaborView {
     show('#ml-opts-auc', mode === 'auc');
     show('#ml-opts-classify', mode === 'classify');
     show('#ml-opts-noise', mode === 'noise'); // noise WAV + single engine + SNR levels
-    show('#ml-opts-engines', mode === 'auc' || mode === 'classify'); // multi-engine checkboxes
+    show('#ml-opts-phone', mode === 'phone');
+    show('#ml-opts-engines', mode === 'auc' || mode === 'classify' || mode === 'phone'); // multi-engine checkboxes
     show('#ml-opts-interactive', mode === 'interactive'); // single-engine select
     show('#ml-run', mode !== 'interactive'); // interactive drives itself
     show('#ml-interactive', mode === 'interactive');
@@ -186,6 +195,7 @@ export class MessLaborView {
     if (res) res.innerHTML = '';
     const exports = this.$('#ml-exports') as HTMLElement | null;
     if (exports) exports.style.display = 'none';
+    show('#ml-detail', mode === 'phone');
   }
 
   // ── Folder ingestion ──────────────────────────────────────────────────────
@@ -337,6 +347,24 @@ export class MessLaborView {
         this.lastClassify = result;
         this.renderClassifyResult(result);
         this.setStatus(`Fertig: ${result.totalClipsScored} Prüf-Clips klassifiziert.`);
+      }
+      if (this.mode === 'phone') {
+        const seedRaw = parseInt((this.$('#ml-phone-seed') as HTMLInputElement | null)?.value ?? '', 10);
+        const maxRaw = parseInt((this.$('#ml-phone-maxtest') as HTMLInputElement | null)?.value ?? '0', 10);
+        const result = await runPhoneProtocol(this.dataset, resolve, {
+          engines,
+          runs: num('#ml-phone-runs', PHONE_PROTOCOL_DEFAULTS.runs),
+          seed: Number.isFinite(seedRaw) ? seedRaw : PHONE_PROTOCOL_DEFAULTS.seed,
+          maxTestPerClass: Number.isFinite(maxRaw) && maxRaw > 0 ? maxRaw : undefined,
+          clipAgg: ((this.$('#ml-phone-agg') as HTMLSelectElement | null)?.value ?? 'mean') as ClipAggMode,
+          signal: this.abort.signal,
+          onProgress,
+        });
+        this.lastPhone = result;
+        this.renderPhoneResult(result);
+        this.setStatus(
+          `Fertig: ${result.totalClipsScored} Prüf-Clips, ${result.details.length} Prüfungen (Referenz × Clip × Engine).`
+        );
       }
       if (this.mode === 'noise') {
         const noiseFile = this.noiseFile;
@@ -553,7 +581,88 @@ export class MessLaborView {
     (this.$('#ml-exports') as HTMLElement | null)?.style.removeProperty('display');
   }
 
+  /**
+   * Handy-Protokoll: je Bereich × Engine die Verteilung der AUC über alle
+   * Referenzen (Median, Quartile, Min/Max) plus die Quoten bei den Schwellen.
+   * Engines, die mit der Handy-Pipeline nicht sauber liefen, werden markiert.
+   */
+  private renderPhoneResult(result: PhoneProtocolResult): void {
+    const host = this.$('#ml-result');
+    if (!host) return;
+    const n3 = (v: number): string => (Number.isFinite(v) ? v.toFixed(3).replace('.', ',') : '—');
+    const range = (s: SpreadSummary): string =>
+      s.n > 0 ? `${n3(s.min)}–${n3(s.max)}` : '—';
+    const pctSpread = (s: SpreadSummary): string =>
+      s.n > 0 ? `${pctCell(s.median)} <span class="ml-split">(${pctCell(s.min)}–${pctCell(s.max)})</span>` : '—';
+    const healthCell = (h: string): string =>
+      h === 'ok'
+        ? '<td class="ml-ok">ok</td>'
+        : `<td class="${h === 'fehler' ? 'ml-err' : 'ml-warn'}"><strong>${esc(h)}</strong></td>`;
+
+    const rows: string[] = [];
+    const issues: string[] = [];
+    for (const s of result.sections) {
+      for (const e of result.engines) {
+        const r = s.perEngine[e];
+        if (!r) continue;
+        const sum = r.summary;
+        const refs =
+          sum.bestRef && sum.worstRef && sum.bestRef.path === sum.worstRef.path
+            ? `<span title="${esc(sum.bestRef.path)}">${esc(basename(sum.bestRef.path))}</span>`
+            : sum.bestRef && sum.worstRef
+            ? `<span title="${esc(sum.bestRef.path)}">▲ ${esc(basename(sum.bestRef.path))}</span><br><span title="${esc(sum.worstRef.path)}">▼ ${esc(basename(sum.worstRef.path))}</span>`
+            : '—';
+        rows.push(`<tr>
+          <td>${esc(s.key)}</td><td>${esc(ENGINE_LABEL[e])}</td>${healthCell(sum.health)}
+          <td>${sum.runsOk}/${r.runs.length}</td>
+          <td><strong>${n3(sum.auc.median)}</strong></td>
+          <td class="ml-split">${n3(sum.auc.q1)}–${n3(sum.auc.q3)}</td>
+          <td class="ml-split">${range(sum.auc)}</td>
+          <td>${n3(sum.pAuc.median)}</td>
+          <td>${pctSpread(sum.falseAlarmRate)}</td>
+          <td>${pctSpread(sum.detectionRate)}</td>
+          <td>${pctSpread(sum.uncertainRate)}</td>
+          <td class="ml-split">${refs}</td>
+        </tr>`);
+        for (const i of sum.issues) issues.push(`<li><strong>${esc(s.key)} · ${esc(ENGINE_LABEL[e])}:</strong> ${esc(i)}</li>`);
+      }
+      for (const n of s.notes) issues.push(`<li><strong>${esc(s.key)}:</strong> ${esc(n)}</li>`);
+    }
+    const skipped = result.skipped.length
+      ? `<p class="ml-warn">Übersprungen: ${result.skipped.map((s) => `${esc(s.key)} (${esc(s.reason)})`).join(' · ')}</p>`
+      : '';
+    const notes = result.notes.map((n) => `<p class="ml-note">ℹ ${esc(n)}</p>`).join('');
+    const testInfo = result.sections
+      .map((s) => `${esc(s.key)}: ${s.runsPlanned} Referenzen, je ${s.nTestNormal} N + ${s.nTestAbnormal} A geprüft`)
+      .join(' · ');
+
+    host.innerHTML = `
+      <h3>Handy-Protokoll · 1 Referenz je Durchlauf <span class="ml-agg-note">(${result.runs} Durchläufe · Seed ${result.seed} · Aggregation ${esc(result.clipAgg)} · ${esc(result.pipeline)})</span></h3>
+      <div class="ml-scroll"><table class="ml-table ml-result-table ml-phone-table">
+        <thead><tr><th>Bereich</th><th>Engine</th><th>Zustand</th><th>Durchl.</th><th>AUC Median</th><th>AUC Q1–Q3</th><th>AUC Min–Max</th><th>pAUC Median</th><th>Fehlalarm</th><th>Erkennung</th><th>Zwischenbereich</th><th>beste/schlechteste Referenz</th></tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table></div>
+      ${issues.length ? `<div class="ml-warn"><strong>Hinweise:</strong><ul>${issues.join('')}</ul></div>` : ''}
+      ${skipped}
+      ${notes}
+      <p class="ml-note">${testInfo}</p>
+      <p class="ml-note">Je Durchlauf lernt die Engine GENAU EINEN Normal-Clip an (wie die Referenzaufnahme am Handy) und prüft alle übrigen Clips desselben Bereichs mit der Handy-Pipeline. Die Spanne Min–Max zeigt, wie stark das Ergebnis an der gewählten Referenz hängt. Fehlalarm = Normal-Clips „auffällig“, Erkennung = Abnormal-Clips „auffällig“, Zwischenbereich = „unsicher“ (Median über die Durchläufe, in Klammern Min–Max). AUC/pAUC auf Rohähnlichkeit. Nichts wurde gespeichert.</p>`;
+    (this.$('#ml-exports') as HTMLElement | null)?.style.removeProperty('display');
+  }
+
+  /** Detail-Export des Handy-Protokolls: eine Zeile je geprüftem Clip. */
+  private downloadPhoneDetail(): void {
+    if (this.mode !== 'phone' || !this.lastPhone) return;
+    this.saveBlob(toCsvPhoneDetail(this.lastPhone), 'csv', 'handy-protokoll-detail');
+  }
+
   private download(kind: 'csv' | 'json'): void {
+    if (this.mode === 'phone') {
+      if (!this.lastPhone) return;
+      const content = kind === 'csv' ? toCsvPhone(this.lastPhone) : toJsonPhone(this.lastPhone);
+      this.saveBlob(content, kind, 'handy-protokoll');
+      return;
+    }
     if (this.mode === 'noise') {
       if (!this.lastNoise) return;
       const content = kind === 'csv' ? toCsvNoise(this.lastNoise) : toJsonNoise(this.lastNoise);
@@ -917,6 +1026,7 @@ export class MessLaborView {
           <button class="ml-mode-btn" id="ml-mode-classify" type="button">Gut/Schlecht-Klassifikation</button>
           <button class="ml-mode-btn" id="ml-mode-noise" type="button">Lärm-Robustheit (A/B)</button>
           <button class="ml-mode-btn" id="ml-mode-interactive" type="button">Interaktiv (Handy-Simulation)</button>
+          <button class="ml-mode-btn" id="ml-mode-phone" type="button">Handy-Protokoll (1 Referenz)</button>
         </div>
 
         <div class="ml-controls">
@@ -955,6 +1065,21 @@ export class MessLaborView {
                 <input id="ml-noise-maxfiles" type="number" min="0" step="5" value="10" title="0 = alle" />
               </label>
               <span class="ml-opt ml-hint">Profil = 1. Hälfte der Lärm-WAV, gemischt wird die 2. Hälfte</span>
+            </span>
+            <span id="ml-opts-phone" class="ml-opt-group" style="display:none">
+              <label class="ml-opt">Durchläufe
+                <input id="ml-phone-runs" type="number" min="1" step="1" value="${PHONE_PROTOCOL_DEFAULTS.runs}" title="Referenz-Clips je Bereich — je Durchlauf genau einer" />
+              </label>
+              <label class="ml-opt">Seed
+                <input id="ml-phone-seed" class="ml-wide" type="number" step="1" value="${PHONE_PROTOCOL_DEFAULTS.seed}" title="gleicher Seed = gleiche Referenzen" />
+              </label>
+              <label class="ml-opt">Max. Testclips/Klasse
+                <input id="ml-phone-maxtest" type="number" min="0" step="10" value="0" title="0 = alle; kürzt nur den Test, nie die Referenz-Ziehung" />
+              </label>
+              <label class="ml-opt">Aggregation
+                <select id="ml-phone-agg"><option value="mean" selected>Mittel</option><option value="p90">schlechtestes Zehntel (p90)</option></select>
+              </label>
+              <span class="ml-opt ml-hint">je Durchlauf 1 Referenz wie am Handy · Pipeline + Schwellen aus den Einstellungen</span>
             </span>
             <span id="ml-opts-classify" class="ml-opt-group" style="display:none">
               <label class="ml-opt">Gut-Fingerprints
@@ -1043,6 +1168,7 @@ export class MessLaborView {
         <div id="ml-exports" class="ml-exports" style="display:none">
           <button id="ml-csv" class="ml-btn">⬇ CSV</button>
           <button id="ml-json" class="ml-btn">⬇ JSON</button>
+          <button id="ml-detail" class="ml-btn" style="display:none" title="eine Zeile je geprüftem Clip: Bereich, Engine, Referenz, Testdatei, Label, Rohwert, Score">⬇ Detail (CSV)</button>
         </div>
       </div>`;
   }
@@ -1094,7 +1220,7 @@ export class MessLaborView {
       .ml-agg-note,.ml-note{font-size:.75rem;color:#8ba6c4;font-weight:400}
       .ml-note{margin-top:6px}
       .ml-exports{display:flex;gap:10px;margin-top:10px}
-      .ml-modes{display:flex;gap:8px;margin:0 0 14px}
+      .ml-modes{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
       .ml-mode-btn{background:#16293f;color:#9fb6d1;border:1px solid #24405f;border-radius:8px;
         padding:7px 14px;font-size:.82rem;cursor:pointer}
       .ml-mode-btn:hover{background:#1c3450}
@@ -1145,6 +1271,10 @@ export class MessLaborView {
       .ml-int-drift{font-size:.8rem;margin:2px 0}
       .ml-int-drift-warning{color:#ffcf7d}
       .ml-int-drift-critical{color:#ff9a9a}
+      .ml-scroll{overflow-x:auto}
+      .ml-phone-table{font-size:.76rem}
+      .ml-phone-table th,.ml-phone-table td{padding:4px 6px}
+      .ml-opt input.ml-wide{width:110px}
       .ml-int-pipenote{font-size:.72rem;color:#8ba6c4;margin-top:6px;font-style:italic}
     `;
     document.head.appendChild(style);
