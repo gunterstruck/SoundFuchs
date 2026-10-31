@@ -208,6 +208,75 @@ describe('runPhoneProtocol (Rauchtest, synthetisch)', () => {
     expect(json.refClips).toBe(3);
   }, 120_000);
 
+  it('GMIA-λ-Stufen: eigene Zeilen, Standard unverändert, Konditionszahl', async () => {
+    const { paths, files } = dataset();
+    const resolve = (p: string): ClipSource => ({ read: async () => files.get(p)!.slice(0) });
+    const common = { engines: ['gmia' as const], runs: 2, seed: 3, decode: decodePcm };
+    const plain = await runPhoneProtocol(parseFolder(paths), resolve, common);
+    const staged = await runPhoneProtocol(parseFolder(paths), resolve, {
+      ...common,
+      gmiaStages: ['standard', 0.1, 0.001],
+    });
+
+    expect(plain.units.map((u) => u.key)).toEqual(['gmia']);
+    expect(staged.units.map((u) => u.label)).toEqual(['GMIA', 'GMIA α=0,1', 'GMIA α=0,001']);
+    const sec = staged.sections[0];
+    const std = sec.perEngine['gmia']!;
+    // Standard-Stufe: identisch zum Lauf ohne Stufen.
+    expect(std.runs.map((r) => r.auc)).toEqual(
+      plain.sections[0].perEngine['gmia']!.runs.map((r) => r.auc)
+    );
+    expect(std.runs.every((r) => r.lambda === 1e9)).toBe(true);
+    for (const key of ['gmia', 'gmia-a0.1', 'gmia-a0.001']) {
+      const r = sec.perEngine[key]!;
+      expect(r, key).toBeDefined();
+      expect(r.summary.runsOk, key).toBe(2);
+      for (const run of r.runs) {
+        expect(Number.isFinite(run.conditionNumber), key).toBe(true);
+        expect(Number.isFinite(run.auc), key).toBe(true);
+      }
+    }
+    // Kleineres α → kleineres λ, größere Konditionszahl.
+    const a01 = sec.perEngine['gmia-a0.1']!.runs[0];
+    const a0001 = sec.perEngine['gmia-a0.001']!.runs[0];
+    expect(a0001.lambda).toBeLessThan(a01.lambda);
+    expect(a0001.conditionNumber).toBeGreaterThan(a01.conditionNumber);
+    // Detail- und CSV-Export tragen die Stufen-Namen.
+    expect(staged.details.some((d) => d.unit === 'gmia-a0.1')).toBe(true);
+    expect(toCsvPhoneDetail(staged)).toContain('GMIA α=0,1');
+    expect(toCsvPhone(staged)).toContain('GMIA Konditionszahl');
+  }, 120_000);
+
+  it('kennzeichnet eine schlecht konditionierte λ-Stufe als „eingeschränkt“', async () => {
+    // Rauschfreier Dauerton: alle Frames gleich → XᵀX fast vom Rang 1, mit
+    // winzigem α ist XᵀX + λI dann schlecht konditioniert.
+    const clean = (abn: boolean): Float32Array => {
+      const out = new Float32Array(SR * SECONDS);
+      for (let i = 0; i < out.length; i++) {
+        const t = i / SR;
+        out[i] =
+          0.25 * Math.sin(2 * Math.PI * 500 * t) +
+          (abn ? 0.2 * Math.sin(2 * Math.PI * 3000 * t) : 0);
+      }
+      return out;
+    };
+    const files = new Map<string, ArrayBuffer>();
+    for (let i = 0; i < 4; i++) files.set(`m/id_00/normal/${i}.wav`, toWav(clean(false), SR));
+    for (let i = 0; i < 2; i++) files.set(`m/id_00/abnormal/${i}.wav`, toWav(clean(true), SR));
+    const result = await runPhoneProtocol(
+      parseFolder([...files.keys()]),
+      (p) => ({ read: async () => files.get(p)!.slice(0) }),
+      { engines: ['gmia'], gmiaStages: ['standard', 1e-9], runs: 1, seed: 3, decode: decodePcm }
+    );
+    const sec = result.sections[0];
+    const bad = sec.perEngine['gmia-a1e-9']!;
+    expect(bad.runs[0].conditionNumber).toBeGreaterThan(1e10);
+    expect(bad.summary.health).toBe('eingeschränkt');
+    expect(bad.summary.issues.join(' ')).toMatch(/Konditionszahl/);
+    // Der Standard (λ = 10^9) bleibt gut konditioniert.
+    expect(sec.perEngine['gmia']!.runs[0].conditionNumber).toBeLessThan(10);
+  }, 120_000);
+
   it('bricht über das AbortSignal ab', async () => {
     const { paths, files } = dataset();
     const ctrl = new AbortController();

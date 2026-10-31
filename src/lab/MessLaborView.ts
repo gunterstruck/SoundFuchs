@@ -30,7 +30,13 @@ import {
   type NoiseBenchmarkResult,
 } from './noiseBenchmark.js';
 import { InteractiveSession, type TrainSelection } from './interactive.js';
-import { runPhoneProtocol, type PhoneProtocolResult } from './phoneProtocol.js';
+import {
+  runPhoneProtocol,
+  GMIA_LAMBDA_STAGES,
+  GMIA_CONDITION_LIMIT,
+  type GmiaLambdaStage,
+  type PhoneProtocolResult,
+} from './phoneProtocol.js';
 import { toCsvPhone, toCsvPhoneDetail, toJsonPhone } from './phoneProtocolExport.js';
 import {
   PHONE_PROTOCOL_DEFAULTS,
@@ -317,6 +323,13 @@ export class MessLaborView {
     const refClips = Math.min(REF_CLIPS_MAX, Math.max(1, intIn('#ml-phone-refk', 1)));
     const calibRule = ((this.$('#ml-phone-rule') as HTMLSelectElement | null)?.value ??
       PHONE_PROTOCOL_DEFAULTS.calibRule) as CalibRule;
+    const gmiaStages: GmiaLambdaStage[] = Array.from(
+      this.overlay?.querySelectorAll<HTMLInputElement>('.ml-phone-gmia-stage:checked') ?? []
+    ).map((el) => (el.value === 'standard' ? 'standard' : Number(el.value)));
+    if (this.mode === 'phone' && engines.includes('gmia') && gmiaStages.length === 0) {
+      this.setStatus('Bitte mindestens eine GMIA-λ-Stufe wählen (oder GMIA abwählen).', true);
+      return;
+    }
     if (this.mode === 'phone' && calibClips > 0 && calibRule === 'mean-z' && calibClips < CALIB_MEAN_Z_MIN) {
       this.setStatus(
         `„Mittel + z · Standardabweichung“ braucht mindestens ${CALIB_MEAN_Z_MIN} Kalibrier-Clips.`,
@@ -398,6 +411,7 @@ export class MessLaborView {
           calibRule,
           calibFactor: floatIn('#ml-phone-factor', PHONE_PROTOCOL_DEFAULTS.calibFactor),
           calibZ: floatIn('#ml-phone-z', PHONE_PROTOCOL_DEFAULTS.calibZ),
+          gmiaStages,
           signal: this.abort.signal,
           onProgress,
         });
@@ -650,7 +664,12 @@ export class MessLaborView {
     const rows: string[] = [];
     const issues: string[] = [];
     for (const s of result.sections) {
-      for (const e of result.engines) {
+      for (const unit of result.units) {
+        const e = unit.key;
+        const unitName =
+          unit.gmiaStage === undefined || unit.gmiaStage === 'standard'
+            ? ENGINE_LABEL[unit.engineId]
+            : unit.label;
         const r = s.perEngine[e];
         if (!r) continue;
         const sum = r.summary;
@@ -661,7 +680,7 @@ export class MessLaborView {
             ? `<span title="${esc(sum.bestRef.path)}">▲ ${esc(basename(sum.bestRef.path))}</span><br><span title="${esc(sum.worstRef.path)}">▼ ${esc(basename(sum.worstRef.path))}</span>`
             : '—';
         rows.push(`<tr>
-          <td>${esc(s.key)}</td><td>${esc(ENGINE_LABEL[e])}</td>${healthCell(sum.health)}
+          <td>${esc(s.key)}</td><td>${esc(unitName)}</td>${healthCell(sum.health)}
           <td>${sum.runsOk}/${r.runs.length}</td>
           <td><strong>${n3(sum.auc.median)}</strong></td>
           <td class="ml-split">${n3(sum.auc.q1)}–${n3(sum.auc.q3)}</td>
@@ -673,7 +692,7 @@ export class MessLaborView {
           ${calibOn ? `<td class="ml-split">${sum.threshold.n > 0 ? n4(sum.threshold.median) : '—'}</td><td>${pctSpread(sum.calibFalseAlarmRate)}</td><td>${pctSpread(sum.calibDetectionRate)}</td>` : ''}
           <td class="ml-split">${refs}</td>
         </tr>`);
-        for (const i of sum.issues) issues.push(`<li><strong>${esc(s.key)} · ${esc(ENGINE_LABEL[e])}:</strong> ${esc(i)}</li>`);
+        for (const i of sum.issues) issues.push(`<li><strong>${esc(s.key)} · ${esc(unitName)}:</strong> ${esc(i)}</li>`);
       }
       for (const n of s.notes) issues.push(`<li><strong>${esc(s.key)}:</strong> ${esc(n)}</li>`);
     }
@@ -699,6 +718,7 @@ export class MessLaborView {
       ${skipped}
       ${notes}
       <p class="ml-note">${testInfo}</p>
+      ${result.gmiaStages.some((st) => st !== 'standard') ? `<p class="ml-note">GMIA-λ-Stufen: „GMIA“ = Standard der App (λ = 10^9 — gegen die auf Summe 1 normierten Merkmale riesig, praktisch Mittelwert-Vergleich). „GMIA α=…“ = relatives λ = α · Spur(XᵀX) / N je Training, kleineres α geht Richtung MIA. Konditionszahl von XᵀX + λI über ${GMIA_CONDITION_LIMIT.toExponential(0)} → Stufe „eingeschränkt“.</p>` : ''}
       ${calibOn ? `<p class="ml-note">Kalibriert: Je Durchlauf werden nach dem Anlernen ${result.calibClips} weitere Normal-Clips wie Prüfungen bewertet; aus ihren Rohwerten (1 − Ähnlichkeit) entsteht die Schwelle (${esc(ruleText)}). Ein Testclip ist kalibriert „auffällig“, wenn sein Rohwert darüber liegt. Bei MIMII stammen die Kalibrier-Clips aus derselben Aufnahmeserie — im Feld kämen sie von anderen Tagen, das Ergebnis ist hier eher optimistisch.</p>` : ''}
       <p class="ml-note">Je Durchlauf lernt die Engine aus ${result.refClips === 1 ? 'GENAU EINEM Normal-Clip' : `${result.refClips} Normal-Clips zusammen`} an (wie die Referenzaufnahme am Handy) und prüft die Testclips desselben Bereichs mit der Handy-Pipeline. Die Spanne Min–Max zeigt, wie stark das Ergebnis an der gewählten Referenz hängt. Fehlalarm = Normal-Clips „auffällig“, Erkennung = Abnormal-Clips „auffällig“, Zwischenbereich = „unsicher“ (Median über die Durchläufe, in Klammern Min–Max). AUC/pAUC auf Rohähnlichkeit. Nichts wurde gespeichert.</p>`;
     (this.$('#ml-exports') as HTMLElement | null)?.style.removeProperty('display');
@@ -1148,6 +1168,12 @@ export class MessLaborView {
               <label class="ml-opt">z
                 <input id="ml-phone-z" type="number" min="0" step="0.5" value="${PHONE_PROTOCOL_DEFAULTS.calibZ}" />
               </label>
+              <span class="ml-opt" title="Nur wirksam, wenn GMIA angehakt ist. Jede Stufe wird eine eigene Zeile im Bericht.">GMIA-λ-Stufen
+                ${GMIA_LAMBDA_STAGES.map(
+                  (st) =>
+                    `<label class="ml-check"><input type="checkbox" class="ml-phone-gmia-stage" value="${st}"${st === 'standard' ? ' checked' : ''} /> ${st === 'standard' ? 'Standard 1e9' : `α=${String(st).replace('.', ',')}`}</label>`
+                ).join('')}
+              </span>
               <span class="ml-opt ml-hint">Pipeline + Schwellen aus den Einstellungen · Regel/Faktor/z wirken nur bei m &gt; 0</span>
             </span>
             <span id="ml-opts-classify" class="ml-opt-group" style="display:none">

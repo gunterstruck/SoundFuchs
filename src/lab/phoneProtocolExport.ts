@@ -26,6 +26,18 @@ function label(e: EngineId): string {
   return ENGINE_LABEL[e] ?? e;
 }
 
+/** Anzeigename einer Berichtszeile (Engine oder GMIA-λ-Stufe). */
+function unitLabel(result: PhoneProtocolResult, key: string): string {
+  const u = result.units.find((x) => x.key === key);
+  if (!u) return key;
+  return u.gmiaStage === undefined || u.gmiaStage === 'standard' ? label(u.engineId) : u.label;
+}
+
+/** Zahl in Exponentialschreibweise (λ, Konditionszahl) oder leer. */
+function fmtExp(v: number): string {
+  return Number.isFinite(v) ? v.toExponential(3) : '';
+}
+
 /** Klartext der Schwellenregel, z. B. „größte Abweichung × 1,25“. */
 export function calibRuleLabel(result: PhoneProtocolResult): string {
   if (result.calibClips <= 0) return 'keine';
@@ -40,6 +52,9 @@ function header(result: PhoneProtocolResult): string {
     `${result.runs} Durchläufe/Bereich · Seed ${result.seed} · ` +
     `Referenz aus k=${result.refClips} Clip(s) · Kalibrier-Clips m=${result.calibClips} · ` +
     `Schwellenregel ${calibRuleLabel(result)} · ` +
+    (result.gmiaStages.some((st) => st !== 'standard')
+      ? `GMIA-λ-Stufen ${result.gmiaStages.map((st) => (st === 'standard' ? 'Standard 1e9' : `α=${st}`)).join('/')} · `
+      : '') +
     `Testclips/Klasse ${result.maxTestPerClass > 0 ? result.maxTestPerClass : 'alle'} · ` +
     `Aggregation ${result.clipAgg} · ` +
     `${result.pipeline}`
@@ -92,6 +107,8 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
       'Zwischenbereich gesamt',
       ...PARAM_HEADS,
       'Kalibrier-Dateien',
+      'GMIA λ',
+      'GMIA Konditionszahl',
       'Schwelle (Rohwert)',
       'Fehlalarmquote kalibriert',
       'Erkennungsquote kalibriert',
@@ -99,14 +116,15 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
     ].join(',')
   );
   for (const sec of result.sections) {
-    for (const e of result.engines) {
+    for (const u of result.units) {
+      const e = u.key;
       const r = sec.perEngine[e];
       if (!r) continue;
       for (const run of r.runs) {
         lines.push(
           [
             csvCell(sec.key),
-            csvCell(label(e)),
+            csvCell(unitLabel(result, e)),
             String(run.run + 1),
             csvCell(run.refPaths.join(' + ')),
             run.refQuality ?? '',
@@ -122,6 +140,8 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
             fmt(run.uncertainRate),
             ...paramCols(result),
             csvCell(run.calibPaths.join(' + ')),
+            fmtExp(run.lambda),
+            fmtExp(run.conditionNumber),
             fmt(run.threshold, 5),
             fmt(run.calibFalseAlarmRate),
             fmt(run.calibDetectionRate),
@@ -163,20 +183,28 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
       'Erkennungsquote kalibriert Min',
       'Erkennungsquote kalibriert Max',
       'Testmenge fest',
+      'GMIA λ Median',
+      'GMIA Konditionszahl Max',
       'beste Referenz',
       'schlechteste Referenz',
       'Hinweise',
     ].join(',')
   );
   for (const sec of result.sections) {
-    for (const e of result.engines) {
+    for (const u of result.units) {
+      const e = u.key;
       const r = sec.perEngine[e];
       if (!r) continue;
       const s = r.summary;
+      const conds = r.runs.map((x) => x.conditionNumber).filter((x) => Number.isFinite(x));
+      const lambdas = r.runs
+        .map((x) => x.lambda)
+        .filter((x) => Number.isFinite(x))
+        .sort((a, b) => a - b);
       lines.push(
         [
           csvCell(sec.key),
-          csvCell(label(e)),
+          csvCell(unitLabel(result, e)),
           s.health,
           String(s.runsOk),
           String(s.runsFailed),
@@ -198,6 +226,8 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
           fmt(s.calibDetectionRate.min),
           fmt(s.calibDetectionRate.max),
           sec.testSetFixed ? 'ja' : 'nein',
+          lambdas.length ? fmtExp(lambdas[Math.floor((lambdas.length - 1) / 2)]) : '',
+          conds.length ? fmtExp(Math.max(...conds)) : '',
           csvCell(s.bestRef ? s.bestRef.path : ''),
           csvCell(s.worstRef ? s.worstRef.path : ''),
           csvCell([...sec.notes, ...s.issues].join(' | ')),
@@ -231,7 +261,7 @@ export function toCsvPhoneDetail(result: PhoneProtocolResult): string {
     lines.push(
       [
         csvCell(d.sectionKey),
-        csvCell(label(d.engine)),
+        csvCell(unitLabel(result, d.unit)),
         String(d.run + 1),
         csvCell(d.refPath),
         csvCell(d.testPath),
