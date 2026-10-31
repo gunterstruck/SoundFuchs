@@ -75,6 +75,7 @@ import type { Customer, Machine } from '@data/types.js';
 import { escapeHtml } from '@utils/sanitize.js';
 import { initErrorBoundary } from '@utils/errorBoundary.js';
 import { initPwaUpdate } from '@utils/pwaUpdate.js';
+import { openMessLaborFromUrl } from '@lab/urlEntry.js';
 import {
   applyViewLevel,
   setViewLevel,
@@ -349,6 +350,12 @@ class ZanobotApp {
       // Service Worker registration + active update handling (discreet prompt,
       // measurement-safe reload, once-daily re-prompt). See utils/pwaUpdate.ts.
       initPwaUpdate();
+
+      // Mess-Labor nur über die Adresse (?labor) — in der Oberfläche versteckt.
+      // Lazy geladen; ohne Parameter passiert hier nichts.
+      void openMessLaborFromUrl({ hint: (msg) => notify.info(msg) }).catch((error) => {
+        logger.warn('Mess-Labor über ?labor nicht verfügbar:', error);
+      });
 
       if (dbAvailable) {
         logger.info('✅ Zanobo initialized successfully!');
