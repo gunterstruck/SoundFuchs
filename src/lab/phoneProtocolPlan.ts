@@ -3,12 +3,14 @@
  *
  * Am Handy lernt SoundFuchs aus GENAU EINER Referenzaufnahme und prüft spätere
  * Aufnahmen derselben Maschine dagegen. Das Handy-Protokoll misst genau das:
- * je Bereich werden N Referenz-Clips reproduzierbar gezogen, jeder davon wird
- * einzeln angelernt, und alle übrigen Clips desselben Bereichs werden geprüft.
+ * je Bereich werden N Referenzen reproduzierbar gezogen (je aus k Clips, Standard
+ * 1), jede wird einzeln angelernt und gegen eine feste Testmenge geprüft.
+ * Optional schätzen m Kalibrier-Clips je Durchlauf eine eigene Schwelle.
  *
  * Diese Datei enthält nur die reinen, testbaren Teile:
- *  - planPhoneProtocol(): Referenzen ziehen + Testmengen je Durchlauf bilden
- *    (Referenz nie im Test; die Kappung kürzt NUR den Test, nie die Referenz),
+ *  - planPhoneProtocol(): Testmenge festlegen, Referenz- und Kalibrier-Clips
+ *    ziehen (Referenz, Kalibrierung und Test überschneiden sich nie),
+ *  - calibrationThreshold()/calibratedFlag(): Schwellenregeln,
  *  - summarize()/quantile(): Median, Quartile, Min/Max über die Durchläufe,
  *  - wavSampleRate(): Abtastrate aus dem RIFF-Kopf (für den 16-kHz-Vermerk).
  */
@@ -18,23 +20,43 @@ import type { ParsedSection } from './parseFolder.js';
 
 /** Standardwerte des Protokolls (auch in der UI vorbelegt). */
 export const PHONE_PROTOCOL_DEFAULTS = {
-  /** Referenz-Durchläufe je Bereich (je Durchlauf genau EIN Referenz-Clip). */
+  /** Referenz-Durchläufe je Bereich. */
   runs: 20,
   /** Seed für die reproduzierbare Referenz-Ziehung. */
   seed: 20261031,
   /** 0 = alle Testclips je Klasse. */
   maxTestPerClass: 0,
+  /** Kalibrier-Clips m je Durchlauf (0 = keine kalibrierte Schwelle). */
+  calibClips: 0,
+  /** Referenz aus k Clips (1 = wie am Handy heute). */
+  refClips: 1,
+  /** Schwellenregel bei m > 0. */
+  calibRule: 'max-factor' as CalibRule,
+  /** Faktor für „größte Abweichung × Faktor“. */
+  calibFactor: 1.25,
+  /** z für „Mittel + z · Standardabweichung“. */
+  calibZ: 3,
 };
 
-/** Ein Durchlauf: ein Referenz-Clip + die Clips, die dagegen geprüft werden. */
+/** Grenzen der neuen Optionen. */
+export const CALIB_CLIPS_MAX = 10;
+export const REF_CLIPS_MAX = 5;
+/** „Mittel + z · σ“ braucht mindestens so viele Kalibrier-Clips. */
+export const CALIB_MEAN_Z_MIN = 3;
+
+/** Ein Durchlauf: k Referenz-Clips, m Kalibrier-Clips und die Testclips. */
 export interface PhoneRunPlan {
   /** Laufende Nummer (0-basiert). */
   index: number;
-  /** Der EINE Referenz-Clip dieses Durchlaufs. */
+  /** Erster Referenz-Clip (bei k = 1 DIE Referenz). */
   refPath: string;
-  /** Geprüfte Normal-Clips (ohne die Referenz, ggf. gekappt). */
+  /** Alle k Referenz-Clips (zusammen angelernt). */
+  refPaths: string[];
+  /** Die m Kalibrier-Clips (Normal, nicht im Test, nicht in der Referenz). */
+  calibPaths: string[];
+  /** Geprüfte Normal-Clips. */
   testNormal: string[];
-  /** Geprüfte Abnormal-Clips (ggf. gekappt; in allen Durchläufen gleich). */
+  /** Geprüfte Abnormal-Clips (in allen Durchläufen gleich). */
   testAbnormal: string[];
 }
 
@@ -48,6 +70,13 @@ export interface PhoneSectionPlan {
   /** Alle Abnormal-Clips des Bereichs (sortiert). */
   abnormals: string[];
   runs: PhoneRunPlan[];
+  /**
+   * true: Die Testmenge ist über alle Durchläufe gleich; Referenz und
+   * Kalibrierung stammen aus den übrigen Normal-Clips. false: Es gibt keine
+   * übrigen Clips (Max. Testclips = 0 oder zu wenige) — Referenz und
+   * Kalibrierung werden je Durchlauf aus dem Test herausgenommen.
+   */
+  testSetFixed: boolean;
   /** Grund, warum der Bereich übersprungen wird (sonst undefined). */
   skipped?: string;
   /** Angefragte, aber mangels Normal-Clips nicht mögliche Durchläufe. */
@@ -57,8 +86,12 @@ export interface PhoneSectionPlan {
 export interface PhonePlanOptions {
   runs?: number;
   seed?: number;
-  /** Max. Testclips je Klasse (0/undefined = alle). Kürzt nie die Referenz. */
+  /** Max. Testclips je Klasse (0/undefined = alle). */
   maxTestPerClass?: number;
+  /** Kalibrier-Clips m (0–10). */
+  calibClips?: number;
+  /** Referenz aus k Clips (1–5). */
+  refClips?: number;
 }
 
 /** Alle Normal-Clips eines Bereichs, egal ob mit oder ohne train/test-Ordner. */
@@ -80,15 +113,25 @@ export function capEvenly(paths: string[], max?: number): string[] {
   return out;
 }
 
+function clampInt(v: number | undefined, lo: number, hi: number, fallback: number): number {
+  const n = Math.floor(v ?? fallback);
+  return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : fallback;
+}
+
 /**
  * Plane das Handy-Protokoll für einen Bereich.
  *
- *  1. Referenzen: reproduzierbare Permutation (mulberry32/shuffledIndices) der
- *     sortierten Normal-Clips; die ersten `runs` Einträge sind die Referenzen.
- *     Gezogen wird IMMER aus allen Normal-Clips — die Kappung wirkt hier nicht.
- *  2. Test je Durchlauf: alle übrigen Normal-Clips (ohne die Referenz) und alle
- *     Abnormal-Clips; erst danach wird je Klasse gekappt.
- *  3. Weniger als 2 Normal-Clips → übersprungen (es bliebe kein Normal-Test).
+ *  1. Testmenge EINMAL festlegen: Normal- und Abnormal-Clips gleichmäßig
+ *     verteilt gekappt (capEvenly); über alle Durchläufe gleich.
+ *  2. Referenz- (k) und Kalibrier-Clips (m) je Durchlauf aus den ÜBRIGEN
+ *     Normal-Clips ziehen: reproduzierbare Permutation (mulberry32 /
+ *     shuffledIndices), Durchlauf r nimmt die Positionen r·(k+m) … r·(k+m)+k+m−1
+ *     (zyklisch), die ersten k sind Referenz, die nächsten m Kalibrierung.
+ *  3. Bleiben keine bzw. zu wenige übrige Clips (Max. Testclips = 0 → alle
+ *     Normal-Clips sind Test), wird wie bisher aus ALLEN Normal-Clips gezogen
+ *     und Referenz + Kalibrierung je Durchlauf aus dem Test herausgenommen.
+ *     Mit k = 1, m = 0, Max = 0 ist das exakt die bisherige Auswahl.
+ *  4. Referenz, Kalibrierung und Test überschneiden sich nie.
  */
 export function planPhoneProtocol(
   section: ParsedSection,
@@ -97,6 +140,9 @@ export function planPhoneProtocol(
   const runsRequested = Math.max(1, Math.floor(options.runs ?? PHONE_PROTOCOL_DEFAULTS.runs));
   const seed = options.seed ?? PHONE_PROTOCOL_DEFAULTS.seed;
   const maxTest = options.maxTestPerClass;
+  const k = clampInt(options.refClips, 1, REF_CLIPS_MAX, PHONE_PROTOCOL_DEFAULTS.refClips);
+  const m = clampInt(options.calibClips, 0, CALIB_CLIPS_MAX, PHONE_PROTOCOL_DEFAULTS.calibClips);
+  const g = k + m;
   const normals = normalsOf(section);
   const abnormals = [...section.abnormalPaths].sort();
 
@@ -109,29 +155,87 @@ export function planPhoneProtocol(
     runsRequested,
   };
 
-  if (normals.length < 2) {
+  if (normals.length < g + 1) {
     return {
       ...base,
       runs: [],
-      skipped: `nur ${normals.length} Normal-Clip(s) — mindestens 2 nötig (1 Referenz + 1 Test)`,
+      testSetFixed: false,
+      skipped:
+        `nur ${normals.length} Normal-Clip(s) — mindestens ${g + 1} nötig ` +
+        `(${k} Referenz${m > 0 ? ` + ${m} Kalibrierung` : ''} + 1 Test)`,
     };
   }
 
-  const order = shuffledIndices(normals.length, seed);
-  const nRuns = Math.min(runsRequested, normals.length);
   const testAbnormal = capEvenly(abnormals, maxTest);
+  const fixedTest = capEvenly(normals, maxTest);
+  const testSet = new Set(fixedTest);
+  const rest = normals.filter((p) => !testSet.has(p));
+  const testSetFixed = rest.length >= g;
+  const pool = testSetFixed ? rest : normals;
+
+  const order = shuffledIndices(pool.length, seed);
+  const nRuns = Math.min(runsRequested, pool.length);
   const runs: PhoneRunPlan[] = [];
   for (let r = 0; r < nRuns; r++) {
-    const refPath = normals[order[r]];
-    const rest = normals.filter((p) => p !== refPath);
+    const group: string[] = [];
+    for (let j = 0; j < g; j++) group.push(pool[order[(r * g + j) % pool.length]]);
+    const refPaths = group.slice(0, k);
+    const calibPaths = group.slice(k);
+    const drawn = new Set(group);
     runs.push({
       index: r,
-      refPath,
-      testNormal: capEvenly(rest, maxTest),
+      refPath: refPaths[0],
+      refPaths,
+      calibPaths,
+      testNormal: testSetFixed ? fixedTest : fixedTest.filter((p) => !drawn.has(p)),
       testAbnormal,
     });
   }
-  return { ...base, runs };
+  return { ...base, runs, testSetFixed };
+}
+
+// ── Kalibrierte Schwelle ─────────────────────────────────────────────────────
+
+/** Schwellenregel aus den Rohwerten der Kalibrier-Clips. */
+export type CalibRule = 'max-factor' | 'mean-z';
+
+export interface CalibParams {
+  rule: CalibRule;
+  /** Faktor für 'max-factor'. */
+  factor: number;
+  /** z für 'mean-z'. */
+  z: number;
+}
+
+/**
+ * Schwelle aus den Roh-Anomalien (1 − Ähnlichkeit) der Kalibrier-Clips.
+ *
+ *  - 'max-factor': größte Abweichung × Faktor.
+ *  - 'mean-z'    : Mittel + z · Stichproben-Standardabweichung (n − 1);
+ *                  erst ab CALIB_MEAN_Z_MIN Werten, sonst NaN.
+ *
+ * NaN, wenn keine Werte vorliegen oder einer nicht endlich ist (ohne Rohwert
+ * keine ehrliche Schwelle).
+ */
+export function calibrationThreshold(values: number[], params: CalibParams): number {
+  if (values.length === 0 || values.some((v) => !Number.isFinite(v))) return NaN;
+  if (params.rule === 'max-factor') {
+    return Math.max(...values) * params.factor;
+  }
+  if (values.length < CALIB_MEAN_Z_MIN) return NaN;
+  let sum = 0;
+  for (const v of values) sum += v;
+  const mean = sum / values.length;
+  let ss = 0;
+  for (const v of values) ss += (v - mean) * (v - mean);
+  const sd = Math.sqrt(ss / (values.length - 1));
+  return mean + params.z * sd;
+}
+
+/** Kalibriertes Urteil: „auffällig“, wenn der Rohwert ÜBER der Schwelle liegt. */
+export function calibratedFlag(raw: number, threshold: number): boolean | null {
+  if (!Number.isFinite(raw) || !Number.isFinite(threshold)) return null;
+  return raw > threshold;
 }
 
 // ── Statistik über die Durchläufe ───────────────────────────────────────────

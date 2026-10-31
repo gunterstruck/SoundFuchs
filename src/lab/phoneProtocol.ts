@@ -16,6 +16,16 @@
  *   5. Mit den Schwellen aus den Einstellungen (phoneVerdict, wie die
  *      Handy-Simulation): Fehlalarm-, Erkennungs- und Zwischenbereichsquote.
  *
+ * Erweiterungen (Standard aus → Verhalten wie oben):
+ *   - Referenz aus k Clips: die Handy-Vorverarbeitung läuft je Clip, die
+ *     Features (und das Rohsignal für YAMNet) werden aneinandergehängt wie
+ *     bei einer längeren Aufnahme und gemeinsam angelernt.
+ *   - Kalibrier-Clips m: nach dem Anlernen werden m weitere Normal-Clips wie
+ *     Prüfungen bewertet; aus ihren Rohwerten entsteht eine Schwelle
+ *     (calibrationThreshold). Ein Testclip ist kalibriert „auffällig“, wenn
+ *     sein Rohwert darüber liegt.
+ *   - Die Testmenge ist je Bereich fest (siehe planPhoneProtocol).
+ *
  * Sequenz-Engines (Zeitmuster) bekommen pro Clip resetSequenceState() wie in
  * benchmark.ts. YAMNet läuft asynchron in ≈1-s-Fenstern über das Rohsignal; die
  * spektralen Handy-Stufen wirken dort — wie am Handy — nicht.
@@ -50,12 +60,22 @@ import {
   summarize,
   wavSampleRate,
   PHONE_PROTOCOL_DEFAULTS,
+  CALIB_CLIPS_MAX,
+  REF_CLIPS_MAX,
   type PhoneSectionPlan,
   type SpreadSummary,
 } from './phoneProtocolPlan.js';
 import {
+  calibrationThreshold,
+  calibratedFlag,
+  CALIB_MEAN_Z_MIN,
+  type CalibParams,
+  type CalibRule,
+} from './phoneProtocolPlan.js';
+import {
   type ClipSource,
   type DecodedClip,
+  concatRaw,
   throwIfAborted,
   yieldToUi,
   decodeClip,
@@ -78,6 +98,16 @@ export interface PhoneProtocolOptions {
   maxTestPerClass?: number;
   /** Clip-Aggregation für AUC/pAUC (wie im AUC-Modus). */
   clipAgg?: ClipAggMode;
+  /** Kalibrier-Clips m je Durchlauf (0–10, Standard 0 = keine kalibrierte Schwelle). */
+  calibClips?: number;
+  /** Referenz aus k Clips (1–5, Standard 1). */
+  refClips?: number;
+  /** Schwellenregel bei m > 0 (Standard 'max-factor'). */
+  calibRule?: CalibRule;
+  /** Faktor für 'max-factor' (Standard 1,25). */
+  calibFactor?: number;
+  /** z für 'mean-z' (Standard 3). */
+  calibZ?: number;
   signal?: AbortSignal;
   onProgress?: (p: BenchmarkProgress) => void;
   /**
@@ -105,14 +135,30 @@ export interface PhoneClipRecord {
   displayScore: number;
   /** Urteil mit den Schwellen aus den Einstellungen. */
   status: PredClass;
+  /** Kalibrierte Schwelle dieses Durchlaufs (NaN ohne Kalibrierung). */
+  threshold: number;
+  /** Kalibriertes Urteil: true = auffällig, false = unauffällig, null = keine Schwelle. */
+  calibFlag: boolean | null;
 }
 
 /** Ergebnis EINES Durchlaufs (eine Referenz) für eine Engine. */
 export interface PhoneRunResult {
   run: number;
   refPath: string;
-  /** Qualität der Referenzaufnahme, bewertet wie am Handy. */
+  /** Alle k Referenz-Clips (bei k = 1 nur refPath). */
+  refPaths: string[];
+  /** Die m Kalibrier-Clips dieses Durchlaufs. */
+  calibPaths: string[];
+  /** Qualität der Referenzaufnahme, bewertet wie am Handy (schlechteste der k Clips). */
   refQuality: QualityResult['rating'] | null;
+  /** Roh-Anomalien der Kalibrier-Clips (Basis der Schwelle). */
+  calibRaw: number[];
+  /** Kalibrierte Schwelle auf dem Rohwert (NaN ohne Kalibrierung). */
+  threshold: number;
+  /** Normal-Clips mit Rohwert über der Schwelle / alle Normal-Clips. */
+  calibFalseAlarmRate: number;
+  /** Abnormal-Clips mit Rohwert über der Schwelle / alle Abnormal-Clips. */
+  calibDetectionRate: number;
   auc: number;
   pAuc: number;
   scoreBasis: ScoreBasis;
@@ -146,6 +192,10 @@ export interface PhoneEngineSummary {
   falseAlarmRate: SpreadSummary;
   detectionRate: SpreadSummary;
   uncertainRate: SpreadSummary;
+  /** Kalibrierte Schwelle und Quoten über die Durchläufe (n = 0 ohne Kalibrierung). */
+  threshold: SpreadSummary;
+  calibFalseAlarmRate: SpreadSummary;
+  calibDetectionRate: SpreadSummary;
   /** Referenz mit der besten / schlechtesten AUC (zeigt die Referenz-Abhängigkeit). */
   bestRef: { path: string; auc: number } | null;
   worstRef: { path: string; auc: number } | null;
@@ -164,6 +214,8 @@ export interface PhoneSectionResult {
   nAbnormal: number;
   runsRequested: number;
   runsPlanned: number;
+  /** Testmenge über alle Durchläufe gleich (siehe planPhoneProtocol). */
+  testSetFixed: boolean;
   /** Testclips je Durchlauf (nach Kappung). */
   nTestNormal: number;
   nTestAbnormal: number;
@@ -178,6 +230,14 @@ export interface PhoneProtocolResult {
   runs: number;
   seed: number;
   maxTestPerClass: number;
+  /** Kalibrier-Clips m je Durchlauf. */
+  calibClips: number;
+  /** Referenz aus k Clips. */
+  refClips: number;
+  /** Schwellenregel, Faktor und z (wirksam nur bei m > 0). */
+  calibRule: CalibRule;
+  calibFactor: number;
+  calibZ: number;
   confidenceThreshold: number;
   faultyThreshold: number;
   /** Aktive Handy-Stufen laut Einstellungen (pipelineSummary). */
@@ -319,7 +379,19 @@ function emptyBucket(): RunBucket {
 /** AUC/pAUC + Schwellen-Quoten eines Durchlaufs (rein, exportiert für Tests). */
 export function runMetrics(
   b: Pick<RunBucket, 'labels' | 'raw' | 'capped' | 'status' | 'rawAllValid'>
-): Omit<PhoneRunResult, 'run' | 'refPath' | 'refQuality' | 'error'> {
+): Omit<
+  PhoneRunResult,
+  | 'run'
+  | 'refPath'
+  | 'refPaths'
+  | 'calibPaths'
+  | 'refQuality'
+  | 'calibRaw'
+  | 'threshold'
+  | 'calibFalseAlarmRate'
+  | 'calibDetectionRate'
+  | 'error'
+> {
   const useRaw = b.rawAllValid && b.raw.length === b.labels.length && b.labels.length > 0;
   const metric = useRaw ? b.raw : b.capped;
   let nN = 0;
@@ -355,6 +427,39 @@ export function runMetrics(
   };
 }
 
+/**
+ * Quoten mit der kalibrierten Schwelle (rein, exportiert für Tests): Anteil der
+ * Normal- bzw. Abnormal-Clips, deren Rohwert über der Schwelle liegt. NaN ohne
+ * Schwelle oder wenn ein Rohwert fehlt.
+ */
+export function calibratedRates(
+  labels: number[],
+  raw: number[],
+  threshold: number
+): { calibFalseAlarmRate: number; calibDetectionRate: number } {
+  if (!Number.isFinite(threshold) || raw.some((v) => !Number.isFinite(v))) {
+    return { calibFalseAlarmRate: NaN, calibDetectionRate: NaN };
+  }
+  let nN = 0;
+  let nA = 0;
+  let fN = 0;
+  let fA = 0;
+  labels.forEach((l, i) => {
+    const flag = raw[i] > threshold;
+    if (l === 1) {
+      nA++;
+      if (flag) fA++;
+    } else {
+      nN++;
+      if (flag) fN++;
+    }
+  });
+  return {
+    calibFalseAlarmRate: nN > 0 ? fN / nN : NaN,
+    calibDetectionRate: nA > 0 ? fA / nA : NaN,
+  };
+}
+
 /** Engine-Zusammenfassung über alle Durchläufe (rein, exportiert für Tests). */
 export function summarizeEngineRuns(runs: PhoneRunResult[], issues: string[]): PhoneEngineSummary {
   const ok = runs.filter((r) => !r.error);
@@ -380,6 +485,9 @@ export function summarizeEngineRuns(runs: PhoneRunResult[], issues: string[]): P
     falseAlarmRate: summarize(ok.map((r) => r.falseAlarmRate)),
     detectionRate: summarize(ok.map((r) => r.detectionRate)),
     uncertainRate: summarize(ok.map((r) => r.uncertainRate)),
+    threshold: summarize(ok.map((r) => r.threshold)),
+    calibFalseAlarmRate: summarize(ok.map((r) => r.calibFalseAlarmRate)),
+    calibDetectionRate: summarize(ok.map((r) => r.calibDetectionRate)),
     bestRef: best,
     worstRef: worst,
   };
@@ -393,6 +501,13 @@ const ENGINE_NAME: Record<EngineId, string> = {
   yamnet: 'YAMNet',
   temporal: 'Zeitmuster',
 };
+
+/** Schlechteste Qualitätsbewertung mehrerer Referenz-Clips. */
+function worstRating(ratings: QualityResult['rating'][]): QualityResult['rating'] {
+  if (ratings.includes('BAD')) return 'BAD';
+  if (ratings.includes('OK')) return 'OK';
+  return 'GOOD';
+}
 
 interface TrainedRef {
   fp: Fingerprint;
@@ -414,6 +529,19 @@ export async function runPhoneProtocol(
   const runsRequested = Math.max(1, Math.floor(options.runs ?? PHONE_PROTOCOL_DEFAULTS.runs));
   const seed = options.seed ?? PHONE_PROTOCOL_DEFAULTS.seed;
   const maxTestPerClass = Math.max(0, Math.floor(options.maxTestPerClass ?? 0));
+  const calibClips = Math.min(
+    CALIB_CLIPS_MAX,
+    Math.max(0, Math.floor(options.calibClips ?? PHONE_PROTOCOL_DEFAULTS.calibClips))
+  );
+  const refClips = Math.min(
+    REF_CLIPS_MAX,
+    Math.max(1, Math.floor(options.refClips ?? PHONE_PROTOCOL_DEFAULTS.refClips))
+  );
+  const calib: CalibParams = {
+    rule: options.calibRule ?? PHONE_PROTOCOL_DEFAULTS.calibRule,
+    factor: options.calibFactor ?? PHONE_PROTOCOL_DEFAULTS.calibFactor,
+    z: options.calibZ ?? PHONE_PROTOCOL_DEFAULTS.calibZ,
+  };
   const settings = getRecordingSettings();
   const thresholds = { confidence: settings.confidenceThreshold, faulty: settings.faultyThreshold };
   // Spektrale Handy-Stufen aktiv? Dann weicht YAMNet (Rohaudio) davon ab.
@@ -463,14 +591,15 @@ export async function runPhoneProtocol(
 
   // Planung + Fortschritts-Gesamtzahl (Referenzen + eindeutige Testclips).
   const plans: PhoneSectionPlan[] = dataset.sections.map((s) =>
-    planPhoneProtocol(s, { runs: runsRequested, seed, maxTestPerClass })
+    planPhoneProtocol(s, { runs: runsRequested, seed, maxTestPerClass, calibClips, refClips })
   );
   let filesTotal = 0;
   for (const p of plans) {
     if (p.skipped) continue;
-    const tests = new Set<string>();
-    for (const r of p.runs) for (const t of [...r.testNormal, ...r.testAbnormal]) tests.add(t);
-    filesTotal += p.runs.length + tests.size;
+    const scored = new Set<string>();
+    for (const r of p.runs)
+      for (const t of [...r.testNormal, ...r.testAbnormal, ...r.calibPaths]) scored.add(t);
+    filesTotal += p.runs.length * refClips + scored.size;
   }
 
   let filesDone = 0;
@@ -490,6 +619,12 @@ export async function runPhoneProtocol(
       const sectionNotes: string[] = [];
       if (plan.abnormals.length === 0) {
         sectionNotes.push('keine Abnormal-Clips — AUC nicht berechenbar, nur Fehlalarmquote');
+      }
+      if (!plan.testSetFixed && (calibClips > 0 || refClips > 1 || maxTestPerClass > 0)) {
+        sectionNotes.push(
+          'Testmenge nicht fest: keine übrigen Normal-Clips für Referenz/Kalibrierung — ' +
+            'sie werden je Durchlauf aus dem Test herausgenommen'
+        );
       }
       if (plan.runs.length < plan.runsRequested) {
         sectionNotes.push(
@@ -512,23 +647,39 @@ export async function runPhoneProtocol(
           filesTotal,
           message: `Anlernen ${plan.key}: Referenz ${run.index + 1}/${plan.runs.length}`,
         });
-        let clip: DecodedClip | null = null;
+        // k Referenz-Clips dekodieren; Handy-Vorverarbeitung JE CLIP (wie bei
+        // einer Aufnahme), danach aneinanderhängen wie eine längere Aufnahme.
+        // Bei k = 1 ist das exakt das bisherige Anlernen.
+        const parts: DecodedClip[] = [];
         let decodeError = '';
-        try {
-          clip = await decode(run.refPath);
-        } catch (err) {
-          decodeError = `Referenz nicht lesbar: ${err instanceof Error ? err.message : String(err)}`;
-          logger.warn(`Mess-Labor (Handy-Protokoll): Referenz übersprungen (${run.refPath}):`, err);
+        for (const refPath of run.refPaths) {
+          try {
+            parts.push(await decode(refPath));
+          } catch (err) {
+            decodeError = `Referenz nicht lesbar (${refPath}): ${err instanceof Error ? err.message : String(err)}`;
+            logger.warn(`Mess-Labor (Handy-Protokoll): Referenz übersprungen (${refPath}):`, err);
+            break;
+          }
+          filesDone++;
         }
-        if (!clip) {
+        if (decodeError || parts.length === 0) {
+          filesDone += run.refPaths.length - parts.length;
           for (const id of engines.keys())
-            trained.set(`${run.index}|${id}`, { error: decodeError });
+            trained.set(`${run.index}|${id}`, { error: decodeError || 'Referenz nicht lesbar' });
           refQuality.set(run.index, null);
         } else {
-          // Handy-Vorverarbeitung der Referenz — engine-unabhängig, einmal.
-          const pre = trainPipeline(clip.features);
-          refQuality.set(run.index, pre.quality.rating);
-          const refStats = computeRefStats(pre.features);
+          const pres = parts.map((c) => trainPipeline(c.features));
+          refQuality.set(run.index, worstRating(pres.map((p) => p.quality.rating)));
+          const processed = pres.flatMap((p) => p.features);
+          const clip: DecodedClip =
+            parts.length === 1
+              ? parts[0]
+              : {
+                  features: parts.flatMap((c) => c.features),
+                  raw: concatRaw(parts.map((c) => c.raw)),
+                  sampleRate: parts[0].sampleRate,
+                };
+          const refStats = computeRefStats(processed);
           for (const [id, engine] of engines) {
             throwIfAborted(signal);
             const fp = await trainFingerprint(
@@ -537,7 +688,7 @@ export async function runPhoneProtocol(
               'healthy',
               'Referenz',
               plan.key,
-              pre.features
+              processed
             );
             trained.set(
               `${run.index}|${id}`,
@@ -545,23 +696,33 @@ export async function runPhoneProtocol(
             );
           }
         }
-        filesDone++;
         await yieldToUi();
       }
 
       // ── 3: Testclips einmal dekodieren, gegen jede passende Referenz prüfen ─
-      const runsOfClip = new Map<string, number[]>();
+      // Jeder Clip wird einmal dekodiert und gegen jeden Durchlauf bewertet, in
+      // dem er Test- ODER Kalibrier-Clip ist (Rollen schließen sich je
+      // Durchlauf aus, siehe planPhoneProtocol).
+      const runsOfClip = new Map<string, Array<{ run: number; calib: boolean }>>();
       const abnormalSet = new Set(plan.abnormals);
+      const addRole = (p: string, run: number, isCalib: boolean): void => {
+        const list = runsOfClip.get(p) ?? [];
+        list.push({ run, calib: isCalib });
+        runsOfClip.set(p, list);
+      };
       for (const run of plan.runs) {
-        for (const p of [...run.testNormal, ...run.testAbnormal]) {
-          const list = runsOfClip.get(p) ?? [];
-          list.push(run.index);
-          runsOfClip.set(p, list);
-        }
+        for (const p of [...run.testNormal, ...run.testAbnormal]) addRole(p, run.index, false);
+        for (const p of run.calibPaths) addRole(p, run.index, true);
       }
       const buckets = new Map<string, RunBucket>(); // `${run}|${engine}`
+      const calibRaw = new Map<string, number[]>(); // `${run}|${engine}` → Rohwerte
+      const detailIdx = new Map<string, number[]>(); // `${run}|${engine}` → details-Indizes
       for (const run of plan.runs)
-        for (const id of engines.keys()) buckets.set(`${run.index}|${id}`, emptyBucket());
+        for (const id of engines.keys()) {
+          buckets.set(`${run.index}|${id}`, emptyBucket());
+          calibRaw.set(`${run.index}|${id}`, []);
+          detailIdx.set(`${run.index}|${id}`, []);
+        }
       const gateStats = new Map<EngineId, { rejected: number; fallbacks: number }>();
       let decodeFailures = 0;
 
@@ -584,7 +745,8 @@ export async function runPhoneProtocol(
         }
         if (clip) {
           const label: 0 | 1 = abnormalSet.has(path) ? 1 : 0;
-          for (const runIdx of runsOfClip.get(path) ?? []) {
+          for (const role of runsOfClip.get(path) ?? []) {
+            const runIdx = role.run;
             throwIfAborted(signal);
             for (const [id, engine] of engines) {
               const ref = trained.get(`${runIdx}|${id}`);
@@ -599,6 +761,11 @@ export async function runPhoneProtocol(
                   clipAgg,
                   thresholds
                 );
+                if (role.calib) {
+                  // Kalibrier-Clip: nur der Rohwert zählt (wie für die AUC).
+                  calibRaw.get(`${runIdx}|${id}`)?.push(s.raw);
+                  continue;
+                }
                 if (!Number.isFinite(s.capped)) {
                   bucket.scoringErrors++;
                   continue;
@@ -612,17 +779,20 @@ export async function runPhoneProtocol(
                 g.rejected += s.gateRejected;
                 if (s.gateFallback) g.fallbacks++;
                 gateStats.set(id, g);
+                detailIdx.get(`${runIdx}|${id}`)?.push(details.length);
                 details.push({
                   sectionKey: plan.key,
                   engine: id,
                   run: runIdx,
-                  refPath: plan.runs[runIdx].refPath,
+                  refPath: plan.runs[runIdx].refPaths.join(' + '),
                   testPath: path,
                   label,
                   raw: s.raw,
                   capped: s.capped,
                   displayScore: s.displayScore,
                   status: s.status,
+                  threshold: NaN,
+                  calibFlag: null,
                 });
               } catch (err) {
                 bucket.scoringErrors++;
@@ -649,35 +819,58 @@ export async function runPhoneProtocol(
         const runs: PhoneRunResult[] = [];
         let scoringErrors = 0;
         let cappedRuns = 0;
+        let calibFailed = 0;
         for (const run of plan.runs) {
           const key = `${run.index}|${id}`;
           const ref = trained.get(key);
-          const quality = refQuality.get(run.index) ?? null;
           const bucket = buckets.get(key) ?? emptyBucket();
           scoringErrors += bucket.scoringErrors;
+          const cal = calibRaw.get(key) ?? [];
+          const threshold = calibClips > 0 ? calibrationThreshold(cal, calib) : NaN;
+          const ident = {
+            run: run.index,
+            refPath: run.refPath,
+            refPaths: run.refPaths,
+            calibPaths: run.calibPaths,
+            refQuality: refQuality.get(run.index) ?? null,
+            calibRaw: cal,
+            threshold,
+          };
           if (!ref || 'error' in ref) {
             runs.push({
               ...runMetrics(emptyBucket()),
-              run: run.index,
-              refPath: run.refPath,
-              refQuality: quality,
+              ...calibratedRates([], [], NaN),
+              ...ident,
               error: ref && 'error' in ref ? ref.error : 'nicht angelernt',
             });
             continue;
           }
+          if (calibClips > 0 && !Number.isFinite(threshold)) calibFailed++;
+          // Detail-Zeilen um Schwelle + kalibriertes Urteil ergänzen.
+          for (const i of detailIdx.get(key) ?? []) {
+            details[i].threshold = threshold;
+            details[i].calibFlag = calibratedFlag(details[i].raw, threshold);
+          }
+          const rates = calibratedRates(bucket.labels, bucket.raw, threshold);
           if (bucket.labels.length === 0) {
             runs.push({
               ...runMetrics(bucket),
-              run: run.index,
-              refPath: run.refPath,
-              refQuality: quality,
+              ...rates,
+              ...ident,
               error: 'kein Testclip bewertbar',
             });
             continue;
           }
           const m = runMetrics(bucket);
           if (m.scoreBasis === 'capped-score') cappedRuns++;
-          runs.push({ ...m, run: run.index, refPath: run.refPath, refQuality: quality });
+          runs.push({ ...m, ...rates, ...ident });
+        }
+        if (calibFailed > 0) {
+          issues.add(
+            calib.rule === 'mean-z' && calibClips < CALIB_MEAN_Z_MIN
+              ? `Regel „Mittel + z · σ“ braucht mindestens ${CALIB_MEAN_Z_MIN} Kalibrier-Clips — keine kalibrierte Schwelle`
+              : `Kalibrierte Schwelle in ${calibFailed} Durchlauf/Durchläufen nicht bestimmbar (Rohwert fehlte)`
+          );
         }
 
         if (scoringErrors > 0)
@@ -715,6 +908,7 @@ export async function runPhoneProtocol(
         nAbnormal: plan.abnormals.length,
         runsRequested: plan.runsRequested,
         runsPlanned: plan.runs.length,
+        testSetFixed: plan.testSetFixed,
         nTestNormal: first?.testNormal.length ?? 0,
         nTestAbnormal: first?.testAbnormal.length ?? 0,
         perEngine,
@@ -758,6 +952,11 @@ export async function runPhoneProtocol(
     runs: runsRequested,
     seed,
     maxTestPerClass,
+    calibClips,
+    refClips,
+    calibRule: calib.rule,
+    calibFactor: calib.factor,
+    calibZ: calib.z,
     confidenceThreshold: thresholds.confidence,
     faultyThreshold: thresholds.faulty,
     pipeline: pipelineSummary(),
