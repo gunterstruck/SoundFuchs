@@ -4,8 +4,11 @@
  * Kernaussagen:
  * 1. Die Referenz eines Durchlaufs ist NIE in dessen Testmenge.
  * 2. Gleicher Seed → gleiche Auswahl; anderer Seed → andere Auswahl.
- * 3. Die Kappung kürzt nur den Test, nie die Referenz-Ziehung.
+ * 3. Mit Kappung ist die Testmenge fest; Referenz und Kalibrierung stammen aus
+ *    den übrigen Normal-Clips. Referenz, Kalibrierung und Test überschneiden
+ *    sich nie.
  * 4. Median/Quartile stimmen (Typ 7, lineare Interpolation).
+ * 5. Schwellenregeln (größte Abweichung × Faktor, Mittel + z · σ).
  */
 
 import { describe, it, expect } from 'vitest';
@@ -16,7 +19,10 @@ import {
   quantile,
   summarize,
   wavSampleRate,
+  calibrationThreshold,
+  calibratedFlag,
 } from './phoneProtocolPlan.js';
+import { shuffledIndices } from './rng.js';
 
 function section(nNormal: number, nAbnormal: number, key = 'pump/id_00'): ParsedSection {
   const pad = (i: number) => String(i).padStart(8, '0');
@@ -57,19 +63,100 @@ describe('planPhoneProtocol', () => {
     expect(a.runs.map((r) => r.refPath)).not.toEqual(c.runs.map((r) => r.refPath));
   });
 
-  it('die Kappung trifft nur den Test, nie die Referenz', () => {
-    const uncapped = planPhoneProtocol(section(40, 12), { runs: 8, seed: 9 });
-    const capped = planPhoneProtocol(section(40, 12), { runs: 8, seed: 9, maxTestPerClass: 5 });
-    // Dieselben Referenzen — gezogen aus ALLEN Normal-Clips.
-    expect(capped.runs.map((r) => r.refPath)).toEqual(uncapped.runs.map((r) => r.refPath));
-    for (const run of capped.runs) {
+  it('mit Kappung: feste Testmenge, Referenz aus den übrigen Normal-Clips', () => {
+    const plan = planPhoneProtocol(section(40, 12), { runs: 8, seed: 9, maxTestPerClass: 5 });
+    expect(plan.testSetFixed).toBe(true);
+    const first = plan.runs[0];
+    for (const run of plan.runs) {
+      expect(run.testNormal).toEqual(first.testNormal);
+      expect(run.testAbnormal).toEqual(first.testAbnormal);
       expect(run.testNormal).toHaveLength(5);
       expect(run.testAbnormal).toHaveLength(5);
       expect(run.testNormal).not.toContain(run.refPath);
     }
-    // Referenzen dürfen auch außerhalb der gekappten Testmenge liegen.
-    const testedAnywhere = new Set(capped.runs.flatMap((r) => r.testNormal));
-    expect(capped.runs.some((r) => !testedAnywhere.has(r.refPath))).toBe(true);
+    // Feste Testmenge = gleichmäßig verteilt wie capEvenly.
+    expect(first.testNormal).toEqual(capEvenly(plan.normals, 5));
+  });
+
+  it('m = 0, k = 1, ohne Kappung: exakt die bisherige Auswahl', () => {
+    const n = 30;
+    const plan = planPhoneProtocol(section(n, 4), { runs: 6, seed: 11 });
+    const order = shuffledIndices(n, 11);
+    expect(plan.testSetFixed).toBe(false);
+    plan.runs.forEach((run, r) => {
+      expect(run.refPath).toBe(plan.normals[order[r]]);
+      expect(run.refPaths).toEqual([run.refPath]);
+      expect(run.calibPaths).toEqual([]);
+      expect(run.testNormal).toEqual(plan.normals.filter((p) => p !== run.refPath));
+    });
+  });
+
+  it('Referenz, Kalibrierung und Test überschneiden sich nie (k = 3, m = 5)', () => {
+    for (const maxTestPerClass of [0, 10]) {
+      const plan = planPhoneProtocol(section(40, 8), {
+        runs: 12,
+        seed: 5,
+        maxTestPerClass,
+        refClips: 3,
+        calibClips: 5,
+      });
+      expect(plan.runs).toHaveLength(12);
+      for (const run of plan.runs) {
+        expect(run.refPaths).toHaveLength(3);
+        expect(run.calibPaths).toHaveLength(5);
+        const ref = new Set(run.refPaths);
+        const cal = new Set(run.calibPaths);
+        expect(ref.size + cal.size).toBe(8);
+        for (const p of run.calibPaths) expect(ref.has(p)).toBe(false);
+        for (const p of run.testNormal) {
+          expect(ref.has(p)).toBe(false);
+          expect(cal.has(p)).toBe(false);
+        }
+      }
+      if (maxTestPerClass > 0) {
+        expect(plan.testSetFixed).toBe(true);
+        const t0 = plan.runs[0].testNormal;
+        for (const run of plan.runs) expect(run.testNormal).toEqual(t0);
+      } else {
+        // Ohne Kappung wie heute: gezogene Clips fehlen im Test.
+        for (const run of plan.runs) expect(run.testNormal).toHaveLength(40 - 8);
+      }
+    }
+  });
+
+  it('gleicher Seed ergibt gleiche Referenz- und Kalibrier-Clips', () => {
+    const opts = { runs: 6, seed: 77, maxTestPerClass: 8, refClips: 2, calibClips: 4 };
+    const a = planPhoneProtocol(section(50, 6), opts);
+    const b = planPhoneProtocol(section(50, 6), opts);
+    const c = planPhoneProtocol(section(50, 6), { ...opts, seed: 78 });
+    expect(a.runs.map((r) => [r.refPaths, r.calibPaths])).toEqual(
+      b.runs.map((r) => [r.refPaths, r.calibPaths])
+    );
+    expect(a.runs.map((r) => r.refPaths)).not.toEqual(c.runs.map((r) => r.refPaths));
+  });
+
+  it('fällt ohne übrige Normal-Clips auf „Referenz aus dem Test nehmen“ zurück', () => {
+    // 10 Normal, Kappung 8 → nur 2 übrig, aber k + m = 4 nötig.
+    const plan = planPhoneProtocol(section(10, 3), {
+      runs: 3,
+      maxTestPerClass: 8,
+      refClips: 1,
+      calibClips: 3,
+    });
+    expect(plan.testSetFixed).toBe(false);
+    for (const run of plan.runs) {
+      const drawn = new Set([...run.refPaths, ...run.calibPaths]);
+      for (const p of run.testNormal) expect(drawn.has(p)).toBe(false);
+    }
+  });
+
+  it('überspringt Bereiche ohne genug Normal-Clips für k + m + 1', () => {
+    expect(planPhoneProtocol(section(5, 2), { refClips: 2, calibClips: 3 }).skipped).toMatch(
+      /mindestens 6/
+    );
+    expect(
+      planPhoneProtocol(section(6, 2), { refClips: 2, calibClips: 3 }).skipped
+    ).toBeUndefined();
   });
 
   it('überspringt Bereiche mit weniger als 2 Normal-Clips', () => {
@@ -147,5 +234,42 @@ describe('wavSampleRate', () => {
     put(36, 'data');
     expect(wavSampleRate(buf)).toBe(16000);
     expect(Number.isNaN(wavSampleRate(new ArrayBuffer(8)))).toBe(true);
+  });
+});
+
+describe('calibrationThreshold / calibratedFlag', () => {
+  it('größte Abweichung × Faktor', () => {
+    expect(
+      calibrationThreshold([0.1, 0.4, 0.2], { rule: 'max-factor', factor: 1.25, z: 3 })
+    ).toBeCloseTo(0.5);
+    expect(calibrationThreshold([0.08], { rule: 'max-factor', factor: 2, z: 3 })).toBeCloseTo(0.16);
+  });
+
+  it('Mittel + z · Standardabweichung (Stichprobe, n − 1), erst ab 3 Werten', () => {
+    // Mittel 0,2; σ = 0,1 (Werte 0,1/0,2/0,3) → 0,2 + 3 · 0,1 = 0,5
+    expect(calibrationThreshold([0.1, 0.2, 0.3], { rule: 'mean-z', factor: 1, z: 3 })).toBeCloseTo(
+      0.5
+    );
+    expect(
+      calibrationThreshold([0.2, 0.2, 0.2, 0.2], { rule: 'mean-z', factor: 1, z: 3 })
+    ).toBeCloseTo(0.2);
+    expect(
+      Number.isNaN(calibrationThreshold([0.1, 0.2], { rule: 'mean-z', factor: 1, z: 3 }))
+    ).toBe(true);
+  });
+
+  it('ohne Werte oder mit fehlendem Rohwert keine Schwelle', () => {
+    expect(Number.isNaN(calibrationThreshold([], { rule: 'max-factor', factor: 1.25, z: 3 }))).toBe(
+      true
+    );
+    expect(
+      Number.isNaN(calibrationThreshold([0.1, NaN], { rule: 'max-factor', factor: 1.25, z: 3 }))
+    ).toBe(true);
+  });
+
+  it('auffällig nur ÜBER der Schwelle', () => {
+    expect(calibratedFlag(0.51, 0.5)).toBe(true);
+    expect(calibratedFlag(0.5, 0.5)).toBe(false);
+    expect(calibratedFlag(0.2, NaN)).toBeNull();
   });
 });

@@ -32,7 +32,15 @@ import {
 import { InteractiveSession, type TrainSelection } from './interactive.js';
 import { runPhoneProtocol, type PhoneProtocolResult } from './phoneProtocol.js';
 import { toCsvPhone, toCsvPhoneDetail, toJsonPhone } from './phoneProtocolExport.js';
-import { PHONE_PROTOCOL_DEFAULTS, type SpreadSummary } from './phoneProtocolPlan.js';
+import {
+  PHONE_PROTOCOL_DEFAULTS,
+  CALIB_CLIPS_MAX,
+  REF_CLIPS_MAX,
+  CALIB_MEAN_Z_MIN,
+  type CalibRule,
+  type SpreadSummary,
+} from './phoneProtocolPlan.js';
+import { keepScreenAwake, type ReleaseWakeLock } from './wakeLock.js';
 import { pipelineSummary } from './phonePipeline.js';
 import type { BenchmarkResult, ClassifyResult } from './types.js';
 import type { ClipAggMode } from './clipAggregate.js';
@@ -296,10 +304,38 @@ export class MessLaborView {
       return;
     }
 
+    // Handy-Protokoll: Optionen vorab prüfen (klare Meldung statt leerem Ergebnis).
+    const intIn = (sel: string, fallback: number): number => {
+      const v = parseInt((this.$(sel) as HTMLInputElement | null)?.value ?? '', 10);
+      return Number.isFinite(v) ? v : fallback;
+    };
+    const floatIn = (sel: string, fallback: number): number => {
+      const v = parseFloat(((this.$(sel) as HTMLInputElement | null)?.value ?? '').replace(',', '.'));
+      return Number.isFinite(v) ? v : fallback;
+    };
+    const calibClips = Math.min(CALIB_CLIPS_MAX, Math.max(0, intIn('#ml-phone-calib', 0)));
+    const refClips = Math.min(REF_CLIPS_MAX, Math.max(1, intIn('#ml-phone-refk', 1)));
+    const calibRule = ((this.$('#ml-phone-rule') as HTMLSelectElement | null)?.value ??
+      PHONE_PROTOCOL_DEFAULTS.calibRule) as CalibRule;
+    if (this.mode === 'phone' && calibClips > 0 && calibRule === 'mean-z' && calibClips < CALIB_MEAN_Z_MIN) {
+      this.setStatus(
+        `„Mittel + z · Standardabweichung“ braucht mindestens ${CALIB_MEAN_Z_MIN} Kalibrier-Clips.`,
+        true
+      );
+      return;
+    }
+
     this.running = true;
     this.abort = new AbortController();
     this.toggleRunningUi(true);
     this.setStatus('Starte Messung…');
+    // Bildschirm während der Messung wachhalten (still weiter ohne API).
+    let releaseWake: ReleaseWakeLock = async () => {};
+    try {
+      releaseWake = await keepScreenAwake();
+    } catch {
+      /* ohne Wake Lock weiter */
+    }
 
     const resolve = (path: string): ClipSource => {
       const src = this.clips.get(path);
@@ -357,6 +393,11 @@ export class MessLaborView {
           seed: Number.isFinite(seedRaw) ? seedRaw : PHONE_PROTOCOL_DEFAULTS.seed,
           maxTestPerClass: Number.isFinite(maxRaw) && maxRaw > 0 ? maxRaw : undefined,
           clipAgg: ((this.$('#ml-phone-agg') as HTMLSelectElement | null)?.value ?? 'mean') as ClipAggMode,
+          calibClips,
+          refClips,
+          calibRule,
+          calibFactor: floatIn('#ml-phone-factor', PHONE_PROTOCOL_DEFAULTS.calibFactor),
+          calibZ: floatIn('#ml-phone-z', PHONE_PROTOCOL_DEFAULTS.calibZ),
           signal: this.abort.signal,
           onProgress,
         });
@@ -406,6 +447,7 @@ export class MessLaborView {
     } finally {
       this.running = false;
       this.toggleRunningUi(false);
+      void releaseWake();
     }
   }
 
@@ -594,6 +636,12 @@ export class MessLaborView {
       s.n > 0 ? `${n3(s.min)}–${n3(s.max)}` : '—';
     const pctSpread = (s: SpreadSummary): string =>
       s.n > 0 ? `${pctCell(s.median)} <span class="ml-split">(${pctCell(s.min)}–${pctCell(s.max)})</span>` : '—';
+    const calibOn = result.calibClips > 0;
+    const n4 = (v: number): string => (Number.isFinite(v) ? v.toFixed(4).replace('.', ',') : '—');
+    const ruleText =
+      result.calibRule === 'mean-z'
+        ? `Mittel + ${String(result.calibZ).replace('.', ',')} · σ`
+        : `größte Abweichung × ${String(result.calibFactor).replace('.', ',')}`;
     const healthCell = (h: string): string =>
       h === 'ok'
         ? '<td class="ml-ok">ok</td>'
@@ -622,6 +670,7 @@ export class MessLaborView {
           <td>${pctSpread(sum.falseAlarmRate)}</td>
           <td>${pctSpread(sum.detectionRate)}</td>
           <td>${pctSpread(sum.uncertainRate)}</td>
+          ${calibOn ? `<td class="ml-split">${sum.threshold.n > 0 ? n4(sum.threshold.median) : '—'}</td><td>${pctSpread(sum.calibFalseAlarmRate)}</td><td>${pctSpread(sum.calibDetectionRate)}</td>` : ''}
           <td class="ml-split">${refs}</td>
         </tr>`);
         for (const i of sum.issues) issues.push(`<li><strong>${esc(s.key)} · ${esc(ENGINE_LABEL[e])}:</strong> ${esc(i)}</li>`);
@@ -633,20 +682,25 @@ export class MessLaborView {
       : '';
     const notes = result.notes.map((n) => `<p class="ml-note">ℹ ${esc(n)}</p>`).join('');
     const testInfo = result.sections
-      .map((s) => `${esc(s.key)}: ${s.runsPlanned} Referenzen, je ${s.nTestNormal} N + ${s.nTestAbnormal} A geprüft`)
+      .map(
+        (s) =>
+          `${esc(s.key)}: ${s.runsPlanned} Durchläufe, je ${s.nTestNormal} N + ${s.nTestAbnormal} A geprüft` +
+          (s.testSetFixed ? ' (Testmenge fest)' : ' (Testmenge je Durchlauf ohne Referenz/Kalibrierung)')
+      )
       .join(' · ');
 
     host.innerHTML = `
-      <h3>Handy-Protokoll · 1 Referenz je Durchlauf <span class="ml-agg-note">(${result.runs} Durchläufe · Seed ${result.seed} · Aggregation ${esc(result.clipAgg)} · ${esc(result.pipeline)})</span></h3>
+      <h3>Handy-Protokoll · Referenz aus ${result.refClips} Clip(s)${calibOn ? ` · ${result.calibClips} Kalibrier-Clips` : ''} <span class="ml-agg-note">(${result.runs} Durchläufe · Seed ${result.seed}${calibOn ? ` · Schwelle: ${esc(ruleText)}` : ''} · Aggregation ${esc(result.clipAgg)} · ${esc(result.pipeline)})</span></h3>
       <div class="ml-scroll"><table class="ml-table ml-result-table ml-phone-table">
-        <thead><tr><th>Bereich</th><th>Engine</th><th>Zustand</th><th>Durchl.</th><th>AUC Median</th><th>AUC Q1–Q3</th><th>AUC Min–Max</th><th>pAUC Median</th><th>Fehlalarm</th><th>Erkennung</th><th>Zwischenbereich</th><th>beste/schlechteste Referenz</th></tr></thead>
+        <thead><tr><th>Bereich</th><th>Engine</th><th>Zustand</th><th>Durchl.</th><th>AUC Median</th><th>AUC Q1–Q3</th><th>AUC Min–Max</th><th>pAUC Median</th><th>Fehlalarm ${result.confidenceThreshold}/${result.faultyThreshold}</th><th>Erkennung ${result.confidenceThreshold}/${result.faultyThreshold}</th><th>Zwischenbereich</th>${calibOn ? '<th>Schwelle (Rohwert) Median</th><th>Fehlalarm kalibriert</th><th>Erkennung kalibriert</th>' : ''}<th>beste/schlechteste Referenz</th></tr></thead>
         <tbody>${rows.join('')}</tbody>
       </table></div>
       ${issues.length ? `<div class="ml-warn"><strong>Hinweise:</strong><ul>${issues.join('')}</ul></div>` : ''}
       ${skipped}
       ${notes}
       <p class="ml-note">${testInfo}</p>
-      <p class="ml-note">Je Durchlauf lernt die Engine GENAU EINEN Normal-Clip an (wie die Referenzaufnahme am Handy) und prüft alle übrigen Clips desselben Bereichs mit der Handy-Pipeline. Die Spanne Min–Max zeigt, wie stark das Ergebnis an der gewählten Referenz hängt. Fehlalarm = Normal-Clips „auffällig“, Erkennung = Abnormal-Clips „auffällig“, Zwischenbereich = „unsicher“ (Median über die Durchläufe, in Klammern Min–Max). AUC/pAUC auf Rohähnlichkeit. Nichts wurde gespeichert.</p>`;
+      ${calibOn ? `<p class="ml-note">Kalibriert: Je Durchlauf werden nach dem Anlernen ${result.calibClips} weitere Normal-Clips wie Prüfungen bewertet; aus ihren Rohwerten (1 − Ähnlichkeit) entsteht die Schwelle (${esc(ruleText)}). Ein Testclip ist kalibriert „auffällig“, wenn sein Rohwert darüber liegt. Bei MIMII stammen die Kalibrier-Clips aus derselben Aufnahmeserie — im Feld kämen sie von anderen Tagen, das Ergebnis ist hier eher optimistisch.</p>` : ''}
+      <p class="ml-note">Je Durchlauf lernt die Engine aus ${result.refClips === 1 ? 'GENAU EINEM Normal-Clip' : `${result.refClips} Normal-Clips zusammen`} an (wie die Referenzaufnahme am Handy) und prüft die Testclips desselben Bereichs mit der Handy-Pipeline. Die Spanne Min–Max zeigt, wie stark das Ergebnis an der gewählten Referenz hängt. Fehlalarm = Normal-Clips „auffällig“, Erkennung = Abnormal-Clips „auffällig“, Zwischenbereich = „unsicher“ (Median über die Durchläufe, in Klammern Min–Max). AUC/pAUC auf Rohähnlichkeit. Nichts wurde gespeichert.</p>`;
     (this.$('#ml-exports') as HTMLElement | null)?.style.removeProperty('display');
   }
 
@@ -1068,18 +1122,33 @@ export class MessLaborView {
             </span>
             <span id="ml-opts-phone" class="ml-opt-group" style="display:none">
               <label class="ml-opt">Durchläufe
-                <input id="ml-phone-runs" type="number" min="1" step="1" value="${PHONE_PROTOCOL_DEFAULTS.runs}" title="Referenz-Clips je Bereich — je Durchlauf genau einer" />
+                <input id="ml-phone-runs" type="number" min="1" step="1" value="${PHONE_PROTOCOL_DEFAULTS.runs}" title="Durchläufe je Bereich — je Durchlauf eine Referenz" />
               </label>
               <label class="ml-opt">Seed
                 <input id="ml-phone-seed" class="ml-wide" type="number" step="1" value="${PHONE_PROTOCOL_DEFAULTS.seed}" title="gleicher Seed = gleiche Referenzen" />
               </label>
               <label class="ml-opt">Max. Testclips/Klasse
-                <input id="ml-phone-maxtest" type="number" min="0" step="10" value="0" title="0 = alle; kürzt nur den Test, nie die Referenz-Ziehung" />
+                <input id="ml-phone-maxtest" type="number" min="0" step="10" value="0" title="0 = alle; feste Testmenge je Bereich, Referenz/Kalibrierung aus den übrigen Normal-Clips" />
               </label>
               <label class="ml-opt">Aggregation
                 <select id="ml-phone-agg"><option value="mean" selected>Mittel</option><option value="p90">schlechtestes Zehntel (p90)</option></select>
               </label>
-              <span class="ml-opt ml-hint">je Durchlauf 1 Referenz wie am Handy · Pipeline + Schwellen aus den Einstellungen</span>
+              <label class="ml-opt">Referenz aus k Clips
+                <input id="ml-phone-refk" type="number" min="1" max="${REF_CLIPS_MAX}" step="1" value="${PHONE_PROTOCOL_DEFAULTS.refClips}" title="1 = wie am Handy; k Clips werden zusammen angelernt wie eine längere Aufnahme" />
+              </label>
+              <label class="ml-opt">Kalibrier-Clips m
+                <input id="ml-phone-calib" type="number" min="0" max="${CALIB_CLIPS_MAX}" step="1" value="${PHONE_PROTOCOL_DEFAULTS.calibClips}" title="0 = keine kalibrierte Schwelle; sonst m weitere Normal-Clips je Durchlauf" />
+              </label>
+              <label class="ml-opt">Schwellenregel
+                <select id="ml-phone-rule"><option value="max-factor" selected>größte Abweichung × Faktor</option><option value="mean-z">Mittel + z · Standardabweichung (m ≥ ${CALIB_MEAN_Z_MIN})</option></select>
+              </label>
+              <label class="ml-opt">Faktor
+                <input id="ml-phone-factor" type="number" min="0" step="0.05" value="${PHONE_PROTOCOL_DEFAULTS.calibFactor}" />
+              </label>
+              <label class="ml-opt">z
+                <input id="ml-phone-z" type="number" min="0" step="0.5" value="${PHONE_PROTOCOL_DEFAULTS.calibZ}" />
+              </label>
+              <span class="ml-opt ml-hint">Pipeline + Schwellen aus den Einstellungen · Regel/Faktor/z wirken nur bei m &gt; 0</span>
             </span>
             <span id="ml-opts-classify" class="ml-opt-group" style="display:none">
               <label class="ml-opt">Gut-Fingerprints

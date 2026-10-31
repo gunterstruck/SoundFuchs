@@ -26,15 +26,38 @@ function label(e: EngineId): string {
   return ENGINE_LABEL[e] ?? e;
 }
 
+/** Klartext der Schwellenregel, z. B. „größte Abweichung × 1,25“. */
+export function calibRuleLabel(result: PhoneProtocolResult): string {
+  if (result.calibClips <= 0) return 'keine';
+  return result.calibRule === 'mean-z'
+    ? `Mittel + ${result.calibZ} · Standardabweichung`
+    : `größte Abweichung × ${result.calibFactor}`;
+}
+
 function header(result: PhoneProtocolResult): string {
   return (
-    `# Zanobot Mess-Labor · Handy-Protokoll (1 Referenz je Durchlauf) · ` +
+    `# Zanobot Mess-Labor · Handy-Protokoll · ` +
     `${result.runs} Durchläufe/Bereich · Seed ${result.seed} · ` +
+    `Referenz aus k=${result.refClips} Clip(s) · Kalibrier-Clips m=${result.calibClips} · ` +
+    `Schwellenregel ${calibRuleLabel(result)} · ` +
     `Testclips/Klasse ${result.maxTestPerClass > 0 ? result.maxTestPerClass : 'alle'} · ` +
     `Aggregation ${result.clipAgg} · ` +
     `${result.pipeline}`
   );
 }
+
+/** Parameter-Spalten der neuen Optionen (gleich in allen Zeilen eines Laufs). */
+function paramCols(result: PhoneProtocolResult): string[] {
+  const m = result.calibClips;
+  return [
+    String(m),
+    String(result.refClips),
+    m > 0 ? result.calibRule : '',
+    m > 0 && result.calibRule === 'max-factor' ? String(result.calibFactor) : '',
+    m > 0 && result.calibRule === 'mean-z' ? String(result.calibZ) : '',
+  ];
+}
+const PARAM_HEADS = ['m (Kalibrier-Clips)', 'k (Referenz-Clips)', 'Regel', 'Faktor', 'z'];
 
 /** Zusammenfassung als CSV-Spalten (Median/Min/Q1/Q3/Max). */
 function spreadCols(s: SpreadSummary): string[] {
@@ -67,6 +90,11 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
       'Zwischenbereich normal',
       'Zwischenbereich abnormal',
       'Zwischenbereich gesamt',
+      ...PARAM_HEADS,
+      'Kalibrier-Dateien',
+      'Schwelle (Rohwert)',
+      'Fehlalarmquote kalibriert',
+      'Erkennungsquote kalibriert',
       'Fehler',
     ].join(',')
   );
@@ -80,7 +108,7 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
             csvCell(sec.key),
             csvCell(label(e)),
             String(run.run + 1),
-            csvCell(run.refPath),
+            csvCell(run.refPaths.join(' + ')),
             run.refQuality ?? '',
             fmt(run.auc),
             fmt(run.pAuc),
@@ -92,6 +120,11 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
             fmt(run.normalUncertainRate),
             fmt(run.abnormalUncertainRate),
             fmt(run.uncertainRate),
+            ...paramCols(result),
+            csvCell(run.calibPaths.join(' + ')),
+            fmt(run.threshold, 5),
+            fmt(run.calibFalseAlarmRate),
+            fmt(run.calibDetectionRate),
             csvCell(run.error ?? ''),
           ].join(',')
         );
@@ -121,6 +154,15 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
       'Erkennungsquote Min',
       'Erkennungsquote Max',
       'Zwischenbereich Median',
+      ...PARAM_HEADS,
+      'Schwelle Median',
+      'Fehlalarmquote kalibriert Median',
+      'Fehlalarmquote kalibriert Min',
+      'Fehlalarmquote kalibriert Max',
+      'Erkennungsquote kalibriert Median',
+      'Erkennungsquote kalibriert Min',
+      'Erkennungsquote kalibriert Max',
+      'Testmenge fest',
       'beste Referenz',
       'schlechteste Referenz',
       'Hinweise',
@@ -147,6 +189,15 @@ export function toCsvPhone(result: PhoneProtocolResult): string {
           fmt(s.detectionRate.min),
           fmt(s.detectionRate.max),
           fmt(s.uncertainRate.median),
+          ...paramCols(result),
+          fmt(s.threshold.median, 5),
+          fmt(s.calibFalseAlarmRate.median),
+          fmt(s.calibFalseAlarmRate.min),
+          fmt(s.calibFalseAlarmRate.max),
+          fmt(s.calibDetectionRate.median),
+          fmt(s.calibDetectionRate.min),
+          fmt(s.calibDetectionRate.max),
+          sec.testSetFixed ? 'ja' : 'nein',
           csvCell(s.bestRef ? s.bestRef.path : ''),
           csvCell(s.worstRef ? s.worstRef.path : ''),
           csvCell([...sec.notes, ...s.issues].join(' | ')),
@@ -172,6 +223,8 @@ export function toCsvPhoneDetail(result: PhoneProtocolResult): string {
       'Anomalie gedeckelt (100−Score)',
       'Angezeigter Score',
       'Urteil',
+      'Schwelle',
+      'kalibriertes Urteil',
     ].join(','),
   ];
   for (const d of result.details) {
@@ -187,6 +240,8 @@ export function toCsvPhoneDetail(result: PhoneProtocolResult): string {
         fmt(d.capped, 2),
         fmt(d.displayScore, 1),
         d.status,
+        fmt(d.threshold, 5),
+        d.calibFlag === null ? '' : d.calibFlag ? 'auffällig' : 'unauffällig',
       ].join(',')
     );
   }
@@ -201,10 +256,13 @@ export function toJsonPhone(result: PhoneProtocolResult, includeDetails = false)
       tool: 'zanobot-mess-labor',
       mode: 'phone-protocol',
       note:
-        'Handy-Protokoll: je Durchlauf GENAU EIN Referenz-Clip, angelernt mit der Handy-' +
-        'Vorverarbeitung (trainPipeline); geprüft mit LivePipeline; AUC/pAUC auf Rohähnlichkeit ' +
-        '(scoreBasis je Durchlauf); Quoten mit phoneVerdict und den Schwellen aus den Einstellungen. ' +
-        'Strikt lesend.',
+        'Handy-Protokoll: je Durchlauf eine Referenz aus refClips Normal-Clips, angelernt mit der ' +
+        'Handy-Vorverarbeitung (trainPipeline je Clip, Features aneinandergehängt); geprüft mit ' +
+        'LivePipeline gegen eine feste Testmenge; AUC/pAUC auf Rohähnlichkeit (scoreBasis je ' +
+        'Durchlauf); Quoten mit phoneVerdict und den Schwellen aus den Einstellungen. Bei ' +
+        'calibClips > 0 zusätzlich eine Schwelle aus den Rohwerten der Kalibrier-Clips ' +
+        '(calibRule); kalibriert auffällig = Rohwert > Schwelle. Strikt lesend.',
+      calibRuleText: calibRuleLabel(result),
       ...rest,
       startedAt: new Date(result.startedAt).toISOString(),
       finishedAt: new Date(result.finishedAt).toISOString(),
