@@ -15,7 +15,7 @@
  *  - wavSampleRate(): Abtastrate aus dem RIFF-Kopf (für den 16-kHz-Vermerk).
  */
 
-import { shuffledIndices } from './rng.js';
+import { shuffledIndices, mulberry32 } from './rng.js';
 import type { ParsedSection } from './parseFolder.js';
 
 /** Standardwerte des Protokolls (auch in der UI vorbelegt). */
@@ -34,9 +34,20 @@ export const PHONE_PROTOCOL_DEFAULTS = {
   calibRule: 'max-factor' as CalibRule,
   /** Faktor für „größte Abweichung × Faktor“. */
   calibFactor: 1.25,
+  /** Lage der k Referenz-Clips (Standard: verteilt = bisheriges Verhalten). */
+  refLayout: 'spread' as RefLayout,
   /** z für „Mittel + z · Standardabweichung“. */
   calibZ: 3,
 };
+
+/**
+ * Lage der k Referenz-Clips:
+ *  - 'spread': zufällig über die ganze Aufnahme verteilt — am Handy mehrere
+ *              Aufnahmen zu verschiedenen Zeiten (bisheriges Verhalten).
+ *  - 'block' : k direkt aufeinanderfolgende freie Clips nach Dateinummer — am
+ *              Handy EINE lange Aufnahme. Annahme: Dateinummer = Aufnahmereihenfolge.
+ */
+export type RefLayout = 'spread' | 'block';
 
 /** Grenzen der neuen Optionen. */
 export const CALIB_CLIPS_MAX = 10;
@@ -54,6 +65,8 @@ export interface PhoneRunPlan {
   refPaths: string[];
   /** Die m Kalibrier-Clips (Normal, nicht im Test, nicht in der Referenz). */
   calibPaths: string[];
+  /** Größte minus kleinste Dateinummer der Referenz-Clips (NaN ohne Nummer). */
+  refSpan: number;
   /** Geprüfte Normal-Clips. */
   testNormal: string[];
   /** Geprüfte Abnormal-Clips (in allen Durchläufen gleich). */
@@ -92,6 +105,41 @@ export interface PhonePlanOptions {
   calibClips?: number;
   /** Referenz aus k Clips (1–5). */
   refClips?: number;
+  /** Lage der Referenz-Clips (Standard 'spread'). */
+  refLayout?: RefLayout;
+}
+
+/**
+ * Dateinummer eines Clips: die letzte Ziffernfolge im Dateinamen, z. B.
+ * „pump/id_06/normal/00000123.wav“ → 123. NaN, wenn der Name keine Zahl hat.
+ */
+export function fileNumber(path: string): number {
+  const name = path.split('/').pop() ?? path;
+  const m = name.match(/(\d+)(?!.*\d)/);
+  return m ? parseInt(m[1], 10) : NaN;
+}
+
+/** Größte minus kleinste Dateinummer (NaN, wenn eine Nummer fehlt). */
+export function numberSpan(paths: string[]): number {
+  const nums = paths.map(fileNumber);
+  if (nums.length === 0 || nums.some((n) => !Number.isFinite(n))) return NaN;
+  return Math.max(...nums) - Math.min(...nums);
+}
+
+/** Nach Dateinummer sortieren (ohne Nummer: hinten, dann nach Pfad). */
+function byFileNumber(paths: string[]): string[] {
+  return [...paths].sort((a, b) => {
+    const na = fileNumber(a);
+    const nb = fileNumber(b);
+    if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) return na - nb;
+    if (Number.isFinite(na) !== Number.isFinite(nb)) return Number.isFinite(na) ? -1 : 1;
+    return a.localeCompare(b);
+  });
+}
+
+/** Reproduzierbarer Teil-Seed je Durchlauf (für die Kalibrier-Ziehung „am Stück“). */
+function runSeed(seed: number, run: number): number {
+  return Math.floor(mulberry32((seed ^ Math.imul(run + 1, 0x9e3779b1)) >>> 0)() * 2 ** 32);
 }
 
 /** Alle Normal-Clips eines Bereichs, egal ob mit oder ohne train/test-Ordner. */
@@ -173,6 +221,38 @@ export function planPhoneProtocol(
   const testSetFixed = rest.length >= g;
   const pool = testSetFixed ? rest : normals;
 
+  const layout: RefLayout = options.refLayout ?? PHONE_PROTOCOL_DEFAULTS.refLayout;
+  if (layout === 'block' && k > 1) {
+    // „am Stück“: freie Clips nach Dateinummer, je Durchlauf ein Startpunkt aus
+    // dem Seed, die nächsten k freien Clips sind die Referenz. Kalibrierung wie
+    // bisher zufällig aus dem Rest.
+    const sorted = byFileNumber(pool);
+    const nStarts = sorted.length - k + 1;
+    const starts = shuffledIndices(nStarts, seed);
+    const nRunsBlock = Math.min(runsRequested, nStarts);
+    const runsBlock: PhoneRunPlan[] = [];
+    for (let r = 0; r < nRunsBlock; r++) {
+      const start = starts[r];
+      const refPaths = sorted.slice(start, start + k);
+      const refSet = new Set(refPaths);
+      const rest = sorted.filter((p) => !refSet.has(p));
+      const calibOrder = shuffledIndices(rest.length, runSeed(seed, r));
+      const calibPaths = calibOrder.slice(0, m).map((i) => rest[i]);
+      const drawn = new Set([...refPaths, ...calibPaths]);
+      runsBlock.push({
+        index: r,
+        refPath: refPaths[0],
+        refPaths,
+        calibPaths,
+        refSpan: numberSpan(refPaths),
+        testNormal: testSetFixed ? fixedTest : fixedTest.filter((p) => !drawn.has(p)),
+        testAbnormal,
+      });
+    }
+    return { ...base, runs: runsBlock, testSetFixed };
+  }
+
+  // „verteilt“ (Standard, bisheriges Verhalten; bei k = 1 auch für „am Stück“).
   const order = shuffledIndices(pool.length, seed);
   const nRuns = Math.min(runsRequested, pool.length);
   const runs: PhoneRunPlan[] = [];
@@ -187,11 +267,159 @@ export function planPhoneProtocol(
       refPath: refPaths[0],
       refPaths,
       calibPaths,
+      refSpan: numberSpan(refPaths),
       testNormal: testSetFixed ? fixedTest : fixedTest.filter((p) => !drawn.has(p)),
       testAbnormal,
     });
   }
   return { ...base, runs, testSetFixed };
+}
+
+// ── Mikrofon-Szenario (Kanalwahl) ────────────────────────────────────────────
+
+/**
+ * Welche Kanäle einer Mehrkanal-Datei (MIMII: 8 Mikrofone im Ring) verwendet
+ * werden. Die Clip-Planung ist in allen Szenarien gleich; nur die Kanäle
+ * unterscheiden sich.
+ *  - 'mean' (A): Mittel aller Kanäle — bisheriges Verhalten.
+ *  - 'same' (B): 1 Mikrofon, Prüfung an derselben Stelle — alles aus Kanal 1.
+ *  - 'other'(C): 1 Mikrofon, Prüfung an anderer Stelle — Referenz aus Kanal 1,
+ *                Kalibrier-/Testclips aus dem Prüf-Pool.
+ *  - 'spread'(D): Referenz an k Stellen — die k Referenz-Clips aus k über den
+ *                Ring verteilten Kanälen, Kalibrier-/Testclips aus dem Prüf-Pool.
+ *                Braucht k ≥ 2.
+ * Kanäle sind hier 0-basiert (Kanal 1 = Index 0); Anzeige 1-basiert.
+ */
+export type MicScenario = 'mean' | 'same' | 'other' | 'spread';
+
+/** Kanal-Auswahl: Index (0-basiert) oder 'mean' (Mittel aller Kanäle). */
+export type ChannelChoice = number | 'mean';
+
+/** k gleichmäßig über den Ring verteilte Kanäle, z. B. k = 3, 8 Kanäle → 0, 3, 5. */
+export function spreadRefChannels(k: number, channelCount: number): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < k; i++) out.push(Math.round((i * channelCount) / k) % channelCount);
+  return out;
+}
+
+/**
+ * Prüf-Pool: die Kanäle, die in Szenario D nicht Referenz sind. Gilt für C und
+ * D gleich (bei k = 1 also alle außer Kanal 1). Bleibt nichts übrig (zu wenige
+ * Kanäle), werden alle Kanäle genommen.
+ */
+export function probeChannelPool(k: number, channelCount: number): number[] {
+  const ref = new Set(spreadRefChannels(Math.max(1, k), channelCount));
+  const pool: number[] = [];
+  for (let c = 0; c < channelCount; c++) if (!ref.has(c)) pool.push(c);
+  return pool.length > 0 ? pool : Array.from({ length: channelCount }, (_, c) => c);
+}
+
+/** Einfacher, stabiler 32-bit-Hash eines Pfads (FNV-1a). */
+function hashPath(path: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < path.length; i++) {
+    h ^= path.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+/**
+ * Fester Prüf-Kanal eines Clips: per Seed und Pfad aus dem Prüf-Pool — derselbe
+ * in C und D und in allen Durchläufen (jeder Testclip wird nur einmal in
+ * Merkmale umgerechnet).
+ */
+export function probeChannelOf(path: string, seed: number, pool: number[]): number {
+  const r = mulberry32((seed ^ hashPath(path)) >>> 0)();
+  return pool[Math.floor(r * pool.length) % pool.length];
+}
+
+/** Kanalplan eines Bereichs für ein Szenario. */
+export interface ChannelPlan {
+  scenario: MicScenario;
+  channelCount: number;
+  /** Kanal des j-ten Referenz-Clips (j = 0 … k−1). */
+  refChannel(j: number): ChannelChoice;
+  /** Kanal eines Test- oder Kalibrier-Clips. */
+  probeChannel(path: string): ChannelChoice;
+  /** Prüf-Pool (nur C/D, sonst leer). */
+  pool: number[];
+  /** Hinweis, falls auf weniger Kanäle zurückgefallen wurde. */
+  note?: string;
+}
+
+/**
+ * Kanalplan für Szenario, k, Kanalzahl und Seed. Dateien mit nur einem Kanal:
+ * alle Szenarien nutzen diesen Kanal (Hinweis).
+ */
+export function planChannels(
+  scenario: MicScenario,
+  k: number,
+  channelCount: number,
+  seed: number
+): ChannelPlan {
+  if (scenario === 'mean') {
+    return {
+      scenario,
+      channelCount,
+      refChannel: () => 'mean',
+      probeChannel: () => 'mean',
+      pool: [],
+    };
+  }
+  if (channelCount <= 1) {
+    return {
+      scenario,
+      channelCount,
+      refChannel: () => 0,
+      probeChannel: () => 0,
+      pool: [],
+      note: 'Dateien haben nur einen Kanal — alle Szenarien nutzen diesen Kanal',
+    };
+  }
+  if (scenario === 'same') {
+    return { scenario, channelCount, refChannel: () => 0, probeChannel: () => 0, pool: [] };
+  }
+  const pool = probeChannelPool(k, channelCount);
+  const refs = scenario === 'spread' ? spreadRefChannels(k, channelCount) : [];
+  const tooFew = channelCount < Math.max(2, k) + 1;
+  return {
+    scenario,
+    channelCount,
+    refChannel: (j) => (scenario === 'spread' ? refs[j % refs.length] : 0),
+    probeChannel: (path) => probeChannelOf(path, seed, pool),
+    pool,
+    note: tooFew
+      ? `nur ${channelCount} Kanäle — Prüf-Pool kann Referenz-Kanäle enthalten`
+      : undefined,
+  };
+}
+
+/** Anzeige eines Kanals: 1-basiert, „Mittel“ für 'mean'. */
+export function channelLabel(c: ChannelChoice): string {
+  return c === 'mean' ? 'Mittel' : String(c + 1);
+}
+
+/** Kanalzahl aus dem RIFF/WAVE-Kopf (fmt-Chunk), NaN wenn kein WAV. */
+export function wavChannelCount(bytes: ArrayBuffer): number {
+  if (bytes.byteLength < 12) return NaN;
+  const view = new DataView(bytes);
+  const tag = (off: number): string =>
+    String.fromCharCode(
+      view.getUint8(off),
+      view.getUint8(off + 1),
+      view.getUint8(off + 2),
+      view.getUint8(off + 3)
+    );
+  if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return NaN;
+  let off = 12;
+  while (off + 8 <= bytes.byteLength) {
+    const id = tag(off);
+    const size = view.getUint32(off + 4, true);
+    if (id === 'fmt ') return off + 12 <= bytes.byteLength ? view.getUint16(off + 10, true) : NaN;
+    off += 8 + size + (size % 2);
+  }
+  return NaN;
 }
 
 // ── Kalibrierte Schwelle ─────────────────────────────────────────────────────

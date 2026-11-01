@@ -37,14 +37,17 @@ import {
   type GmiaLambdaStage,
   type PhoneProtocolResult,
 } from './phoneProtocol.js';
-import { toCsvPhone, toCsvPhoneDetail, toJsonPhone } from './phoneProtocolExport.js';
+import { toCsvPhone, toCsvPhoneDetail, toJsonPhone, micScenarioLabel } from './phoneProtocolExport.js';
 import {
   PHONE_PROTOCOL_DEFAULTS,
   CALIB_CLIPS_MAX,
   REF_CLIPS_MAX,
   CALIB_MEAN_Z_MIN,
   type CalibRule,
+  type RefLayout,
+  type MicScenario,
   type SpreadSummary,
+  summarize,
 } from './phoneProtocolPlan.js';
 import { keepScreenAwake, type ReleaseWakeLock } from './wakeLock.js';
 import { pipelineSummary } from './phonePipeline.js';
@@ -326,6 +329,12 @@ export class MessLaborView {
     const gmiaStages: GmiaLambdaStage[] = Array.from(
       this.overlay?.querySelectorAll<HTMLInputElement>('.ml-phone-gmia-stage:checked') ?? []
     ).map((el) => (el.value === 'standard' ? 'standard' : Number(el.value)));
+    const micScenario = ((this.$('#ml-phone-mic') as HTMLSelectElement | null)?.value ??
+      'mean') as MicScenario;
+    if (this.mode === 'phone' && micScenario === 'spread' && refClips < 2) {
+      this.setStatus('Szenario D (Referenz an k Stellen) braucht „Referenz aus k Clips“ ≥ 2.', true);
+      return;
+    }
     if (this.mode === 'phone' && engines.includes('gmia') && gmiaStages.length === 0) {
       this.setStatus('Bitte mindestens eine GMIA-λ-Stufe wählen (oder GMIA abwählen).', true);
       return;
@@ -408,6 +417,8 @@ export class MessLaborView {
           clipAgg: ((this.$('#ml-phone-agg') as HTMLSelectElement | null)?.value ?? 'mean') as ClipAggMode,
           calibClips,
           refClips,
+          refLayout: ((this.$('#ml-phone-layout') as HTMLSelectElement | null)?.value ?? 'spread') as RefLayout,
+          micScenario,
           calibRule,
           calibFactor: floatIn('#ml-phone-factor', PHONE_PROTOCOL_DEFAULTS.calibFactor),
           calibZ: floatIn('#ml-phone-z', PHONE_PROTOCOL_DEFAULTS.calibZ),
@@ -651,6 +662,10 @@ export class MessLaborView {
     const pctSpread = (s: SpreadSummary): string =>
       s.n > 0 ? `${pctCell(s.median)} <span class="ml-split">(${pctCell(s.min)}–${pctCell(s.max)})</span>` : '—';
     const calibOn = result.calibClips > 0;
+    const spanCell = (spans: number[]): string => {
+      const sp = summarize(spans);
+      return sp.n > 0 ? `${Math.round(sp.median)} (${sp.min}–${sp.max})` : '—';
+    };
     const n4 = (v: number): string => (Number.isFinite(v) ? v.toFixed(4).replace('.', ',') : '—');
     const ruleText =
       result.calibRule === 'mean-z'
@@ -682,6 +697,7 @@ export class MessLaborView {
         rows.push(`<tr>
           <td>${esc(s.key)}</td><td>${esc(unitName)}</td>${healthCell(sum.health)}
           <td>${sum.runsOk}/${r.runs.length}</td>
+          <td class="ml-split">${spanCell(r.runs.map((x) => x.refSpan))}</td>
           <td><strong>${n3(sum.auc.median)}</strong></td>
           <td class="ml-split">${n3(sum.auc.q1)}–${n3(sum.auc.q3)}</td>
           <td class="ml-split">${range(sum.auc)}</td>
@@ -709,9 +725,9 @@ export class MessLaborView {
       .join(' · ');
 
     host.innerHTML = `
-      <h3>Handy-Protokoll · Referenz aus ${result.refClips} Clip(s)${calibOn ? ` · ${result.calibClips} Kalibrier-Clips` : ''} <span class="ml-agg-note">(${result.runs} Durchläufe · Seed ${result.seed}${calibOn ? ` · Schwelle: ${esc(ruleText)}` : ''} · Aggregation ${esc(result.clipAgg)} · ${esc(result.pipeline)})</span></h3>
+      <h3>Handy-Protokoll · Referenz aus ${result.refClips} Clip(s)${result.refClips > 1 ? (result.refLayout === 'block' ? ' am Stück' : ' verteilt') : ''} · Mikrofon ${esc(micScenarioLabel(result))}${calibOn ? ` · ${result.calibClips} Kalibrier-Clips` : ''} <span class="ml-agg-note">(${result.runs} Durchläufe · Seed ${result.seed}${calibOn ? ` · Schwelle: ${esc(ruleText)}` : ''} · Aggregation ${esc(result.clipAgg)} · ${esc(result.pipeline)})</span></h3>
       <div class="ml-scroll"><table class="ml-table ml-result-table ml-phone-table">
-        <thead><tr><th>Bereich</th><th>Engine</th><th>Zustand</th><th>Durchl.</th><th>AUC Median</th><th>AUC Q1–Q3</th><th>AUC Min–Max</th><th>pAUC Median</th><th>Fehlalarm ${result.confidenceThreshold}/${result.faultyThreshold}</th><th>Erkennung ${result.confidenceThreshold}/${result.faultyThreshold}</th><th>Zwischenbereich</th>${calibOn ? '<th>Schwelle (Rohwert) Median</th><th>Fehlalarm kalibriert</th><th>Erkennung kalibriert</th>' : ''}<th>beste/schlechteste Referenz</th></tr></thead>
+        <thead><tr><th>Bereich</th><th>Engine</th><th>Zustand</th><th>Durchl.</th><th>Ref.-Spanne Median (Min–Max)</th><th>AUC Median</th><th>AUC Q1–Q3</th><th>AUC Min–Max</th><th>pAUC Median</th><th>Fehlalarm ${result.confidenceThreshold}/${result.faultyThreshold}</th><th>Erkennung ${result.confidenceThreshold}/${result.faultyThreshold}</th><th>Zwischenbereich</th>${calibOn ? '<th>Schwelle (Rohwert) Median</th><th>Fehlalarm kalibriert</th><th>Erkennung kalibriert</th>' : ''}<th>beste/schlechteste Referenz</th></tr></thead>
         <tbody>${rows.join('')}</tbody>
       </table></div>
       ${issues.length ? `<div class="ml-warn"><strong>Hinweise:</strong><ul>${issues.join('')}</ul></div>` : ''}
@@ -720,6 +736,7 @@ export class MessLaborView {
       <p class="ml-note">${testInfo}</p>
       ${result.gmiaStages.some((st) => st !== 'standard') ? `<p class="ml-note">GMIA-λ-Stufen: „GMIA“ = Standard der App (λ = 10^9 — gegen die auf Summe 1 normierten Merkmale riesig, praktisch Mittelwert-Vergleich). „GMIA α=…“ = relatives λ = α · Spur(XᵀX) / N je Training, kleineres α geht Richtung MIA. Konditionszahl von XᵀX + λI über ${GMIA_CONDITION_LIMIT.toExponential(0)} → Stufe „eingeschränkt“.</p>` : ''}
       ${calibOn ? `<p class="ml-note">Kalibriert: Je Durchlauf werden nach dem Anlernen ${result.calibClips} weitere Normal-Clips wie Prüfungen bewertet; aus ihren Rohwerten (1 − Ähnlichkeit) entsteht die Schwelle (${esc(ruleText)}). Ein Testclip ist kalibriert „auffällig“, wenn sein Rohwert darüber liegt. Bei MIMII stammen die Kalibrier-Clips aus derselben Aufnahmeserie — im Feld kämen sie von anderen Tagen, das Ergebnis ist hier eher optimistisch.</p>` : ''}
+      ${result.refClips > 1 ? `<p class="ml-note">Referenz-Lage: ${result.refLayout === 'block' ? '„am Stück“ — k direkt aufeinanderfolgende freie Clips nach Dateinummer (wie EINE lange Aufnahme)' : '„verteilt“ — k Clips zufällig über die ganze Aufnahme (wie mehrere Aufnahmen zu verschiedenen Zeiten)'}. Ref.-Spanne = größte minus kleinste Dateinummer der Referenz-Clips. Annahme: Dateinummer = Aufnahmereihenfolge.</p>` : ''}
       <p class="ml-note">Je Durchlauf lernt die Engine aus ${result.refClips === 1 ? 'GENAU EINEM Normal-Clip' : `${result.refClips} Normal-Clips zusammen`} an (wie die Referenzaufnahme am Handy) und prüft die Testclips desselben Bereichs mit der Handy-Pipeline. Die Spanne Min–Max zeigt, wie stark das Ergebnis an der gewählten Referenz hängt. Fehlalarm = Normal-Clips „auffällig“, Erkennung = Abnormal-Clips „auffällig“, Zwischenbereich = „unsicher“ (Median über die Durchläufe, in Klammern Min–Max). AUC/pAUC auf Rohähnlichkeit. Nichts wurde gespeichert.</p>`;
     (this.$('#ml-exports') as HTMLElement | null)?.style.removeProperty('display');
   }
@@ -1155,6 +1172,17 @@ export class MessLaborView {
               </label>
               <label class="ml-opt">Referenz aus k Clips
                 <input id="ml-phone-refk" type="number" min="1" max="${REF_CLIPS_MAX}" step="1" value="${PHONE_PROTOCOL_DEFAULTS.refClips}" title="1 = wie am Handy; k Clips werden zusammen angelernt wie eine längere Aufnahme" />
+              </label>
+              <label class="ml-opt" title="Annahme: Dateinummer = Aufnahmereihenfolge. Bei k = 1 sind beide Lagen gleich.">Referenz-Lage
+                <select id="ml-phone-layout"><option value="spread" selected>verteilt (mehrere Aufnahmen)</option><option value="block">am Stück (eine lange Aufnahme)</option></select>
+              </label>
+              <label class="ml-opt" title="Mehrkanal-Dateien (MIMII: 8 Mikrofone im Ring). Kanal 1 = erster Kanal.">Mikrofon-Szenario
+                <select id="ml-phone-mic">
+                  <option value="mean" selected>A: Mittel aller Kanäle</option>
+                  <option value="same">B: 1 Mikrofon, Prüfung an derselben Stelle</option>
+                  <option value="other">C: 1 Mikrofon, Prüfung an anderer Stelle</option>
+                  <option value="spread">D: Referenz an k Stellen, Prüfung an anderer Stelle (k ≥ 2)</option>
+                </select>
               </label>
               <label class="ml-opt">Kalibrier-Clips m
                 <input id="ml-phone-calib" type="number" min="0" max="${CALIB_CLIPS_MAX}" step="1" value="${PHONE_PROTOCOL_DEFAULTS.calibClips}" title="0 = keine kalibrierte Schwelle; sonst m weitere Normal-Clips je Durchlauf" />

@@ -277,6 +277,34 @@ describe('runPhoneProtocol (Rauchtest, synthetisch)', () => {
     expect(sec.perEngine['gmia']!.runs[0].conditionNumber).toBeLessThan(10);
   }, 120_000);
 
+  it('Referenz-Lage „am Stück“: Spanne je Durchlauf in Bericht und Exporten', async () => {
+    const { paths, files } = dataset();
+    const resolve = (p: string): ClipSource => ({ read: async () => files.get(p)!.slice(0) });
+    const result = await runPhoneProtocol(parseFolder(paths), resolve, {
+      engines: ['spectral-cosine'],
+      runs: 2,
+      seed: 3,
+      refClips: 3,
+      refLayout: 'block',
+      decode: decodePcm,
+    });
+    expect(result.refLayout).toBe('block');
+    const runs = result.sections[0].perEngine['spectral-cosine']!.runs;
+    for (const run of runs) {
+      expect(run.refPaths).toHaveLength(3);
+      expect(run.refSpan).toBe(2); // ohne Kappung: drei direkt aufeinanderfolgende Nummern
+    }
+    const csv = toCsvPhone(result);
+    expect(csv).toContain('am Stück (eine lange Aufnahme)');
+    expect(csv).toContain('Referenz-Spanne (Nummern)');
+    const detail = toCsvPhoneDetail(result).split('\n');
+    expect(detail[1]).toContain('Referenz-Spanne (Nummern)');
+    const col = detail[1].split(',').indexOf('Referenz-Spanne (Nummern)');
+    expect(detail[2].split(',')[col]).toBe('2');
+    const json = JSON.parse(toJsonPhone(result)) as { refLayout: string };
+    expect(json.refLayout).toBe('block');
+  }, 120_000);
+
   it('bricht über das AbortSignal ab', async () => {
     const { paths, files } = dataset();
     const ctrl = new AbortController();
@@ -290,6 +318,154 @@ describe('runPhoneProtocol (Rauchtest, synthetisch)', () => {
       })
     ).rejects.toMatchObject({ name: 'AbortError' });
   });
+});
+
+/** 16-bit-PCM-WAV mit mehreren Kanälen (verschachtelt). */
+function toWavMulti(channels: Float32Array[], sampleRate: number): ArrayBuffer {
+  const nCh = channels.length;
+  const n = channels[0].length;
+  const buf = new ArrayBuffer(44 + n * nCh * 2);
+  const v = new DataView(buf);
+  const put = (off: number, t: string) =>
+    [...t].forEach((c, i) => v.setUint8(off + i, c.charCodeAt(0)));
+  put(0, 'RIFF');
+  v.setUint32(4, 36 + n * nCh * 2, true);
+  put(8, 'WAVE');
+  put(12, 'fmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, nCh, true);
+  v.setUint32(24, sampleRate, true);
+  v.setUint32(28, sampleRate * nCh * 2, true);
+  v.setUint16(32, nCh * 2, true);
+  v.setUint16(34, 16, true);
+  put(36, 'data');
+  v.setUint32(40, n * nCh * 2, true);
+  for (let i = 0; i < n; i++)
+    for (let c = 0; c < nCh; c++)
+      v.setInt16(44 + (i * nCh + c) * 2, Math.max(-1, Math.min(1, channels[c][i])) * 0x7fff, true);
+  return buf;
+}
+
+/** Decoder für Mehrkanal-PCM: ohne Kanal = Mittel aller Kanäle (wie die Produktion). */
+async function decodePcmMulti(src: ClipSource, channel?: number): Promise<DecodedClip> {
+  const bytes = await src.read();
+  const v = new DataView(bytes);
+  const nCh = v.getUint16(22, true);
+  const rate = v.getUint32(24, true);
+  const n = v.getUint32(40, true) / 2 / nCh;
+  const raw = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    if (channel === undefined) {
+      let sum = 0;
+      for (let c = 0; c < nCh; c++) sum += v.getInt16(44 + (i * nCh + c) * 2, true) / 0x7fff;
+      raw[i] = sum / nCh;
+    } else {
+      const c = Math.min(channel, nCh - 1);
+      raw[i] = v.getInt16(44 + (i * nCh + c) * 2, true) / 0x7fff;
+    }
+  }
+  return { features: extractFeaturesFromRaw(raw, rate), raw, sampleRate: rate };
+}
+
+/** 8 Kanäle: dieselbe Maschine, je Kanal andere Pegel/Phase (andere Stelle am Ring). */
+function dataset8(): { paths: string[]; files: Map<string, ArrayBuffer> } {
+  const files = new Map<string, ArrayBuffer>();
+  const clip = (seed: number, abn: boolean): ArrayBuffer => {
+    const base = synth(seed, abn);
+    const chans = Array.from({ length: 8 }, (_, c) => {
+      const out = new Float32Array(base.length);
+      const g = 0.6 + 0.05 * c;
+      const d = c * 3; // kleine Laufzeitverschiebung
+      for (let i = 0; i < base.length; i++) out[i] = g * base[Math.max(0, i - d)];
+      return out;
+    });
+    return toWavMulti(chans, SR);
+  };
+  for (let i = 0; i < 12; i++)
+    files.set(`pump/id_00/normal/${String(i).padStart(8, '0')}.wav`, clip(100 + i, false));
+  for (let i = 0; i < 6; i++)
+    files.set(`pump/id_00/abnormal/${String(i).padStart(8, '0')}.wav`, clip(900 + i, true));
+  return { paths: [...files.keys()], files };
+}
+
+describe('Mikrofon-Szenario (Läufer)', () => {
+  const run = async (
+    opts: Partial<Parameters<typeof runPhoneProtocol>[2]>,
+    calls?: Array<number | undefined>
+  ) => {
+    const { paths, files } = dataset8();
+    return runPhoneProtocol(
+      parseFolder(paths),
+      (p) => ({ read: async () => files.get(p)!.slice(0) }),
+      {
+        engines: ['spectral-cosine'],
+        runs: 2,
+        seed: 3,
+        refClips: 3,
+        maxTestPerClass: 4,
+        decode: async (src, ch) => {
+          calls?.push(ch);
+          return decodePcmMulti(src, ch);
+        },
+        ...opts,
+      }
+    );
+  };
+
+  it('A ist bitgleich zu bisher (ohne Angabe = A, kein Kanal beim Dekodieren)', async () => {
+    const calls: Array<number | undefined> = [];
+    const before = await run({}, calls);
+    const a = await run({ micScenario: 'mean' });
+    expect(a.sections).toEqual(before.sections);
+    expect(a.details).toEqual(before.details);
+    expect(calls.every((c) => c === undefined)).toBe(true);
+    expect(before.sourceChannelCounts['8']).toBeGreaterThan(0);
+    expect(before.notes.join(' ')).toMatch(/8 Kanal\/Kanäle/);
+    expect(before.details.every((d) => d.channel === 'Mittel')).toBe(true);
+  }, 120_000);
+
+  it('B/C/D wählen die richtigen Kanäle; C und D prüfen auf denselben Kanälen', async () => {
+    const b = await run({ micScenario: 'same', calibClips: 2 });
+    const c = await run({ micScenario: 'other', calibClips: 2 });
+    const d = await run({ micScenario: 'spread', calibClips: 2 });
+    const runsOf = (r: typeof b) => r.sections[0].perEngine['spectral-cosine']!.runs;
+    for (const x of runsOf(b)) expect(x.refChannels).toEqual(['1', '1', '1']);
+    for (const x of runsOf(c)) expect(x.refChannels).toEqual(['1', '1', '1']);
+    for (const x of runsOf(d)) expect(x.refChannels).toEqual(['1', '4', '6']);
+    expect(b.details.every((x) => x.channel === '1')).toBe(true);
+    const pool = new Set(['2', '3', '5', '7', '8']);
+    for (const x of d.details) expect(pool.has(x.channel)).toBe(true);
+    const chanC = new Map(c.details.map((x) => [x.testPath, x.channel]));
+    for (const x of d.details) expect(chanC.get(x.testPath)).toBe(x.channel);
+    // je Clip ein fester Kanal über alle Durchläufe
+    const seen = new Map<string, string>();
+    for (const x of d.details) {
+      expect(seen.get(x.testPath) ?? x.channel).toBe(x.channel);
+      seen.set(x.testPath, x.channel);
+    }
+    expect(toCsvPhoneDetail(d)).toContain('Referenz-Kanäle');
+    expect(toCsvPhone(d)).toContain('D: Referenz an k Stellen');
+    expect((JSON.parse(toJsonPhone(d)) as { micScenario: string }).micScenario).toBe('spread');
+  }, 120_000);
+
+  it('D braucht k ≥ 2; einkanalige Dateien fallen auf Kanal 1 zurück', async () => {
+    await expect(run({ micScenario: 'spread', refClips: 1 })).rejects.toThrow(/k ≥ 2/);
+    const { paths, files } = dataset(); // einkanalig
+    const r = await runPhoneProtocol(
+      parseFolder(paths),
+      (p) => ({ read: async () => files.get(p)!.slice(0) }),
+      {
+        engines: ['spectral-cosine'],
+        runs: 1,
+        refClips: 2,
+        micScenario: 'spread',
+        decode: decodePcmMulti,
+      }
+    );
+    expect(r.sections[0].notes.join(' ')).toMatch(/nur einen Kanal/);
+    expect(r.details.every((x) => x.channel === '1')).toBe(true);
+  }, 120_000);
 });
 
 describe('calibratedRates', () => {

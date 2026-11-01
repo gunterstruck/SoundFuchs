@@ -38,8 +38,15 @@ import { logger } from '@utils/logger.js';
  * Gewichtsvektor w = X(XᵀX + λI)⁻¹·1 ist praktisch das (skalierte) mittlere
  * Spektrum. GMIA arbeitet mit diesem Standard also als Mittelwert-Vergleich.
  * Kleinere λ gehen Richtung MIA (gemeinsame, frameübergreifend gleich starke
- * Anteile). Ob das besser erkennt, misst das Mess-Labor (relatives λ, siehe
- * relativeLambda); der Standard der App bleibt 10^9.
+ * Anteile). Das Mess-Labor kann das nachmessen (relatives λ, siehe
+ * relativeLambda).
+ *
+ * Gemessen (MIMII pump/id_06, k = 3, 20 Durchläufe): AUC 0,990 mit 10^9, 0,327
+ * mit α = 1, ≈ 0,08 mit α ≤ 0,01. Grund: Jeder Frame ist auf Summe 1 normiert
+ * und erfüllt die MIA-Bedingung (Projektion = 1) schon mit dem Einsvektor. Für
+ * kleines λ wird w flach, und der Kosinus misst nur noch 1/‖f‖₂ (Breitbandigkeit),
+ * unabhängig von der Referenz. Entscheidung: Die App bleibt bei 10^9.
+ * Details: docs/messlabor-handy-protokoll.md, Abschnitt „GMIA-λ-Stufen“.
  */
 export const LAMBDA = 1e9;
 
